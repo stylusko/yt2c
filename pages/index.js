@@ -521,11 +521,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     ? React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null))
     : null;
 
-  const TimestampLink = () => ytLink ? React.createElement("a", {
-    href: ytLink, target: "_blank", rel: "noopener noreferrer",
-    onClick: (e) => e.stopPropagation(),
-    style: { position: "absolute", top: 8, right: 8, zIndex: 10, padding: "4px 10px", borderRadius: T.radiusPill, background: "rgba(99,102,241,0.9)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none", boxShadow: T.shadow }
-  }, `\u25B6 ${formatSec(seekTime)}`) : null;
+  const TimestampLink = () => null;
 
   const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
@@ -1543,72 +1539,77 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
     // ── LEFT: Preview (compact) ──
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
-      // Top bar: nav + card name + actions
-      React.createElement("div", { style: { padding: '8px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, background: T.surface, flexShrink: 0 } },
+      // Top bar: nav + card name only
+      React.createElement("div", { style: { padding: '6px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, background: T.surface, flexShrink: 0 } },
         React.createElement("button", { onClick: () => goTo(activeIndex - 1), disabled: activeIndex === 0, style: navBtn(activeIndex === 0) }, "\u25C0"),
-        React.createElement("span", { style: { width: 24, height: 24, borderRadius: T.radiusPill, background: T.accent, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
+        React.createElement("span", { style: { width: 22, height: 22, borderRadius: T.radiusPill, background: T.accent, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
         editingName
           ? React.createElement("input", { ref: nameRef, value: nameValue, onChange: (e) => setNameValue(e.target.value), onBlur: commitName, onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); }, onClick: (e) => e.stopPropagation(), style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', padding: '2px 6px', borderRadius: 4, flex: 1, minWidth: 0 } })
           : React.createElement("span", { onClick: startEditName, style: { color: T.text, fontWeight: 500, fontSize: 12, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
         React.createElement("button", { onClick: () => goTo(activeIndex + 1), disabled: activeIndex >= cards.length - 1, style: navBtn(activeIndex >= cards.length - 1) }, "\u25B6"),
-        React.createElement("div", { style: { width: 1, height: 16, background: T.border, flexShrink: 0 } }),
-        React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\u2630"),
-        React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\uBCF5\uC81C"),
-        cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\u00D7"),
-        React.createElement("button", { onClick: onAdd, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+"),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, `${activeIndex + 1}/${cards.length}`),
       ),
-      // Card preview area
-      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', overflow: 'hidden' } },
+      // Card preview area (reduced padding)
+      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 16px', overflow: 'hidden' } },
         React.createElement("div", {
           key: 'card-' + activeIndex,
           style: {
             animation: animDir ? (animDir === 'down' ? 'slideFromBelow 0.3s cubic-bezier(0.4,0,0.2,1)' : 'slideFromAbove 0.3s cubic-bezier(0.4,0,0.2,1)') : 'none',
             borderRadius: T.radius,
-            boxShadow: '0 0 0 2.5px ' + T.accent,
+            boxShadow: '0 0 0 2px ' + T.accent,
             maxWidth: '100%',
           },
         },
           React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn })
         ),
       ),
-      // Card carousel thumbnails
-      React.createElement("div", { style: { padding: '6px 8px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 4, background: T.surface, flexShrink: 0, overflowX: 'hidden' } },
-        React.createElement("button", {
-          onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -140, behavior: 'smooth' }); },
-          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '2px 4px', flexShrink: 0 },
-        }, "\u25C0"),
-        React.createElement("div", {
-          id: 'card-carousel',
-          style: { display: 'flex', gap: 6, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '2px 0' },
-        },
-          cards.map((c, i) => React.createElement("div", {
-            key: c.id,
-            onClick: () => goTo(i),
-            style: {
-              width: 56, height: aspectRatio === '3:4' ? 75 : 56, flexShrink: 0, borderRadius: 6, overflow: 'hidden', cursor: 'pointer',
-              boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
-              opacity: i === activeIndex ? 1 : 0.6,
-              transition: 'all 0.15s',
-            },
+      // Bottom bar: carousel + actions + toggle
+      React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, background: T.surface, flexShrink: 0 } },
+        // Carousel row
+        React.createElement("div", { style: { padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
+          React.createElement("button", {
+            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -120, behavior: 'smooth' }); },
+            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+          }, "\u25C0"),
+          React.createElement("div", {
+            id: 'card-carousel',
+            style: { display: 'flex', gap: 4, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '1px 0' },
           },
-            React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 56 })
-          ))
+            cards.map((c, i) => React.createElement("div", {
+              key: c.id,
+              onClick: () => goTo(i),
+              style: {
+                width: 44, height: aspectRatio === '3:4' ? 59 : 44, flexShrink: 0, borderRadius: 4, overflow: 'hidden', cursor: 'pointer',
+                boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
+                opacity: i === activeIndex ? 1 : 0.55,
+                transition: 'all 0.15s',
+              },
+            },
+              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 44 })
+            ))
+          ),
+          React.createElement("button", {
+            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 120, behavior: 'smooth' }); },
+            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+          }, "\u25B6"),
         ),
-        React.createElement("button", {
-          onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 140, behavior: 'smooth' }); },
-          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '2px 4px', flexShrink: 0 },
-        }, "\u25B6"),
-      ),
-      // Bottom bar: video preview toggle
-      React.createElement("div", { style: { padding: '6px 16px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 8, background: T.surface, flexShrink: 0 } },
-        React.createElement("div", {
-          onClick: onVideoPreviewToggle,
-          style: { width: 32, height: 16, borderRadius: 8, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
-        },
-          React.createElement("div", { style: { width: 12, height: 12, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 18 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+        // Actions row + video toggle
+        React.createElement("div", { style: { padding: '4px 10px 5px', display: 'flex', alignItems: 'center', gap: 4, borderTop: `1px solid ${T.border}` } },
+          React.createElement("button", { onClick: onAdd, style: { ...btnSm, padding: '3px 10px', fontSize: 10, background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+ \uCD94\uAC00"),
+          React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\uBCF5\uC81C"),
+          React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\u2630 \uC21C\uC11C"),
+          cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, padding: '3px 8px', fontSize: 10, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\uC0AD\uC81C"),
+          // Video preview toggle (right-aligned)
+          React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 } },
+            React.createElement("div", {
+              onClick: onVideoPreviewToggle,
+              style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
+            },
+              React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+            ),
+            React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uC601\uC0C1"),
+          ),
         ),
-        React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 11, color: T.textSecondary, cursor: 'pointer', userSelect: 'none' } }, "\uC601\uC0C1 \uBBF8\uB9AC\uBCF4\uAE30"),
-        videoPreviewOn && React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, "\u00B7 \uB290\uB824\uC9C0\uBA74 \uBBF8\uB9AC\uBCF4\uAE30\uB97C \uAEBC\uC8FC\uC138\uC694"),
       ),
     ),
     // \u2500\u2500 RIGHT: Tabs \u2500\u2500
