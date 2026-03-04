@@ -346,7 +346,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const playerRef = useRef(null);
   const timerRef = useRef(null);
   const [ready, setReady] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
+  const mountId = useRef(Date.now());
 
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
@@ -368,14 +368,15 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     document.head.appendChild(tag);
   }, []);
 
-  // Create player
+  // Create player – use a small delay to ensure DOM is ready after mount
   useEffect(() => {
-    if (!videoId || !hasRange) { setShowVideo(false); return; }
-    setShowVideo(true);
+    if (!videoId || !hasRange) return;
+    let cancelled = false;
 
     const createPlayer = () => {
+      if (cancelled) return;
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
-      const containerId = 'yt-pv-' + videoId + '-' + startSec + '-' + (endSec || 0) + '-' + Date.now();
+      const containerId = 'yt-pv-' + mountId.current + '-' + videoId + '-' + startSec;
       const el = iframeRef.current;
       if (!el) return;
       el.id = containerId;
@@ -390,7 +391,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { e.target.setVolume(0); e.target.playVideo(); setReady(true); },
+          onReady: (e) => { if (!cancelled) { e.target.setVolume(0); e.target.playVideo(); setReady(true); } },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
               e.target.seekTo(Math.floor(startSec), true);
@@ -401,14 +402,19 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       });
     };
 
-    if (window.YT && window.YT.Player) {
-      createPlayer();
-    } else {
-      const poll = setInterval(() => {
-        if (window.YT && window.YT.Player) { clearInterval(poll); createPlayer(); }
-      }, 200);
-      return () => clearInterval(poll);
-    }
+    // Small delay to ensure iframeRef is attached to DOM
+    const initDelay = setTimeout(() => {
+      if (cancelled) return;
+      if (window.YT && window.YT.Player) {
+        createPlayer();
+      } else {
+        const poll = setInterval(() => {
+          if (cancelled) { clearInterval(poll); return; }
+          if (window.YT && window.YT.Player) { clearInterval(poll); createPlayer(); }
+        }, 200);
+        timerRef._poll = poll;
+      }
+    }, 50);
 
     timerRef.current = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
@@ -421,12 +427,15 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     }, 300);
 
     return () => {
+      cancelled = true;
+      clearTimeout(initDelay);
+      if (timerRef._poll) clearInterval(timerRef._poll);
       if (timerRef.current) clearInterval(timerRef.current);
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
   }, [videoId, startSec, endSec, hasRange, width, height]);
 
-  if (!videoId || !hasRange || !showVideo) return null;
+  if (!videoId || !hasRange) return null;
 
   const vsc = (videoScale || 110) / 100;
 
