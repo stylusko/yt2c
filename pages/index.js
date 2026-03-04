@@ -350,7 +350,7 @@ function CheckboxRow({ label, checked, onChange }) {
 
 
 /* ── ZoomedSeekbar: shows region around start ── */
-function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange }) {
+function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange, onWarn }) {
   const zoomRef = useRef(null);
   const [zDrag, setZDrag] = useState(false);
   const [zDragTime, setZDragTime] = useState(null);
@@ -397,7 +397,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
         onStartChange(fmtMM(t));
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); return; }
+        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
         onEndChange(fmtMM(t));
       }
     };
@@ -433,15 +433,10 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onMouseDown: handleZDown,
-      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none', marginTop: 10, overflow: 'visible' },
+      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-      // 30s max zone (subtle background showing selectable range)
-      React.createElement("div", { style: { position: 'absolute', top: 6, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, toZPct(Math.min(startSec + 30, duration))) - Math.max(0, sPct)) + '%', height: 12, background: 'rgba(99,102,241,0.08)', borderRadius: 3, pointerEvents: 'none' } }),
-      // 30s limit marker line
-      toZPct(startSec + 30) <= 100 && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + toZPct(startSec + 30) + '% - 0.5px)', width: 1, height: 16, background: 'rgba(99,102,241,0.25)', pointerEvents: 'none' } }),
-      toZPct(startSec + 30) <= 100 && React.createElement("div", { style: { position: 'absolute', top: -8, left: toZPct(startSec + 30) + '%', transform: 'translateX(-50%)', fontSize: 8, color: 'rgba(99,102,241,0.5)', whiteSpace: 'nowrap', pointerEvents: 'none' } }, '30\uCD08'),
       // Range highlight (selected)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
       // Start marker (visible line + wider hit area)
@@ -473,6 +468,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
   const [dragTime, setDragTime] = useState(null);
   const [dragX, setDragX] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [warnToast, setWarnToast] = useState(false);
+  const warnTimer = useRef(null);
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -556,6 +553,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     else { playerRef.current.mute(); setMuted(true); }
   };
 
+  const showWarn = () => {
+    setWarnToast(true);
+    if (warnTimer.current) clearTimeout(warnTimer.current);
+    warnTimer.current = setTimeout(() => setWarnToast(false), 3000);
+  };
+
   const seekTo = (sec) => {
     if (playerRef.current) { playerRef.current.seekTo(sec, true); setCurrent(sec); }
   };
@@ -600,6 +603,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     // If end is set and clip > 30s, adjust end
     else if (es - t > 30) {
       onEndChange(fmtMM(t + 30));
+      showWarn();
     }
   };
 
@@ -608,6 +612,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     const ss = parseTime(start);
     if (ss != null && t - ss > 30) {
       onEndChange(fmtMM(ss + 30));
+      showWarn();
     } else {
       onEndChange(fmtMM(t));
     }
@@ -710,12 +715,16 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
         }),
       ),
     ),
-    // Clip info
-    clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, fontSize: 11, color: overLimit ? dangerC : T.textMuted, textAlign: 'center' } },
-      '\uC120\uD0DD \uAD6C\uAC04: ' + Math.round(clipLen) + '\uCD08' + (overLimit ? ' (\uCD5C\uB300 30\uCD08 \uCD08\uACFC!)' : ' / \uCD5C\uB300 30\uCD08')
+    // Clip duration
+    clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, fontSize: 11, color: T.textMuted, textAlign: 'center' } },
+      '\uC120\uD0DD \uAD6C\uAC04: ' + Math.round(clipLen) + '\uCD08'
     ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
+    // Warning toast
+    warnToast && React.createElement("div", { style: { padding: '6px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', margin: '4px 0', transition: 'opacity 0.3s' } },
+      '\u26A0 \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
+    ),
   );
 }
 
