@@ -1399,6 +1399,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     }
   }, [activeIndex]);
 
+  // Auto-scroll carousel to active card
+  useEffect(() => {
+    const el = document.getElementById('card-carousel');
+    if (el && el.children[activeIndex]) {
+      el.children[activeIndex].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [activeIndex]);
+
   const card = cards[activeIndex] || cards[0];
   const nextCard = activeIndex < cards.length - 1 ? cards[activeIndex + 1] : null;
   const prevCard = activeIndex > 0 ? cards[activeIndex - 1] : null;
@@ -1532,7 +1540,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 220px)' } },
-    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }"),
+    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
     // ── LEFT: Preview (compact) ──
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
       // Top bar: nav + card name + actions
@@ -1545,7 +1553,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("button", { onClick: () => goTo(activeIndex + 1), disabled: activeIndex >= cards.length - 1, style: navBtn(activeIndex >= cards.length - 1) }, "\u25B6"),
         React.createElement("div", { style: { width: 1, height: 16, background: T.border, flexShrink: 0 } }),
         React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\u2630"),
-        React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\u8907\u88FD"),
+        React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\uBCF5\uC81C"),
         cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\u00D7"),
         React.createElement("button", { onClick: onAdd, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+"),
       ),
@@ -1562,6 +1570,34 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         },
           React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn })
         ),
+      ),
+      // Card carousel thumbnails
+      React.createElement("div", { style: { padding: '6px 8px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 4, background: T.surface, flexShrink: 0, overflowX: 'hidden' } },
+        React.createElement("button", {
+          onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -140, behavior: 'smooth' }); },
+          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '2px 4px', flexShrink: 0 },
+        }, "\u25C0"),
+        React.createElement("div", {
+          id: 'card-carousel',
+          style: { display: 'flex', gap: 6, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '2px 0' },
+        },
+          cards.map((c, i) => React.createElement("div", {
+            key: c.id,
+            onClick: () => goTo(i),
+            style: {
+              width: 56, height: aspectRatio === '3:4' ? 75 : 56, flexShrink: 0, borderRadius: 6, overflow: 'hidden', cursor: 'pointer',
+              boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
+              opacity: i === activeIndex ? 1 : 0.6,
+              transition: 'all 0.15s',
+            },
+          },
+            React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 56 })
+          ))
+        ),
+        React.createElement("button", {
+          onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 140, behavior: 'smooth' }); },
+          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '2px 4px', flexShrink: 0 },
+        }, "\u25B6"),
       ),
       // Bottom bar: video preview toggle
       React.createElement("div", { style: { padding: '6px 16px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 8, background: T.surface, flexShrink: 0 } },
