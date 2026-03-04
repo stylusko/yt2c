@@ -71,9 +71,9 @@ const DEFAULT_CARD = () => ({
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
-  titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0,
-  subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0,
-  bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0,
+  titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
+  subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
+  bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
 });
 
@@ -196,6 +196,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   }
 
   // Helper to draw text with letter spacing
+  function measureTextLS(text, fieldLS) {
+    if (fieldLS === 0) return ctx.measureText(text).width;
+    let w2 = 0;
+    for (const ch of text) w2 += ctx.measureText(ch).width + fieldLS;
+    return w2 - (text.length > 0 ? fieldLS : 0);
+  }
+
   function drawTextLS(text, x, y, fieldLS) {
     if (fieldLS === 0) { ctx.fillText(text, x, y); return; }
     let cx = x;
@@ -203,6 +210,12 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
       ctx.fillText(ch, cx, y);
       cx += ctx.measureText(ch).width + fieldLS;
     }
+  }
+
+  function alignX(text, align, fieldLS) {
+    if (align === 'center') return w / 2 - measureTextLS(text, fieldLS) / 2;
+    if (align === 'right') return w - padX - measureTextLS(text, fieldLS);
+    return padX; // left
   }
 
   const titleSz = card.titleSize;
@@ -223,16 +236,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
     let curY = h - padTop;
     const allItems = [];
-    if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, ls: titleLS, ox: titleOX, oy: titleOY });
-    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY }); }
-    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY }); }
+    if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
+    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
+    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
       if (!item.text) { curY -= 20; continue; }
       curY -= item.lh;
       ctx.font = item.font; ctx.fillStyle = item.color;
-      drawTextLS(item.text, padX + (item.ox || 0), curY + item.lh * 0.78 + (item.oy || 0), item.ls);
+      drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + item.lh * 0.78 + (item.oy || 0), item.ls);
     }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
@@ -259,9 +272,9 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
       }
     }
     let curY = yStart + padTop;
-    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { drawTextLS(ln, padX + titleOX, curY + titleSz * 0.85 + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { drawTextLS(ln, padX + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, padX + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
+    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleSz * 0.85 + titleOY, titleLS); curY += titleLh; } }
+    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   }
   // Draw overlay images
   const overlays = card.overlays || [];
@@ -912,9 +925,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
-    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
-    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
+    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
+    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
   );
 
   const BgImage = () => baseImage
@@ -939,9 +952,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
+        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
+        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
       ),
     );
   }
@@ -1172,10 +1185,16 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-              React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "좌우", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "위아래", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+                React.createElement("div", { style: { display: 'flex', gap: 3 } },
+                  [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+                ),
+              ),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
             ),
             // 부제목
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -1187,10 +1206,16 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-              React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "좌우", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "위아래", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+                React.createElement("div", { style: { display: 'flex', gap: 3 } },
+                  [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+                ),
+              ),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
             ),
             // 본문
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -1202,10 +1227,16 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-              React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "좌우", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "위아래", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+                React.createElement("div", { style: { display: 'flex', gap: 3 } },
+                  [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+                ),
+              ),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
             ),
           ),
 
@@ -1750,10 +1781,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "좌우", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "위아래", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+        ),
+      ),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
     ),
     // 부제목
     React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -1765,10 +1802,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "좌우", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "위아래", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+        ),
+      ),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
     ),
     // 본문
     React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -1780,10 +1823,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "좌우", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "위아래", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+        ),
+      ),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
     ),
   );
 
