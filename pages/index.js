@@ -1233,6 +1233,51 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 }
 
 /* ── JSON Modal ── */
+
+/* ── PreviewModal ── */
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose }) {
+  const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
+  const previewW = 480;
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', backdropFilter: 'blur(4px)', overflowY: 'auto', padding: '40px 20px' }
+  },
+    React.createElement("div", {
+      style: { position: 'relative', maxWidth: previewW + 60, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, paddingBottom: 40 }
+    },
+      // Close button
+      React.createElement("button", {
+        onClick: onClose,
+        style: { position: 'fixed', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, transition: 'background 0.15s' },
+        onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)',
+        onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)',
+      }, "\u2715"),
+
+      // Title
+      React.createElement("div", { style: { color: '#fff', fontSize: 16, fontWeight: 600, letterSpacing: '0.02em' } },
+        "\uCE74\uB4DC \uBBF8\uB9AC\uBCF4\uAE30 (" + cards.length + "\uC7A5)"
+      ),
+
+      // Cards
+      cards.map((card, i) =>
+        React.createElement("div", { key: i, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 } },
+          React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 500 } }, (i + 1) + " / " + cards.length),
+          React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' } },
+            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW })
+          )
+        )
+      )
+    )
+  );
+}
+
 function JsonModal({ json, onClose }) {
   const textRef = useRef(null);
   const [copied, setCopied] = useState(false);
@@ -2025,6 +2070,7 @@ export default function App() {
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [showJson, setShowJson] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
@@ -2254,7 +2300,7 @@ export default function App() {
 
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, flexShrink: 0 } },
           !mob && React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-          React.createElement("button", { onClick: exportJson, style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "JSON"),
+          React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "미리보기"),
           React.createElement("button", {
             onClick: handleGenerate, disabled: generating,
             style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
@@ -2361,6 +2407,7 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false) }),
     confirmClose && React.createElement(ConfirmDialog, {
       message: "지금 저장된 내용이 날아갑니다.\n정말로 닫으시겠습니까?",
       onConfirm: confirmCloseProject,
