@@ -1544,12 +1544,12 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
-  return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 220px)' } },
+  return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
     React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
     // ── LEFT: Preview (compact) ──
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
       // Top bar: nav + card name only
-      React.createElement("div", { style: { padding: '6px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, background: T.surface, flexShrink: 0 } },
+      React.createElement("div", { style: { padding: '4px 10px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, background: T.surface, flexShrink: 0 } },
         React.createElement("button", { onClick: () => goTo(activeIndex - 1), disabled: activeIndex === 0, style: navBtn(activeIndex === 0) }, "\u25C0"),
         React.createElement("span", { style: { width: 22, height: 22, borderRadius: T.radiusPill, background: T.accent, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
         editingName
@@ -1559,7 +1559,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, `${activeIndex + 1}/${cards.length}`),
       ),
       // Card preview area (reduced padding)
-      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 16px', overflow: 'hidden' } },
+      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
         React.createElement("div", {
           key: 'card-' + activeIndex,
           style: {
@@ -1575,7 +1575,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Bottom bar: carousel + actions + toggle
       React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, background: T.surface, flexShrink: 0 } },
         // Carousel row
-        React.createElement("div", { style: { padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
+        React.createElement("div", { style: { padding: '3px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
           React.createElement("button", {
             onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -120, behavior: 'smooth' }); },
             style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
@@ -1588,13 +1588,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               key: c.id,
               onClick: () => goTo(i),
               style: {
-                width: 44, height: aspectRatio === '3:4' ? 59 : 44, flexShrink: 0, borderRadius: 4, overflow: 'hidden', cursor: 'pointer',
+                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
                 boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
                 opacity: i === activeIndex ? 1 : 0.55,
                 transition: 'all 0.15s',
               },
             },
-              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 44 })
+              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38 })
             ))
           ),
           React.createElement("button", {
@@ -1603,7 +1603,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           }, "\u25B6"),
         ),
         // Actions row + video toggle
-        React.createElement("div", { style: { padding: '4px 10px 5px', display: 'flex', alignItems: 'center', gap: 4, borderTop: `1px solid ${T.border}` } },
+        React.createElement("div", { style: { padding: '3px 10px 3px', display: 'flex', alignItems: 'center', gap: 4, borderTop: `1px solid ${T.border}` } },
           React.createElement("button", { onClick: onAdd, style: { ...btnSm, padding: '3px 10px', fontSize: 10, background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+ \uCD94\uAC00"),
           React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\uBCF5\uC81C"),
           React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\u2630 \uC21C\uC11C"),
@@ -1624,13 +1624,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     // \u2500\u2500 RIGHT: Tabs \u2500\u2500
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 } },
       // Card info header
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px 10px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 8px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
         React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
         React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, (activeIndex + 1) + ' / ' + cards.length + '\uc7a5'),
       ),
       // Tab bar
-      React.createElement("div", { style: { display: 'flex', gap: 4, padding: '10px 20px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
+      React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
         DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
@@ -1714,7 +1714,7 @@ export default function App() {
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
   const duplicateCard = (i) => setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; });
-  const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || p[p.length-1]?.url || "" }]);
+  const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]);
 
   // Project tab actions
   const addProject = () => {
