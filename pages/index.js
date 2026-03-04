@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import JSZip from 'jszip';
 
 /* ── Constants ── */
 const LAYOUT_OPTIONS = [
@@ -374,24 +375,213 @@ function JsonModal({ json, onClose }) {
   );
 }
 
+/* ── Project Helpers ── */
+const STORAGE_KEY = 'yt2c_projects';
+const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
+  id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+  name,
+  globalUrl: '',
+  outputFormat: 'video',
+  outputSize: 1080,
+  cards: [DEFAULT_CARD()],
+});
+
+function loadProjects() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.projects?.length > 0) return data;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveProjects(projects, activeId) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, activeId })); } catch (e) {}
+}
+
+/* ── Download All as ZIP ── */
+async function downloadAllAsZip(urls, outputFormat) {
+  const zip = new JSZip();
+  const ext = outputFormat === 'video' ? 'mp4' : 'jpg';
+  for (let i = 0; i < urls.length; i++) {
+    const res = await fetch(urls[i]);
+    if (!res.ok) continue;
+    const blob = await res.blob();
+    zip.file(`card_${i + 1}.${ext}`, blob);
+  }
+  const content = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = `yt2c_cards_${Date.now()}.zip`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ── Confirm Dialog ── */
+function ConfirmDialog({ message, onConfirm, onCancel }) {
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+      React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24 } }, message),
+      React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "취소"),
+        React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.danger, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "닫기"),
+      )
+    )
+  );
+}
+
+/* ── Project Tabs ── */
+function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const inputRef = useRef(null);
+
+  useEffect(() => { if (editingId && inputRef.current) inputRef.current.focus(); }, [editingId]);
+
+  const startRename = (proj) => { setEditingId(proj.id); setEditName(proj.name); };
+  const commitRename = () => {
+    if (editingId && editName.trim()) onRename(editingId, editName.trim());
+    setEditingId(null);
+  };
+
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflow: 'auto', paddingRight: 8 } },
+    projects.map(proj => {
+      const isActive = proj.id === activeId;
+      const isEditing = proj.id === editingId;
+      return React.createElement("div", {
+        key: proj.id,
+        style: {
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '5px 12px', borderRadius: T.radiusPill, cursor: 'pointer',
+          background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
+          border: `1px solid ${isActive ? 'rgba(99,102,241,0.3)' : 'transparent'}`,
+          transition: 'all 0.15s', flexShrink: 0,
+        },
+        onClick: () => !isEditing && onSwitch(proj.id),
+      },
+        isEditing
+          ? React.createElement("input", {
+              ref: inputRef, value: editName,
+              onChange: (e) => setEditName(e.target.value),
+              onBlur: commitRename,
+              onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
+              onClick: (e) => e.stopPropagation(),
+              style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', width: Math.max(40, editName.length * 8), padding: 0 },
+            })
+          : React.createElement("span", {
+              onDoubleClick: (e) => { e.stopPropagation(); startRename(proj); },
+              style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, userSelect: 'none' },
+            }, proj.name),
+        projects.length > 1 && React.createElement("button", {
+          onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.6 },
+          onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
+          onMouseLeave: (e) => e.currentTarget.style.opacity = 0.6,
+        }, "×"),
+      );
+    }),
+    React.createElement("button", {
+      onClick: onAdd,
+      style: { width: 26, height: 26, borderRadius: T.radiusPill, background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
+      onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = T.accent; },
+      onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = T.textMuted; },
+    }, "+"),
+  );
+}
+
 /* ── App ── */
 export default function App() {
-  const [globalUrl, setGlobalUrl] = useState("");
-  const [outputFormat, setOutputFormat] = useState("video");
-  const [outputSize, setOutputSize] = useState(1080);
-  const [cards, setCards] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
   const [showJson, setShowJson] = useState(false);
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
   const [results, setResults] = useState([]);
+  const [downloading, setDownloading] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(null);
 
-  useEffect(() => { setCards([DEFAULT_CARD()]); }, []);
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = loadProjects();
+    if (saved) {
+      setProjects(saved.projects);
+      setActiveProjectId(saved.activeId || saved.projects[0]?.id);
+    } else {
+      const first = DEFAULT_PROJECT('프로젝트 1');
+      setProjects([first]);
+      setActiveProjectId(first.id);
+    }
+  }, []);
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (projects.length > 0 && activeProjectId) saveProjects(projects, activeProjectId);
+  }, [projects, activeProjectId]);
+
+  const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
+  const globalUrl = activeProject?.globalUrl || '';
+  const outputFormat = activeProject?.outputFormat || 'video';
+  const outputSize = activeProject?.outputSize || 1080;
+  const cards = activeProject?.cards || [];
+
+  const updateProject = useCallback((updates) => {
+    setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
+  }, [activeProjectId]);
+
+  const setGlobalUrl = (v) => updateProject({ globalUrl: v });
+  const setOutputFormat = (v) => updateProject({ outputFormat: v });
+  const setOutputSize = (v) => updateProject({ outputSize: v });
+  const setCards = (updater) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id !== activeProjectId) return p;
+      const newCards = typeof updater === 'function' ? updater(p.cards) : updater;
+      return { ...p, cards: newCards };
+    }));
+  };
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
   const duplicateCard = (i) => setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; });
   const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || p[p.length-1]?.url || "" }]);
+
+  // Project tab actions
+  const addProject = () => {
+    const name = prompt('새 프로젝트 이름을 입력하세요:', `프로젝트 ${projects.length + 1}`);
+    if (!name?.trim()) return;
+    const proj = DEFAULT_PROJECT(name.trim());
+    setProjects(prev => [...prev, proj]);
+    setActiveProjectId(proj.id);
+    setGenProgress(''); setResults([]);
+  };
+
+  const closeProject = (id) => { setConfirmClose(id); };
+
+  const confirmCloseProject = () => {
+    const id = confirmClose;
+    setConfirmClose(null);
+    setProjects(prev => {
+      const next = prev.filter(p => p.id !== id);
+      if (activeProjectId === id && next.length > 0) {
+        setActiveProjectId(next[0].id);
+      }
+      return next;
+    });
+    setGenProgress(''); setResults([]);
+  };
+
+  const renameProject = (id, name) => {
+    setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+  };
+
+  const switchProject = (id) => {
+    setActiveProjectId(id);
+    setGenProgress(''); setResults([]);
+  };
 
   const buildConfig = (card) => ({
     start: card.start, end: card.end, layout: card.layout, photo_ratio: card.photoRatio,
@@ -453,17 +643,31 @@ export default function App() {
     } catch (err) { alert(`오류: ${err.message}`); setGenProgress(""); setGenerating(false); }
   };
 
+  const handleDownloadAll = async () => {
+    if (results.length === 0) return;
+    setDownloading(true);
+    try { await downloadAllAsZip(results, outputFormat); }
+    catch (e) { alert('ZIP 다운로드 실패: ' + e.message); }
+    finally { setDownloading(false); }
+  };
+
   return React.createElement("div", { style: { minHeight: "100vh", background: T.bg } },
     React.createElement(Head, null, React.createElement("title", null, "YT2C — 카드뉴스 메이커")),
 
     // ── Header ──
     React.createElement("header", { style: { position: 'sticky', top: 0, zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
-          React.createElement("h1", { style: { fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' } }, "YT2C"),
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 } },
+        React.createElement("h1", { style: { fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', flexShrink: 0 } }, "YT2C"),
+
+        // Project Tabs
+        projects.length > 0 && React.createElement(ProjectTabs, {
+          projects, activeId: activeProjectId,
+          onSwitch: switchProject, onAdd: addProject,
+          onClose: closeProject, onRename: renameProject,
+        }),
+
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
           React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
           React.createElement("button", { onClick: exportJson, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "JSON"),
           React.createElement("button", {
             onClick: handleGenerate, disabled: generating,
@@ -478,8 +682,12 @@ export default function App() {
       React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
         generating && React.createElement("div", { style: { width: 14, height: 14, border: `2px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' } }),
         React.createElement("span", { style: { fontSize: 13, color: generating ? T.accent : T.success, fontWeight: 500 } }, genProgress),
-        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 6 } },
-          results.map((url, i) => React.createElement("a", { key: i, href: url, download: true, style: { padding: '5px 14px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 12, textDecoration: 'none', fontWeight: 500 } }, `카드 ${i+1} 다운로드`))
+        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' } },
+          results.map((url, i) => React.createElement("a", { key: i, href: url, download: true, style: { padding: '5px 14px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 12, textDecoration: 'none', fontWeight: 500 } }, `카드 ${i+1}`)),
+          results.length > 1 && React.createElement("button", {
+            onClick: handleDownloadAll, disabled: downloading,
+            style: { padding: '6px 16px', background: T.success, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer', transition: 'all 0.15s', marginLeft: 4 }
+          }, downloading ? "압축 중..." : "한 번에 다운로드"),
         ),
       )
     ),
@@ -526,6 +734,11 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
+    confirmClose && React.createElement(ConfirmDialog, {
+      message: "이 프로젝트를 닫으면 복구할 수 없습니다.\n정말로 닫으시겠습니까?",
+      onConfirm: confirmCloseProject,
+      onCancel: () => setConfirmClose(null),
+    }),
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
   );
 }

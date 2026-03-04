@@ -16,6 +16,7 @@
     "ioredis": "^5.3.0",
     "uuid": "^9.0.0",
     "multer": "^1.4.5-lts.1",
-    "formidable": "^3.5.0"
+    "formidable": "^3.5.0",
+    "jszip": "^3.10.1"
   }
 }
