@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -29,12 +29,16 @@ const RECENT_FEATURES = [
   '오버레이 렌더링 일치 개선',
   '데스크탑 미리보기 sticky',
   '텍스트 배경 설정 이름 변경',
+  '탭 구조 개편 (채우기/레이아웃/텍스트/얹기)',
+  '다중 오버레이 이미지',
+  '그라데이션 옵션',
+  '투명하게 체크박스',
 ];
 
 const LAYOUT_OPTIONS = [
   { id: "photo_top", label: "사진\u2191 텍스트\u2193" },
   { id: "photo_bottom", label: "텍스트\u2191 사진\u2193" },
-  { id: "text_overlay", label: "오버레이" },
+  { id: "full_bg", label: "전체" },
 ];
 
 const ASPECT_OPTIONS = [
@@ -56,7 +60,7 @@ const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
   url: "", start: "", end: "",
-  layout: "photo_top", photoRatio: 0.55,
+  layout: "photo_top", photoRatio: 55, useGradient: false,
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
@@ -64,13 +68,11 @@ const DEFAULT_CARD = () => ({
   subtitle: "", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
   body: "", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
-  overlayEnabled: false, overlayImage: null,
-  overlayX: 50, overlayY: 50, overlayScale: 100, overlayOpacity: 1,
+  overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
-  textScale: 100, letterSpacing: 0, lineHeight: 1.4,
-  titleLetterSpacing: null, titleLineHeight: null,
-  subtitleLetterSpacing: null, subtitleLineHeight: null,
-  bodyLetterSpacing: null, bodyLineHeight: null,
+  titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0,
+  subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0,
+  bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0,
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
 });
 
@@ -144,30 +146,28 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   ctx.clearRect(0, 0, w, h);
 
   const layout = card.layout || "photo_top";
-  const photoRatio = card.photoRatio || 0.55;
+  const photoRatio = (card.photoRatio ?? 55) / 100;
   const videoFill = card.videoFill || "full";
   const useBg = card.useBg !== false;
+  const useGradient = card.useGradient === true;
   const bgColor = hexToRgb(card.bgColor || "#121212");
   const bgOpacity = card.bgOpacity ?? 0.75;
   const padX = 60, padTop = 40;
   const maxTextW = w - padX * 2;
 
-  const textScaleF = (card.textScale ?? 100) / 100;
-  const globalLS = card.letterSpacing ?? 0;
-  const globalLH = card.lineHeight ?? 1.4;
-  const titleLS = card.titleLetterSpacing ?? globalLS;
-  const titleLH = card.titleLineHeight ?? globalLH;
-  const subtitleLS = card.subtitleLetterSpacing ?? globalLS;
-  const subtitleLH = card.subtitleLineHeight ?? globalLH;
-  const bodyLS = card.bodyLetterSpacing ?? globalLS;
-  const bodyLH = card.bodyLineHeight ?? globalLH;
+  const titleLS = card.titleLetterSpacing ?? 0;
+  const titleLH = card.titleLineHeight ?? 1.4;
+  const subtitleLS = card.subtitleLetterSpacing ?? 0;
+  const subtitleLH = card.subtitleLineHeight ?? 1.4;
+  const bodyLS = card.bodyLetterSpacing ?? 0;
+  const bodyLH = card.bodyLineHeight ?? 1.4;
 
   const fontMap = {
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
   };
-  const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz * textScaleF));
+  const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz));
 
   function wrapText(text, fontSize, fontName, fieldLS) {
     if (!text) return [];
@@ -198,78 +198,81 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
   }
 
-  if (layout === "text_overlay") {
-    if (!useBg) return canvas.toDataURL("image/png");
-    const titleLines = wrapText(card.title, card.titleSize, card.titleFont, titleLS);
-    const subtitleLines = wrapText(card.subtitle, card.subtitleSize, card.subtitleFont, subtitleLS);
-    const bodyLines = wrapText(card.body, card.bodySize, card.bodyFont, bodyLS);
-    const scaledTitleSize = Math.round(card.titleSize * textScaleF);
-    const scaledSubtitleSize = Math.round(card.subtitleSize * textScaleF);
-    const scaledBodySize = Math.round(card.bodySize * textScaleF);
-    const titleLh = Math.round(scaledTitleSize * titleLH);
-    const subtitleLh = Math.round(scaledSubtitleSize * subtitleLH);
-    const bodyLh = Math.round(scaledBodySize * bodyLH);
-    let totalTextH = padTop * 2 + titleLines.length * titleLh;
-    if (card.subtitle) totalTextH += 12 + subtitleLines.length * subtitleLh;
-    if (card.body) totalTextH += 24 + bodyLines.length * bodyLh;
-    const gradH = Math.round(h * 0.80);
-    const maxAlpha = Math.max(Math.round(bgOpacity * 255), 230) / 255;
-    for (let y = h - gradH; y < h; y++) {
-      const progress = (y - (h - gradH)) / gradH;
-      let alpha;
-      if (progress < 0.2) alpha = (progress / 0.2) ** 2 * maxAlpha * 0.5;
-      else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * maxAlpha;
-      else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * maxAlpha;
-      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, maxAlpha)})`;
-      ctx.fillRect(0, y, w, 1);
+  const titleSz = card.titleSize;
+  const subSz = card.subtitleSize;
+  const bodySz = card.bodySize;
+  const titleLh = Math.round(titleSz * titleLH);
+  const subLh = Math.round(subSz * subtitleLH);
+  const bodyLh = Math.round(bodySz * bodyLH);
+  const titleOX = (card.titleX ?? 0), titleOY = (card.titleY ?? 0);
+  const subOX = (card.subtitleX ?? 0), subOY = (card.subtitleY ?? 0);
+  const bodyOX = (card.bodyX ?? 0), bodyOY = (card.bodyY ?? 0);
+
+  if (layout === "full_bg") {
+    // 전체: solid bg covers entire card
+    if (useBg) {
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
+      ctx.fillRect(0, 0, w, h);
     }
     let curY = h - padTop;
     const allItems = [];
-    if (card.title) for (const ln of titleLines) allItems.push({ text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: titleLh, ls: titleLS });
-    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of subtitleLines) allItems.push({ text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: subtitleLh, ls: subtitleLS }); }
-    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of bodyLines) allItems.push({ text: ln, font: getFont(card.bodyFont, card.bodySize), color: card.bodyColor, lh: bodyLh, ls: bodyLS }); }
+    if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, ls: titleLS, ox: titleOX, oy: titleOY });
+    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY }); }
+    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
       if (!item.text) { curY -= 20; continue; }
       curY -= item.lh;
       ctx.font = item.font; ctx.fillStyle = item.color;
-      drawTextLS(item.text, padX, curY + item.lh * 0.78, item.ls);
+      drawTextLS(item.text, padX + (item.ox || 0), curY + item.lh * 0.78 + (item.oy || 0), item.ls);
     }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
     const yStart = layout === "photo_top" ? h - textH : 0;
     if (useBg) {
-      const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
-      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
-      ctx.fillRect(0, yStart, w, textH);
+      if (useGradient) {
+        // Gradient mode for photo_top/photo_bottom
+        const gradH = textH + Math.round(h * 0.15);
+        const gradStart = layout === "photo_top" ? h - gradH : 0;
+        const gradEnd = layout === "photo_top" ? h : gradH;
+        for (let y = gradStart; y < gradEnd; y++) {
+          const progress = layout === "photo_top" ? (y - gradStart) / gradH : (gradEnd - y) / gradH;
+          let alpha;
+          if (progress < 0.2) alpha = (progress / 0.2) ** 2 * bgOpacity * 0.5;
+          else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * bgOpacity;
+          else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * bgOpacity;
+          ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, bgOpacity)})`;
+          ctx.fillRect(0, y, w, 1);
+        }
+      } else {
+        const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
+        ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
+        ctx.fillRect(0, yStart, w, textH);
+      }
     }
-    const scaledTitleSz = Math.round(card.titleSize * textScaleF);
-    const scaledSubSz = Math.round(card.subtitleSize * textScaleF);
-    const scaledBodySz = Math.round(card.bodySize * textScaleF);
-    const titleLhN = Math.round(scaledTitleSz * titleLH);
-    const subLhN = Math.round(scaledSubSz * subtitleLH);
-    const bodyLhN = Math.round(scaledBodySz * bodyLH);
     let curY = yStart + padTop;
-    if (card.title) { ctx.font = getFont(card.titleFont, card.titleSize); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, card.titleSize, card.titleFont, titleLS)) { drawTextLS(ln, padX, curY + scaledTitleSz * 0.85, titleLS); curY += titleLhN; } }
-    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont, subtitleLS)) { drawTextLS(ln, padX, curY + scaledSubSz * 0.85, subtitleLS); curY += subLhN; } }
-    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont, bodyLS)) { if (!ln) { curY += scaledBodySz / 2; continue; } drawTextLS(ln, padX, curY + scaledBodySz * 0.85, bodyLS); curY += bodyLhN; } }
+    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { drawTextLS(ln, padX + titleOX, curY + titleSz * 0.85 + titleOY, titleLS); curY += titleLh; } }
+    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { drawTextLS(ln, padX + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, padX + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   }
-  // Draw overlay image if enabled
-  if (card.overlayEnabled && card.overlayImage) {
+  // Draw overlay images
+  const overlays = card.overlays || [];
+  for (const ov of overlays) {
+    if (!ov.image) continue;
     try {
       const oImg = new Image();
-      await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = card.overlayImage; });
-      const oScale = (card.overlayScale || 100) / 100;
+      await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
+      const oScale = (ov.scale || 100) / 100;
       const fitRatio = w / oImg.width;
       const oW = oImg.width * fitRatio * oScale;
       const oH = oImg.height * fitRatio * oScale;
-      const oX = (card.overlayX ?? 50) / 100 * w - oW / 2;
-      const oY = (card.overlayY ?? 50) / 100 * h - oH / 2;
-      ctx.globalAlpha = card.overlayOpacity ?? 1;
+      const oX = (ov.x ?? 50) / 100 * w - oW / 2;
+      const oY = (ov.y ?? 50) / 100 * h - oH / 2;
+      ctx.globalAlpha = ov.opacity ?? 1;
       ctx.drawImage(oImg, oX, oY, oW, oH);
       ctx.globalAlpha = 1;
-    } catch (e) { /* ignore overlay load error */ }
+    } catch (e) { /* ignore */ }
   }
 
   ctx.fillStyle = "rgba(0,0,0,0.78)";
@@ -339,24 +342,29 @@ function CheckboxRow({ label, checked, onChange }) {
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
-  const textRatio = 1 - card.photoRatio;
-  const textH = card.layout === "text_overlay" ? previewH : Math.round(previewH * textRatio);
+  const pRatio = (card.photoRatio ?? 55) / 100;
+  const textRatio = 1 - pRatio;
+  const textH = card.layout === "full_bg" ? previewH : Math.round(previewH * textRatio);
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
   const useBg = card.useBg !== false;
+  const useGradient = card.useGradient === true;
   const sc = previewW / 1080;
-  const textScaleF = (card.textScale ?? 100) / 100;
-  const titleFs = Math.round(card.titleSize * sc * textScaleF);
-  const subtitleFs = Math.round(card.subtitleSize * sc * textScaleF);
-  const bodyFs = Math.round(card.bodySize * sc * textScaleF);
-  const globalLSv = (card.letterSpacing ?? 0) * sc;
-  const globalLHv = card.lineHeight ?? 1.4;
-  const titleLSv = (card.titleLetterSpacing != null ? card.titleLetterSpacing : card.letterSpacing ?? 0) * sc;
-  const titleLHv = card.titleLineHeight ?? globalLHv;
-  const subtitleLSv = (card.subtitleLetterSpacing != null ? card.subtitleLetterSpacing : card.letterSpacing ?? 0) * sc;
-  const subtitleLHv = card.subtitleLineHeight ?? globalLHv;
-  const bodyLSv = (card.bodyLetterSpacing != null ? card.bodyLetterSpacing : card.letterSpacing ?? 0) * sc;
-  const bodyLHv = card.bodyLineHeight ?? globalLHv;
+  const titleFs = Math.round(card.titleSize * sc);
+  const subtitleFs = Math.round(card.subtitleSize * sc);
+  const bodyFs = Math.round(card.bodySize * sc);
+  const titleLSv = (card.titleLetterSpacing ?? 0) * sc;
+  const titleLHv = card.titleLineHeight ?? 1.4;
+  const subtitleLSv = (card.subtitleLetterSpacing ?? 0) * sc;
+  const subtitleLHv = card.subtitleLineHeight ?? 1.4;
+  const bodyLSv = (card.bodyLetterSpacing ?? 0) * sc;
+  const bodyLHv = card.bodyLineHeight ?? 1.4;
+  const titleOX = Math.round((card.titleX ?? 0) * sc);
+  const titleOY = Math.round((card.titleY ?? 0) * sc);
+  const subOX = Math.round((card.subtitleX ?? 0) * sc);
+  const subOY = Math.round((card.subtitleY ?? 0) * sc);
+  const bodyOXv = Math.round((card.bodyX ?? 0) * sc);
+  const bodyOYv = Math.round((card.bodyY ?? 0) * sc);
   const padX = Math.round(60 * sc);
   const padTop = Math.round(40 * sc);
   const videoUrl = card.url || globalUrl || "";
@@ -375,18 +383,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
-  // Base image: depends on fillSource
-  // video → thumbnail; image → uploadedImage or globalBgImage or thumbnail fallback
   const baseImage = fillSource === 'image'
     ? (card.uploadedImage || globalBgImage || thumbSrc)
     : (thumbSrc || globalBgImage);
   const isBaseThumb = baseImage === thumbSrc && fillSource === 'video';
-
-  // Overlay image (PNG layered on top)
-  const overlayImg = card.overlayEnabled && card.overlayImage ? card.overlayImage : null;
-  const overlayScale = (card.overlayScale || 100) / 100;
-  const overlayOpacity = card.overlayOpacity ?? 1;
-
+  const overlays = card.overlays || [];
   const bgRgb = card.bgColor.replace("#", "").match(/.{2}/g)?.map(h => parseInt(h, 16)) || [18,18,18];
   const vScale = (card.videoScale || 110) / 100;
   const ytLink = thumbnailId && seekTime > 0
@@ -394,9 +395,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv } }, card.title),
-    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv } }, card.subtitle),
-    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap" } }, card.body),
+    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
+    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
+    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
   );
 
   const BgImage = () => baseImage
@@ -406,8 +407,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
 
-  const OverlayImg = () => overlayImg
-    ? React.createElement("img", { src: overlayImg, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${(card.overlayX - 50) * previewW / 50}px, ${(card.overlayY - 50) * previewH / 50}px) scale(${overlayScale})`, opacity: overlayOpacity, pointerEvents: 'none' } })
+  const OverlayImgs = () => overlays.length > 0
+    ? React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null))
     : null;
 
   const TimestampLink = () => ytLink ? React.createElement("a", {
@@ -418,18 +419,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
-  if (card.layout === "text_overlay") {
+  if (card.layout === "full_bg") {
     return React.createElement("div", { style: wrapper },
-      React.createElement(BgImage), React.createElement(OverlayImg), React.createElement(TimestampLink),
-      useBg && React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, height: "80%", background: `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},0.5) 20%, rgba(${bgRgb.join(",")},0.9) 40%, rgba(${bgRgb.join(",")},0.95) 100%)`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 2 } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap" } }, card.body),
-      ),
-      !useBg && React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop}px ${padX}px`, zIndex: 2 } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap" } }, card.body),
+      React.createElement(BgImage), React.createElement(OverlayImgs), React.createElement(TimestampLink),
+      useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
+      React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
+        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
+        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
+        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
       ),
     );
   }
@@ -442,25 +439,31 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
       ),
-      React.createElement(OverlayImg), React.createElement(TimestampLink),
+      React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
         useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgb(${bgRgb.join(",")})` } }),
         React.createElement(TextContent)
       ));
   }
 
+  // photo_top / photo_bottom with optional gradient
+  const bgOverlay = useBg ? (useGradient
+    ? React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH + Math.round(previewH * 0.15), background: isTop ? `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` : `linear-gradient(to top, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` } })
+    : React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } })
+  ) : null;
+
   return React.createElement("div", { style: wrapper },
-    React.createElement(BgImage), React.createElement(OverlayImg), React.createElement(TimestampLink),
+    React.createElement(BgImage), React.createElement(OverlayImgs), React.createElement(TimestampLink),
+    bgOverlay,
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
-      useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } }),
       React.createElement(TextContent)
     ));
 }
 
 /* ── Section Box ── */
 function Section({ title, children }) {
-  return React.createElement("div", { style: { marginBottom: 20 } },
-    React.createElement("div", { style: sectionTitle }, title),
+  return React.createElement("div", { style: { marginBottom: 16, padding: 16, background: 'rgba(255,255,255,0.02)', borderRadius: T.radius, border: `1px solid ${T.border}` } },
+    React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 12 } }, title),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, children)
   );
 }
@@ -589,20 +592,11 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
 
-          // 레이아웃
-          React.createElement(Section, { title: "레이아웃" },
-            React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-              LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
-            ),
-            card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트 비율", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
-          ),
-
-          // 채우기 (영상 / 이미지 통합)
+          // 채우기
           React.createElement(Section, { title: "채우기" },
             React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
-            // 영상 모드
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
               React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
               React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 } },
@@ -610,22 +604,45 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
                 React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
               ),
-              card.layout !== "text_overlay" && React.createElement("div", null,
+              card.layout !== "full_bg" && React.createElement("div", null,
                 React.createElement("label", { style: labelBase }, "영상 채우기"),
                 React.createElement("div", { style: { display: 'flex', gap: 6 } },
                   VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
                 )
               ),
             ),
-            // 이미지 모드
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
-            // 공통: 위치/확대
             React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
               React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+            ),
+          ),
+
+          // 레이아웃
+          React.createElement(Section, { title: "레이아웃" },
+            React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+              LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+            ),
+            (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
+            card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 55), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            // 텍스트 배경 설정
+            React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
+              React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "텍스트 배경 설정"),
+              React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+              card.useBg !== false && React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
+                  React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
+                  React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+                  React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
+                ),
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
+                  React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+                  React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+                ),
+              ),
             ),
           ),
 
@@ -641,8 +658,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-              React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "좌우", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "위아래", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
             ),
             // 부제목
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -654,8 +673,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-              React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "좌우", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "위아래", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
             ),
             // 본문
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -667,43 +688,34 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
             ),
             showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-              React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+              React.createElement(SliderRow, { label: "좌우", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "위아래", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
             ),
           ),
 
-          // 텍스트 설정 (폰트크기 배율, 자간, 줄간격)
-          React.createElement(Section, { title: "텍스트 설정" },
-            React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
-            React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
-            React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
-          ),
-
-          // 텍스트 배경 설정
-          React.createElement(Section, { title: "텍스트 배경 설정" },
-            React.createElement(CheckboxRow, { label: "배경 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-            card.useBg !== false && React.createElement(React.Fragment, null,
-              card.layout !== "text_overlay" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-                React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
-                React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-                React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-              ),
-              card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
-            ),
-          ),
-
-          // 이미지 얹기 (오버레이)
+          // 이미지 얹기
           React.createElement(Section, { title: "이미지 얹기" },
-            React.createElement(CheckboxRow, { label: "이미지 얹기 사용", checked: card.overlayEnabled === true, onChange: (v) => update("overlayEnabled", v) }),
-            card.overlayEnabled && React.createElement(React.Fragment, null,
-              React.createElement(ImageUploadField, { value: card.overlayImage, onChange: (v) => update("overlayImage", v), maxMb: 5 }),
-              card.overlayImage && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-                React.createElement(SliderRow, { label: "좌우", value: card.overlayX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayX", v) }),
-                React.createElement(SliderRow, { label: "위아래", value: card.overlayY ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayY", v) }),
-                React.createElement(SliderRow, { label: "크기", value: card.overlayScale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => update("overlayScale", v), suffix: '%' }),
-                React.createElement(SliderRow, { label: "투명도", value: card.overlayOpacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => update("overlayOpacity", v) }),
+            (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 12, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
+                React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+                React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
               ),
-            ),
+              React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+              ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+                React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
+                React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
+                React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
+                React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+              ),
+            )),
+            React.createElement("button", {
+              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+              style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
+              onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+              onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
+            }, "+ 이미지 추가"),
           ),
         ),
 
@@ -997,14 +1009,14 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'layoutfill', label: '레이아웃' },
+  { id: 'fill', label: '채우기' },
+  { id: 'layout', label: '레이아웃' },
   { id: 'text', label: '텍스트' },
-  { id: 'bg', label: '텍스트 배경' },
   { id: 'overlay', label: '얹기' },
 ];
 
 function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
-  const [activeTab, setActiveTab] = useState('layoutfill');
+  const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
@@ -1030,7 +1042,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     if (idx === cards.length) { onAdd(); return; }
     setTransitioning(true);
     onActiveChange(idx);
-    setActiveTab('layoutfill');
+    setActiveTab('fill');
     setTimeout(() => setTransitioning(false), 200);
   };
 
@@ -1052,39 +1064,54 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const previewCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
 
   // Tab content renderers
-  const renderLayoutFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    // Layout
+  const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+      FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
+    ),
+    (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
+      React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } },
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      ),
+      React.createElement("div", { style: { marginBottom: 8 } }, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      card.layout !== "full_bg" && React.createElement("div", { style: { marginBottom: 8 } },
+        React.createElement("label", { style: labelBase }, "영상 채우기"),
+        React.createElement("div", { style: { display: 'flex', gap: 6 } },
+          VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+        )
+      ),
+    ),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+  );
+
+  const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", null,
       React.createElement("label", { style: labelBase }, "레이아웃"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
         LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
       )
     ),
-    card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트 비율", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
-    // Fill
+    (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
+    card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 55), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+    // 텍스트 배경 설정
     React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "채우기"),
-      React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
-        FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
-      ),
-      (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
-        React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } },
-          React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-          React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 배경 설정"),
+      React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
+          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
+          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
         ),
-        React.createElement("div", { style: { marginBottom: 8 } }, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        card.layout !== "text_overlay" && React.createElement("div", { style: { marginBottom: 8 } },
-          React.createElement("label", { style: labelBase }, "영상 채우기"),
-          React.createElement("div", { style: { display: 'flex', gap: 6 } },
-            VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-          )
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
+          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+          React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
         ),
       ),
-      (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
-      React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
-      React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
-      React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
     ),
   );
 
@@ -1099,8 +1126,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "좌우", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "위아래", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
     ),
     // 부제목
     React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -1112,8 +1141,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "좌우", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "위아래", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
     ),
     // 본문
     React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -1125,44 +1156,34 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
     ),
     showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-    ),
-    // 전체 텍스트 설정
-    React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 설정"),
-      React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
-      React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
-    ),
-  );
-
-  const renderBgTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement(CheckboxRow, { label: "배경 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-    card.useBg !== false && React.createElement(React.Fragment, null,
-      card.layout !== "text_overlay" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
-        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-      ),
-      card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
+      React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "좌우", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "위아래", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
     ),
   );
 
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement(CheckboxRow, { label: "이미지 얹기 사용", checked: card.overlayEnabled === true, onChange: (v) => update("overlayEnabled", v) }),
-    card.overlayEnabled && React.createElement(React.Fragment, null,
-      React.createElement(ImageUploadField, { value: card.overlayImage, onChange: (v) => update("overlayImage", v), maxMb: 5 }),
-      card.overlayImage && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-        React.createElement(SliderRow, { label: "좌우", value: card.overlayX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayX", v) }),
-        React.createElement(SliderRow, { label: "위아래", value: card.overlayY ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayY", v) }),
-        React.createElement(SliderRow, { label: "크기", value: card.overlayScale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => update("overlayScale", v), suffix: '%' }),
-        React.createElement(SliderRow, { label: "투명도", value: card.overlayOpacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => update("overlayOpacity", v) }),
+    (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+        React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
       ),
-    ),
+      React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+      ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+        React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
+        React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
+        React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
+        React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+      ),
+    )),
+    React.createElement("button", {
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
+    }, "+ 이미지 추가"),
   );
 
-  const tabContent = { layoutfill: renderLayoutFillTab, text: renderTextTab, bg: renderBgTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
