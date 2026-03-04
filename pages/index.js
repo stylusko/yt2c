@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -19,6 +19,9 @@ const RECENT_FEATURES = [
   '카드 순서 드래그 조정',
   '배경 이미지 업로드',
   '텍스트 설정 (크기/자간/줄간격)',
+  '이미지 업로드 UI 개선',
+  '개별 카드 우선 적용',
+  '모바일 캐러셀 카드 편집',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -884,6 +887,215 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
   );
 }
 
+/* ── Mobile Tab Pill ── */
+function TabPill({ label, active, onClick }) {
+  return React.createElement("button", {
+    onClick,
+    style: {
+      padding: '8px 16px', borderRadius: T.radiusPill, fontSize: 13, fontWeight: active ? 600 : 400,
+      border: active ? `1.5px solid ${T.accent}` : `1px solid ${T.border}`,
+      background: active ? 'rgba(99,102,241,0.12)' : 'transparent',
+      color: active ? T.accent : T.textSecondary,
+      cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap',
+    },
+  }, label);
+}
+
+/* ── Mobile Card Carousel ── */
+const MOBILE_TABS = [
+  { id: 'video', label: '영상' },
+  { id: 'text', label: '텍스트' },
+  { id: 'bg', label: '배경' },
+];
+
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
+  const [activeTab, setActiveTab] = useState('video');
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchDelta, setTouchDelta] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
+
+  const totalSlides = cards.length + 1; // +1 for add card
+  const card = cards[activeIndex];
+  const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
+
+  // Name editing
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const nameRef = useRef(null);
+  useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
+  const displayName = card ? (card.name || card.title || card.subtitle || `카드 ${activeIndex + 1}`) : '';
+  const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
+  const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
+
+  const goTo = (idx) => {
+    if (idx < 0 || idx >= totalSlides || transitioning) return;
+    if (idx === cards.length) { onAdd(); return; }
+    setTransitioning(true);
+    onActiveChange(idx);
+    setActiveTab('video');
+    setTimeout(() => setTransitioning(false), 200);
+  };
+
+  const handleTouchStart = (e) => setTouchStart(e.touches[0].clientX);
+  const handleTouchMove = (e) => { if (touchStart !== null) setTouchDelta(e.touches[0].clientX - touchStart); };
+  const handleTouchEnd = () => {
+    if (Math.abs(touchDelta) > 60) {
+      if (touchDelta < 0 && activeIndex < totalSlides - 1) goTo(activeIndex + 1);
+      else if (touchDelta > 0 && activeIndex > 0) goTo(activeIndex - 1);
+    }
+    setTouchStart(null);
+    setTouchDelta(0);
+  };
+
+  // Tabs content for image source when output is image format
+  const tabs = outputFormat === 'image'
+    ? [{ id: 'video', label: '영상' }, { id: 'image', label: '이미지' }, { id: 'text', label: '텍스트' }, { id: 'bg', label: '배경' }]
+    : MOBILE_TABS;
+
+  if (!card) return null;
+
+  const previewCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+
+  // Tab content renderers
+  const renderVideoTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+    React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+      React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+    ),
+    React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+    React.createElement("div", null,
+      React.createElement("label", { style: labelBase }, "레이아웃"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+        LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+      )
+    ),
+    card.layout !== "text_overlay" && React.createElement("div", null,
+      React.createElement("label", { style: labelBase }, "영상 채우기"),
+      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+        VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+      )
+    ),
+    card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
+    React.createElement(SliderRow, { label: "X", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
+    React.createElement(SliderRow, { label: "Y", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+  );
+
+  const renderImageTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("div", null,
+      React.createElement("label", { style: labelBase }, "이미지 소스"),
+      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+        IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.imageSource || "thumbnail") === opt.id, onClick: () => update("imageSource", opt.id) }, opt.label))
+      ),
+    ),
+    (card.imageSource === "upload") && React.createElement(ImageUploadField, {
+      value: card.uploadedImage,
+      onChange: (v) => update("uploadedImage", v),
+    }),
+  );
+
+  const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목 (크고 두껍게)", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용...", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+    React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
+      React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 설정"),
+      React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
+      React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
+    ),
+  );
+
+  const renderBgTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement(CheckboxRow, { label: "배경 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+    card.useBg !== false && React.createElement(React.Fragment, null,
+      card.layout !== "text_overlay" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
+        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
+      ),
+      card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
+      React.createElement("div", null,
+        React.createElement("label", { style: { ...labelBase, marginTop: 4 } }, "배경 이미지"),
+        React.createElement(ImageUploadField, { value: card.bgImage, onChange: (v) => update("bgImage", v), maxMb: 5 }),
+      ),
+    ),
+  );
+
+  const tabContent = { video: renderVideoTab, image: renderImageTab, text: renderTextTab, bg: renderBgTab };
+
+  return React.createElement("div", {
+    style: { display: 'flex', flexDirection: 'column', gap: 0 },
+    onTouchStart: handleTouchStart,
+    onTouchMove: handleTouchMove,
+    onTouchEnd: handleTouchEnd,
+  },
+    // Carousel indicator (dots + arrows)
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0' } },
+      React.createElement("button", {
+        onClick: () => goTo(activeIndex - 1),
+        disabled: activeIndex === 0,
+        style: { background: 'none', border: 'none', color: activeIndex === 0 ? T.textMuted : T.accent, fontSize: 18, cursor: activeIndex === 0 ? 'default' : 'pointer', padding: '4px 8px', opacity: activeIndex === 0 ? 0.3 : 1 },
+      }, "\u25C0"),
+      cards.map((_, i) => React.createElement("div", {
+        key: i,
+        onClick: () => goTo(i),
+        style: { width: i === activeIndex ? 20 : 8, height: 8, borderRadius: 4, background: i === activeIndex ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
+      })),
+      // + dot
+      React.createElement("div", {
+        onClick: () => goTo(cards.length),
+        style: { width: 8, height: 8, borderRadius: 4, background: 'transparent', border: `1.5px solid ${T.accent}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: T.accent, lineHeight: 1 },
+      }),
+      React.createElement("button", {
+        onClick: () => goTo(activeIndex + 1),
+        disabled: activeIndex >= totalSlides - 1,
+        style: { background: 'none', border: 'none', color: activeIndex >= totalSlides - 1 ? T.textMuted : T.accent, fontSize: 18, cursor: activeIndex >= totalSlides - 1 ? 'default' : 'pointer', padding: '4px 8px', opacity: activeIndex >= totalSlides - 1 ? 0.3 : 1 },
+      }, "\u25B6"),
+    ),
+
+    // Card header (name, actions)
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px', gap: 8 } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
+        React.createElement("span", { style: { width: 26, height: 26, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
+        editingName
+          ? React.createElement("input", {
+              ref: nameRef, value: nameValue,
+              onChange: (e) => setNameValue(e.target.value),
+              onBlur: commitName,
+              onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); },
+              style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 },
+            })
+          : React.createElement("span", {
+              onClick: startEditName,
+              style: { color: T.text, fontWeight: 500, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' },
+            }, displayName),
+      ),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flexShrink: 0 } },
+        React.createElement("button", { onClick: onReorder, style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "\u2630"),
+        React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "복제"),
+        cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "삭제"),
+      ),
+    ),
+
+    // Sticky preview
+    React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32) }),
+    ),
+
+    // Tab pills
+    React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
+      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) })),
+    ),
+
+    // Tab content
+    React.createElement("div", { style: { padding: '8px 0 20px' } },
+      tabContent[activeTab] ? tabContent[activeTab]() : null,
+    ),
+  );
+}
+
 /* ── App ── */
 export default function App() {
   const mob = useIsMobile();
@@ -898,6 +1110,7 @@ export default function App() {
   const [confirmClose, setConfirmClose] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
+  const [mobileCardIndex, setMobileCardIndex] = useState(0);
   const infoRef = useRef(null);
 
   // Close info panel on outside click
@@ -1194,26 +1407,38 @@ export default function App() {
         React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
       ),
 
-      // Cards
-      cards.map((card, i) =>
-        React.createElement(CardEditor, {
-          key: card.id, card, index: i,
-          onChange: (c) => updateCard(i, c),
-          onRemove: () => removeCard(i),
-          onDuplicate: () => duplicateCard(i),
-          total: cards.length, globalUrl, aspectRatio, outputFormat,
-          globalBgImage, mob,
+      // Cards — mobile carousel vs desktop list
+      mob ? React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
+        React.createElement(MobileCardCarousel, {
+          cards, activeIndex: Math.min(mobileCardIndex, cards.length - 1),
+          onActiveChange: setMobileCardIndex,
+          onCardChange: updateCard,
+          onRemove: (i) => { removeCard(i); setMobileCardIndex(Math.min(mobileCardIndex, Math.max(0, cards.length - 2))); },
+          onDuplicate: duplicateCard,
+          onAdd: addCard,
+          globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
-        })
+        }),
+      ) : React.createElement(React.Fragment, null,
+        cards.map((card, i) =>
+          React.createElement(CardEditor, {
+            key: card.id, card, index: i,
+            onChange: (c) => updateCard(i, c),
+            onRemove: () => removeCard(i),
+            onDuplicate: () => duplicateCard(i),
+            total: cards.length, globalUrl, aspectRatio, outputFormat,
+            globalBgImage, mob,
+            onReorder: () => setShowReorder(true),
+          })
+        ),
+        // Add card
+        React.createElement("button", {
+          onClick: addCard,
+          style: { width: '100%', padding: 16, border: `2px dashed ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.textMuted, fontSize: 14, cursor: 'pointer', transition: 'all 0.15s' },
+          onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+          onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
+        }, "+ 카드 추가"),
       ),
-
-      // Add card
-      React.createElement("button", {
-        onClick: addCard,
-        style: { width: '100%', padding: 16, border: `2px dashed ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.textMuted, fontSize: 14, cursor: 'pointer', transition: 'all 0.15s' },
-        onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
-        onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
-      }, "+ 카드 추가"),
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
