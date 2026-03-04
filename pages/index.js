@@ -2384,7 +2384,7 @@ export default function App() {
     ),
 
     // ── Main ──
-    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '12px 10px 32px' : '24px 24px 48px', display: 'flex', flexDirection: 'column', gap: mob ? 12 : 16 } },
+    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 10px 32px' : '12px 24px 48px', display: 'flex', flexDirection: 'column', gap: mob ? 10 : 12 } },
 
       // Mobile Project Tabs
       mob && projects.length > 0 && React.createElement("div", { style: { overflowX: 'auto', paddingBottom: 4 } },
@@ -2396,27 +2396,27 @@ export default function App() {
       ),
 
       // Global Settings
-      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow, display: 'flex', gap: mob ? 10 : 16, alignItems: 'flex-end', flexWrap: 'wrap' } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '8px 10px' : '8px 16px', boxShadow: T.shadow, display: 'flex', gap: mob ? 8 : 12, alignItems: 'flex-end', flexWrap: 'wrap' } },
         React.createElement("div", { style: { flex: 1, minWidth: mob ? '100%' : 240 } },
-          React.createElement("label", { style: labelBase }, "공통 영상 URL"),
-          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: inputBase })
+          React.createElement("label", { style: { ...labelBase, marginBottom: 3, fontSize: 11 } }, "공통 영상 URL"),
+          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '6px 10px', fontSize: 13 } })
         ),
-        React.createElement("div", { style: { display: 'flex', gap: mob ? 10 : 16, flexWrap: 'wrap' } },
+        React.createElement("div", { style: { display: 'flex', gap: mob ? 8 : 12, flexWrap: 'wrap' } },
           React.createElement("div", null,
-            React.createElement("label", { style: labelBase }, "비율"),
+            React.createElement("label", { style: { ...labelBase, marginBottom: 3, fontSize: 11 } }, "비율"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => setAspectRatio(opt.id) }, opt.label))
             )
           ),
           React.createElement("div", null,
-            React.createElement("label", { style: labelBase }, "형식"),
+            React.createElement("label", { style: { ...labelBase, marginBottom: 3, fontSize: 11 } }, "형식"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
               React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "영상"),
               React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "이미지"),
             )
           ),
           React.createElement("div", null,
-            React.createElement("label", { style: labelBase }, "해상도"),
+            React.createElement("label", { style: { ...labelBase, marginBottom: 3, fontSize: 11 } }, "해상도"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
               React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
               React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
