@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 12; // same-day deploy count
+const BUILD_NUM = 13; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -449,7 +449,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -532,7 +532,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (card.layout === "full_bg") {
     return React.createElement("div", { style: wrapper },
       React.createElement(BgImage),
-      React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
@@ -550,7 +550,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       ),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
@@ -567,7 +567,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
     React.createElement(OverlayImgs), React.createElement(TimestampLink),
     bgOverlay,
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
@@ -1379,7 +1379,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -1533,59 +1533,46 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 220px)' } },
     React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }"),
-    // \u2500\u2500 LEFT: Preview \u2500\u2500
+    // ── LEFT: Preview (compact) ──
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
-      // Preview stack with slide animation
-      React.createElement("div", { style: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px', gap: 10 } },
-        // Active card with slide animation + active border
+      // Top bar: nav + card name + actions
+      React.createElement("div", { style: { padding: '8px 12px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 6, background: T.surface, flexShrink: 0 } },
+        React.createElement("button", { onClick: () => goTo(activeIndex - 1), disabled: activeIndex === 0, style: navBtn(activeIndex === 0) }, "\u25C0"),
+        React.createElement("span", { style: { width: 24, height: 24, borderRadius: T.radiusPill, background: T.accent, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
+        editingName
+          ? React.createElement("input", { ref: nameRef, value: nameValue, onChange: (e) => setNameValue(e.target.value), onBlur: commitName, onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); }, onClick: (e) => e.stopPropagation(), style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', padding: '2px 6px', borderRadius: 4, flex: 1, minWidth: 0 } })
+          : React.createElement("span", { onClick: startEditName, style: { color: T.text, fontWeight: 500, fontSize: 12, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
+        React.createElement("button", { onClick: () => goTo(activeIndex + 1), disabled: activeIndex >= cards.length - 1, style: navBtn(activeIndex >= cards.length - 1) }, "\u25B6"),
+        React.createElement("div", { style: { width: 1, height: 16, background: T.border, flexShrink: 0 } }),
+        React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\u2630"),
+        React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '4px 8px', fontSize: 11 } }, "\u8907\u88FD"),
+        cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\u00D7"),
+        React.createElement("button", { onClick: onAdd, style: { ...btnSm, padding: '4px 8px', fontSize: 11, background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+"),
+      ),
+      // Card preview area
+      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px 20px', overflow: 'hidden' } },
         React.createElement("div", {
           key: 'card-' + activeIndex,
           style: {
             animation: animDir ? (animDir === 'down' ? 'slideFromBelow 0.3s cubic-bezier(0.4,0,0.2,1)' : 'slideFromAbove 0.3s cubic-bezier(0.4,0,0.2,1)') : 'none',
             borderRadius: T.radius,
             boxShadow: '0 0 0 2.5px ' + T.accent,
+            maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn })
         ),
-        // Next card thumbnail (small, complete)
-        nextCard
-          ? React.createElement("div", {
-              onClick: () => goTo(activeIndex + 1),
-              style: { cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radiusSm, opacity: 0.7, flexShrink: 0 },
-              onMouseEnter: (e) => { e.currentTarget.style.opacity = 1; },
-              onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.7; },
-            },
-              React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 160 })
-            )
-          : React.createElement("div", {
-              onClick: onAdd,
-              style: { width: 160, height: 40, border: '2px dashed ' + T.border, borderRadius: T.radiusSm, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 },
-              onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
-              onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
-            }, "+ \uc0c8 \uce74\ub4dc"),
       ),
-      // Card info bar
-      React.createElement("div", { style: { padding: '12px 20px 16px', borderTop: `1px solid ${T.border}`, background: T.surface } },
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 } },
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
-            React.createElement("span", { style: { width: 26, height: 26, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
-            editingName
-              ? React.createElement("input", { ref: nameRef, value: nameValue, onChange: (e) => setNameValue(e.target.value), onBlur: commitName, onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); }, onClick: (e) => e.stopPropagation(), style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 } })
-              : React.createElement("span", { onClick: startEditName, style: { color: T.text, fontWeight: 500, fontSize: 13, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, displayName),
-          ),
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
-            React.createElement("button", { onClick: () => goTo(activeIndex - 1), disabled: activeIndex === 0, style: navBtn(activeIndex === 0) }, "\u25B2"),
-            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 36, textAlign: 'center' } }, `${activeIndex + 1}/${cards.length}`),
-            React.createElement("button", { onClick: () => goTo(activeIndex + 1), disabled: activeIndex >= cards.length - 1, style: navBtn(activeIndex >= cards.length - 1) }, "\u25BC"),
-          ),
+      // Bottom bar: video preview toggle
+      React.createElement("div", { style: { padding: '6px 16px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 8, background: T.surface, flexShrink: 0 } },
+        React.createElement("div", {
+          onClick: onVideoPreviewToggle,
+          style: { width: 32, height: 16, borderRadius: 8, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
+        },
+          React.createElement("div", { style: { width: 12, height: 12, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 18 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
         ),
-        React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center' } },
-          React.createElement("button", { onClick: onReorder, style: btnSm }, "\u2630 \uc21c\uc11c"),
-          React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: btnSm }, "\ubcf5\uc81c"),
-          cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\uc0ad\uc81c"),
-          React.createElement("button", { onClick: onAdd, style: { ...btnSm, marginLeft: 'auto', background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+ \uce74\ub4dc \ucd94\uac00"),
-        ),
+        React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 11, color: T.textSecondary, cursor: 'pointer', userSelect: 'none' } }, "\uC601\uC0C1 \uBBF8\uB9AC\uBCF4\uAE30"),
+        videoPreviewOn && React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, "\u00B7 \uB290\uB824\uC9C0\uBA74 \uBBF8\uB9AC\uBCF4\uAE30\uB97C \uAEBC\uC8FC\uC138\uC694"),
       ),
     ),
     // \u2500\u2500 RIGHT: Tabs \u2500\u2500
@@ -1623,6 +1610,7 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
+  const [videoPreviewOn, setVideoPreviewOn] = useState(false);
   const infoRef = useRef(null);
 
   // Close info panel on outside click
@@ -1944,6 +1932,7 @@ export default function App() {
         onAdd: addCard,
         globalUrl, aspectRatio, outputFormat, globalBgImage,
         onReorder: () => setShowReorder(true),
+        videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
       }),
     ),
 
