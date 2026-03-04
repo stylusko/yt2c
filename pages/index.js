@@ -1,10 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Head from 'next/head';
 
+/* ── Constants ── */
 const LAYOUT_OPTIONS = [
-  { id: "photo_top", label: "사진 위 / 텍스트 아래" },
-  { id: "photo_bottom", label: "텍스트 위 / 사진 아래" },
-  { id: "text_overlay", label: "사진 위 텍스트 오버레이" },
+  { id: "photo_top", label: "사진↑ 텍스트↓" },
+  { id: "photo_bottom", label: "텍스트↑ 사진↓" },
+  { id: "text_overlay", label: "오버레이" },
 ];
 
 const DEFAULT_CARD = () => ({
@@ -19,6 +20,7 @@ const DEFAULT_CARD = () => ({
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
 });
 
+/* ── Helpers ── */
 function parseTime(str) {
   if (!str) return null;
   const parts = str.trim().split(":").map(Number);
@@ -34,22 +36,51 @@ function formatSec(s) {
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
-// ── 오버레이 Canvas 생성 (Python card_gen.py의 create_overlay_image를 JS로 포팅) ──
+/* ── Design Tokens ── */
+const T = {
+  bg: '#09090b',
+  surface: '#111113',
+  surfaceHover: '#18181b',
+  border: 'rgba(255,255,255,0.06)',
+  borderHover: 'rgba(255,255,255,0.12)',
+  text: '#fafafa',
+  textSecondary: '#a1a1aa',
+  textMuted: '#52525b',
+  accent: '#6366f1',
+  accentHover: '#818cf8',
+  success: '#22c55e',
+  successHover: '#16a34a',
+  danger: '#ef4444',
+  radius: 12,
+  radiusSm: 8,
+  radiusPill: 999,
+  shadow: '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+  shadowLg: '0 4px 16px rgba(0,0,0,0.5)',
+};
+
+/* ── Shared Styles ── */
+const inputBase = {
+  padding: '10px 14px', background: T.surface, border: `1px solid ${T.border}`,
+  borderRadius: T.radiusSm, fontSize: 14, color: T.text, outline: 'none',
+  transition: 'border-color 0.15s',
+  width: '100%',
+};
+const labelBase = { display: 'block', fontSize: 12, color: T.textSecondary, fontWeight: 500, marginBottom: 6 };
+const sectionTitle = { fontSize: 13, fontWeight: 600, color: T.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 };
+
+/* ── Overlay Canvas (동일 로직) ── */
 async function generateOverlayPng(card, outputSize) {
   const size = outputSize;
   const canvas = document.createElement("canvas");
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext("2d");
-
   ctx.clearRect(0, 0, size, size);
 
   const layout = card.layout || "photo_top";
   const photoRatio = card.photoRatio || 0.55;
-  const textRatio = 1 - photoRatio;
   const bgColor = hexToRgb(card.bgColor || "#121212");
   const bgOpacity = card.bgOpacity ?? 0.75;
-  const padX = 60;
-  const padTop = 40;
+  const padX = 60, padTop = 40;
   const maxTextW = size - padX * 2;
 
   const fontMap = {
@@ -68,12 +99,8 @@ async function generateOverlayPng(card, outputSize) {
       let cur = "";
       for (const ch of para) {
         const test = cur + ch;
-        if (ctx.measureText(test).width > maxTextW && cur) {
-          lines.push(cur);
-          cur = ch;
-        } else {
-          cur = test;
-        }
+        if (ctx.measureText(test).width > maxTextW && cur) { lines.push(cur); cur = ch; }
+        else cur = test;
       }
       if (cur) lines.push(cur);
     }
@@ -84,121 +111,90 @@ async function generateOverlayPng(card, outputSize) {
     const titleLines = wrapText(card.title, card.titleSize, card.titleFont);
     const subtitleLines = wrapText(card.subtitle, card.subtitleSize, card.subtitleFont);
     const bodyLines = wrapText(card.body, card.bodySize, card.bodyFont);
-
-    let totalTextH = padTop * 2;
-    totalTextH += titleLines.length * (card.titleSize + 8);
+    let totalTextH = padTop * 2 + titleLines.length * (card.titleSize + 8);
     if (card.subtitle) totalTextH += 12 + subtitleLines.length * (card.subtitleSize + 8);
     if (card.body) totalTextH += 24 + bodyLines.length * (card.bodySize + 10);
-
     const gradH = Math.min(Math.round(size * 0.80), totalTextH + 200);
     const maxAlpha = Math.max(Math.round(bgOpacity * 255), 230) / 255;
-
     for (let y = size - gradH; y < size; y++) {
       const progress = (y - (size - gradH)) / gradH;
       let alpha;
-      if (progress < 0.2) {
-        const t = progress / 0.2;
-        alpha = t * t * maxAlpha * 0.5;
-      } else if (progress < 0.4) {
-        const t = (progress - 0.2) / 0.2;
-        alpha = (0.5 + 0.4 * t) * maxAlpha;
-      } else {
-        const t = (progress - 0.4) / 0.6;
-        alpha = (0.9 + 0.1 * t) * maxAlpha;
-      }
-      alpha = Math.min(alpha, maxAlpha);
-      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${alpha})`;
+      if (progress < 0.2) alpha = (progress / 0.2) ** 2 * maxAlpha * 0.5;
+      else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * maxAlpha;
+      else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * maxAlpha;
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, maxAlpha)})`;
       ctx.fillRect(0, y, size, 1);
     }
-
     let curY = size - padTop;
     const allItems = [];
-    if (card.title) {
-      for (const ln of titleLines)
-        allItems.push({ type: "title", text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: card.titleSize + 8 });
-    }
-    if (card.subtitle) {
-      allItems.push({ type: "gap", size: 12 });
-      for (const ln of subtitleLines)
-        allItems.push({ type: "subtitle", text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: card.subtitleSize + 8 });
-    }
-    if (card.body) {
-      allItems.push({ type: "gap", size: 24 });
-      for (const ln of bodyLines)
-        allItems.push({ type: "body", text: ln, font: getFont(card.bodyFont, card.bodySize), color: card.bodyColor, lh: card.bodySize + 10 });
-    }
-
+    if (card.title) for (const ln of titleLines) allItems.push({ text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: card.titleSize + 8 });
+    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of subtitleLines) allItems.push({ text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: card.subtitleSize + 8 }); }
+    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of bodyLines) allItems.push({ text: ln, font: getFont(card.bodyFont, card.bodySize), color: card.bodyColor, lh: card.bodySize + 10 }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
       if (!item.text) { curY -= 20; continue; }
       curY -= item.lh;
-      ctx.font = item.font;
-      ctx.fillStyle = item.color;
+      ctx.font = item.font; ctx.fillStyle = item.color;
       ctx.fillText(item.text, padX, curY + item.lh * 0.78);
     }
-
   } else {
-    const textH = Math.round(size * textRatio);
+    const textH = Math.round(size * (1 - photoRatio));
     const yStart = layout === "photo_top" ? size - textH : 0;
-    const bgAlpha = bgOpacity;
-
-    ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgAlpha})`;
+    ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
     ctx.fillRect(0, yStart, size, textH);
-
     let curY = yStart + padTop;
-
-    if (card.title) {
-      ctx.font = getFont(card.titleFont, card.titleSize);
-      ctx.fillStyle = card.titleColor;
-      for (const ln of wrapText(card.title, card.titleSize, card.titleFont)) {
-        ctx.fillText(ln, padX, curY + card.titleSize * 0.85);
-        curY += card.titleSize + 8;
-      }
-    }
-    if (card.subtitle) {
-      if (card.title) curY += 8;
-      ctx.font = getFont(card.subtitleFont, card.subtitleSize);
-      ctx.fillStyle = card.subtitleColor;
-      for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) {
-        ctx.fillText(ln, padX, curY + card.subtitleSize * 0.85);
-        curY += card.subtitleSize + 8;
-      }
-    }
-    if (card.body) {
-      if (card.title || card.subtitle) curY += 16;
-      ctx.font = getFont(card.bodyFont, card.bodySize);
-      ctx.fillStyle = card.bodyColor;
-      for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) {
-        if (!ln) { curY += card.bodySize / 2; continue; }
-        ctx.fillText(ln, padX, curY + card.bodySize * 0.85);
-        curY += card.bodySize + 10;
-      }
-    }
+    if (card.title) { ctx.font = getFont(card.titleFont, card.titleSize); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, card.titleSize, card.titleFont)) { ctx.fillText(ln, padX, curY + card.titleSize * 0.85); curY += card.titleSize + 8; } }
+    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) { ctx.fillText(ln, padX, curY + card.subtitleSize * 0.85); curY += card.subtitleSize + 8; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) { if (!ln) { curY += card.bodySize / 2; continue; } ctx.fillText(ln, padX, curY + card.bodySize * 0.85); curY += card.bodySize + 10; } }
   }
-
-  // 2px 어두운 테두리
   ctx.fillStyle = "rgba(0,0,0,0.78)";
-  ctx.fillRect(0, 0, size, 2);
-  ctx.fillRect(0, size - 2, size, 2);
-  ctx.fillRect(0, 0, 2, size);
-  ctx.fillRect(size - 2, 0, 2, size);
-
+  ctx.fillRect(0, 0, size, 2); ctx.fillRect(0, size - 2, size, 2);
+  ctx.fillRect(0, 0, 2, size); ctx.fillRect(size - 2, 0, 2, size);
   return canvas.toDataURL("image/png");
 }
 
-// ── TimeInput ──
-function TimeInput({ value, onChange, placeholder }) {
-  return React.createElement("input", {
-    type: "text", value, placeholder,
-    onChange: (e) => onChange(e.target.value),
-    style: { width: 96, padding: "6px 8px", background: "#262626", border: "1px solid #404040", borderRadius: 6, fontSize: 14, color: "#fff", outline: "none" },
-  });
+/* ── Pill Button ── */
+function PillBtn({ active, children, onClick, style }) {
+  return React.createElement("button", {
+    onClick,
+    style: {
+      padding: '7px 16px', borderRadius: T.radiusPill, fontSize: 12, fontWeight: 500,
+      border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+      background: active ? T.accent : T.surface,
+      color: active ? '#fff' : T.textSecondary,
+      ...style,
+    }
+  }, children);
 }
 
-// ── CardPreview ──
+/* ── Slider Row ── */
+function SliderRow({ label, value, min, max, step, onChange, suffix = '%' }) {
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 32 } }, label),
+    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => onChange(parseFloat(e.target.value)), style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right' } }, `${typeof value === 'number' && value < 1 ? Math.round(value * 100) : value}${suffix}`)
+  );
+}
+
+/* ── Text Field Row (input + size + color) ── */
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows }) {
+  const input = rows
+    ? React.createElement("textarea", { value, placeholder, rows, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64 } })
+    : React.createElement("input", { type: "text", value, placeholder, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1 } });
+
+  return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
+    input,
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' } },
+      React.createElement("input", { type: "number", value: size, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 52, padding: '7px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none' } }),
+      React.createElement("input", { type: "color", value: color, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer', background: 'transparent' } }),
+    )
+  );
+}
+
+/* ── CardPreview ── */
 function CardPreview({ card, globalUrl }) {
-  const size = 340;
+  const size = 320;
   const textRatio = 1 - card.photoRatio;
   const textH = card.layout === "text_overlay" ? size : Math.round(size * textRatio);
   const sc = size / 1080;
@@ -225,208 +221,160 @@ function CardPreview({ card, globalUrl }) {
 
   const bgRgb = card.bgColor.replace("#", "").match(/.{2}/g)?.map(h => parseInt(h, 16)) || [18,18,18];
   const vScale = (card.videoScale || 110) / 100;
-
   const ytLink = thumbnailId && seekTime > 0
     ? `https://www.youtube.com/watch?v=${thumbnailId}&t=${Math.floor(seekTime)}s`
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
-  const TextContent = () => React.createElement("div", {
-    style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" }
-  },
+  const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
     card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: 1.3 } }, card.title),
     card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: 1.3 } }, card.subtitle),
     card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, card.body),
   );
 
-  const BgImage = () => {
-    if (thumbSrc) {
-      return React.createElement("img", {
-        src: thumbSrc, alt: "", onError: handleThumbError,
-        style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: "block", zIndex: 0, transform: `scale(${vScale})`, transformOrigin: `${card.videoX}% ${card.videoY}%` }
-      });
-    }
-    return React.createElement("div", {
-      style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", zIndex: 0 }
-    },
-      React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 6 } },
-        React.createElement("span", { style: { color: "rgba(255,255,255,0.7)", fontSize: 18, marginLeft: 2 } }, "▶")
-      )
-    );
-  };
+  const BgImage = () => thumbSrc
+    ? React.createElement("img", { src: thumbSrc, alt: "", onError: handleThumbError, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: `scale(${vScale})`, transformOrigin: `${card.videoX}% ${card.videoY}%` } })
+    : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
+        React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
+          React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "▶")
+        ));
 
-  const TimestampLink = () => {
-    if (!ytLink) return null;
-    return React.createElement("a", {
-      href: ytLink, target: "_blank", rel: "noopener noreferrer",
-      onClick: (e) => e.stopPropagation(),
-      style: { position: "absolute", top: 8, right: 8, zIndex: 10, padding: "4px 10px", borderRadius: 6, border: "none", cursor: "pointer", background: "rgba(59,130,246,0.9)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none", display: "flex", alignItems: "center", gap: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }
-    }, `▶ ${formatSec(seekTime)} 확인`);
-  };
+  const TimestampLink = () => ytLink ? React.createElement("a", {
+    href: ytLink, target: "_blank", rel: "noopener noreferrer",
+    onClick: (e) => e.stopPropagation(),
+    style: { position: "absolute", top: 8, right: 8, zIndex: 10, padding: "4px 10px", borderRadius: T.radiusPill, background: "rgba(99,102,241,0.9)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none", boxShadow: T.shadow }
+  }, `▶ ${formatSec(seekTime)}`) : null;
+
+  const wrapper = { width: size, height: size, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
   if (card.layout === "text_overlay") {
-    return React.createElement("div", {
-      style: { width: size, height: size, borderRadius: 10, overflow: "hidden", flexShrink: 0, position: "relative", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }
-    },
-      React.createElement(BgImage),
-      React.createElement(TimestampLink),
-      React.createElement("div", {
-        style: { position: "absolute", bottom: 0, left: 0, right: 0, height: "80%", background: `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},0.5) 20%, rgba(${bgRgb.join(",")},0.9) 40%, rgba(${bgRgb.join(",")},0.95) 100%)`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${padTop * 3}px ${padX}px ${padTop}px`, zIndex: 2 }
-      },
+    return React.createElement("div", { style: wrapper },
+      React.createElement(BgImage), React.createElement(TimestampLink),
+      React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, height: "80%", background: `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},0.5) 20%, rgba(${bgRgb.join(",")},0.9) 40%, rgba(${bgRgb.join(",")},0.95) 100%)`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 2 } },
         card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: 1.3 } }, card.title),
         card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: 1.3 } }, card.subtitle),
         card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, card.body),
-      )
-    );
+      ));
   }
 
   const isTop = card.layout === "photo_top";
-  const textAreaStyle = { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" };
-
-  return React.createElement("div", {
-    style: { width: size, height: size, borderRadius: 10, overflow: "hidden", flexShrink: 0, position: "relative", border: "1px solid rgba(255,255,255,0.12)", boxShadow: "0 4px 24px rgba(0,0,0,0.5)" }
-  },
-    React.createElement(BgImage),
-    React.createElement(TimestampLink),
-    React.createElement("div", { style: textAreaStyle },
-      React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb[0]},${bgRgb[1]},${bgRgb[2]},${card.bgOpacity})` } }),
+  return React.createElement("div", { style: wrapper },
+    React.createElement(BgImage), React.createElement(TimestampLink),
+    React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
+      React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } }),
       React.createElement(TextContent)
-    )
+    ));
+}
+
+/* ── Section Box ── */
+function Section({ title, children }) {
+  return React.createElement("div", { style: { marginBottom: 20 } },
+    React.createElement("div", { style: sectionTitle }, title),
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, children)
   );
 }
 
-// ── CardEditor ──
+/* ── CardEditor ── */
 function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl }) {
   const [expanded, setExpanded] = useState(true);
   const update = (key, val) => onChange({ ...card, [key]: val });
-  const labelStyle = { display: "block", fontSize: 12, color: "#888", fontWeight: 500, marginBottom: 4 };
-  const inputStyle = { width: "100%", padding: "8px 12px", background: "#262626", border: "1px solid #404040", borderRadius: 6, fontSize: 14, color: "#fff", outline: "none" };
-  const numStyle = { width: 60, padding: "8px 4px", background: "#262626", border: "1px solid #404040", borderRadius: 6, fontSize: 12, color: "#999", outline: "none", textAlign: "center" };
-  const colorStyle = { width: 32, height: 36, borderRadius: 6, border: "1px solid #404040", cursor: "pointer", background: "transparent" };
-  const btnStyle = (active) => ({ padding: "6px 14px", borderRadius: 6, fontSize: 12, border: "none", cursor: "pointer", transition: "all 0.15s", background: active ? "#3b82f6" : "#262626", color: active ? "#fff" : "#999" });
 
-  return React.createElement("div", { style: { background: "#171717", border: "1px solid #333", borderRadius: 10, overflow: "hidden" } },
+  return React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, overflow: 'hidden', boxShadow: T.shadow } },
+    // Header
     React.createElement("div", {
       onClick: () => setExpanded(!expanded),
-      style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", cursor: "pointer", transition: "background 0.15s" },
-      onMouseEnter: (e) => e.currentTarget.style.background = "#1f1f1f",
-      onMouseLeave: (e) => e.currentTarget.style.background = "transparent",
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer', transition: 'background 0.15s' },
+      onMouseEnter: (e) => e.currentTarget.style.background = T.surfaceHover,
+      onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
     },
-      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
-        React.createElement("span", { style: { width: 28, height: 28, borderRadius: "50%", background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff" } }, index + 1),
-        React.createElement("span", { style: { color: "#fff", fontWeight: 500, fontSize: 14 } }, card.title || card.subtitle || `카드 ${index + 1}`),
-        card.start && React.createElement("span", { style: { color: "#666", fontSize: 12 } }, `${card.start} ~ ${card.end}`)
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' } }, index + 1),
+        React.createElement("span", { style: { color: T.text, fontWeight: 500, fontSize: 14 } }, card.title || card.subtitle || `카드 ${index + 1}`),
+        card.start && React.createElement("span", { style: { color: T.textMuted, fontSize: 12, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `${card.start} ~ ${card.end}`)
       ),
-      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-        React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDuplicate(); }, style: { background: "none", border: "none", color: "#666", fontSize: 12, cursor: "pointer", padding: "4px 8px", borderRadius: 4 } }, "복제"),
-        total > 1 && React.createElement("button", { onClick: (e) => { e.stopPropagation(); onRemove(); }, style: { background: "none", border: "none", color: "#ef4444", fontSize: 12, cursor: "pointer", padding: "4px 8px", borderRadius: 4 } }, "삭제"),
-        React.createElement("span", { style: { color: "#666", fontSize: 16 } }, expanded ? "▾" : "▸")
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+        React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDuplicate(); }, style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '4px 10px', borderRadius: T.radiusPill, transition: 'all 0.15s' } }, "복제"),
+        total > 1 && React.createElement("button", { onClick: (e) => { e.stopPropagation(); onRemove(); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '4px 10px', borderRadius: T.radiusPill } }, "삭제"),
+        React.createElement("span", { style: { color: T.textMuted, fontSize: 14, marginLeft: 4, transition: 'transform 0.2s', transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' } }, "▾")
       )
     ),
-    expanded && React.createElement("div", { style: { padding: "0 16px 16px", display: "flex", gap: 24 } },
-      React.createElement("div", { style: { flex: 1, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 } },
-        React.createElement("div", null,
-          React.createElement("label", { style: labelStyle }, "영상 URL (비워두면 공통 URL 사용)"),
-          React.createElement("input", { type: "text", value: card.url, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => update("url", e.target.value), style: inputStyle }),
-          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginTop: 8 } },
-            React.createElement("div", null, React.createElement("label", { style: { ...labelStyle, fontSize: 11, color: "#666" } }, "시작"), React.createElement(TimeInput, { value: card.start, onChange: (v) => update("start", v), placeholder: "3:42" })),
-            React.createElement("span", { style: { color: "#444", marginTop: 16 } }, "~"),
-            React.createElement("div", null, React.createElement("label", { style: { ...labelStyle, fontSize: 11, color: "#666" } }, "종료"), React.createElement(TimeInput, { value: card.end, onChange: (v) => update("end", v), placeholder: "3:59" })),
-            React.createElement("div", null, React.createElement("label", { style: { ...labelStyle, fontSize: 11, color: "#666" } }, "캡처 시점"), React.createElement(TimeInput, { value: card.captureTime, onChange: (v) => update("captureTime", v), placeholder: "1:10" })),
-          )
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: labelStyle }, "레이아웃"),
-          React.createElement("div", { style: { display: "flex", gap: 6 } },
-            LAYOUT_OPTIONS.map(opt => React.createElement("button", { key: opt.id, onClick: () => update("layout", opt.id), style: btnStyle(card.layout === opt.id) }, opt.label))
+
+    // Body
+    expanded && React.createElement("div", { style: { padding: '0 20px 20px', display: 'flex', gap: 28 } },
+      // Left: Form
+      React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+
+        // ── 영상 설정 ──
+        React.createElement(Section, { title: "영상 설정" },
+          React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+          React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 } },
+            React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+            React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+            React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
           ),
-          card.layout !== "text_overlay" && React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginTop: 8 } },
-            React.createElement("label", { style: { fontSize: 12, color: "#666" } }, `텍스트 영역: ${Math.round((1 - card.photoRatio) * 100)}%`),
-            React.createElement("input", { type: "range", min: 0.3, max: 0.8, step: 0.05, value: card.photoRatio, onChange: (e) => update("photoRatio", parseFloat(e.target.value)), style: { flex: 1 } })
-          )
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: labelStyle }, "영상 위치 조절"),
-          React.createElement("div", { style: { display: "flex", gap: 16 } },
-            React.createElement("div", { style: { flex: 1, display: "flex", alignItems: "center", gap: 8 } },
-              React.createElement("label", { style: { fontSize: 12, color: "#666", minWidth: 14 } }, "X"),
-              React.createElement("input", { type: "range", min: 0, max: 100, step: 1, value: card.videoX, onChange: (e) => update("videoX", parseInt(e.target.value)), style: { flex: 1 } }),
-              React.createElement("span", { style: { fontSize: 11, color: "#555", minWidth: 32, textAlign: "right" } }, `${card.videoX}%`),
-            ),
-            React.createElement("div", { style: { flex: 1, display: "flex", alignItems: "center", gap: 8 } },
-              React.createElement("label", { style: { fontSize: 12, color: "#666", minWidth: 14 } }, "Y"),
-              React.createElement("input", { type: "range", min: 0, max: 100, step: 1, value: card.videoY, onChange: (e) => update("videoY", parseInt(e.target.value)), style: { flex: 1 } }),
-              React.createElement("span", { style: { fontSize: 11, color: "#555", minWidth: 32, textAlign: "right" } }, `${card.videoY}%`),
-            ),
-          ),
-          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginTop: 6 } },
-            React.createElement("label", { style: { fontSize: 12, color: "#666", minWidth: 40 } }, "확대"),
-            React.createElement("input", { type: "range", min: 100, max: 200, step: 5, value: card.videoScale || 110, onChange: (e) => update("videoScale", parseInt(e.target.value)), style: { flex: 1 } }),
-            React.createElement("span", { style: { fontSize: 11, color: "#555", minWidth: 40, textAlign: "right" } }, `${card.videoScale || 110}%`),
-          ),
-        ),
-        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
-          React.createElement("label", { style: labelStyle }, "텍스트 내용"),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("input", { type: "text", value: card.title, placeholder: "제목 (크고 두껍게)", onChange: (e) => update("title", e.target.value), style: { ...inputStyle, flex: 1 } }),
-            React.createElement("input", { type: "number", value: card.titleSize, onChange: (e) => update("titleSize", parseInt(e.target.value) || 0), style: numStyle, title: "폰트 크기" }),
-            React.createElement("input", { type: "color", value: card.titleColor, onChange: (e) => update("titleColor", e.target.value), style: colorStyle }),
-          ),
-          React.createElement("div", { style: { display: "flex", gap: 8 } },
-            React.createElement("input", { type: "text", value: card.subtitle, placeholder: "부제 (얇게)", onChange: (e) => update("subtitle", e.target.value), style: { ...inputStyle, flex: 1 } }),
-            React.createElement("input", { type: "number", value: card.subtitleSize, onChange: (e) => update("subtitleSize", parseInt(e.target.value) || 0), style: numStyle }),
-            React.createElement("input", { type: "color", value: card.subtitleColor, onChange: (e) => update("subtitleColor", e.target.value), style: colorStyle }),
-          ),
-          React.createElement("div", { style: { display: "flex", gap: 8, alignItems: "start" } },
-            React.createElement("textarea", { value: card.body, placeholder: "본문 내용...", rows: 3, onChange: (e) => update("body", e.target.value), style: { ...inputStyle, flex: 1, resize: "vertical", minHeight: 72 } }),
-            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } },
-              React.createElement("input", { type: "number", value: card.bodySize, onChange: (e) => update("bodySize", parseInt(e.target.value) || 0), style: numStyle }),
-              React.createElement("input", { type: "color", value: card.bodyColor, onChange: (e) => update("bodyColor", e.target.value), style: colorStyle }),
+          React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "레이아웃"),
+            React.createElement("div", { style: { display: 'flex', gap: 6 } },
+              LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
             )
           ),
-          card.layout !== "text_overlay" && React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginTop: 4 } },
-            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-              React.createElement("label", { style: { fontSize: 12, color: "#666" } }, "배경색"),
-              React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { ...colorStyle, width: 28, height: 28 } }),
-              React.createElement("span", { style: { fontSize: 11, color: "#555" } }, card.bgColor),
-            ),
-            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
-              React.createElement("label", { style: { fontSize: 12, color: "#666" } }, `배경 투명도: ${Math.round(card.bgOpacity * 100)}%`),
-              React.createElement("input", { type: "range", min: 0, max: 1, step: 0.05, value: card.bgOpacity, onChange: (e) => update("bgOpacity", parseFloat(e.target.value)), style: { flex: 1 } }),
-            )
+          card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
+          React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            React.createElement(SliderRow, { label: "X", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
+            React.createElement(SliderRow, { label: "Y", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
+            React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
           ),
-        )
+        ),
+
+        // ── 텍스트 내용 ──
+        React.createElement(Section, { title: "텍스트 내용" },
+          React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목 (크고 두껍게)", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v) }),
+          React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v) }),
+          React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용...", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v) }),
+        ),
+
+        // ── 배경 설정 ──
+        card.layout !== "text_overlay" && React.createElement(Section, { title: "배경 설정" },
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
+            React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
+          ),
+          React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
+        ),
       ),
-      React.createElement("div", { style: { flexShrink: 0 } },
-        React.createElement("label", { style: { display: "block", fontSize: 12, color: "#888", fontWeight: 500, marginBottom: 8 } }, "미리보기"),
+
+      // Right: Preview (sticky)
+      React.createElement("div", { style: { flexShrink: 0, position: 'sticky', top: 80, alignSelf: 'flex-start' } },
+        React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
         React.createElement(CardPreview, { card, globalUrl }),
       )
     )
   );
 }
 
-// ── JSON Modal ──
+/* ── JSON Modal ── */
 function JsonModal({ json, onClose }) {
   const textRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const handleCopy = () => { textRef.current?.select(); navigator.clipboard.writeText(json).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
-  return React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 32 } },
-    React.createElement("div", { style: { background: "#171717", border: "1px solid #333", borderRadius: 12, maxWidth: 640, width: "100%", display: "flex", flexDirection: "column" } },
-      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: "1px solid #333" } },
-        React.createElement("h3", { style: { fontWeight: 600 } }, "내보내기 JSON"),
-        React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: "#666", fontSize: 20, cursor: "pointer" } }, "✕")
+  return React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: 'blur(4px)', display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 32 } },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, maxWidth: 640, width: "100%", boxShadow: T.shadowLg } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${T.border}` } },
+        React.createElement("h3", { style: { fontWeight: 600, fontSize: 15 } }, "JSON 내보내기"),
+        React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: T.textMuted, fontSize: 20, cursor: "pointer" } }, "✕")
       ),
       React.createElement("div", { style: { padding: 20 } },
-        React.createElement("textarea", { ref: textRef, readOnly: true, value: json, style: { width: "100%", height: 320, background: "#0a0a0a", border: "1px solid #333", borderRadius: 8, padding: 16, fontSize: 13, color: "#4ade80", fontFamily: "monospace", outline: "none", resize: "none" } })
+        React.createElement("textarea", { ref: textRef, readOnly: true, value: json, style: { width: "100%", height: 300, background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, padding: 16, fontSize: 13, color: "#4ade80", fontFamily: "monospace", outline: "none", resize: "none" } })
       ),
-      React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 12, padding: "16px 20px", borderTop: "1px solid #333" } },
-        React.createElement("button", { onClick: handleCopy, style: { padding: "8px 16px", background: "#3b82f6", color: "#fff", borderRadius: 6, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer" } }, copied ? "복사됨!" : "클립보드 복사"),
-        React.createElement("button", { onClick: onClose, style: { padding: "8px 16px", background: "#333", color: "#fff", borderRadius: 6, border: "none", fontSize: 13, cursor: "pointer" } }, "닫기")
+      React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 20px", borderTop: `1px solid ${T.border}` } },
+        React.createElement("button", { onClick: handleCopy, style: { padding: "8px 20px", background: T.accent, color: "#fff", borderRadius: T.radiusPill, border: "none", fontSize: 13, fontWeight: 500, cursor: "pointer" } }, copied ? "복사됨!" : "클립보드 복사"),
+        React.createElement("button", { onClick: onClose, style: { padding: "8px 20px", background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: "none", fontSize: 13, cursor: "pointer" } }, "닫기")
       )
     )
   );
 }
 
-// ── App ──
+/* ── App ── */
 export default function App() {
   const [globalUrl, setGlobalUrl] = useState("");
   const [outputFormat, setOutputFormat] = useState("video");
@@ -438,10 +386,7 @@ export default function App() {
   const [genProgress, setGenProgress] = useState("");
   const [results, setResults] = useState([]);
 
-  // Initialize with one default card on mount (client-side only)
-  useEffect(() => {
-    setCards([DEFAULT_CARD()]);
-  }, []);
+  useEffect(() => { setCards([DEFAULT_CARD()]); }, []);
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
@@ -463,170 +408,124 @@ export default function App() {
   const exportJson = () => {
     const url = globalUrl || cards[0]?.url || "";
     const config = { url, output_format: outputFormat, output_size: outputSize, cards: cards.map(buildConfig) };
-    setJsonStr(JSON.stringify(config, null, 2));
-    setShowJson(true);
+    setJsonStr(JSON.stringify(config, null, 2)); setShowJson(true);
   };
 
-  // ── 생성하기 (Web API) ──
   const handleGenerate = async () => {
     const url = globalUrl || cards[0]?.url || "";
     if (!url) { alert("영상 URL을 입력하세요."); return; }
     for (let i = 0; i < cards.length; i++) {
       if (!cards[i].start || !cards[i].end) { alert(`카드 ${i + 1}의 시작/종료 시간을 입력하세요.`); return; }
     }
-
-    setGenerating(true);
-    setResults([]);
-    setGenProgress("오버레이 생성 중...");
-
+    setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중...");
     try {
-      // 1) 모든 카드의 오버레이 PNG 생성
       const overlays = [];
       for (let i = 0; i < cards.length; i++) {
         setGenProgress(`카드 ${i + 1}/${cards.length} 오버레이 생성 중...`);
-        const overlayDataUrl = await generateOverlayPng(cards[i], outputSize);
-        overlays.push(overlayDataUrl);
+        overlays.push(await generateOverlayPng(cards[i], outputSize));
       }
-
-      // 2) 서버에 작업 요청
-      setGenProgress("서버에 작업 요청 중...");
-      const res = await fetch("/api/jobs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url,
-          outputFormat,
-          outputSize,
-          cards: cards.map((card, i) => ({
-            cardConfig: buildConfig(card),
-            overlayData: overlays[i],
-          })),
-        }),
+      setGenProgress("서버에 요청 중...");
+      const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, outputFormat, outputSize, cards: cards.map((card, i) => ({ cardConfig: buildConfig(card), overlayData: overlays[i] })) }),
       });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "서버 요청 실패");
-      }
-
+      if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
-
-      // 3) 폴링으로 진행 상황 확인
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/jobs/${jobId}`);
           if (!statusRes.ok) return;
           const status = await statusRes.json();
-
-          let totalProgress = 0;
-          let completedCards = 0;
-          let failedCards = 0;
+          let completedCards = 0, failedCards = 0, totalProgress = 0;
           const downloadUrls = [];
-
-          for (const card of (status.cards || [])) {
-            if (card.status === "completed") {
-              completedCards++;
-              totalProgress += 100;
-              if (card.downloadUrl) downloadUrls.push(card.downloadUrl);
-            } else if (card.status === "failed") {
-              failedCards++;
-              totalProgress += 100;
-            } else {
-              totalProgress += (card.progress || 0);
-            }
+          for (const c of (status.cards || [])) {
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push(c.downloadUrl); }
+            else if (c.status === "failed") { failedCards++; totalProgress += 100; }
+            else totalProgress += (c.progress || 0);
           }
-
-          const avgProgress = Math.round(totalProgress / cardCount);
-          setGenProgress(`처리 중... ${completedCards}/${cardCount}개 완료 (${avgProgress}%)`);
-
+          setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval);
-            setResults(downloadUrls);
-            setGenProgress(`완료! ${completedCards}/${cardCount}개 카드 생성됨${failedCards > 0 ? ` (${failedCards}개 실패)` : ""}`);
+            clearInterval(pollInterval); setResults(downloadUrls);
+            setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` · ${failedCards}개 실패` : ""}`);
             setGenerating(false);
           }
-        } catch (e) {
-          // polling error, continue
-        }
+        } catch (e) {}
       }, 1500);
-
-    } catch (err) {
-      alert(`오류: ${err.message}`);
-      setGenProgress("");
-      setGenerating(false);
-    }
+    } catch (err) { alert(`오류: ${err.message}`); setGenProgress(""); setGenerating(false); }
   };
 
-  const inputStyle = { width: "100%", padding: "8px 12px", background: "#262626", border: "1px solid #404040", borderRadius: 6, fontSize: 14, color: "#fff", outline: "none" };
-  const btnStyle = (active) => ({ padding: "8px 14px", borderRadius: 6, fontSize: 12, border: "none", cursor: "pointer", background: active ? "#3b82f6" : "#262626", color: active ? "#fff" : "#999" });
+  return React.createElement("div", { style: { minHeight: "100vh", background: T.bg } },
+    React.createElement(Head, null, React.createElement("title", null, "YT2C — 카드뉴스 메이커")),
 
-  return React.createElement("div", { style: { minHeight: "100vh" } },
-    React.createElement(Head, null,
-      React.createElement("title", null, "YT2C - 카드뉴스 메이커"),
-    ),
-    // Header
-    React.createElement("div", { style: { borderBottom: "1px solid #222", position: "sticky", top: 0, background: "#0a0a0a", zIndex: 20 } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "12px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" } },
-        React.createElement("div", null,
-          React.createElement("h1", { style: { fontSize: 18, fontWeight: 700 } }, "카드뉴스 메이커"),
-          React.createElement("p", { style: { fontSize: 12, color: "#666", marginTop: 2 } }, "YouTube 영상으로 카드뉴스를 만들어보세요")
+    // ── Header ──
+    React.createElement("header", { style: { position: 'sticky', top: 0, zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
+          React.createElement("h1", { style: { fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em' } }, "YT2C"),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
         ),
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
-          React.createElement("span", { style: { fontSize: 12, color: "#666" } }, `카드 ${cards.length}개`),
-          React.createElement("button", { onClick: exportJson, style: { padding: "8px 16px", background: "#262626", color: "#999", borderRadius: 8, border: "1px solid #404040", fontSize: 13, cursor: "pointer" } }, "JSON"),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("button", { onClick: exportJson, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "JSON"),
           React.createElement("button", {
-            onClick: handleGenerate,
-            disabled: generating,
-            style: { padding: "10px 24px", background: generating ? "#333" : "#22c55e", color: generating ? "#666" : "#fff", borderRadius: 8, border: "none", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", transition: "all 0.15s" }
+            onClick: handleGenerate, disabled: generating,
+            style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
           }, generating ? "생성 중..." : "생성하기"),
         )
       )
     ),
-    // Progress bar
-    (generating || genProgress) && React.createElement("div", { style: { background: "#171717", borderBottom: "1px solid #333", padding: "10px 24px" } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", gap: 12 } },
-        generating && React.createElement("div", { style: { width: 16, height: 16, border: "2px solid #3b82f6", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" } }),
-        React.createElement("span", { style: { fontSize: 13, color: generating ? "#3b82f6" : "#22c55e" } }, genProgress),
-        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: "auto", display: "flex", gap: 8 } },
-          results.map((url, i) => React.createElement("a", {
-            key: i, href: url, download: true,
-            style: { padding: "4px 12px", background: "#3b82f6", color: "#fff", borderRadius: 6, border: "none", fontSize: 12, cursor: "pointer", textDecoration: "none" }
-          }, `카드 ${i+1} 다운로드`))
+
+    // ── Progress ──
+    (generating || genProgress) && React.createElement("div", { style: { background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '10px 24px' } },
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        generating && React.createElement("div", { style: { width: 14, height: 14, border: `2px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' } }),
+        React.createElement("span", { style: { fontSize: 13, color: generating ? T.accent : T.success, fontWeight: 500 } }, genProgress),
+        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 6 } },
+          results.map((url, i) => React.createElement("a", { key: i, href: url, download: true, style: { padding: '5px 14px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 12, textDecoration: 'none', fontWeight: 500 } }, `카드 ${i+1} 다운로드`))
         ),
       )
     ),
-    // Main content
-    React.createElement("div", { style: { maxWidth: 1200, margin: "0 auto", padding: "24px 24px", display: "flex", flexDirection: "column", gap: 20 } },
-      // Global settings
-      React.createElement("div", { style: { background: "#171717", border: "1px solid #333", borderRadius: 10, padding: 16, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-end" } },
-        React.createElement("div", { style: { flex: 1, minWidth: 260 } },
-          React.createElement("label", { style: { display: "block", fontSize: 12, color: "#888", fontWeight: 500, marginBottom: 4 } }, "공통 영상 URL"),
-          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: inputStyle })
+
+    // ── Main ──
+    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: '24px 24px 48px', display: 'flex', flexDirection: 'column', gap: 16 } },
+
+      // Global Settings
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '16px 20px', boxShadow: T.shadow, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' } },
+        React.createElement("div", { style: { flex: 1, minWidth: 240 } },
+          React.createElement("label", { style: labelBase }, "공통 영상 URL"),
+          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: inputBase })
         ),
-        React.createElement("div", null,
-          React.createElement("label", { style: { display: "block", fontSize: 12, color: "#888", fontWeight: 500, marginBottom: 4 } }, "출력 형식"),
-          React.createElement("div", { style: { display: "flex", gap: 4 } },
-            ["video", "image"].map(f => React.createElement("button", { key: f, onClick: () => setOutputFormat(f), style: btnStyle(outputFormat === f) }, f === "video" ? "영상 (mp4)" : "이미지 (jpg)"))
-          )
-        ),
-        React.createElement("div", null,
-          React.createElement("label", { style: { display: "block", fontSize: 12, color: "#888", fontWeight: 500, marginBottom: 4 } }, "해상도"),
-          React.createElement("div", { style: { display: "flex", gap: 4 } },
-            [720, 1080].map(s => React.createElement("button", { key: s, onClick: () => setOutputSize(s), style: btnStyle(outputSize === s) }, `${s}p`))
-          )
-        ),
+        React.createElement("div", { style: { display: 'flex', gap: 16 } },
+          React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "형식"),
+            React.createElement("div", { style: { display: 'flex', gap: 4 } },
+              React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "영상"),
+              React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "이미지"),
+            )
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "해상도"),
+            React.createElement("div", { style: { display: 'flex', gap: 4 } },
+              React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
+              React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
+            )
+          ),
+        )
       ),
+
       // Cards
       cards.map((card, i) =>
         React.createElement(CardEditor, { key: card.id, card, index: i, onChange: (c) => updateCard(i, c), onRemove: () => removeCard(i), onDuplicate: () => duplicateCard(i), total: cards.length, globalUrl })
       ),
+
+      // Add card
       React.createElement("button", {
         onClick: addCard,
-        style: { width: "100%", padding: 14, border: "2px dashed #333", borderRadius: 10, background: "transparent", color: "#666", fontSize: 14, cursor: "pointer" }
-      }, "+ 카드 추가")
+        style: { width: '100%', padding: 16, border: `2px dashed ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.textMuted, fontSize: 14, cursor: 'pointer', transition: 'all 0.15s' },
+        onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+        onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
+      }, "+ 카드 추가"),
     ),
+
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    // Spin animation
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
   );
 }
