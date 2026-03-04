@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 11; // same-day deploy count
+const BUILD_NUM = 12; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -339,6 +339,99 @@ function CheckboxRow({ label, checked, onChange }) {
   );
 }
 
+
+/* ── VideoPreview (YouTube IFrame loop between start/end) ── */
+function VideoPreview({ videoId, start, end, width, height, style }) {
+  const iframeRef = useRef(null);
+  const playerRef = useRef(null);
+  const timerRef = useRef(null);
+  const [ready, setReady] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+
+  const startSec = parseTime(start) ?? 0;
+  const endSec = parseTime(end);
+  const hasRange = endSec != null && endSec > startSec;
+
+  // Load YouTube IFrame API once
+  useEffect(() => {
+    if (window.YT && window.YT.Player) return;
+    if (document.getElementById('yt-iframe-api')) return;
+    const tag = document.createElement('script');
+    tag.id = 'yt-iframe-api';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  }, []);
+
+  // Create player
+  useEffect(() => {
+    if (!videoId || !hasRange) { setShowVideo(false); return; }
+    setShowVideo(true);
+
+    const createPlayer = () => {
+      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      const containerId = 'yt-preview-' + videoId + '-' + startSec + '-' + (endSec || 0);
+      const el = iframeRef.current;
+      if (!el) return;
+      el.id = containerId;
+
+      playerRef.current = new window.YT.Player(containerId, {
+        width: width, height: height,
+        videoId: videoId,
+        playerVars: {
+          start: Math.floor(startSec), end: endSec ? Math.ceil(endSec) : undefined,
+          autoplay: 1, mute: 1, controls: 0, loop: 0,
+          modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
+          playsinline: 1, disablekb: 1, iv_load_policy: 3,
+        },
+        events: {
+          onReady: (e) => { e.target.setVolume(0); e.target.playVideo(); setReady(true); },
+          onStateChange: (e) => {
+            if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
+              // Loop: seek back to start
+              e.target.seekTo(Math.floor(startSec), true);
+              e.target.playVideo();
+            }
+          },
+        },
+      });
+    };
+
+    // Poll for YT API readiness
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const poll = setInterval(() => {
+        if (window.YT && window.YT.Player) { clearInterval(poll); createPlayer(); }
+      }, 200);
+      return () => clearInterval(poll);
+    }
+
+    // Also set up a timer to loop at the exact end time
+    timerRef.current = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        const cur = playerRef.current.getCurrentTime();
+        if (endSec && cur >= endSec - 0.3) {
+          playerRef.current.seekTo(Math.floor(startSec), true);
+          playerRef.current.playVideo();
+        }
+      }
+    }, 300);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+    };
+  }, [videoId, startSec, endSec, hasRange]);
+
+  if (!videoId || !hasRange || !showVideo) return null;
+
+  return React.createElement("div", {
+    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', pointerEvents: 'none', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', ...style },
+  },
+    React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
+  );
+}
+
 /* ── CardPreview ── */
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth }) {
   const previewW = previewWidth || 320;
@@ -422,7 +515,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   if (card.layout === "full_bg") {
     return React.createElement("div", { style: wrapper },
-      React.createElement(BgImage), React.createElement(OverlayImgs), React.createElement(TimestampLink),
+      React.createElement(BgImage),
+      React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH }),
+      React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
         card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
@@ -439,6 +534,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
+        React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH }),
       ),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
@@ -454,7 +550,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   ) : null;
 
   return React.createElement("div", { style: wrapper },
-    React.createElement(BgImage), React.createElement(OverlayImgs), React.createElement(TimestampLink),
+    React.createElement(BgImage),
+    React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH }),
+    React.createElement(OverlayImgs), React.createElement(TimestampLink),
     bgOverlay,
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
       React.createElement(TextContent)
