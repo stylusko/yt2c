@@ -1422,16 +1422,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     // \u2500\u2500 LEFT: Preview \u2500\u2500
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
       // Preview stack with slide animation
-      React.createElement("div", { style: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px 0', gap: 0, position: 'relative' } },
-        // Previous card (peek above, shows bottom edge)
-        prevCard
-          ? React.createElement("div", {
-              onClick: () => goTo(activeIndex - 1),
-              style: { maxHeight: 60, overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radius, marginBottom: 8, width: 360 },
-            },
-              React.createElement(CardPreview, { card: pvCard(prevCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
-            )
-          : null,
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px', gap: 10 } },
         // Active card with slide animation + active border
         React.createElement("div", {
           key: 'card-' + activeIndex,
@@ -1443,22 +1434,22 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         },
           React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
         ),
-        // Next card (peek below)
-        React.createElement("div", { style: { marginTop: 8, width: 360 } },
-          nextCard
-            ? React.createElement("div", {
-                onClick: () => goTo(activeIndex + 1),
-                style: { maxHeight: 80, overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radius },
-              },
-                React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
-              )
-            : React.createElement("div", {
-                onClick: onAdd,
-                style: { width: '100%', height: 60, border: '2px dashed ' + T.border, borderRadius: T.radius, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' },
-                onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
-                onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
-              }, "+ \uc0c8 \uce74\ub4dc"),
-        ),
+        // Next card thumbnail (small, complete)
+        nextCard
+          ? React.createElement("div", {
+              onClick: () => goTo(activeIndex + 1),
+              style: { cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radiusSm, opacity: 0.7, flexShrink: 0 },
+              onMouseEnter: (e) => { e.currentTarget.style.opacity = 1; },
+              onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.7; },
+            },
+              React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 160 })
+            )
+          : React.createElement("div", {
+              onClick: onAdd,
+              style: { width: 160, height: 40, border: '2px dashed ' + T.border, borderRadius: T.radiusSm, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 },
+              onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+              onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
+            }, "+ \uc0c8 \uce74\ub4dc"),
       ),
       // Card info bar
       React.createElement("div", { style: { padding: '12px 20px 16px', borderTop: `1px solid ${T.border}`, background: T.surface } },
