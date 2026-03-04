@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -22,6 +22,8 @@ const RECENT_FEATURES = [
   '이미지 업로드 UI 개선',
   '개별 카드 우선 적용',
   '모바일 캐러셀 카드 편집',
+  '채우기 통합 (영상/이미지)',
+  '이미지 얹기 (오버레이)',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -35,28 +37,30 @@ const ASPECT_OPTIONS = [
   { id: "3:4", label: "3:4", w: 3, h: 4 },
 ];
 
+const FILL_SOURCE_OPTIONS = [
+  { id: "video", label: "영상" },
+  { id: "image", label: "이미지" },
+];
+
 const VIDEO_FILL_OPTIONS = [
   { id: "full", label: "전체 채우기" },
   { id: "split", label: "분리형" },
-];
-
-const IMAGE_SOURCE_OPTIONS = [
-  { id: "thumbnail", label: "영상 썸네일" },
-  { id: "upload", label: "이미지 업로드" },
 ];
 
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
   url: "", start: "", end: "",
-  layout: "photo_top", photoRatio: 0.55, videoFill: "full",
-  imageSource: "thumbnail", uploadedImage: null,
+  layout: "photo_top", photoRatio: 0.55,
+  fillSource: "video", videoFill: "full",
+  uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
   title: "", titleSize: 56, titleFont: "Pretendard-Bold.otf",
   subtitle: "", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
   body: "", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
-  bgImage: null, // base64 background image
+  overlayEnabled: false, overlayImage: null,
+  overlayX: 50, overlayY: 50, overlayScale: 100, overlayOpacity: 1,
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
   textScale: 100, letterSpacing: 0, lineHeight: 1.4,
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
@@ -237,6 +241,22 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) { drawTextLS(ln, padX, curY + scaledSubSz * 0.85); curY += subLhN; } }
     if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) { if (!ln) { curY += scaledBodySz / 2; continue; } drawTextLS(ln, padX, curY + scaledBodySz * 0.85); curY += bodyLhN; } }
   }
+  // Draw overlay image if enabled
+  if (card.overlayEnabled && card.overlayImage) {
+    try {
+      const oImg = new Image();
+      await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = card.overlayImage; });
+      const oScale = (card.overlayScale || 100) / 100;
+      const oW = oImg.width * oScale;
+      const oH = oImg.height * oScale;
+      const oX = (card.overlayX ?? 50) / 100 * w - oW / 2;
+      const oY = (card.overlayY ?? 50) / 100 * h - oH / 2;
+      ctx.globalAlpha = card.overlayOpacity ?? 1;
+      ctx.drawImage(oImg, oX, oY, oW, oH);
+      ctx.globalAlpha = 1;
+    } catch (e) { /* ignore overlay load error */ }
+  }
+
   ctx.fillStyle = "rgba(0,0,0,0.78)";
   ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
   ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
@@ -305,6 +325,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const textRatio = 1 - card.photoRatio;
   const textH = card.layout === "text_overlay" ? previewH : Math.round(previewH * textRatio);
+  const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
   const useBg = card.useBg !== false;
   const sc = previewW / 1080;
@@ -322,12 +343,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
 
-  // Determine background image priority:
-  // 1) Card-level uploaded image (imageSource=upload) > card bgImage > global bgImage
-  // 2) Card's own URL thumbnail > global URL thumbnail
-  const cardUpload = (card.imageSource === 'upload' && card.uploadedImage) ? card.uploadedImage : null;
-  const bgImageSrc = cardUpload || card.bgImage || globalBgImage || null;
-
   useEffect(() => {
     if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
     else setThumbSrc(null);
@@ -338,12 +353,17 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
-  // Display priority: card-level overrides > global > fallback
-  // If card has explicit image content (upload/bgImage/own URL), it takes priority over global
-  const hasCardOverride = cardUpload || card.bgImage || (card.url && card.url.trim());
-  const displayImage = hasCardOverride
-    ? (cardUpload || card.bgImage || thumbSrc)
-    : (globalBgImage || thumbSrc);
+  // Base image: depends on fillSource
+  // video → thumbnail; image → uploadedImage or globalBgImage or thumbnail fallback
+  const baseImage = fillSource === 'image'
+    ? (card.uploadedImage || globalBgImage || thumbSrc)
+    : (thumbSrc || globalBgImage);
+  const isBaseThumb = baseImage === thumbSrc && fillSource === 'video';
+
+  // Overlay image (PNG layered on top)
+  const overlayImg = card.overlayEnabled && card.overlayImage ? card.overlayImage : null;
+  const overlayScale = (card.overlayScale || 100) / 100;
+  const overlayOpacity = card.overlayOpacity ?? 1;
 
   const bgRgb = card.bgColor.replace("#", "").match(/.{2}/g)?.map(h => parseInt(h, 16)) || [18,18,18];
   const vScale = (card.videoScale || 110) / 100;
@@ -357,14 +377,16 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: lhVal, letterSpacing: lsVal, whiteSpace: "pre-wrap" } }, card.body),
   );
 
-  const isStaticImage = cardUpload || card.bgImage || globalBgImage;
-  const isThumb = displayImage === thumbSrc && !isStaticImage;
-  const BgImage = () => displayImage
-    ? React.createElement("img", { src: displayImage, alt: "", onError: isThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: isThumb ? `scale(${vScale})` : 'none', transformOrigin: isThumb ? `${card.videoX}% ${card.videoY}%` : 'center' } })
+  const BgImage = () => baseImage
+    ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center' } })
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
+
+  const OverlayImg = () => overlayImg
+    ? React.createElement("img", { src: overlayImg, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', transform: `translate(-50%, -50%) translate(${(card.overlayX - 50) * previewW / 50}px, ${(card.overlayY - 50) * previewH / 50}px) scale(${overlayScale})`, opacity: overlayOpacity, pointerEvents: 'none', maxWidth: 'none', maxHeight: 'none' } })
+    : null;
 
   const TimestampLink = () => ytLink ? React.createElement("a", {
     href: ytLink, target: "_blank", rel: "noopener noreferrer",
@@ -376,7 +398,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   if (card.layout === "text_overlay") {
     return React.createElement("div", { style: wrapper },
-      React.createElement(BgImage), React.createElement(TimestampLink),
+      React.createElement(BgImage), React.createElement(OverlayImg), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, height: "80%", background: `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},0.5) 20%, rgba(${bgRgb.join(",")},0.9) 40%, rgba(${bgRgb.join(",")},0.95) 100%)`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 2 } },
         card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: lhVal, letterSpacing: lsVal } }, card.title),
         card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: lhVal, letterSpacing: lsVal } }, card.subtitle),
@@ -393,12 +415,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const isTop = card.layout === "photo_top";
   const videoAreaH = previewH - textH;
 
-  if (videoFill === "split") {
+  if (videoFill === "split" && fillSource === 'video') {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
       ),
-      React.createElement(TimestampLink),
+      React.createElement(OverlayImg), React.createElement(TimestampLink),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
         useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgb(${bgRgb.join(",")})` } }),
         React.createElement(TextContent)
@@ -406,7 +428,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   }
 
   return React.createElement("div", { style: wrapper },
-    React.createElement(BgImage), React.createElement(TimestampLink),
+    React.createElement(BgImage), React.createElement(OverlayImg), React.createElement(TimestampLink),
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } }),
       React.createElement(TextContent)
@@ -542,43 +564,44 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
 
-          // 영상 설정
-          React.createElement(Section, { title: "영상 설정" },
-            React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-            React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 } },
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+          // 레이아웃
+          React.createElement(Section, { title: "레이아웃" },
+            React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+              LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
             ),
-            React.createElement("div", null,
-              React.createElement("label", { style: labelBase }, "레이아웃"),
-              React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-                LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
-              )
+            card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트 비율", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
+          ),
+
+          // 채우기 (영상 / 이미지 통합)
+          React.createElement(Section, { title: "채우기" },
+            React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
+              FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
-            card.layout !== "text_overlay" && React.createElement("div", null,
-              React.createElement("label", { style: labelBase }, "영상 채우기"),
-              React.createElement("div", { style: { display: 'flex', gap: 6 } },
-                VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-              )
+            // 영상 모드
+            (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
+              React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+              React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 } },
+                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+              ),
+              card.layout !== "text_overlay" && React.createElement("div", null,
+                React.createElement("label", { style: labelBase }, "영상 채우기"),
+                React.createElement("div", { style: { display: 'flex', gap: 6 } },
+                  VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+                )
+              ),
             ),
-            card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
-            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            // 이미지 모드
+            (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
+              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+            ),
+            // 공통: 위치/확대
+            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SliderRow, { label: "X", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
               React.createElement(SliderRow, { label: "Y", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
               React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
             ),
-          ),
-
-          // 이미지 소스 (이미지 형식일 때)
-          outputFormat === 'image' && React.createElement(Section, { title: "이미지 소스" },
-            React.createElement("div", { style: { display: 'flex', gap: 6 } },
-              IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.imageSource || "thumbnail") === opt.id, onClick: () => update("imageSource", opt.id) }, opt.label))
-            ),
-            (card.imageSource === "upload") && React.createElement(ImageUploadField, {
-              value: card.uploadedImage,
-              onChange: (v) => update("uploadedImage", v),
-            }),
           ),
 
           // 텍스트 내용
@@ -605,9 +628,19 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
               ),
               card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
-              React.createElement("div", null,
-                React.createElement("label", { style: { ...labelBase, marginTop: 8 } }, "배경 이미지 (개별)"),
-                React.createElement(ImageUploadField, { value: card.bgImage, onChange: (v) => update("bgImage", v), maxMb: 5 }),
+            ),
+          ),
+
+          // 이미지 얹기 (오버레이)
+          React.createElement(Section, { title: "이미지 얹기" },
+            React.createElement(CheckboxRow, { label: "이미지 얹기 사용", checked: card.overlayEnabled === true, onChange: (v) => update("overlayEnabled", v) }),
+            card.overlayEnabled && React.createElement(React.Fragment, null,
+              React.createElement(ImageUploadField, { value: card.overlayImage, onChange: (v) => update("overlayImage", v), maxMb: 5 }),
+              card.overlayImage && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+                React.createElement(SliderRow, { label: "X", value: card.overlayX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayX", v) }),
+                React.createElement(SliderRow, { label: "Y", value: card.overlayY ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayY", v) }),
+                React.createElement(SliderRow, { label: "크기", value: card.overlayScale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => update("overlayScale", v), suffix: '%' }),
+                React.createElement(SliderRow, { label: "투명도", value: card.overlayOpacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => update("overlayOpacity", v) }),
               ),
             ),
           ),
@@ -903,13 +936,15 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'video', label: '영상' },
+  { id: 'layout', label: '레이아웃' },
+  { id: 'fill', label: '채우기' },
   { id: 'text', label: '텍스트' },
   { id: 'bg', label: '배경' },
+  { id: 'overlay', label: '얹기' },
 ];
 
 function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
-  const [activeTab, setActiveTab] = useState('video');
+  const [activeTab, setActiveTab] = useState('layout');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
@@ -932,7 +967,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     if (idx === cards.length) { onAdd(); return; }
     setTransitioning(true);
     onActiveChange(idx);
-    setActiveTab('video');
+    setActiveTab('layout');
     setTimeout(() => setTransitioning(false), 200);
   };
 
@@ -947,52 +982,45 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     setTouchDelta(0);
   };
 
-  // Tabs content for image source when output is image format
-  const tabs = outputFormat === 'image'
-    ? [{ id: 'video', label: '영상' }, { id: 'image', label: '이미지' }, { id: 'text', label: '텍스트' }, { id: 'bg', label: '배경' }]
-    : MOBILE_TABS;
+  const tabs = MOBILE_TABS;
 
   if (!card) return null;
 
   const previewCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
 
   // Tab content renderers
-  const renderVideoTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-    React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
-      React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-      React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-    ),
-    React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+  const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", null,
       React.createElement("label", { style: labelBase }, "레이아웃"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
         LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
       )
     ),
-    card.layout !== "text_overlay" && React.createElement("div", null,
-      React.createElement("label", { style: labelBase }, "영상 채우기"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
-        VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-      )
+    card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트 비율", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
+  );
+
+  const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+      FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
-    card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
+    (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
+      React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      ),
+      React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      card.layout !== "text_overlay" && React.createElement("div", null,
+        React.createElement("label", { style: labelBase }, "영상 채우기"),
+        React.createElement("div", { style: { display: 'flex', gap: 6 } },
+          VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+        )
+      ),
+    ),
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement(SliderRow, { label: "X", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
     React.createElement(SliderRow, { label: "Y", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
-  );
-
-  const renderImageTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", null,
-      React.createElement("label", { style: labelBase }, "이미지 소스"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
-        IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.imageSource || "thumbnail") === opt.id, onClick: () => update("imageSource", opt.id) }, opt.label))
-      ),
-    ),
-    (card.imageSource === "upload") && React.createElement(ImageUploadField, {
-      value: card.uploadedImage,
-      onChange: (v) => update("uploadedImage", v),
-    }),
   );
 
   const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -1016,14 +1044,23 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
       ),
       card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) }),
-      React.createElement("div", null,
-        React.createElement("label", { style: { ...labelBase, marginTop: 4 } }, "배경 이미지"),
-        React.createElement(ImageUploadField, { value: card.bgImage, onChange: (v) => update("bgImage", v), maxMb: 5 }),
+    ),
+  );
+
+  const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement(CheckboxRow, { label: "이미지 얹기 사용", checked: card.overlayEnabled === true, onChange: (v) => update("overlayEnabled", v) }),
+    card.overlayEnabled && React.createElement(React.Fragment, null,
+      React.createElement(ImageUploadField, { value: card.overlayImage, onChange: (v) => update("overlayImage", v), maxMb: 5 }),
+      card.overlayImage && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+        React.createElement(SliderRow, { label: "X", value: card.overlayX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayX", v) }),
+        React.createElement(SliderRow, { label: "Y", value: card.overlayY ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("overlayY", v) }),
+        React.createElement(SliderRow, { label: "크기", value: card.overlayScale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => update("overlayScale", v), suffix: '%' }),
+        React.createElement(SliderRow, { label: "투명도", value: card.overlayOpacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => update("overlayOpacity", v) }),
       ),
     ),
   );
 
-  const tabContent = { video: renderVideoTab, image: renderImageTab, text: renderTextTab, bg: renderBgTab };
+  const tabContent = { layout: renderLayoutTab, fill: renderFillTab, text: renderTextTab, bg: renderBgTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -1223,7 +1260,8 @@ export default function App() {
       video_position: [c.videoX, c.videoY], video_scale: c.videoScale || 110,
       output_size: outputSize,
       aspect_ratio: aspectRatio,
-      image_source: c.imageSource || 'thumbnail',
+      fill_source: c.fillSource || 'video',
+      image_source: c.fillSource === 'image' ? 'upload' : 'thumbnail',
       ...(c.url && c.url !== globalUrl ? { url: c.url } : {}),
       ...(c.captureTime ? { capture_time: c.captureTime } : {}),
     };
@@ -1385,12 +1423,6 @@ export default function App() {
               React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "이미지"),
             )
           ),
-          outputFormat === 'image' && React.createElement("div", null,
-            React.createElement("label", { style: labelBase }, "이미지 소스"),
-            React.createElement("div", { style: { display: 'flex', gap: 4 } },
-              IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: globalImageSource === opt.id, onClick: () => setGlobalImageSource(opt.id) }, opt.label))
-            )
-          ),
           React.createElement("div", null,
             React.createElement("label", { style: labelBase }, "해상도"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
@@ -1401,10 +1433,18 @@ export default function App() {
         )
       ),
 
-      // Global background image upload (only when image format + upload source)
-      outputFormat === 'image' && globalImageSource === 'upload' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow } },
-        React.createElement("label", { style: labelBase }, "공통 배경 이미지"),
-        React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+      // Global fallback image (used when card fillSource=image and no per-card upload)
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow, display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("label", { style: { ...labelBase, marginBottom: 0, whiteSpace: 'nowrap' } }, "공통 이미지"),
+        React.createElement("div", { style: { flex: 1 } },
+          globalBgImage
+            ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("img", { src: globalBgImage, style: { width: 40, height: 40, borderRadius: 6, objectFit: 'cover' } }),
+                React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "적용 중"),
+                React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "삭제"),
+              )
+            : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+        ),
       ),
 
       // Cards — mobile carousel vs desktop list
