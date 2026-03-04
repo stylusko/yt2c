@@ -431,7 +431,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const vsc = (videoScale || 110) / 100;
 
   return React.createElement("div", {
-    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s' },
+    style: { position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s' },
   },
     // Iframe: centered & scaled to cover, respecting user's position/scale
     React.createElement("div", {
@@ -561,8 +561,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   // photo_top / photo_bottom with optional gradient
   const bgOverlay = useBg ? (useGradient
-    ? React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH + Math.round(previewH * 0.15), background: isTop ? `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` : `linear-gradient(to top, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` } })
-    : React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } })
+    ? React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH + Math.round(previewH * 0.15), zIndex: 1, background: isTop ? `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` : `linear-gradient(to top, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` } })
+    : React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH, zIndex: 1, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } })
   ) : null;
 
   return React.createElement("div", { style: wrapper },
