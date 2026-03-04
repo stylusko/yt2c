@@ -57,6 +57,18 @@ const DEFAULT_CARD = () => ({
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
 });
 
+/* ── Responsive Hook ── */
+function useIsMobile(breakpoint = 768) {
+  const [mob, setMob] = useState(false);
+  useEffect(() => {
+    const check = () => setMob(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return mob;
+}
+
 /* ── Helpers ── */
 function parseTime(str) {
   if (!str) return null;
@@ -255,9 +267,9 @@ function CheckboxRow({ label, checked, onChange }) {
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage }) {
-  const previewW = 320;
-  const previewH = aspectRatio === '3:4' ? Math.round(320 * 4 / 3) : 320;
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth }) {
+  const previewW = previewWidth || 320;
+  const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const textRatio = 1 - card.photoRatio;
   const textH = card.layout === "text_overlay" ? previewH : Math.round(previewH * textRatio);
   const videoFill = card.videoFill || "full";
@@ -389,7 +401,7 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob }) {
   const [expanded, setExpanded] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -419,11 +431,11 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
       // Header
       React.createElement("div", {
         onClick: () => setExpanded(!expanded),
-        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', cursor: 'pointer', transition: 'background 0.15s' },
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: mob ? '10px 12px' : '14px 20px', cursor: 'pointer', transition: 'background 0.15s', flexWrap: mob ? 'wrap' : 'nowrap', gap: mob ? 8 : 0 },
         onMouseEnter: (e) => e.currentTarget.style.background = T.surfaceHover,
         onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       },
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: mob ? 8 : 12, minWidth: 0, flex: 1 } },
           React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff' } }, index + 1),
           editingName
             ? React.createElement("input", {
@@ -435,7 +447,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 14, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, width: Math.max(80, nameValue.length * 10) },
               })
             : React.createElement("span", {
-                style: { color: T.text, fontWeight: 500, fontSize: 14 },
+                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none' },
               }, displayName),
           !editingName && React.createElement("button", {
             onClick: (e) => { e.stopPropagation(); startEditName(); },
@@ -444,7 +456,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.8; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; },
             title: '카드 이름 수정',
           }, "\u270E"),
-          card.start && React.createElement("span", { style: { color: T.textMuted, fontSize: 12, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `${card.start} ~ ${card.end}`)
+          !mob && card.start && React.createElement("span", { style: { color: T.textMuted, fontSize: 12, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `${card.start} ~ ${card.end}`)
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("button", { onClick: (e) => { e.stopPropagation(); onDuplicate(); }, style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '4px 10px', borderRadius: T.radiusPill, transition: 'all 0.15s' } }, "복제"),
@@ -454,21 +466,21 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
       ),
 
       // Body
-      expanded && React.createElement("div", { style: { padding: '0 20px 20px', display: 'flex', gap: 28 } },
+      expanded && React.createElement("div", { style: { padding: mob ? '0 12px 16px' : '0 20px 20px', display: 'flex', flexDirection: mob ? 'column-reverse' : 'row', gap: mob ? 16 : 28 } },
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
 
           // 영상 설정
           React.createElement(Section, { title: "영상 설정" },
             React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-            React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 } },
+            React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
             ),
             React.createElement("div", null,
               React.createElement("label", { style: labelBase }, "레이아웃"),
-              React.createElement("div", { style: { display: 'flex', gap: 6 } },
+              React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
                 LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
               )
             ),
@@ -522,10 +534,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           ),
         ),
 
-        // Right: Preview (sticky)
-        React.createElement("div", { style: { flexShrink: 0, position: 'sticky', top: 80, alignSelf: 'flex-start' } },
+        // Right: Preview (sticky on desktop, top on mobile)
+        React.createElement("div", { style: { flexShrink: 0, ...(mob ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } : { position: 'sticky', top: 80, alignSelf: 'flex-start' }) } },
           React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
-          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage }),
+          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(320, 280) : 320 }),
         )
       )
     )
@@ -537,7 +549,7 @@ function JsonModal({ json, onClose }) {
   const textRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const handleCopy = () => { textRef.current?.select(); navigator.clipboard.writeText(json).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); };
-  return React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: 'blur(4px)', display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 32 } },
+  return React.createElement("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: 'blur(4px)', display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50, padding: 16 } },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, maxWidth: 640, width: "100%", boxShadow: T.shadowLg } },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 20px", borderBottom: `1px solid ${T.border}` } },
         React.createElement("h3", { style: { fontWeight: 600, fontSize: 15 } }, "JSON 내보내기"),
@@ -641,8 +653,8 @@ function ReorderModal({ cards, onReorder, onClose }) {
     onClose();
   };
 
-  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 32 } },
-    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, maxWidth: 480, width: '100%', boxShadow: T.shadowLg, maxHeight: '80vh', display: 'flex', flexDirection: 'column' } },
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 } },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, maxWidth: 480, width: '100%', boxShadow: T.shadowLg, maxHeight: '85vh', display: 'flex', flexDirection: 'column' } },
       React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
         React.createElement("h3", { style: { fontWeight: 600, fontSize: 15, color: T.text } }, "카드 순서 변경"),
         React.createElement("button", { onClick: onClose, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer' } }, "\u2715"),
@@ -798,6 +810,7 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
 
 /* ── App ── */
 export default function App() {
+  const mob = useIsMobile();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [showJson, setShowJson] = useState(false);
@@ -988,6 +1001,7 @@ export default function App() {
       React.createElement("title", null, "YOUMECA \u2014 유메카"),
       React.createElement("link", { rel: "icon", href: "/favicon.ico" }),
       React.createElement("link", { rel: "apple-touch-icon", href: "/icon-192.png" }),
+      React.createElement("meta", { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" }),
       React.createElement("meta", { name: "theme-color", content: "#09090b" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.googleapis.com" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" }),
@@ -996,21 +1010,21 @@ export default function App() {
 
     // ── Header ──
     React.createElement("header", { style: { position: 'sticky', top: 0, zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 } },
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 8 : 16, flexWrap: mob ? 'wrap' : 'nowrap' } },
 
         // Logo area
-        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 } },
+        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: mob ? 6 : 10, flexShrink: 0 } },
           React.createElement("div", {
             onClick: () => setShowInfo(!showInfo),
-            style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, transition: 'background 0.15s' },
+            style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, transition: 'background 0.15s' },
             onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)',
             onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
           },
-            React.createElement("img", { src: "/icon-round.png", style: { width: 28, height: 28, borderRadius: 7 } }),
-            React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
-            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
+            React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 24 : 28, height: mob ? 24 : 28, borderRadius: 7 } }),
+            React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: mob ? 18 : 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
+            !mob && React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
           ),
-          React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
+          !mob && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
             React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 600, whiteSpace: 'nowrap' } }, "유메카, 내가 꿈꾸던 카드뉴스 생성기"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "유튜브 영상을 쉽게 카드뉴스로 만들어보세요"),
           ),
@@ -1018,15 +1032,15 @@ export default function App() {
         ),
 
         // Project Tabs
-        projects.length > 0 && React.createElement(ProjectTabs, {
+        !mob && projects.length > 0 && React.createElement(ProjectTabs, {
           projects, activeId: activeProjectId,
           onSwitch: switchProject, onAdd: addProject,
           onClose: closeProject, onRename: renameProject,
         }),
 
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-          React.createElement("button", { onClick: exportJson, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "JSON"),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, flexShrink: 0 } },
+          !mob && React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
+          React.createElement("button", { onClick: exportJson, style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "JSON"),
           React.createElement("button", {
             onClick: handleGenerate, disabled: generating,
             style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
@@ -1036,11 +1050,11 @@ export default function App() {
     ),
 
     // ── Progress ──
-    (generating || genProgress) && React.createElement("div", { style: { background: T.surface, borderBottom: `1px solid ${T.border}`, padding: '10px 24px' } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+    (generating || genProgress) && React.createElement("div", { style: { background: T.surface, borderBottom: `1px solid ${T.border}`, padding: mob ? '8px 12px' : '10px 24px' } },
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: mob ? 8 : 12, flexWrap: 'wrap' } },
         generating && React.createElement("div", { style: { width: 14, height: 14, border: `2px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' } }),
-        React.createElement("span", { style: { fontSize: 13, color: generating ? T.accent : T.success, fontWeight: 500 } }, genProgress),
-        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' } },
+        React.createElement("span", { style: { fontSize: mob ? 12 : 13, color: generating ? T.accent : T.success, fontWeight: 500 } }, genProgress),
+        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: mob ? 0 : 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', width: mob ? '100%' : 'auto' } },
           results.map((url, i) => React.createElement("a", { key: i, href: url, download: true, style: { padding: '5px 14px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 12, textDecoration: 'none', fontWeight: 500 } }, `카드 ${i+1}`)),
           results.length > 1 && React.createElement("button", {
             onClick: handleDownloadAll, disabled: downloading,
@@ -1051,15 +1065,24 @@ export default function App() {
     ),
 
     // ── Main ──
-    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: '24px 24px 48px', display: 'flex', flexDirection: 'column', gap: 16 } },
+    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '12px 10px 32px' : '24px 24px 48px', display: 'flex', flexDirection: 'column', gap: mob ? 12 : 16 } },
+
+      // Mobile Project Tabs
+      mob && projects.length > 0 && React.createElement("div", { style: { overflowX: 'auto', paddingBottom: 4 } },
+        React.createElement(ProjectTabs, {
+          projects, activeId: activeProjectId,
+          onSwitch: switchProject, onAdd: addProject,
+          onClose: closeProject, onRename: renameProject,
+        }),
+      ),
 
       // Global Settings
-      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '16px 20px', boxShadow: T.shadow, display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' } },
-        React.createElement("div", { style: { flex: 1, minWidth: 240 } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow, display: 'flex', gap: mob ? 10 : 16, alignItems: 'flex-end', flexWrap: 'wrap' } },
+        React.createElement("div", { style: { flex: 1, minWidth: mob ? '100%' : 240 } },
           React.createElement("label", { style: labelBase }, "공통 영상 URL"),
           React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: inputBase })
         ),
-        React.createElement("div", { style: { display: 'flex', gap: 16, flexWrap: 'wrap' } },
+        React.createElement("div", { style: { display: 'flex', gap: mob ? 10 : 16, flexWrap: 'wrap' } },
           React.createElement("div", null,
             React.createElement("label", { style: labelBase }, "비율"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
@@ -1090,7 +1113,7 @@ export default function App() {
       ),
 
       // Global background image upload (when image format)
-      outputFormat === 'image' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '16px 20px', boxShadow: T.shadow } },
+      outputFormat === 'image' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow } },
         React.createElement("label", { style: labelBase }, "공통 배경 이미지"),
         React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
       ),
@@ -1103,7 +1126,7 @@ export default function App() {
           onRemove: () => removeCard(i),
           onDuplicate: () => duplicateCard(i),
           total: cards.length, globalUrl, aspectRatio, outputFormat,
-          globalBgImage,
+          globalBgImage, mob,
           onReorder: () => setShowReorder(true),
         })
       ),
