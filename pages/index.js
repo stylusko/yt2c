@@ -60,7 +60,7 @@ const VIDEO_FILL_OPTIONS = [
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
-  url: "", start: "", end: "",
+  url: "", start: "0:00", end: "0:10",
   layout: "photo_top", photoRatio: 50, useGradient: false,
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
@@ -454,7 +454,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMuted, onClipUnmute }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -467,9 +467,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
   const [dragging, setDragging] = useState(false);
   const [dragTime, setDragTime] = useState(null);
   const [dragX, setDragX] = useState(0);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(clipMuted !== undefined ? clipMuted : true);
   const [warnToast, setWarnToast] = useState(false);
   const warnTimer = useRef(null);
+
+  // Sync muted state with external prop
+  useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -728,7 +731,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
   );
 }
 
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, muted: mutedProp }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const timerRef = useRef(null);
@@ -738,6 +741,14 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
   const hasRange = endSec != null && endSec > startSec;
+
+  // Sync mute state with prop
+  useEffect(() => {
+    if (playerRef.current && playerRef.current.isMuted) {
+      if (mutedProp === false) { playerRef.current.unMute(); playerRef.current.setVolume(80); }
+      else { playerRef.current.mute(); playerRef.current.setVolume(0); }
+    }
+  }, [mutedProp]);
 
   // Cover-fit dimensions: make iframe big enough to fill container (YouTube = 16:9)
   const containerAR = width / height;
@@ -845,7 +856,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -1277,10 +1288,17 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose })
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
         // Video preview toggle
-        React.createElement("button", {
+        React.createElement("div", {
           onClick: () => setVideoPreviewOn(!videoPreviewOn),
-          style: { padding: '5px 12px', borderRadius: 20, border: 'none', fontSize: 11, fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s', background: videoPreviewOn ? T.accent : 'rgba(255,255,255,0.12)', color: videoPreviewOn ? '#fff' : 'rgba(255,255,255,0.6)' }
-        }, "\uD83C\uDFAC \uC601\uC0C1"),
+          style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '4px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.08)' }
+        },
+          React.createElement("div", {
+            style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 },
+          },
+            React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+          ),
+          React.createElement("span", { style: { fontSize: 11, color: videoPreviewOn ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: 500, userSelect: 'none' } }, "\uC601\uC0C1 \uBBF8\uB9AC\uBCF4\uAE30"),
+        ),
         // Close
         React.createElement("button", {
           onClick: onClose,
@@ -1870,7 +1888,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -1923,7 +1941,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v) }),
+      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); } }),
       card.layout !== "full_bg" && React.createElement("div", null,
         React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
         React.createElement("div", { style: { display: 'flex', gap: 6 } },
@@ -2050,7 +2068,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -2098,7 +2116,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             },
               React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
             ),
-            React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uC601\uC0C1"),
+            React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+            videoPreviewOn && React.createElement("div", {
+              onClick: onPreviewMuteToggle,
+              style: { width: 22, height: 22, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', marginLeft: 2 },
+            },
+              React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
+            ),
           ),
         ),
       ),
@@ -2129,7 +2153,6 @@ export default function App() {
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [showJson, setShowJson] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
@@ -2140,6 +2163,8 @@ export default function App() {
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [videoPreviewOn, setVideoPreviewOn] = useState(false);
+  const [previewMuted, setPreviewMuted] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const infoRef = useRef(null);
 
   // Close info panel on outside click
@@ -2462,6 +2487,7 @@ export default function App() {
         globalUrl, aspectRatio, outputFormat, globalBgImage,
         onReorder: () => setShowReorder(true),
         videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
+        previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
       }),
     ),
 
