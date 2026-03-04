@@ -434,7 +434,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + ePct + '% - 1px)', width: 3, height: 18, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 7px)' } }),
       // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: zDrag ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+      React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
       // Drag tooltip
       zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
     ),
@@ -455,6 +455,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
   const [dragging, setDragging] = useState(false);
   const [dragTime, setDragTime] = useState(null);
   const [dragX, setDragX] = useState(0);
+  const [muted, setMuted] = useState(true);
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -530,6 +531,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     if (!playerRef.current) return;
     if (playing) playerRef.current.pauseVideo();
     else playerRef.current.playVideo();
+  };
+
+  const toggleMute = () => {
+    if (!playerRef.current) return;
+    if (muted) { playerRef.current.unMute(); playerRef.current.setVolume(50); setMuted(false); }
+    else { playerRef.current.mute(); setMuted(true); }
   };
 
   const seekTo = (sec) => {
@@ -647,6 +654,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
         onClick: togglePlay,
         style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
       }, playing ? '\u23F8' : '\u25B6'),
+      React.createElement("button", {
+        onClick: toggleMute,
+        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+      }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
       // Start: capture btn + input
       React.createElement("div", { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 3 } },
         React.createElement("button", {
