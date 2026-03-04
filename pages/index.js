@@ -1237,44 +1237,103 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── PreviewModal ── */
 function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
-  const previewW = 480;
+  const scrollRef = useRef(null);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [videoPreviewOn, setVideoPreviewOn] = useState(false);
+  const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
+  const previewW = isMob ? Math.min(window.innerWidth - 64, 400) : 480;
+  const cardSlotW = previewW + 40;
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(Math.min(currentIdx + 1, cards.length - 1));
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goTo(Math.max(currentIdx - 1, 0));
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, currentIdx, cards.length]);
+
+  const goTo = (idx) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({ left: idx * cardSlotW, behavior: 'smooth' });
+  };
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const idx = Math.round(scrollRef.current.scrollLeft / cardSlotW);
+    setCurrentIdx(Math.max(0, Math.min(idx, cards.length - 1)));
+  };
 
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
-    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', backdropFilter: 'blur(4px)', overflowY: 'auto', padding: '40px 20px' }
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }
   },
-    React.createElement("div", {
-      style: { position: 'relative', maxWidth: previewW + 60, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24, paddingBottom: 40 }
-    },
-      // Close button
-      React.createElement("button", {
-        onClick: onClose,
-        style: { position: 'fixed', top: 16, right: 16, width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, transition: 'background 0.15s' },
-        onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.3)',
-        onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)',
-      }, "\u2715"),
-
-      // Title
-      React.createElement("div", { style: { color: '#fff', fontSize: 16, fontWeight: 600, letterSpacing: '0.02em' } },
-        "\uCE74\uB4DC \uBBF8\uB9AC\uBCF4\uAE30 (" + cards.length + "\uC7A5)"
+    // Top bar: title + toggle + close
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, padding: '16px 24px', width: '100%', maxWidth: cardSlotW + 120, justifyContent: 'space-between' } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { color: '#fff', fontSize: 15, fontWeight: 600 } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+        React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.45)' } }, (currentIdx + 1) + " / " + cards.length),
       ),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        // Video preview toggle
+        React.createElement("button", {
+          onClick: () => setVideoPreviewOn(!videoPreviewOn),
+          style: { padding: '5px 12px', borderRadius: 20, border: 'none', fontSize: 11, fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s', background: videoPreviewOn ? T.accent : 'rgba(255,255,255,0.12)', color: videoPreviewOn ? '#fff' : 'rgba(255,255,255,0.6)' }
+        }, "\uD83C\uDFAC \uC601\uC0C1"),
+        // Close
+        React.createElement("button", {
+          onClick: onClose,
+          style: { width: 32, height: 32, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' },
+          onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)',
+          onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)',
+        }, "\u2715"),
+      ),
+    ),
 
-      // Cards
+    // Scroll area
+    React.createElement("div", {
+      ref: scrollRef,
+      onScroll: handleScroll,
+      style: { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: cardSlotW, maxWidth: '100vw' }
+    },
       cards.map((card, i) =>
-        React.createElement("div", { key: i, style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 } },
-          React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.5)', fontWeight: 500 } }, (i + 1) + " / " + cards.length),
-          React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' } },
-            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW })
+        React.createElement("div", {
+          key: i,
+          style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
+        },
+          React.createElement("div", { style: { borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
+            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, videoPreviewOn: videoPreviewOn && i === currentIdx })
           )
         )
       )
-    )
+    ),
+
+    // Bottom: dots + nav arrows
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px' } },
+      // Left arrow
+      React.createElement("button", {
+        onClick: () => goTo(Math.max(currentIdx - 1, 0)),
+        disabled: currentIdx === 0,
+        style: { width: 36, height: 36, borderRadius: '50%', background: currentIdx === 0 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)', border: 'none', color: currentIdx === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)', fontSize: 16, cursor: currentIdx === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }
+      }, "\u25C0"),
+      // Dots
+      React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+        cards.map((_, i) =>
+          React.createElement("div", {
+            key: i,
+            onClick: () => goTo(i),
+            style: { width: i === currentIdx ? 18 : 7, height: 7, borderRadius: 4, background: i === currentIdx ? T.accent : 'rgba(255,255,255,0.25)', cursor: 'pointer', transition: 'all 0.25s' }
+          })
+        )
+      ),
+      // Right arrow
+      React.createElement("button", {
+        onClick: () => goTo(Math.min(currentIdx + 1, cards.length - 1)),
+        disabled: currentIdx === cards.length - 1,
+        style: { width: 36, height: 36, borderRadius: '50%', background: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)', border: 'none', color: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)', fontSize: 16, cursor: currentIdx === cards.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }
+      }, "\u25B6"),
+    ),
   );
 }
 
