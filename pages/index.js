@@ -475,9 +475,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
   const markStart = () => {
     const t = currentTime;
     onStartChange(fmtMM(t));
-    // If end is set and clip > 30s, adjust end
     const es = parseTime(end);
-    if (es != null && es - t > 30) {
+    // Reset end if it's before the new start
+    if (es != null && es <= t) {
+      onEndChange('');
+    }
+    // If end is set and clip > 30s, adjust end
+    else if (es != null && es - t > 30) {
       onEndChange(fmtMM(t + 30));
     }
   };
@@ -523,16 +527,22 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: 'pointer', userSelect: 'none' },
+      style: { position: 'relative', height: 28, background: T.surface, cursor: 'pointer', userSelect: 'none', marginTop: 14, overflow: 'visible' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Selected range highlight
       startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: 12, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
-      // Start marker
-      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + startPct + '% - 1px)', width: 3, height: 16, background: accentC, borderRadius: 1 } }),
-      // End marker
-      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 16, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
+      // Start marker + label
+      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + startPct + '% - 1px)', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
+        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC2DC\uC791 ' + fmtMM(startSec))
+      ),
+      // End marker + label
+      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + endPct + '% - 1px)', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
+        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC885\uB8CC ' + fmtMM(endSec))
+      ),
       // Playhead
       React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + pct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: dragging ? 'none' : 'left 0.05s linear' } }),
       // Drag tooltip
