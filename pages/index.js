@@ -350,11 +350,12 @@ function CheckboxRow({ label, checked, onChange }) {
 
 
 /* ── ZoomedSeekbar: shows region around start ── */
-function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek }) {
+function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange }) {
   const zoomRef = useRef(null);
   const [zDrag, setZDrag] = useState(false);
   const [zDragTime, setZDragTime] = useState(null);
   const [zDragX, setZDragX] = useState(0);
+  const [zDragType, setZDragType] = useState(null); // 'seek' | 'start' | 'end'
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
@@ -375,16 +376,41 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     return { time: zStart + pct * zDur, x: e.clientX - rect.left };
   };
 
+  const startMarkerDrag = (type, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const { time, x } = calcZTime(e);
+    setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
+    const onMove = (ev) => {
+      const r = calcZTime(ev);
+      const t = Math.max(0, Math.min(duration, r.time));
+      setZDragTime(t); setZDragX(r.x);
+      if (type === 'start') {
+        if (endSec != null && t >= endSec) return;
+        onStartChange(fmtMM(t));
+      } else {
+        if (t <= startSec) return;
+        if (t - startSec > 30) { onEndChange(fmtMM(startSec + 30)); setZDragTime(startSec + 30); return; }
+        onEndChange(fmtMM(t));
+      }
+    };
+    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
   const handleZDown = (e) => {
     e.preventDefault();
     const { time, x } = calcZTime(e);
     onSeek(time);
-    setZDrag(true); setZDragTime(time); setZDragX(x);
+    setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType('seek');
     const onMove = (ev) => { const r = calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
-    const onUp = () => { setZDrag(false); setZDragTime(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
+
+  const markerHit = { position: 'absolute', top: 0, width: 14, height: 24, cursor: 'ew-resize', zIndex: 3 };
 
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
@@ -395,20 +421,22 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onMouseDown: handleZDown,
-      style: { position: 'relative', height: 20, cursor: 'pointer', userSelect: 'none' },
+      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none' },
     },
       // Track
-      React.createElement("div", { style: { position: 'absolute', top: 8, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
+      React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Range highlight
-      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 8, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
-      // Start line
-      React.createElement("div", { style: { position: 'absolute', top: 2, left: 'calc(' + sPct + '% - 1px)', width: 2, height: 16, background: accentC, borderRadius: 1 } }),
-      // End line
-      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 2, left: 'calc(' + ePct + '% - 1px)', width: 2, height: 16, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
+      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
+      // Start marker (visible line + wider hit area)
+      React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + sPct + '% - 1px)', width: 3, height: 18, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 7px)' } }),
+      // End marker (visible line + wider hit area)
+      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + ePct + '% - 1px)', width: 3, height: 18, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 7px)' } }),
       // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: zDrag ? 'none' : 'left 0.05s linear' } }),
+      React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: zDrag ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
       // Drag tooltip
-      zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(zDragTime)),
+      zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
     ),
   );
 }
@@ -659,7 +687,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
       '\uC120\uD0DD \uAD6C\uAC04: ' + Math.round(clipLen) + '\uCD08' + (overLimit ? ' (\uCD5C\uB300 30\uCD08 \uCD08\uACFC!)' : ' / \uCD5C\uB300 30\uCD08')
     ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange }),
   );
 }
 
