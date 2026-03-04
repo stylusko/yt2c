@@ -696,8 +696,6 @@ function InfoPanel({ onClose }) {
         React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, VERSION),
       ),
     ),
-    React.createElement("p", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5, marginBottom: 16 } }, "Youtube 영상을 카드뉴스로 만들어 보세요"),
-
     // Recent features
     React.createElement("div", { style: { marginBottom: 16 } },
       React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 } }, "최근 업데이트"),
@@ -993,6 +991,8 @@ export default function App() {
             React.createElement("span", { style: { fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: T.text } }, "YT2C"),
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
           ),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted, display: 'none' } }, "|"), // spacer
+          React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, whiteSpace: 'nowrap' } }, "Youtube 영상을 카드뉴스로 만들어 보세요"),
           showInfo && React.createElement(InfoPanel, { onClose: () => setShowInfo(false) }),
         ),
 
