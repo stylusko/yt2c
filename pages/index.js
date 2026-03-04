@@ -103,6 +103,12 @@ function formatSec(s) {
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
 }
+function fmtMM(s) {
+  if (s == null || isNaN(s)) return '--:--';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
+}
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
 /* ── Design Tokens ── */
@@ -341,6 +347,186 @@ function CheckboxRow({ label, checked, onChange }) {
 
 
 /* ── VideoPreview (YouTube IFrame loop between start/end, cover-fit with position/scale) ── */
+
+/* ── ClipSelector: visual start/end picker ── */
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
+  const containerRef = useRef(null);
+  const playerRef = useRef(null);
+  const seekRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [ready, setReady] = useState(false);
+  const rafRef = useRef(null);
+
+  const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  const startSec = parseTime(start);
+  const endSec = parseTime(end);
+  const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
+
+  // Load YT API
+  useEffect(() => {
+    if (window.YT && window.YT.Player) return;
+    if (document.getElementById('yt-iframe-api')) return;
+    const tag = document.createElement('script');
+    tag.id = 'yt-iframe-api';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  }, []);
+
+  // Create player
+  useEffect(() => {
+    if (!videoId) return;
+    let cancelled = false;
+    const create = () => {
+      if (cancelled) return;
+      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      const el = containerRef.current;
+      if (!el) return;
+      const cid = 'cs-' + videoId + '-' + Date.now();
+      el.id = cid;
+      playerRef.current = new window.YT.Player(cid, {
+        width: '100%', height: 200,
+        videoId: videoId,
+        playerVars: { autoplay: 0, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
+        events: {
+          onReady: (e) => {
+            if (cancelled) return;
+            setReady(true);
+            setDuration(e.target.getDuration() || 0);
+            // If start is set, seek there
+            const ss = parseTime(start);
+            if (ss != null) e.target.seekTo(ss, true);
+          },
+          onStateChange: (e) => {
+            setPlaying(e.data === window.YT.PlayerState.PLAYING);
+          },
+        },
+      });
+    };
+    const initDelay = setTimeout(() => {
+      if (cancelled) return;
+      if (window.YT && window.YT.Player) { create(); }
+      else {
+        const poll = setInterval(() => {
+          if (cancelled) { clearInterval(poll); return; }
+          if (window.YT && window.YT.Player) { clearInterval(poll); create(); }
+        }, 200);
+      }
+    }, 80);
+    return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
+  }, [videoId]);
+
+  // Poll current time
+  useEffect(() => {
+    const tick = () => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        setCurrent(playerRef.current.getCurrentTime());
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+    if (playing) playerRef.current.pauseVideo();
+    else playerRef.current.playVideo();
+  };
+
+  const seekTo = (sec) => {
+    if (playerRef.current) { playerRef.current.seekTo(sec, true); setCurrent(sec); }
+  };
+
+  const handleSeek = (e) => {
+    const rect = seekRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seekTo(pct * duration);
+  };
+
+  const markStart = () => {
+    const t = currentTime;
+    onStartChange(fmtMM(t));
+    // If end is set and clip > 30s, adjust end
+    const es = parseTime(end);
+    if (es != null && es - t > 30) {
+      onEndChange(fmtMM(t + 30));
+    }
+  };
+
+  const markEnd = () => {
+    const t = currentTime;
+    const ss = parseTime(start);
+    if (ss != null && t - ss > 30) {
+      onEndChange(fmtMM(ss + 30));
+    } else {
+      onEndChange(fmtMM(t));
+    }
+  };
+
+  const MAX_CLIP = 30;
+  const overLimit = clipLen != null && clipLen > MAX_CLIP;
+
+  if (!videoId) return null;
+
+  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const startPct = (startSec != null && duration > 0) ? (startSec / duration) * 100 : null;
+  const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
+  const accentC = '#6366f1';
+  const dangerC = '#ef4444';
+
+  return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000' } },
+    // Player area
+    React.createElement("div", { style: { position: 'relative', width: '100%', height: 200, background: '#000' } },
+      React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
+      // Play/pause overlay
+      React.createElement("div", {
+        onClick: togglePlay,
+        style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+      },
+        !playing && ready && React.createElement("div", { style: { width: 40, height: 40, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+          React.createElement("span", { style: { color: '#fff', fontSize: 18, marginLeft: 3 } }, "\u25B6")
+        )
+      ),
+      // Current time badge
+      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+    ),
+    // Seekbar
+    React.createElement("div", {
+      ref: seekRef,
+      onClick: handleSeek,
+      style: { position: 'relative', height: 24, background: T.surface, cursor: 'pointer', borderTop: '1px solid ' + T.border },
+    },
+      // Track bg
+      React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
+      // Selected range highlight
+      startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
+      // Start marker
+      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + startPct + '% - 1px)', width: 3, height: 16, background: accentC, borderRadius: 1 } }),
+      // End marker
+      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 16, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
+      // Playhead
+      React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + pct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: 'left 0.05s linear' } }),
+    ),
+    // Controls row
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
+      React.createElement("button", {
+        onClick: markStart,
+        style: { flex: 1, padding: '5px 0', borderRadius: 6, border: '1px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' },
+      }, startSec != null ? '\uC2DC\uC791 ' + fmtMM(startSec) : '\u25C9 \uC2DC\uC791 \uC9C0\uC810'),
+      React.createElement("button", {
+        onClick: markEnd,
+        style: { flex: 1, padding: '5px 0', borderRadius: 6, border: '1px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' },
+      }, endSec != null ? '\uC885\uB8CC ' + fmtMM(endSec) : '\u25C9 \uC885\uB8CC \uC9C0\uC810'),
+    ),
+    // Clip info
+    clipLen != null && React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, fontSize: 11, color: overLimit ? dangerC : T.textMuted, textAlign: 'center' } },
+      '\uC120\uD0DD \uAD6C\uAC04: ' + Math.round(clipLen) + '\uCD08' + (overLimit ? ' (\uCD5C\uB300 30\uCD08 \uCD08\uACFC!)' : ' / \uCD5C\uB300 30\uCD08')
+    ),
+  );
+}
+
 function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
@@ -488,7 +674,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const padTop = Math.round(40 * sc);
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
-  const seekTime = parseTime(card.captureTime) ?? parseTime(card.start) ?? 0;
+  const seekTime = parseTime(card.start) ?? 0;
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
 
@@ -719,11 +905,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
               React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-              React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : '1fr 1fr 1fr', gap: 8 } },
-                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-                React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              ),
+              React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v) }),
               card.layout !== "full_bg" && React.createElement("div", null,
                 React.createElement("label", { style: labelBase }, "영상 채우기"),
                 React.createElement("div", { style: { display: 'flex', gap: 6 } },
@@ -1194,7 +1376,6 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
       ),
-      React.createElement("div", { style: { marginBottom: 8 } }, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "캡처 시점"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "선택", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
       card.layout !== "full_bg" && React.createElement("div", { style: { marginBottom: 8 } },
         React.createElement("label", { style: labelBase }, "영상 채우기"),
         React.createElement("div", { style: { display: 'flex', gap: 6 } },
@@ -1437,11 +1618,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 } },
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uc2dc\uc791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uc885\ub8cc"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uce95\uccd0 \uc2dc\uc810"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "\uc120\ud0dd", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-      ),
+      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v) }),
       card.layout !== "full_bg" && React.createElement("div", null,
         React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
         React.createElement("div", { style: { display: 'flex', gap: 6 } },
