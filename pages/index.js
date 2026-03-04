@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -26,6 +26,9 @@ const RECENT_FEATURES = [
   '이미지 얹기 (오버레이)',
   '항목별 자간/줄간 세부조정',
   'X/Y → 좌우/위아래 라벨 변경',
+  '오버레이 렌더링 일치 개선',
+  '데스크탑 미리보기 sticky',
+  '텍스트 배경 설정 이름 변경',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -209,7 +212,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     let totalTextH = padTop * 2 + titleLines.length * titleLh;
     if (card.subtitle) totalTextH += 12 + subtitleLines.length * subtitleLh;
     if (card.body) totalTextH += 24 + bodyLines.length * bodyLh;
-    const gradH = Math.min(Math.round(h * 0.80), totalTextH + 200);
+    const gradH = Math.round(h * 0.80);
     const maxAlpha = Math.max(Math.round(bgOpacity * 255), 230) / 255;
     for (let y = h - gradH; y < h; y++) {
       const progress = (y - (h - gradH)) / gradH;
@@ -258,8 +261,9 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
       const oImg = new Image();
       await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = card.overlayImage; });
       const oScale = (card.overlayScale || 100) / 100;
-      const oW = oImg.width * oScale;
-      const oH = oImg.height * oScale;
+      const fitRatio = w / oImg.width;
+      const oW = oImg.width * fitRatio * oScale;
+      const oH = oImg.height * fitRatio * oScale;
       const oX = (card.overlayX ?? 50) / 100 * w - oW / 2;
       const oY = (card.overlayY ?? 50) / 100 * h - oH / 2;
       ctx.globalAlpha = card.overlayOpacity ?? 1;
@@ -403,7 +407,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         ));
 
   const OverlayImg = () => overlayImg
-    ? React.createElement("img", { src: overlayImg, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', transform: `translate(-50%, -50%) translate(${(card.overlayX - 50) * previewW / 50}px, ${(card.overlayY - 50) * previewH / 50}px) scale(${overlayScale})`, opacity: overlayOpacity, pointerEvents: 'none', maxWidth: 'none', maxHeight: 'none' } })
+    ? React.createElement("img", { src: overlayImg, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${(card.overlayX - 50) * previewW / 50}px, ${(card.overlayY - 50) * previewH / 50}px) scale(${overlayScale})`, opacity: overlayOpacity, pointerEvents: 'none' } })
     : null;
 
   const TimestampLink = () => ytLink ? React.createElement("a", {
@@ -515,7 +519,9 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
 /* ── CardEditor ── */
 function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob }) {
   const [expanded, setExpanded] = useState(true);
-  const [showDetailText, setShowDetailText] = useState(false);
+  const [showDetailTitle, setShowDetailTitle] = useState(false);
+  const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
+  const [showDetailBody, setShowDetailBody] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const nameRef = useRef(null);
@@ -527,7 +533,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
   const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
 
-  return React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, overflow: 'hidden', boxShadow: T.shadow, display: 'flex' } },
+  return React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, display: 'flex' } },
     // Left: Reorder button
     React.createElement("div", {
       onClick: (e) => { e.stopPropagation(); onReorder(); },
@@ -625,9 +631,45 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 텍스트 내용
           React.createElement(Section, { title: "텍스트 내용" },
+            // 제목
             React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+            React.createElement("div", {
+              onClick: () => setShowDetailTitle(!showDetailTitle),
+              style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 6 },
+            },
+              React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+            ),
+            showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+              React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+            ),
+            // 부제목
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+            React.createElement("div", {
+              onClick: () => setShowDetailSubtitle(!showDetailSubtitle),
+              style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 6 },
+            },
+              React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+            ),
+            showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+              React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+            ),
+            // 본문
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+            React.createElement("div", {
+              onClick: () => setShowDetailBody(!showDetailBody),
+              style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0' },
+            },
+              React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+            ),
+            showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
+              React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+            ),
           ),
 
           // 텍스트 설정 (폰트크기 배율, 자간, 줄간격)
@@ -635,29 +677,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
             React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
             React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
-            // 세부조정 (per-field)
-            React.createElement("div", {
-              onClick: () => setShowDetailText(!showDetailText),
-              style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', marginTop: 8, padding: '6px 0', borderTop: `1px solid ${T.border}` },
-            },
-              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailText ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-              React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, "세부조정"),
-            ),
-            showDetailText && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginTop: 4 } },
-              React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500 } }, "제목"),
-              React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-              React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 4 } }, "부제목"),
-              React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-              React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 4 } }, "본문"),
-              React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-            ),
           ),
 
-          // 배경 설정
-          React.createElement(Section, { title: "배경 설정" },
+          // 텍스트 배경 설정
+          React.createElement(Section, { title: "텍스트 배경 설정" },
             React.createElement(CheckboxRow, { label: "배경 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
             card.useBg !== false && React.createElement(React.Fragment, null,
               card.layout !== "text_overlay" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -976,7 +999,7 @@ function TabPill({ label, active, onClick }) {
 const MOBILE_TABS = [
   { id: 'layoutfill', label: '레이아웃' },
   { id: 'text', label: '텍스트' },
-  { id: 'bg', label: '배경' },
+  { id: 'bg', label: '텍스트 배경' },
   { id: 'overlay', label: '얹기' },
 ];
 
@@ -985,7 +1008,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
-  const [showDetailText, setShowDetailText] = useState(false);
+  const [showDetailTitle, setShowDetailTitle] = useState(false);
+  const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
+  const [showDetailBody, setShowDetailBody] = useState(false);
 
   const totalSlides = cards.length + 1; // +1 for add card
   const card = cards[activeIndex];
@@ -1064,33 +1089,51 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   );
 
   const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    // 제목
     React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement("div", {
+      onClick: () => setShowDetailTitle(!showDetailTitle),
+      style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 4 },
+    },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+    ),
+    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+      React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+    ),
+    // 부제목
     React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement("div", {
+      onClick: () => setShowDetailSubtitle(!showDetailSubtitle),
+      style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 4 },
+    },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+    ),
+    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+      React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+    ),
+    // 본문
     React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+    React.createElement("div", {
+      onClick: () => setShowDetailBody(!showDetailBody),
+      style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0' },
+    },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "세부조정"),
+    ),
+    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
+      React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+    ),
+    // 전체 텍스트 설정
     React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
       React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 설정"),
       React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
       React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
       React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
-      // 세부조정 (per-field)
-      React.createElement("div", {
-        onClick: () => setShowDetailText(!showDetailText),
-        style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', marginTop: 8, padding: '6px 0', borderTop: `1px solid ${T.border}` },
-      },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailText ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, "세부조정"),
-      ),
-      showDetailText && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginTop: 4 } },
-        React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500 } }, "제목"),
-        React.createElement(SliderRow, { label: "자간", value: card.titleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-        React.createElement(SliderRow, { label: "줄간", value: card.titleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-        React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 4 } }, "부제목"),
-        React.createElement(SliderRow, { label: "자간", value: card.subtitleLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-        React.createElement(SliderRow, { label: "줄간", value: card.subtitleLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-        React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, marginTop: 4 } }, "본문"),
-        React.createElement(SliderRow, { label: "자간", value: card.bodyLetterSpacing ?? card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-        React.createElement(SliderRow, { label: "줄간", value: card.bodyLineHeight ?? card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-      ),
     ),
   );
 
