@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -33,6 +33,7 @@ const RECENT_FEATURES = [
   '다중 오버레이 이미지',
   '그라데이션 옵션',
   '투명하게 체크박스',
+  '데스크탑 UI 개편: 좌측 미리보기 + 우측 탭 도구',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -1256,6 +1257,212 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   );
 }
 
+/* ── Desktop Card Panel (left preview + right tabs) ── */
+const DESKTOP_TABS = [
+  { id: 'fill', label: '\ucc44\uc6b0\uae30' },
+  { id: 'layout', label: '\ub808\uc774\uc544\uc6c3' },
+  { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9' },
+  { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
+];
+
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
+  const [activeTab, setActiveTab] = useState('fill');
+  const [showDetailTitle, setShowDetailTitle] = useState(false);
+  const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
+  const [showDetailBody, setShowDetailBody] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState('');
+  const nameRef = useRef(null);
+
+  const card = cards[activeIndex] || cards[0];
+  const nextCard = activeIndex < cards.length - 1 ? cards[activeIndex + 1] : null;
+  const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
+
+  useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
+
+  const displayName = card ? (card.name || card.title || card.subtitle || `\uce74\ub4dc ${activeIndex + 1}`) : '';
+  const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
+  const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
+  const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
+  const goTo = (idx) => { if (idx >= 0 && idx < cards.length) onActiveChange(idx); };
+
+  if (!card) return null;
+
+  const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
+  const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
+
+  // \u2500\u2500 Fill Tab \u2500\u2500
+  const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+      FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
+    ),
+    (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
+      React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 } },
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uc2dc\uc791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uc885\ub8cc"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uce95\uccd0 \uc2dc\uc810"), React.createElement("input", { type: "text", value: card.captureTime, placeholder: "\uc120\ud0dd", onChange: (e) => update("captureTime", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      ),
+      card.layout !== "full_bg" && React.createElement("div", null,
+        React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
+        React.createElement("div", { style: { display: 'flex', gap: 6 } },
+          VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+        )
+      ),
+    ),
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+    ),
+  );
+
+  // \u2500\u2500 Layout Tab \u2500\u2500
+  const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+      LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+    ),
+    (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "\uadf8\ub77c\ub370\uc774\uc158", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
+    card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+    React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
+      React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815"),
+      React.createElement(CheckboxRow, { label: "\ubc30\uacbd\uc0c9 \uc0ac\uc6a9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement(React.Fragment, null,
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
+          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "\uc0c9\uc0c1"),
+          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
+        ),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
+          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+          React.createElement(CheckboxRow, { label: "\ud22c\uba85\ud558\uac8c", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+        ),
+      ),
+    ),
+  );
+
+  // \u2500\u2500 Text Tab \u2500\u2500
+  const renderText = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+    React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
+    ),
+    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+    ),
+    React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
+    ),
+    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+    ),
+    React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+    React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
+    ),
+    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -200, max: 200, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+    ),
+  );
+
+  // \u2500\u2500 Overlay Tab \u2500\u2500
+  const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+    (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
+        React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
+      ),
+      React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+      ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+        React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
+        React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
+        React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 5, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
+        React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.05, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+      ),
+    )),
+    React.createElement("button", {
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
+      onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+      onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
+    }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
+  );
+
+  const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
+
+  // \u2500\u2500 Render \u2500\u2500
+  return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 220px)' } },
+    // \u2500\u2500 LEFT: Preview \u2500\u2500
+    React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
+      // Preview stack
+      React.createElement("div", { style: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px 0', gap: 12 } },
+        React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 }),
+        nextCard
+          ? React.createElement("div", {
+              onClick: () => goTo(activeIndex + 1),
+              style: { opacity: 0.3, maxHeight: 100, overflow: 'hidden', cursor: 'pointer', transition: 'opacity 0.2s', borderRadius: T.radius },
+              onMouseEnter: (e) => { e.currentTarget.style.opacity = 0.5; },
+              onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.3; },
+            },
+              React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
+            )
+          : React.createElement("div", {
+              onClick: onAdd,
+              style: { width: 360, height: 80, border: `2px dashed ${T.border}`, borderRadius: T.radius, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', opacity: 0.5 },
+              onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.opacity = 1; },
+              onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; e.currentTarget.style.opacity = 0.5; },
+            }, "+ \uc0c8 \uce74\ub4dc"),
+      ),
+      // Card info bar
+      React.createElement("div", { style: { padding: '12px 20px 16px', borderTop: `1px solid ${T.border}`, background: T.surface } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 } },
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
+            React.createElement("span", { style: { width: 26, height: 26, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
+            editingName
+              ? React.createElement("input", { ref: nameRef, value: nameValue, onChange: (e) => setNameValue(e.target.value), onBlur: commitName, onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); }, onClick: (e) => e.stopPropagation(), style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 } })
+              : React.createElement("span", { onClick: startEditName, style: { color: T.text, fontWeight: 500, fontSize: 13, cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, displayName),
+          ),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
+            React.createElement("button", { onClick: () => goTo(activeIndex - 1), disabled: activeIndex === 0, style: navBtn(activeIndex === 0) }, "\u25B2"),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 36, textAlign: 'center' } }, `${activeIndex + 1}/${cards.length}`),
+            React.createElement("button", { onClick: () => goTo(activeIndex + 1), disabled: activeIndex >= cards.length - 1, style: navBtn(activeIndex >= cards.length - 1) }, "\u25BC"),
+          ),
+        ),
+        React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center' } },
+          React.createElement("button", { onClick: onReorder, style: btnSm }, "\u2630 \uc21c\uc11c"),
+          React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: btnSm }, "\ubcf5\uc81c"),
+          cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\uc0ad\uc81c"),
+          React.createElement("button", { onClick: onAdd, style: { ...btnSm, marginLeft: 'auto', background: 'rgba(99,102,241,0.1)', color: T.accent } }, "+ \uce74\ub4dc \ucd94\uac00"),
+        ),
+      ),
+    ),
+    // \u2500\u2500 RIGHT: Tabs \u2500\u2500
+    React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 } },
+      React.createElement("div", { style: { display: 'flex', gap: 4, padding: '14px 20px 12px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
+        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) }))
+      ),
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
+        tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
+      ),
+    ),
+  );
+}
+
+
 /* ── App ── */
 export default function App() {
   const mob = useIsMobile();
@@ -1270,7 +1477,7 @@ export default function App() {
   const [confirmClose, setConfirmClose] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
-  const [mobileCardIndex, setMobileCardIndex] = useState(0);
+  const [activeCardIdx, setActiveCardIdx] = useState(0);
   const infoRef = useRef(null);
 
   // Close info panel on outside click
@@ -1573,35 +1780,26 @@ export default function App() {
       // Cards — mobile carousel vs desktop list
       mob ? React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
         React.createElement(MobileCardCarousel, {
-          cards, activeIndex: Math.min(mobileCardIndex, cards.length - 1),
-          onActiveChange: setMobileCardIndex,
+          cards, activeIndex: Math.min(activeCardIdx, cards.length - 1),
+          onActiveChange: setActiveCardIdx,
           onCardChange: updateCard,
-          onRemove: (i) => { removeCard(i); setMobileCardIndex(Math.min(mobileCardIndex, Math.max(0, cards.length - 2))); },
+          onRemove: (i) => { removeCard(i); setActiveCardIdx(Math.min(activeCardIdx, Math.max(0, cards.length - 2))); },
           onDuplicate: duplicateCard,
           onAdd: addCard,
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
         }),
-      ) : React.createElement(React.Fragment, null,
-        cards.map((card, i) =>
-          React.createElement(CardEditor, {
-            key: card.id, card, index: i,
-            onChange: (c) => updateCard(i, c),
-            onRemove: () => removeCard(i),
-            onDuplicate: () => duplicateCard(i),
-            total: cards.length, globalUrl, aspectRatio, outputFormat,
-            globalBgImage, mob,
-            onReorder: () => setShowReorder(true),
-          })
-        ),
-        // Add card
-        React.createElement("button", {
-          onClick: addCard,
-          style: { width: '100%', padding: 16, border: `2px dashed ${T.border}`, borderRadius: T.radius, background: 'transparent', color: T.textMuted, fontSize: 14, cursor: 'pointer', transition: 'all 0.15s' },
-          onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
-          onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
-        }, "+ 카드 추가"),
-      ),
+      ) : React.createElement(DesktopCardPanel, {
+        cards,
+        activeIndex: Math.min(activeCardIdx, cards.length - 1),
+        onActiveChange: setActiveCardIdx,
+        onCardChange: updateCard,
+        onRemove: (i) => removeCard(i),
+        onDuplicate: (i) => duplicateCard(i),
+        onAdd: addCard,
+        globalUrl, aspectRatio, outputFormat, globalBgImage,
+        onReorder: () => setShowReorder(true),
+      }),
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
