@@ -421,11 +421,16 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onMouseDown: handleZDown,
-      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none' },
+      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none', marginTop: 10, overflow: 'visible' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-      // Range highlight
+      // 30s max zone (subtle background showing selectable range)
+      React.createElement("div", { style: { position: 'absolute', top: 6, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, toZPct(Math.min(startSec + 30, duration))) - Math.max(0, sPct)) + '%', height: 12, background: 'rgba(99,102,241,0.08)', borderRadius: 3, pointerEvents: 'none' } }),
+      // 30s limit marker line
+      toZPct(startSec + 30) <= 100 && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + toZPct(startSec + 30) + '% - 0.5px)', width: 1, height: 16, background: 'rgba(99,102,241,0.25)', pointerEvents: 'none' } }),
+      toZPct(startSec + 30) <= 100 && React.createElement("div", { style: { position: 'absolute', top: -8, left: toZPct(startSec + 30) + '%', transform: 'translateX(-50%)', fontSize: 8, color: 'rgba(99,102,241,0.5)', whiteSpace: 'nowrap', pointerEvents: 'none' } }, '30\uCD08'),
+      // Range highlight (selected)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
       // Start marker (visible line + wider hit area)
       React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + sPct + '% - 1px)', width: 3, height: 18, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
@@ -576,12 +581,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
     const t = currentTime;
     onStartChange(fmtMM(t));
     const es = parseTime(end);
-    // Reset end if it's before the new start
-    if (es != null && es <= t) {
-      onEndChange('');
+    // Reset end if it's before the new start, or no end set → default 10s
+    if (es == null || es <= t) {
+      onEndChange(fmtMM(Math.min(t + 10, duration || t + 10)));
     }
     // If end is set and clip > 30s, adjust end
-    else if (es != null && es - t > 30) {
+    else if (es - t > 30) {
       onEndChange(fmtMM(t + 30));
     }
   };
