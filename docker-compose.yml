@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_DIR=/tmp/yt2c-storage
+      - NODE_ENV=production
+    depends_on:
+      - redis
+    volumes:
+      - storage-data:/tmp/yt2c-storage
+
+volumes:
+  redis-data:
+  storage-data:
