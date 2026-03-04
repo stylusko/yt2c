@@ -19,10 +19,17 @@ const VIDEO_FILL_OPTIONS = [
   { id: "split", label: "분리형" },
 ];
 
+const IMAGE_SOURCE_OPTIONS = [
+  { id: "thumbnail", label: "영상 썸네일" },
+  { id: "upload", label: "이미지 업로드" },
+];
+
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   url: "", start: "", end: "",
   layout: "photo_top", photoRatio: 0.55, videoFill: "full",
+  imageSource: "thumbnail", uploadedImage: null,
+  useTitle: true, useSubtitle: true, useBody: true,
   title: "", titleSize: 56, titleFont: "Pretendard-Bold.otf",
   subtitle: "", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
   body: "", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
@@ -192,17 +199,22 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%' }) {
   );
 }
 
-/* ── Text Field Row (input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows }) {
+/* ── Text Field Row (checkbox + input + size + color) ── */
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle }) {
+  const disabled = enabled === false;
   const input = rows
-    ? React.createElement("textarea", { value, placeholder, rows, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64 } })
-    : React.createElement("input", { type: "text", value, placeholder, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1 } });
+    ? React.createElement("textarea", { value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
 
   return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
+    React.createElement("div", {
+      onClick: onToggle,
+      style: { width: 20, height: 20, borderRadius: 4, border: `2px solid ${enabled !== false ? T.accent : T.textMuted}`, background: enabled !== false ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginTop: rows ? 8 : 0 },
+    }, enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "✓")),
     input,
-    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' } },
-      React.createElement("input", { type: "number", value: size, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 52, padding: '7px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none' } }),
-      React.createElement("input", { type: "color", value: color, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer', background: 'transparent' } }),
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', opacity: disabled ? 0.35 : 1 } },
+      React.createElement("input", { type: "number", value: size, disabled, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 52, padding: '7px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none' } }),
+      React.createElement("input", { type: "color", value: color, disabled, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: disabled ? 'default' : 'pointer', background: 'transparent' } }),
     )
   );
 }
@@ -309,7 +321,7 @@ function Section({ title, children }) {
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat }) {
   const [expanded, setExpanded] = useState(true);
   const update = (key, val) => onChange({ ...card, [key]: val });
 
@@ -366,11 +378,38 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           ),
         ),
 
+        // ── 이미지 소스 (이미지 형식일 때) ──
+        outputFormat === 'image' && React.createElement(Section, { title: "이미지 소스" },
+          React.createElement("div", { style: { display: 'flex', gap: 6 } },
+            IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.imageSource || "thumbnail") === opt.id, onClick: () => update("imageSource", opt.id) }, opt.label))
+          ),
+          (card.imageSource === "upload") && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+            React.createElement("input", {
+              type: "file", accept: "image/*",
+              onChange: (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 3 * 1024 * 1024) { alert("3MB 이하 이미지만 업로드 가능합니다."); e.target.value = ''; return; }
+                const reader = new FileReader();
+                reader.onload = () => update("uploadedImage", reader.result);
+                reader.readAsDataURL(file);
+              },
+              style: { fontSize: 12, color: T.textSecondary },
+            }),
+            card.uploadedImage && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+              React.createElement("img", { src: card.uploadedImage, style: { width: 48, height: 48, borderRadius: 6, objectFit: 'cover' } }),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "업로드 완료"),
+              React.createElement("button", { onClick: () => update("uploadedImage", null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer' } }, "삭제"),
+            ),
+            !card.uploadedImage && React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "3MB 이하 · JPG, PNG 권장"),
+          ),
+        ),
+
         // ── 텍스트 내용 ──
         React.createElement(Section, { title: "텍스트 내용" },
-          React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목 (크고 두껍게)", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v) }),
-          React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v) }),
-          React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용...", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v) }),
+          React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목 (크고 두껍게)", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+          React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+          React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용...", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
         ),
 
         // ── 배경 설정 ──
@@ -387,7 +426,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
       // Right: Preview (sticky)
       React.createElement("div", { style: { flexShrink: 0, position: 'sticky', top: 80, alignSelf: 'flex-start' } },
         React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
-        React.createElement(CardPreview, { card, globalUrl, aspectRatio }),
+        React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio }),
       )
     )
   );
@@ -424,6 +463,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   outputFormat: 'video',
   outputSize: 1080,
   aspectRatio: '1:1',
+  globalImageSource: 'thumbnail',
   cards: [DEFAULT_CARD()],
 });
 
@@ -514,9 +554,15 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
               style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', width: Math.max(40, editName.length * 8), padding: 0 },
             })
           : React.createElement("span", {
-              onDoubleClick: (e) => { e.stopPropagation(); startRename(proj); },
               style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, userSelect: 'none' },
             }, proj.name),
+        isActive && !isEditing && React.createElement("button", {
+          onClick: (e) => { e.stopPropagation(); startRename(proj); },
+          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.5 },
+          onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
+          onMouseLeave: (e) => e.currentTarget.style.opacity = 0.5,
+          title: '이름 수정',
+        }, "✎"),
         projects.length > 1 && React.createElement("button", {
           onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
           style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.6 },
@@ -569,6 +615,7 @@ export default function App() {
   const outputFormat = activeProject?.outputFormat || 'video';
   const outputSize = activeProject?.outputSize || 1080;
   const aspectRatio = activeProject?.aspectRatio || '1:1';
+  const globalImageSource = activeProject?.globalImageSource || 'thumbnail';
   const cards = activeProject?.cards || [];
 
   const updateProject = useCallback((updates) => {
@@ -579,6 +626,7 @@ export default function App() {
   const setOutputFormat = (v) => updateProject({ outputFormat: v });
   const setOutputSize = (v) => updateProject({ outputSize: v });
   const setAspectRatio = (v) => updateProject({ aspectRatio: v });
+  const setGlobalImageSource = (v) => updateProject({ globalImageSource: v });
   const setCards = (updater) => {
     setProjects(prev => prev.map(p => {
       if (p.id !== activeProjectId) return p;
@@ -626,19 +674,30 @@ export default function App() {
     setGenProgress(''); setResults([]);
   };
 
-  const buildConfig = (card) => ({
-    start: card.start, end: card.end, layout: card.layout, photo_ratio: card.photoRatio,
-    video_fill: card.videoFill || 'full',
-    title: card.title, title_size: card.titleSize, title_font: card.titleFont, title_color: card.titleColor,
-    subtitle: card.subtitle, subtitle_size: card.subtitleSize, subtitle_font: card.subtitleFont, subtitle_color: card.subtitleColor,
-    body: card.body, body_size: card.bodySize, body_font: card.bodyFont, body_color: card.bodyColor,
-    text_bg_color: hexToRgb(card.bgColor), text_bg_opacity: card.bgOpacity,
-    video_position: [card.videoX, card.videoY], video_scale: card.videoScale || 110,
+  // 체크 해제된 텍스트 필드는 빈 문자열로 처리
+  const effectiveCard = (card) => ({
+    ...card,
+    title: card.useTitle !== false ? card.title : '',
+    subtitle: card.useSubtitle !== false ? card.subtitle : '',
+    body: card.useBody !== false ? card.body : '',
+  });
+
+  const buildConfig = (card) => {
+    const c = effectiveCard(card);
+    return {
+    start: c.start, end: c.end, layout: c.layout, photo_ratio: c.photoRatio,
+    video_fill: c.videoFill || 'full',
+    title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
+    subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
+    body: c.body, body_size: c.bodySize, body_font: c.bodyFont, body_color: c.bodyColor,
+    text_bg_color: hexToRgb(c.bgColor), text_bg_opacity: c.bgOpacity,
+    video_position: [c.videoX, c.videoY], video_scale: c.videoScale || 110,
     output_size: outputSize,
     aspect_ratio: aspectRatio,
-    ...(card.url && card.url !== globalUrl ? { url: card.url } : {}),
-    ...(card.captureTime ? { capture_time: card.captureTime } : {}),
-  });
+    image_source: c.imageSource || 'thumbnail',
+    ...(c.url && c.url !== globalUrl ? { url: c.url } : {}),
+    ...(c.captureTime ? { capture_time: c.captureTime } : {}),
+  }; };
 
   const exportJson = () => {
     const url = globalUrl || cards[0]?.url || "";
@@ -657,7 +716,7 @@ export default function App() {
       const overlays = [];
       for (let i = 0; i < cards.length; i++) {
         setGenProgress(`카드 ${i + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(cards[i], outputSize, aspectRatio));
+        overlays.push(await generateOverlayPng(effectiveCard(cards[i]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
@@ -760,6 +819,12 @@ export default function App() {
               React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "이미지"),
             )
           ),
+          outputFormat === 'image' && React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "이미지 소스"),
+            React.createElement("div", { style: { display: 'flex', gap: 4 } },
+              IMAGE_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: globalImageSource === opt.id, onClick: () => setGlobalImageSource(opt.id) }, opt.label))
+            )
+          ),
           React.createElement("div", null,
             React.createElement("label", { style: labelBase }, "해상도"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
@@ -772,7 +837,7 @@ export default function App() {
 
       // Cards
       cards.map((card, i) =>
-        React.createElement(CardEditor, { key: card.id, card, index: i, onChange: (c) => updateCard(i, c), onRemove: () => removeCard(i), onDuplicate: () => duplicateCard(i), total: cards.length, globalUrl, aspectRatio })
+        React.createElement(CardEditor, { key: card.id, card, index: i, onChange: (c) => updateCard(i, c), onRemove: () => removeCard(i), onDuplicate: () => duplicateCard(i), total: cards.length, globalUrl, aspectRatio, outputFormat })
       ),
 
       // Add card
@@ -786,7 +851,7 @@ export default function App() {
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
     confirmClose && React.createElement(ConfirmDialog, {
-      message: "이 프로젝트를 닫으면 복구할 수 없습니다.\n정말로 닫으시겠습니까?",
+      message: "지금 저장된 내용이 날아갑니다.\n정말로 닫으시겠습니까?",
       onConfirm: confirmCloseProject,
       onCancel: () => setConfirmClose(null),
     }),
