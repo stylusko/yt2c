@@ -1795,14 +1795,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Bottom bar: carousel + actions + toggle
       React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, background: T.surface, flexShrink: 0 } },
         // Carousel row
-        React.createElement("div", { style: { padding: '3px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
+        React.createElement("div", { style: { padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
           React.createElement("button", {
             onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -120, behavior: 'smooth' }); },
             style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
           }, "\u25C0"),
           React.createElement("div", {
             id: 'card-carousel',
-            style: { display: 'flex', gap: 4, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '3px 0' },
+            style: { display: 'flex', gap: 5, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '3px 2px' },
           },
             cards.map((c, i) => React.createElement("div", {
               key: c.id,
