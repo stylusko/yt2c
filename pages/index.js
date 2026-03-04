@@ -4,7 +4,7 @@ import JSZip from 'jszip';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 10; // same-day deploy count
+const BUILD_NUM = 11; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1273,9 +1273,21 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const nameRef = useRef(null);
+  const [animDir, setAnimDir] = useState(null);
+  const prevIdxRef = useRef(activeIndex);
+
+  useEffect(() => {
+    if (prevIdxRef.current !== activeIndex) {
+      setAnimDir(activeIndex > prevIdxRef.current ? 'down' : 'up');
+      prevIdxRef.current = activeIndex;
+      const t = setTimeout(() => setAnimDir(null), 300);
+      return () => clearTimeout(t);
+    }
+  }, [activeIndex]);
 
   const card = cards[activeIndex] || cards[0];
   const nextCard = activeIndex < cards.length - 1 ? cards[activeIndex + 1] : null;
+  const prevCard = activeIndex > 0 ? cards[activeIndex - 1] : null;
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
@@ -1406,26 +1418,47 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 220px)' } },
+    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }"),
     // \u2500\u2500 LEFT: Preview \u2500\u2500
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
-      // Preview stack
-      React.createElement("div", { style: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px 0', gap: 12 } },
-        React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 }),
-        nextCard
+      // Preview stack with slide animation
+      React.createElement("div", { style: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 24px 0', gap: 0, position: 'relative' } },
+        // Previous card (peek above, shows bottom edge)
+        prevCard
           ? React.createElement("div", {
-              onClick: () => goTo(activeIndex + 1),
-              style: { opacity: 0.3, maxHeight: 100, overflow: 'hidden', cursor: 'pointer', transition: 'opacity 0.2s', borderRadius: T.radius },
-              onMouseEnter: (e) => { e.currentTarget.style.opacity = 0.5; },
-              onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.3; },
+              onClick: () => goTo(activeIndex - 1),
+              style: { maxHeight: 60, overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radius, marginBottom: 8, width: 360 },
             },
-              React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
+              React.createElement(CardPreview, { card: pvCard(prevCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
             )
-          : React.createElement("div", {
-              onClick: onAdd,
-              style: { width: 360, height: 80, border: `2px dashed ${T.border}`, borderRadius: T.radius, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s', opacity: 0.5 },
-              onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; e.currentTarget.style.opacity = 1; },
-              onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; e.currentTarget.style.opacity = 0.5; },
-            }, "+ \uc0c8 \uce74\ub4dc"),
+          : null,
+        // Active card with slide animation + active border
+        React.createElement("div", {
+          key: 'card-' + activeIndex,
+          style: {
+            animation: animDir ? (animDir === 'down' ? 'slideFromBelow 0.3s cubic-bezier(0.4,0,0.2,1)' : 'slideFromAbove 0.3s cubic-bezier(0.4,0,0.2,1)') : 'none',
+            borderRadius: T.radius,
+            boxShadow: '0 0 0 2.5px ' + T.accent,
+          },
+        },
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
+        ),
+        // Next card (peek below)
+        React.createElement("div", { style: { marginTop: 8, width: 360 } },
+          nextCard
+            ? React.createElement("div", {
+                onClick: () => goTo(activeIndex + 1),
+                style: { maxHeight: 80, overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s', borderRadius: T.radius },
+              },
+                React.createElement(CardPreview, { card: pvCard(nextCard), globalUrl, aspectRatio, globalBgImage, previewWidth: 360 })
+              )
+            : React.createElement("div", {
+                onClick: onAdd,
+                style: { width: '100%', height: 60, border: '2px dashed ' + T.border, borderRadius: T.radius, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textMuted, fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' },
+                onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
+                onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textMuted; },
+              }, "+ \uc0c8 \uce74\ub4dc"),
+        ),
       ),
       // Card info bar
       React.createElement("div", { style: { padding: '12px 20px 16px', borderTop: `1px solid ${T.border}`, background: T.surface } },
@@ -1452,7 +1485,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     // \u2500\u2500 RIGHT: Tabs \u2500\u2500
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 } },
-      React.createElement("div", { style: { display: 'flex', gap: 4, padding: '14px 20px 12px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
+      // Card info header
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 20px 10px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
+        React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
+        React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, (activeIndex + 1) + ' / ' + cards.length + '\uc7a5'),
+      ),
+      // Tab bar
+      React.createElement("div", { style: { display: 'flex', gap: 4, padding: '10px 20px 10px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
         DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
