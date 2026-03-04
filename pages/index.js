@@ -320,7 +320,13 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
   const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
   const displayVal = suffix === '%' && typeof value === 'number' && value < 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-    React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 42, whiteSpace: 'nowrap' } }, label),
+    React.createElement("span", {
+      onDoubleClick: () => onChange(defVal),
+      style: { fontSize: 12, color: T.textMuted, minWidth: 42, whiteSpace: 'nowrap', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
+      onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)',
+      onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
+      title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
+    }, label),
     React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => onChange(parseFloat(e.target.value)), style: { flex: 1, accentColor: T.accent } }),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -933,24 +939,25 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
   // Center alignment guide lines
-  const snap = 3; // px threshold (in preview scale)
-  const guides = [];
-  // Horizontal center guide: show when any center-aligned text has X near 0
-  const anyHCenter = [
-    { align: card.titleAlign, x: titleOX, active: !!card.title },
-    { align: card.subtitleAlign, x: subOX, active: !!card.subtitle },
-    { align: card.bodyAlign, x: bodyOXv, active: !!card.body },
-  ].some(t => t.active && t.align === 'center' && Math.abs(t.x) <= snap);
-  // Vertical center guide: show when any text has Y positioning it near vertical center
-  const anyVCenter = [
-    { y: titleOY, active: !!card.title },
-    { y: subOY, active: !!card.subtitle },
-    { y: bodyOYv, active: !!card.body },
-  ].some(t => t.active && Math.abs(t.y) <= snap);
+  // Center alignment guide lines
+  const snapPx = Math.round(8 * sc); // ~8px threshold in original coords, scaled
+  const textItems = [
+    { align: card.titleAlign, x: titleOX, y: titleOY, active: !!card.title },
+    { align: card.subtitleAlign, x: subOX, y: subOY, active: !!card.subtitle },
+    { align: card.bodyAlign, x: bodyOXv, y: bodyOYv, active: !!card.body },
+  ];
+  // Horizontal center guide: center-aligned text with X near 0
+  const anyHCenter = textItems.some(t => t.active && t.align === 'center' && Math.abs(t.x) <= snapPx);
+  // Also show horizontal guide for left-aligned at X=0 or right-aligned at X=0
+  const anyLeftGuide = textItems.some(t => t.active && (t.align || 'left') === 'left' && Math.abs(t.x) <= snapPx);
+  const anyRightGuide = textItems.some(t => t.active && t.align === 'right' && Math.abs(t.x) <= snapPx);
+  // Vertical guide: any text with Y near 0 (= default position)
+  const anyVCenter = textItems.some(t => t.active && Math.abs(t.y) <= snapPx);
 
+  const guideStyle = { position: 'absolute', zIndex: 20, pointerEvents: 'none' };
   const CenterGuides = () => React.createElement(React.Fragment, null,
-    anyHCenter && React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.6)', zIndex: 20, pointerEvents: 'none', transform: 'translateX(-0.5px)' } }),
-    anyVCenter && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.6)', zIndex: 20, pointerEvents: 'none', transform: 'translateY(-0.5px)' } }),
+    anyHCenter && React.createElement("div", { style: { ...guideStyle, top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.7)', transform: 'translateX(-0.5px)' } }),
+    anyVCenter && React.createElement("div", { style: { ...guideStyle, left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.5)', transform: 'translateY(-0.5px)' } }),
   );
 
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
