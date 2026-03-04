@@ -439,9 +439,9 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               }, displayName),
           !editingName && React.createElement("button", {
             onClick: (e) => { e.stopPropagation(); startEditName(); },
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '0 4px', opacity: 0.5 },
-            onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-            onMouseLeave: (e) => e.currentTarget.style.opacity = 0.5,
+            style: { background: 'rgba(99,102,241,0.1)', border: 'none', color: T.accentHover, fontSize: 12, cursor: 'pointer', padding: '2px 6px', borderRadius: 4, opacity: 0.8, transition: 'all 0.15s' },
+            onMouseEnter: (e) => { e.currentTarget.style.opacity = 1; e.currentTarget.style.background = 'rgba(99,102,241,0.2)'; },
+            onMouseLeave: (e) => { e.currentTarget.style.opacity = 0.8; e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; },
             title: '카드 이름 수정',
           }, "\u270E"),
           card.start && React.createElement("span", { style: { color: T.textMuted, fontSize: 12, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `${card.start} ~ ${card.end}`)
@@ -649,10 +649,18 @@ function ReorderModal({ cards, onReorder, onClose }) {
       ),
       React.createElement("div", { style: { padding: '12px 20px', overflowY: 'auto', flex: 1 } },
         React.createElement("p", { style: { fontSize: 12, color: T.textMuted, marginBottom: 12 } }, "드래그하여 순서를 변경하세요"),
+        // Column headers
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px 8px', borderBottom: `1px solid ${T.border}`, marginBottom: 8 } },
+          React.createElement("span", { style: { width: 16 } }), // drag handle spacer
+          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, width: 28, textAlign: 'center', flexShrink: 0 } }, "순서"),
+          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, width: 40, textAlign: 'center', flexShrink: 0 } }, "원래"),
+          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, flex: 1 } }, "이름"),
+        ),
         order.map((cardIdx, visualIdx) => {
           const card = cards[cardIdx];
           const isDragging = dragging === visualIdx;
           const isDragOver = dragOver === visualIdx;
+          const moved = cardIdx !== visualIdx; // card moved from original position
           return React.createElement("div", {
             key: card.id,
             draggable: true,
@@ -661,17 +669,25 @@ function ReorderModal({ cards, onReorder, onClose }) {
             onDrop: () => handleDrop(visualIdx),
             onDragEnd: handleDragEnd,
             style: {
-              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px',
-              background: isDragging ? 'rgba(99,102,241,0.15)' : isDragOver ? 'rgba(99,102,241,0.08)' : 'rgba(255,255,255,0.02)',
-              borderRadius: T.radiusSm, marginBottom: 6, cursor: 'grab',
-              border: `1px solid ${isDragOver ? T.accent : T.border}`,
+              display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
+              background: isDragging ? 'rgba(99,102,241,0.15)' : isDragOver ? 'rgba(99,102,241,0.08)' : moved ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.02)',
+              borderRadius: T.radiusSm, marginBottom: 4, cursor: 'grab',
+              border: `1px solid ${isDragOver ? T.accent : moved ? 'rgba(34,197,94,0.2)' : T.border}`,
               opacity: isDragging ? 0.6 : 1,
               transition: 'all 0.15s',
             },
           },
-            React.createElement("span", { style: { color: T.textMuted, fontSize: 16 } }, "\u2630"),
-            React.createElement("span", { style: { width: 24, height: 24, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, visualIdx + 1),
-            React.createElement("span", { style: { color: T.text, fontSize: 13, fontWeight: 500 } }, card.name || card.title || card.subtitle || `카드 ${cardIdx + 1}`),
+            React.createElement("span", { style: { color: T.textMuted, fontSize: 14 } }, "\u2630"),
+            // New order number
+            React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: moved ? T.success : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0, transition: 'background 0.2s' } }, visualIdx + 1),
+            // Original card number (dimmed)
+            React.createElement("span", { style: { width: 40, textAlign: 'center', flexShrink: 0 } },
+              React.createElement("span", { style: { fontSize: 11, color: moved ? T.textSecondary : T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `#${cardIdx + 1}`)
+            ),
+            // Card name
+            React.createElement("span", { style: { color: T.text, fontSize: 13, fontWeight: 500, flex: 1 } }, card.name || card.title || card.subtitle || `카드 ${cardIdx + 1}`),
+            // Move indicator
+            moved && React.createElement("span", { style: { fontSize: 10, color: T.success, fontWeight: 600 } }, `${cardIdx + 1}\u2192${visualIdx + 1}`),
           );
         })
       ),
@@ -692,7 +708,7 @@ function InfoPanel({ onClose }) {
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 } },
       React.createElement("img", { src: "/icon-round.png", style: { width: 40, height: 40, borderRadius: 10 } }),
       React.createElement("div", null,
-        React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: T.text } }, "YT2C"),
+        React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 20, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
         React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, VERSION),
       ),
     ),
@@ -969,10 +985,13 @@ export default function App() {
 
   return React.createElement("div", { style: { minHeight: "100vh", background: T.bg } },
     React.createElement(Head, null,
-      React.createElement("title", null, "YT2C \u2014 카드뉴스 메이커"),
+      React.createElement("title", null, "YOUMECA \u2014 유메카"),
       React.createElement("link", { rel: "icon", href: "/favicon.ico" }),
       React.createElement("link", { rel: "apple-touch-icon", href: "/icon-192.png" }),
       React.createElement("meta", { name: "theme-color", content: "#09090b" }),
+      React.createElement("link", { rel: "preconnect", href: "https://fonts.googleapis.com" }),
+      React.createElement("link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" }),
+      React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&display=swap", rel: "stylesheet" }),
     ),
 
     // ── Header ──
@@ -988,11 +1007,13 @@ export default function App() {
             onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
           },
             React.createElement("img", { src: "/icon-round.png", style: { width: 28, height: 28, borderRadius: 7 } }),
-            React.createElement("span", { style: { fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: T.text } }, "YT2C"),
+            React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
           ),
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted, display: 'none' } }, "|"), // spacer
-          React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, whiteSpace: 'nowrap' } }, "Youtube 영상을 카드뉴스로 만들어 보세요"),
+          React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 600, whiteSpace: 'nowrap' } }, "유메카, 내가 꿈꾸던 카드뉴스 생성기"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "유튜브 영상을 쉽게 카드뉴스로 만들어보세요"),
+          ),
           showInfo && React.createElement(InfoPanel, { onClose: () => setShowInfo(false) }),
         ),
 
