@@ -9,10 +9,20 @@ const LAYOUT_OPTIONS = [
   { id: "text_overlay", label: "오버레이" },
 ];
 
+const ASPECT_OPTIONS = [
+  { id: "1:1", label: "1:1", w: 1, h: 1 },
+  { id: "3:4", label: "3:4", w: 3, h: 4 },
+];
+
+const VIDEO_FILL_OPTIONS = [
+  { id: "full", label: "전체 채우기" },
+  { id: "split", label: "분리형" },
+];
+
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   url: "", start: "", end: "",
-  layout: "photo_top", photoRatio: 0.55,
+  layout: "photo_top", photoRatio: 0.55, videoFill: "full",
   title: "", titleSize: 56, titleFont: "Pretendard-Bold.otf",
   subtitle: "", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
   body: "", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
@@ -69,20 +79,22 @@ const inputBase = {
 const labelBase = { display: 'block', fontSize: 12, color: T.textSecondary, fontWeight: 500, marginBottom: 6 };
 const sectionTitle = { fontSize: 13, fontWeight: 600, color: T.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 };
 
-/* ── Overlay Canvas (동일 로직) ── */
-async function generateOverlayPng(card, outputSize) {
-  const size = outputSize;
+/* ── Overlay Canvas ── */
+async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
+  const w = outputSize;
+  const h = aspectRatio === '3:4' ? Math.round(outputSize * 4 / 3) : outputSize;
   const canvas = document.createElement("canvas");
-  canvas.width = size; canvas.height = size;
+  canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, size, size);
+  ctx.clearRect(0, 0, w, h);
 
   const layout = card.layout || "photo_top";
   const photoRatio = card.photoRatio || 0.55;
+  const videoFill = card.videoFill || "full";
   const bgColor = hexToRgb(card.bgColor || "#121212");
   const bgOpacity = card.bgOpacity ?? 0.75;
   const padX = 60, padTop = 40;
-  const maxTextW = size - padX * 2;
+  const maxTextW = w - padX * 2;
 
   const fontMap = {
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
@@ -115,18 +127,18 @@ async function generateOverlayPng(card, outputSize) {
     let totalTextH = padTop * 2 + titleLines.length * (card.titleSize + 8);
     if (card.subtitle) totalTextH += 12 + subtitleLines.length * (card.subtitleSize + 8);
     if (card.body) totalTextH += 24 + bodyLines.length * (card.bodySize + 10);
-    const gradH = Math.min(Math.round(size * 0.80), totalTextH + 200);
+    const gradH = Math.min(Math.round(h * 0.80), totalTextH + 200);
     const maxAlpha = Math.max(Math.round(bgOpacity * 255), 230) / 255;
-    for (let y = size - gradH; y < size; y++) {
-      const progress = (y - (size - gradH)) / gradH;
+    for (let y = h - gradH; y < h; y++) {
+      const progress = (y - (h - gradH)) / gradH;
       let alpha;
       if (progress < 0.2) alpha = (progress / 0.2) ** 2 * maxAlpha * 0.5;
       else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * maxAlpha;
       else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * maxAlpha;
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, maxAlpha)})`;
-      ctx.fillRect(0, y, size, 1);
+      ctx.fillRect(0, y, w, 1);
     }
-    let curY = size - padTop;
+    let curY = h - padTop;
     const allItems = [];
     if (card.title) for (const ln of titleLines) allItems.push({ text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: card.titleSize + 8 });
     if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of subtitleLines) allItems.push({ text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: card.subtitleSize + 8 }); }
@@ -140,18 +152,20 @@ async function generateOverlayPng(card, outputSize) {
       ctx.fillText(item.text, padX, curY + item.lh * 0.78);
     }
   } else {
-    const textH = Math.round(size * (1 - photoRatio));
-    const yStart = layout === "photo_top" ? size - textH : 0;
-    ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
-    ctx.fillRect(0, yStart, size, textH);
+    const textH = Math.round(h * (1 - photoRatio));
+    const yStart = layout === "photo_top" ? h - textH : 0;
+    // 분리형: 불투명 배경 (opacity=1), 전체 채우기: 반투명 배경
+    const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
+    ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
+    ctx.fillRect(0, yStart, w, textH);
     let curY = yStart + padTop;
     if (card.title) { ctx.font = getFont(card.titleFont, card.titleSize); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, card.titleSize, card.titleFont)) { ctx.fillText(ln, padX, curY + card.titleSize * 0.85); curY += card.titleSize + 8; } }
     if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) { ctx.fillText(ln, padX, curY + card.subtitleSize * 0.85); curY += card.subtitleSize + 8; } }
     if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) { if (!ln) { curY += card.bodySize / 2; continue; } ctx.fillText(ln, padX, curY + card.bodySize * 0.85); curY += card.bodySize + 10; } }
   }
   ctx.fillStyle = "rgba(0,0,0,0.78)";
-  ctx.fillRect(0, 0, size, 2); ctx.fillRect(0, size - 2, size, 2);
-  ctx.fillRect(0, 0, 2, size); ctx.fillRect(size - 2, 0, 2, size);
+  ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
+  ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
   return canvas.toDataURL("image/png");
 }
 
@@ -194,11 +208,13 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl }) {
-  const size = 320;
+function CardPreview({ card, globalUrl, aspectRatio = '1:1' }) {
+  const previewW = 320;
+  const previewH = aspectRatio === '3:4' ? Math.round(320 * 4 / 3) : 320;
   const textRatio = 1 - card.photoRatio;
-  const textH = card.layout === "text_overlay" ? size : Math.round(size * textRatio);
-  const sc = size / 1080;
+  const textH = card.layout === "text_overlay" ? previewH : Math.round(previewH * textRatio);
+  const videoFill = card.videoFill || "full";
+  const sc = previewW / 1080;
   const titleFs = Math.round(card.titleSize * sc);
   const subtitleFs = Math.round(card.subtitleSize * sc);
   const bodyFs = Math.round(card.bodySize * sc);
@@ -245,7 +261,7 @@ function CardPreview({ card, globalUrl }) {
     style: { position: "absolute", top: 8, right: 8, zIndex: 10, padding: "4px 10px", borderRadius: T.radiusPill, background: "rgba(99,102,241,0.9)", color: "#fff", fontSize: 10, fontWeight: 600, textDecoration: "none", boxShadow: T.shadow }
   }, `▶ ${formatSec(seekTime)}`) : null;
 
-  const wrapper = { width: size, height: size, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
+  const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
   if (card.layout === "text_overlay") {
     return React.createElement("div", { style: wrapper },
@@ -258,6 +274,24 @@ function CardPreview({ card, globalUrl }) {
   }
 
   const isTop = card.layout === "photo_top";
+  const videoAreaH = previewH - textH;
+
+  // 분리형: 영상은 영상 영역에만, 텍스트 영역은 순수 배경색 (불투명)
+  if (videoFill === "split") {
+    return React.createElement("div", { style: wrapper },
+      // 영상 영역
+      React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
+        React.createElement(BgImage),
+      ),
+      React.createElement(TimestampLink),
+      // 텍스트 영역 (불투명 배경, 영상 없음)
+      React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
+        React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgb(${bgRgb.join(",")})` } }),
+        React.createElement(TextContent)
+      ));
+  }
+
+  // 전체 채우기: 기존 로직 (반투명 배경)
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage), React.createElement(TimestampLink),
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
@@ -275,7 +309,7 @@ function Section({ title, children }) {
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio }) {
   const [expanded, setExpanded] = useState(true);
   const update = (key, val) => onChange({ ...card, [key]: val });
 
@@ -318,6 +352,12 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
             )
           ),
+          card.layout !== "text_overlay" && React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "영상 채우기"),
+            React.createElement("div", { style: { display: 'flex', gap: 6 } },
+              VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+            )
+          ),
           card.layout !== "text_overlay" && React.createElement(SliderRow, { label: "텍스트", value: card.photoRatio, min: 0.3, max: 0.8, step: 0.05, onChange: (v) => update("photoRatio", v), suffix: '%' }),
           React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
             React.createElement(SliderRow, { label: "X", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
@@ -347,7 +387,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
       // Right: Preview (sticky)
       React.createElement("div", { style: { flexShrink: 0, position: 'sticky', top: 80, alignSelf: 'flex-start' } },
         React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
-        React.createElement(CardPreview, { card, globalUrl }),
+        React.createElement(CardPreview, { card, globalUrl, aspectRatio }),
       )
     )
   );
@@ -383,6 +423,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   globalUrl: '',
   outputFormat: 'video',
   outputSize: 1080,
+  aspectRatio: '1:1',
   cards: [DEFAULT_CARD()],
 });
 
@@ -527,6 +568,7 @@ export default function App() {
   const globalUrl = activeProject?.globalUrl || '';
   const outputFormat = activeProject?.outputFormat || 'video';
   const outputSize = activeProject?.outputSize || 1080;
+  const aspectRatio = activeProject?.aspectRatio || '1:1';
   const cards = activeProject?.cards || [];
 
   const updateProject = useCallback((updates) => {
@@ -536,6 +578,7 @@ export default function App() {
   const setGlobalUrl = (v) => updateProject({ globalUrl: v });
   const setOutputFormat = (v) => updateProject({ outputFormat: v });
   const setOutputSize = (v) => updateProject({ outputSize: v });
+  const setAspectRatio = (v) => updateProject({ aspectRatio: v });
   const setCards = (updater) => {
     setProjects(prev => prev.map(p => {
       if (p.id !== activeProjectId) return p;
@@ -585,19 +628,21 @@ export default function App() {
 
   const buildConfig = (card) => ({
     start: card.start, end: card.end, layout: card.layout, photo_ratio: card.photoRatio,
+    video_fill: card.videoFill || 'full',
     title: card.title, title_size: card.titleSize, title_font: card.titleFont, title_color: card.titleColor,
     subtitle: card.subtitle, subtitle_size: card.subtitleSize, subtitle_font: card.subtitleFont, subtitle_color: card.subtitleColor,
     body: card.body, body_size: card.bodySize, body_font: card.bodyFont, body_color: card.bodyColor,
     text_bg_color: hexToRgb(card.bgColor), text_bg_opacity: card.bgOpacity,
     video_position: [card.videoX, card.videoY], video_scale: card.videoScale || 110,
     output_size: outputSize,
+    aspect_ratio: aspectRatio,
     ...(card.url && card.url !== globalUrl ? { url: card.url } : {}),
     ...(card.captureTime ? { capture_time: card.captureTime } : {}),
   });
 
   const exportJson = () => {
     const url = globalUrl || cards[0]?.url || "";
-    const config = { url, output_format: outputFormat, output_size: outputSize, cards: cards.map(buildConfig) };
+    const config = { url, output_format: outputFormat, output_size: outputSize, aspect_ratio: aspectRatio, cards: cards.map(buildConfig) };
     setJsonStr(JSON.stringify(config, null, 2)); setShowJson(true);
   };
 
@@ -612,11 +657,11 @@ export default function App() {
       const overlays = [];
       for (let i = 0; i < cards.length; i++) {
         setGenProgress(`카드 ${i + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(cards[i], outputSize));
+        overlays.push(await generateOverlayPng(cards[i], outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, cards: cards.map((card, i) => ({ cardConfig: buildConfig(card), overlayData: overlays[i] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: cards.map((card, i) => ({ cardConfig: buildConfig(card), overlayData: overlays[i] })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
@@ -703,6 +748,12 @@ export default function App() {
         ),
         React.createElement("div", { style: { display: 'flex', gap: 16 } },
           React.createElement("div", null,
+            React.createElement("label", { style: labelBase }, "비율"),
+            React.createElement("div", { style: { display: 'flex', gap: 4 } },
+              ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => setAspectRatio(opt.id) }, opt.label))
+            )
+          ),
+          React.createElement("div", null,
             React.createElement("label", { style: labelBase }, "형식"),
             React.createElement("div", { style: { display: 'flex', gap: 4 } },
               React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "영상"),
@@ -721,7 +772,7 @@ export default function App() {
 
       // Cards
       cards.map((card, i) =>
-        React.createElement(CardEditor, { key: card.id, card, index: i, onChange: (c) => updateCard(i, c), onRemove: () => removeCard(i), onDuplicate: () => duplicateCard(i), total: cards.length, globalUrl })
+        React.createElement(CardEditor, { key: card.id, card, index: i, onChange: (c) => updateCard(i, c), onRemove: () => removeCard(i), onDuplicate: () => duplicateCard(i), total: cards.length, globalUrl, aspectRatio })
       ),
 
       // Add card
