@@ -1,52 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import { getVideoQueue } from '../../../lib/queue.js';
-import { getOutputPath } from '../../../lib/storage.js';
 
-/**
- * Streams a file to the client for download
- * @param {Object} res - Response object
- * @param {string} filePath - Path to file to download
- * @param {string} filename - Filename to use in download
- */
-function streamFile(res, filePath, filename) {
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'File not found' });
-  }
-
-  const stat = fs.statSync(filePath);
-  const fileSize = stat.size;
-  const ext = path.extname(filename).toLowerCase();
-
-  // Set appropriate content type
-  let contentType = 'application/octet-stream';
-  if (ext === '.mp4') {
-    contentType = 'video/mp4';
-  } else if (ext === '.png') {
-    contentType = 'image/png';
-  } else if (ext === '.jpg' || ext === '.jpeg') {
-    contentType = 'image/jpeg';
-  }
-
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Length', fileSize);
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-  const stream = fs.createReadStream(filePath);
-  stream.pipe(res);
-
-  stream.on('error', (err) => {
-    console.error('Stream error:', err.message);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to stream file' });
-    }
-  });
-}
+const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
 
 /**
  * GET handler: Get job status or download output file
- * @param {Object} req - Request object
- * @param {Object} res - Response object
  */
 async function handleGet(req, res) {
   try {
@@ -66,44 +25,42 @@ async function handleGet(req, res) {
       }
 
       const extension = ext || 'mp4';
-      const filePath = getOutputPath(`${id}_${cardIdx}`, extension);
-      const filename = `card-${cardIdx}.${extension}`;
+      const filePath = path.join(STORAGE_DIR, 'outputs', `${id}_${cardIdx}.${extension}`);
+      const filename = `card-${parseInt(cardIdx) + 1}.${extension}`;
 
-      return streamFile(res, filePath, filename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      const stat = fs.statSync(filePath);
+      let contentType = 'application/octet-stream';
+      if (extension === 'mp4') contentType = 'video/mp4';
+      else if (extension === 'png') contentType = 'image/png';
+      else if (extension === 'jpg' || extension === 'jpeg') contentType = 'image/jpeg';
+
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', stat.size);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      const stream = fs.createReadStream(filePath);
+      stream.pipe(res);
+      stream.on('error', (err) => {
+        console.error('Stream error:', err.message);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to stream file' });
+        }
+      });
+      return;
     }
 
     // Otherwise return job status
-    const allJobs = await queue.getJobs();
+    const allJobs = await queue.getJobs(['active', 'waiting', 'completed', 'failed', 'delayed']);
     const groupJobs = allJobs.filter((job) => {
-      const data = job.data || {};
-      return data.jobId === id;
+      return job?.data?.jobId === id;
     });
 
     if (groupJobs.length === 0) {
       return res.status(404).json({ error: 'Job group not found' });
-    }
-
-    // Determine overall status
-    let overallStatus = 'pending';
-    let allCompleted = true;
-    let anyFailed = false;
-
-    for (const job of groupJobs) {
-      const state = await job.getState();
-      if (state === 'failed') {
-        anyFailed = true;
-        allCompleted = false;
-      } else if (state !== 'completed') {
-        allCompleted = false;
-      }
-    }
-
-    if (anyFailed) {
-      overallStatus = 'failed';
-    } else if (allCompleted) {
-      overallStatus = 'completed';
-    } else {
-      overallStatus = 'processing';
     }
 
     // Build card status array
@@ -111,32 +68,38 @@ async function handleGet(req, res) {
       groupJobs.map(async (job) => {
         const cardIdx = job.data.cardIdx;
         const state = await job.getState();
-        const progress = job.progress();
+        const progress = job.progress;
+        const ext = job.data.outputFormat || 'mp4';
 
-        return {
+        const result = {
           cardIdx,
           status: state || 'pending',
           progress: typeof progress === 'number' ? progress : 0,
-          outputUrl: `/api/jobs/${id}?download=true&cardIdx=${cardIdx}&ext=${job.data.outputFormat || 'mp4'}`,
         };
+
+        if (state === 'completed') {
+          result.downloadUrl = `/api/jobs/${id}?download=true&cardIdx=${cardIdx}&ext=${ext}`;
+        }
+
+        if (state === 'failed') {
+          result.error = job.failedReason || 'Unknown error';
+        }
+
+        return result;
       })
     );
 
     return res.status(200).json({
       jobId: id,
-      status: overallStatus,
       cardCount: cards.length,
       cards: cards.sort((a, b) => a.cardIdx - b.cardIdx),
     });
   } catch (error) {
-    console.error('GET /api/jobs/[id] error:', error.message);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('GET /api/jobs/[id] error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
   }
 }
 
-/**
- * Main API handler
- */
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return handleGet(req, res);
