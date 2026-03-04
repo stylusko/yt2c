@@ -60,7 +60,7 @@ const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
   url: "", start: "", end: "",
-  layout: "photo_top", photoRatio: 55, useGradient: false,
+  layout: "photo_top", photoRatio: 50, useGradient: false,
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
@@ -146,7 +146,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   ctx.clearRect(0, 0, w, h);
 
   const layout = card.layout || "photo_top";
-  const photoRatio = (card.photoRatio ?? 55) / 100;
+  const photoRatio = (card.photoRatio ?? 50) / 100;
   const videoFill = card.videoFill || "full";
   const useBg = card.useBg !== false;
   const useGradient = card.useGradient === true;
@@ -342,7 +342,7 @@ function CheckboxRow({ label, checked, onChange }) {
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
-  const pRatio = (card.photoRatio ?? 55) / 100;
+  const pRatio = (card.photoRatio ?? 50) / 100;
   const textRatio = 1 - pRatio;
   const textH = card.layout === "full_bg" ? previewH : Math.round(previewH * textRatio);
   const fillSource = card.fillSource || 'video';
@@ -627,7 +627,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
             ),
             (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
-            card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 55), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
             // 텍스트 배경 설정
             React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "텍스트 배경 설정"),
@@ -1096,7 +1096,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
-    card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 55), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+    card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 배경 설정
     React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
       React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 배경 설정"),
