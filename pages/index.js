@@ -492,11 +492,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange }) {
       // Current time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
     ),
+    // Notice
+    React.createElement("div", { style: { padding: '3px 8px', background: T.surface, borderTop: '1px solid ' + T.border, fontSize: 10, color: T.textMuted, textAlign: 'center' } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uC0DD\uC131\uB41C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
     // Seekbar
     React.createElement("div", {
       ref: seekRef,
       onClick: handleSeek,
-      style: { position: 'relative', height: 24, background: T.surface, cursor: 'pointer', borderTop: '1px solid ' + T.border },
+      style: { position: 'relative', height: 24, background: T.surface, cursor: 'pointer' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1742,7 +1744,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           style: {
             animation: animDir ? (animDir === 'down' ? 'slideFromBelow 0.3s cubic-bezier(0.4,0,0.2,1)' : 'slideFromAbove 0.3s cubic-bezier(0.4,0,0.2,1)') : 'none',
             borderRadius: T.radius,
-            boxShadow: '0 0 0 2px ' + T.accent,
             maxWidth: '100%',
           },
         },
@@ -1759,7 +1760,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           }, "\u25C0"),
           React.createElement("div", {
             id: 'card-carousel',
-            style: { display: 'flex', gap: 4, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '1px 0' },
+            style: { display: 'flex', gap: 4, flex: 1, overflowX: 'auto', scrollBehavior: 'smooth', scrollbarWidth: 'none', msOverflowStyle: 'none', padding: '3px 0' },
           },
             cards.map((c, i) => React.createElement("div", {
               key: c.id,
