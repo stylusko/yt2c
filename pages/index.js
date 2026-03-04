@@ -340,8 +340,8 @@ function CheckboxRow({ label, checked, onChange }) {
 }
 
 
-/* ── VideoPreview (YouTube IFrame loop between start/end) ── */
-function VideoPreview({ videoId, start, end, width, height, style }) {
+/* ── VideoPreview (YouTube IFrame loop between start/end, cover-fit with position/scale) ── */
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const timerRef = useRef(null);
@@ -351,6 +351,12 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
   const hasRange = endSec != null && endSec > startSec;
+
+  // Cover-fit dimensions: make iframe big enough to fill container (YouTube = 16:9)
+  const containerAR = width / height;
+  const videoAR = 16 / 9;
+  const iW = containerAR > videoAR ? width : Math.ceil(height * videoAR);
+  const iH = containerAR > videoAR ? Math.ceil(width / videoAR) : height;
 
   // Load YouTube IFrame API once
   useEffect(() => {
@@ -369,13 +375,13 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
 
     const createPlayer = () => {
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
-      const containerId = 'yt-preview-' + videoId + '-' + startSec + '-' + (endSec || 0);
+      const containerId = 'yt-pv-' + videoId + '-' + startSec + '-' + (endSec || 0) + '-' + Date.now();
       const el = iframeRef.current;
       if (!el) return;
       el.id = containerId;
 
       playerRef.current = new window.YT.Player(containerId, {
-        width: width, height: height,
+        width: iW, height: iH,
         videoId: videoId,
         playerVars: {
           start: Math.floor(startSec), end: endSec ? Math.ceil(endSec) : undefined,
@@ -387,7 +393,6 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
           onReady: (e) => { e.target.setVolume(0); e.target.playVideo(); setReady(true); },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
-              // Loop: seek back to start
               e.target.seekTo(Math.floor(startSec), true);
               e.target.playVideo();
             }
@@ -396,7 +401,6 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
       });
     };
 
-    // Poll for YT API readiness
     if (window.YT && window.YT.Player) {
       createPlayer();
     } else {
@@ -406,7 +410,6 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
       return () => clearInterval(poll);
     }
 
-    // Also set up a timer to loop at the exact end time
     timerRef.current = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const cur = playerRef.current.getCurrentTime();
@@ -421,14 +424,27 @@ function VideoPreview({ videoId, start, end, width, height, style }) {
       if (timerRef.current) clearInterval(timerRef.current);
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
-  }, [videoId, startSec, endSec, hasRange]);
+  }, [videoId, startSec, endSec, hasRange, width, height]);
 
   if (!videoId || !hasRange || !showVideo) return null;
 
+  const vsc = (videoScale || 110) / 100;
+
   return React.createElement("div", {
-    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', pointerEvents: 'none', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', ...style },
+    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s' },
   },
-    React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
+    // Iframe: centered & scaled to cover, respecting user's position/scale
+    React.createElement("div", {
+      style: {
+        position: 'absolute', top: '50%', left: '50%', width: iW, height: iH,
+        transform: 'translate(-50%, -50%) scale(' + vsc + ')',
+        transformOrigin: (videoX ?? 50) + '% ' + (videoY ?? 50) + '%',
+      },
+    },
+      React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
+    ),
+    // Transparent overlay to block all YouTube UI interactions
+    React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
   );
 }
 
@@ -516,7 +532,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (card.layout === "full_bg") {
     return React.createElement("div", { style: wrapper },
       React.createElement(BgImage),
-      React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH }),
+      React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
@@ -534,7 +550,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH }),
+        React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       ),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
@@ -551,7 +567,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH }),
+    React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
     React.createElement(OverlayImgs), React.createElement(TimestampLink),
     bgOverlay,
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
