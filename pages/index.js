@@ -18,6 +18,7 @@ const RECENT_FEATURES = [
   '카드 이름 수정',
   '카드 순서 드래그 조정',
   '배경 이미지 업로드',
+  '텍스트 설정 (크기/자간/줄간격)',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -54,6 +55,7 @@ const DEFAULT_CARD = () => ({
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   bgImage: null, // base64 background image
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
+  textScale: 100, letterSpacing: 0, lineHeight: 1.4,
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
 });
 
@@ -135,23 +137,29 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   const padX = 60, padTop = 40;
   const maxTextW = w - padX * 2;
 
+  const textScaleF = (card.textScale ?? 100) / 100;
+  const lsVal = card.letterSpacing ?? 0;
+  const lhVal = card.lineHeight ?? 1.4;
+
   const fontMap = {
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
   };
-  const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", sz);
+  const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz * textScaleF));
 
   function wrapText(text, fontSize, fontName) {
     if (!text) return [];
     ctx.font = getFont(fontName, fontSize);
+    const effectiveMaxW = maxTextW;
     const lines = [];
     for (const para of text.split("\n")) {
       if (!para.trim()) { lines.push(""); continue; }
       let cur = "";
       for (const ch of para) {
         const test = cur + ch;
-        if (ctx.measureText(test).width > maxTextW && cur) { lines.push(cur); cur = ch; }
+        const extraLS = lsVal * test.length;
+        if (ctx.measureText(test).width + extraLS > effectiveMaxW && cur) { lines.push(cur); cur = ch; }
         else cur = test;
       }
       if (cur) lines.push(cur);
@@ -159,14 +167,30 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     return lines;
   }
 
+  // Helper to draw text with letter spacing
+  function drawTextLS(text, x, y) {
+    if (lsVal === 0) { ctx.fillText(text, x, y); return; }
+    let cx = x;
+    for (const ch of text) {
+      ctx.fillText(ch, cx, y);
+      cx += ctx.measureText(ch).width + lsVal;
+    }
+  }
+
   if (layout === "text_overlay") {
     if (!useBg) return canvas.toDataURL("image/png");
     const titleLines = wrapText(card.title, card.titleSize, card.titleFont);
     const subtitleLines = wrapText(card.subtitle, card.subtitleSize, card.subtitleFont);
     const bodyLines = wrapText(card.body, card.bodySize, card.bodyFont);
-    let totalTextH = padTop * 2 + titleLines.length * (card.titleSize + 8);
-    if (card.subtitle) totalTextH += 12 + subtitleLines.length * (card.subtitleSize + 8);
-    if (card.body) totalTextH += 24 + bodyLines.length * (card.bodySize + 10);
+    const scaledTitleSize = Math.round(card.titleSize * textScaleF);
+    const scaledSubtitleSize = Math.round(card.subtitleSize * textScaleF);
+    const scaledBodySize = Math.round(card.bodySize * textScaleF);
+    const titleLh = Math.round(scaledTitleSize * lhVal);
+    const subtitleLh = Math.round(scaledSubtitleSize * lhVal);
+    const bodyLh = Math.round(scaledBodySize * lhVal);
+    let totalTextH = padTop * 2 + titleLines.length * titleLh;
+    if (card.subtitle) totalTextH += 12 + subtitleLines.length * subtitleLh;
+    if (card.body) totalTextH += 24 + bodyLines.length * bodyLh;
     const gradH = Math.min(Math.round(h * 0.80), totalTextH + 200);
     const maxAlpha = Math.max(Math.round(bgOpacity * 255), 230) / 255;
     for (let y = h - gradH; y < h; y++) {
@@ -180,16 +204,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
     let curY = h - padTop;
     const allItems = [];
-    if (card.title) for (const ln of titleLines) allItems.push({ text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: card.titleSize + 8 });
-    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of subtitleLines) allItems.push({ text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: card.subtitleSize + 8 }); }
-    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of bodyLines) allItems.push({ text: ln, font: getFont(card.bodyFont, card.bodySize), color: card.bodyColor, lh: card.bodySize + 10 }); }
+    if (card.title) for (const ln of titleLines) allItems.push({ text: ln, font: getFont(card.titleFont, card.titleSize), color: card.titleColor, lh: titleLh });
+    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of subtitleLines) allItems.push({ text: ln, font: getFont(card.subtitleFont, card.subtitleSize), color: card.subtitleColor, lh: subtitleLh }); }
+    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of bodyLines) allItems.push({ text: ln, font: getFont(card.bodyFont, card.bodySize), color: card.bodyColor, lh: bodyLh }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
       if (!item.text) { curY -= 20; continue; }
       curY -= item.lh;
       ctx.font = item.font; ctx.fillStyle = item.color;
-      ctx.fillText(item.text, padX, curY + item.lh * 0.78);
+      drawTextLS(item.text, padX, curY + item.lh * 0.78);
     }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
@@ -199,10 +223,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
       ctx.fillRect(0, yStart, w, textH);
     }
+    const scaledTitleSz = Math.round(card.titleSize * textScaleF);
+    const scaledSubSz = Math.round(card.subtitleSize * textScaleF);
+    const scaledBodySz = Math.round(card.bodySize * textScaleF);
+    const titleLhN = Math.round(scaledTitleSz * lhVal);
+    const subLhN = Math.round(scaledSubSz * lhVal);
+    const bodyLhN = Math.round(scaledBodySz * lhVal);
     let curY = yStart + padTop;
-    if (card.title) { ctx.font = getFont(card.titleFont, card.titleSize); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, card.titleSize, card.titleFont)) { ctx.fillText(ln, padX, curY + card.titleSize * 0.85); curY += card.titleSize + 8; } }
-    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) { ctx.fillText(ln, padX, curY + card.subtitleSize * 0.85); curY += card.subtitleSize + 8; } }
-    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) { if (!ln) { curY += card.bodySize / 2; continue; } ctx.fillText(ln, padX, curY + card.bodySize * 0.85); curY += card.bodySize + 10; } }
+    if (card.title) { ctx.font = getFont(card.titleFont, card.titleSize); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, card.titleSize, card.titleFont)) { drawTextLS(ln, padX, curY + scaledTitleSz * 0.85); curY += titleLhN; } }
+    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, card.subtitleSize); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, card.subtitleSize, card.subtitleFont)) { drawTextLS(ln, padX, curY + scaledSubSz * 0.85); curY += subLhN; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, card.bodySize); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, card.bodySize, card.bodyFont)) { if (!ln) { curY += scaledBodySz / 2; continue; } drawTextLS(ln, padX, curY + scaledBodySz * 0.85); curY += bodyLhN; } }
   }
   ctx.fillStyle = "rgba(0,0,0,0.78)";
   ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
@@ -229,7 +259,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%' }) {
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 32 } }, label),
     React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => onChange(parseFloat(e.target.value)), style: { flex: 1, accentColor: T.accent } }),
-    React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right' } }, `${typeof value === 'number' && value < 1 ? Math.round(value * 100) : value}${suffix}`)
+    React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right' } }, `${suffix === '%' && typeof value === 'number' && value < 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value)}${suffix}`)
   );
 }
 
@@ -275,9 +305,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoFill = card.videoFill || "full";
   const useBg = card.useBg !== false;
   const sc = previewW / 1080;
-  const titleFs = Math.round(card.titleSize * sc);
-  const subtitleFs = Math.round(card.subtitleSize * sc);
-  const bodyFs = Math.round(card.bodySize * sc);
+  const textScaleF = (card.textScale ?? 100) / 100;
+  const titleFs = Math.round(card.titleSize * sc * textScaleF);
+  const subtitleFs = Math.round(card.subtitleSize * sc * textScaleF);
+  const bodyFs = Math.round(card.bodySize * sc * textScaleF);
+  const lsVal = (card.letterSpacing ?? 0) * sc;
+  const lhVal = card.lineHeight ?? 1.4;
   const padX = Math.round(60 * sc);
   const padTop = Math.round(40 * sc);
   const videoUrl = card.url || globalUrl || "";
@@ -309,9 +342,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: 1.3 } }, card.title),
-    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: 1.3 } }, card.subtitle),
-    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, card.body),
+    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: lhVal, letterSpacing: lsVal } }, card.title),
+    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: lhVal, letterSpacing: lsVal } }, card.subtitle),
+    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: lhVal, letterSpacing: lsVal, whiteSpace: "pre-wrap" } }, card.body),
   );
 
   const BgImage = () => displayImage
@@ -333,14 +366,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement(BgImage), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, height: "80%", background: `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},0.5) 20%, rgba(${bgRgb.join(",")},0.9) 40%, rgba(${bgRgb.join(",")},0.95) 100%)`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 2 } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: 1.3 } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: 1.3 } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, card.body),
+        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: lhVal, letterSpacing: lsVal } }, card.title),
+        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: lhVal, letterSpacing: lsVal } }, card.subtitle),
+        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: lhVal, letterSpacing: lsVal, whiteSpace: "pre-wrap" } }, card.body),
       ),
       !useBg && React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop}px ${padX}px`, zIndex: 2 } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: 1.3 } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: 1.3 } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, card.body),
+        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: lhVal, letterSpacing: lsVal } }, card.title),
+        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: lhVal, letterSpacing: lsVal } }, card.subtitle),
+        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: lhVal, letterSpacing: lsVal, whiteSpace: "pre-wrap" } }, card.body),
       ),
     );
   }
@@ -514,6 +547,13 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목 (크고 두껍게)", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용...", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+          ),
+
+          // 텍스트 설정 (폰트크기 배율, 자간, 줄간격)
+          React.createElement(Section, { title: "텍스트 설정" },
+            React.createElement(SliderRow, { label: "크기", value: card.textScale ?? 100, min: 50, max: 200, step: 5, onChange: (v) => update("textScale", v), suffix: '%' }),
+            React.createElement(SliderRow, { label: "자간", value: card.letterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("letterSpacing", v), suffix: 'px' }),
+            React.createElement(SliderRow, { label: "줄간", value: card.lineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("lineHeight", v), suffix: '' }),
           ),
 
           // 배경 설정
