@@ -316,11 +316,19 @@ function PillBtn({ active, children, onClick, style }) {
 }
 
 /* ── Slider Row ── */
-function SliderRow({ label, value, min, max, step, onChange, suffix = '%' }) {
+function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue }) {
+  const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
+  const displayVal = suffix === '%' && typeof value === 'number' && value < 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 42, whiteSpace: 'nowrap' } }, label),
     React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => onChange(parseFloat(e.target.value)), style: { flex: 1, accentColor: T.accent } }),
-    React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right' } }, `${suffix === '%' && typeof value === 'number' && value < 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value)}${suffix}`)
+    React.createElement("span", {
+      onDoubleClick: () => onChange(defVal),
+      style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
+      onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)',
+      onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
+      title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
+    }, `${displayVal}${suffix}`)
   );
 }
 
@@ -924,6 +932,27 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     ? `https://www.youtube.com/watch?v=${thumbnailId}&t=${Math.floor(seekTime)}s`
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
+  // Center alignment guide lines
+  const snap = 3; // px threshold (in preview scale)
+  const guides = [];
+  // Horizontal center guide: show when any center-aligned text has X near 0
+  const anyHCenter = [
+    { align: card.titleAlign, x: titleOX, active: !!card.title },
+    { align: card.subtitleAlign, x: subOX, active: !!card.subtitle },
+    { align: card.bodyAlign, x: bodyOXv, active: !!card.body },
+  ].some(t => t.active && t.align === 'center' && Math.abs(t.x) <= snap);
+  // Vertical center guide: show when any text has Y positioning it near vertical center
+  const anyVCenter = [
+    { y: titleOY, active: !!card.title },
+    { y: subOY, active: !!card.subtitle },
+    { y: bodyOYv, active: !!card.body },
+  ].some(t => t.active && Math.abs(t.y) <= snap);
+
+  const CenterGuides = () => React.createElement(React.Fragment, null,
+    anyHCenter && React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.6)', zIndex: 20, pointerEvents: 'none', transform: 'translateX(-0.5px)' } }),
+    anyVCenter && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.6)', zIndex: 20, pointerEvents: 'none', transform: 'translateY(-0.5px)' } }),
+  );
+
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
     card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
     card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
@@ -951,6 +980,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
+      React.createElement(CenterGuides),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
         card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
         card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
@@ -969,6 +999,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
       ),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
+      React.createElement(CenterGuides),
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
         useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgb(${bgRgb.join(",")})` } }),
         React.createElement(TextContent)
@@ -985,6 +1016,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     React.createElement(BgImage),
     videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
     React.createElement(OverlayImgs), React.createElement(TimestampLink),
+    React.createElement(CenterGuides),
     bgOverlay,
     React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
       React.createElement(TextContent)
@@ -1142,9 +1174,9 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
             React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-              React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
-              React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
-              React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+              React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
+              React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
+              React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
             ),
           ),
 
@@ -1166,7 +1198,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
                 ),
                 React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-                  React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+                  React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
                   React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
                 ),
               ),
@@ -1191,10 +1223,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 부제목
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -1212,10 +1244,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 본문
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -1233,10 +1265,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
-              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+              React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
             ),
           ),
 
@@ -1738,9 +1770,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
-    React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
-    React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
-    React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -1763,7 +1795,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
           React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
         ),
       ),
@@ -1787,10 +1819,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 부제목
     React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
@@ -1808,10 +1840,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 본문
     React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
@@ -1829,10 +1861,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
     ),
   );
 
@@ -2000,9 +2032,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v) }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v) }),
-      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v) }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
     ),
   );
 
@@ -2023,7 +2055,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v) })),
+          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: card.bgOpacity, min: 0, max: 1, step: 0.05, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
           React.createElement(CheckboxRow, { label: "\ud22c\uba85\ud558\uac8c", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
         ),
       ),
@@ -2044,10 +2076,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
@@ -2061,10 +2093,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
@@ -2078,10 +2110,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '' }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px' }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px' }),
+      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
     ),
   );
 
