@@ -356,18 +356,21 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const [zDragTime, setZDragTime] = useState(null);
   const [zDragX, setZDragX] = useState(0);
   const [zDragType, setZDragType] = useState(null); // 'seek' | 'start' | 'end'
+  const frozenRange = useRef(null); // freeze zoom range during start drag
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
-  // Zoom range: start - 5s to start + 35s (total 40s window)
-  const zStart = Math.max(0, startSec - 5);
-  const zEnd = Math.min(duration, startSec + 35);
+  // Zoom range: freeze during start-marker drag to prevent jumping
+  const liveZStart = Math.max(0, startSec - 5);
+  const liveZEnd = Math.min(duration, startSec + 35);
+  const zStart = frozenRange.current ? frozenRange.current.zStart : liveZStart;
+  const zEnd = frozenRange.current ? frozenRange.current.zEnd : liveZEnd;
   const zDur = zEnd - zStart;
   if (zDur <= 0) return null;
 
   const toZPct = (t) => ((t - zStart) / zDur) * 100;
   const curPct = Math.max(0, Math.min(100, toZPct(currentTime)));
-  const sPct = toZPct(startSec);
+  const sPct = Math.max(0, Math.min(100, toZPct(startSec)));
   const ePct = endSec != null ? Math.max(0, Math.min(100, toZPct(endSec))) : null;
 
   const calcZTime = (e) => {
@@ -379,6 +382,10 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const startMarkerDrag = (type, e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Freeze the zoom range so it doesn't jump during drag
+    frozenRange.current = { zStart, zEnd };
+    const snapEndSec = endSec;
+    const snapStartSec = startSec;
     const { time, x } = calcZTime(e);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
     const onMove = (ev) => {
@@ -386,15 +393,20 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       const t = Math.max(0, Math.min(duration, r.time));
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
-        if (endSec != null && t >= endSec) return;
+        if (snapEndSec != null && t >= snapEndSec) return;
         onStartChange(fmtMM(t));
       } else {
-        if (t <= startSec) return;
-        if (t - startSec > 30) { onEndChange(fmtMM(startSec + 30)); setZDragTime(startSec + 30); return; }
+        if (t <= snapStartSec) return;
+        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); return; }
         onEndChange(fmtMM(t));
       }
     };
-    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onUp = () => {
+      frozenRange.current = null;
+      setZDrag(false); setZDragTime(null); setZDragType(null);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   };
