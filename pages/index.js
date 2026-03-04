@@ -40,6 +40,7 @@ const LAYOUT_OPTIONS = [
   { id: "photo_top", label: "사진\u2191 텍스트\u2193" },
   { id: "photo_bottom", label: "텍스트\u2191 사진\u2193" },
   { id: "full_bg", label: "전체" },
+  { id: "text_box", label: "텍스트 박스" },
 ];
 
 const ASPECT_OPTIONS = [
@@ -75,6 +76,8 @@ const DEFAULT_CARD = () => ({
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
+  textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
+  textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
 });
 
 /* ── Responsive Hook ── */
@@ -247,6 +250,39 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
       ctx.font = item.font; ctx.fillStyle = item.color;
       drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + item.lh * 0.78 + (item.oy || 0), item.ls);
     }
+  } else if (layout === "text_box") {
+    // Text box layout: rounded box with text inside
+    const boxW = w * (card.textBoxWidth || 80) / 100;
+    const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
+    const boxY = (card.textBoxY || 70) / 100 * h;
+    const boxPad = card.textBoxPadding || 20;
+    const boxRad = card.textBoxRadius || 12;
+    const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
+    const boxBgOp = card.textBoxBgOpacity ?? 0.6;
+
+    // Draw rounded rectangle for box background
+    ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxRad, boxY - boxW/2);
+    ctx.arcTo(boxX + boxW, boxY - boxW/2, boxX + boxW, boxY - boxW/2 + boxRad, boxRad);
+    ctx.arcTo(boxX + boxW, boxY + boxW/2, boxX + boxW - boxRad, boxY + boxW/2, boxRad);
+    ctx.arcTo(boxX, boxY + boxW/2, boxX, boxY + boxW/2 - boxRad, boxRad);
+    ctx.arcTo(boxX, boxY - boxW/2, boxX + boxRad, boxY - boxW/2, boxRad);
+    ctx.fill();
+
+    // Draw text inside box
+    let curY = boxY - boxW/2 + boxPad + Math.round(titleSz * 0.85);
+    const textContentBoxW = boxW - boxPad * 2;
+    const alignXForBox = (text, align, fieldLS) => {
+      const tw = measureTextLS(text, fieldLS);
+      if (align === 'center') return boxX + boxW/2 - tw/2;
+      if (align === 'right') return boxX + boxW - boxPad - tw;
+      return boxX + boxPad;
+    };
+
+    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleOY, titleLS); curY += titleLh; } }
+    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
     const yStart = layout === "photo_top" ? h - textH : 0;
@@ -313,6 +349,49 @@ function PillBtn({ active, children, onClick, style }) {
       ...style,
     }
   }, children);
+}
+
+/* ── Layout Thumbnail ── */
+function LayoutThumb({ type, label, active, onClick }) {
+  const w = 48, h = 56;
+  const imgColor = 'rgba(255,255,255,0.15)';
+  const textColor = 'rgba(255,255,255,0.06)';
+  const lineColor = 'rgba(255,255,255,0.3)';
+  const border = active ? `2px solid ${T.accent}` : '2px solid rgba(255,255,255,0.1)';
+
+  const textLines = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: '2px', padding: '3px 6px' } },
+    React.createElement("div", { style: { height: 2, width: '80%', background: lineColor, borderRadius: 1 } }),
+    React.createElement("div", { style: { height: 2, width: '60%', background: lineColor, borderRadius: 1 } }),
+    React.createElement("div", { style: { height: 2, width: '40%', background: lineColor, borderRadius: 1, opacity: 0.5 } }),
+  );
+
+  let layout;
+  if (type === "photo_top") {
+    layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0 } },
+      React.createElement("div", { style: { flex: 1, background: imgColor } }),
+      React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
+    );
+  } else if (type === "photo_bottom") {
+    layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0 } },
+      React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
+      React.createElement("div", { style: { flex: 1, background: imgColor } }),
+    );
+  } else if (type === "full_bg") {
+    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: imgColor, position: 'relative' } },
+      React.createElement("div", { style: { width: '100%', background: 'rgba(0,0,0,0.5)', padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '1px' } }, textLines),
+    );
+  }
+
+  return React.createElement("button", {
+    onClick,
+    style: {
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: 0, background: 'none', border, borderRadius: T.radiusSm,
+      cursor: 'pointer', transition: 'all 0.15s', outline: 'none', padding: 4,
+    }
+  },
+    React.createElement("div", { style: { borderRadius: 4, overflow: 'hidden', border: `1px solid rgba(255,255,255,0.2)` } }, layout),
+    React.createElement("span", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, textAlign: 'center', maxWidth: 64, lineHeight: 1.2 } }, label),
+  );
 }
 
 /* ── Slider Row ── */
@@ -916,11 +995,28 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const seekTime = parseTime(card.start) ?? 0;
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
+  const [guidesVisible, setGuidesVisible] = useState(false);
+  const guidesTimer = useRef(null);
+  const prevPos = useRef({ titleOX: 0, titleOY: 0, subOX: 0, subOY: 0, bodyOXv: 0, bodyOYv: 0 });
 
   useEffect(() => {
     if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
     else setThumbSrc(null);
   }, [thumbnailId]);
+
+  // Track when position values change and show guides temporarily
+  useEffect(() => {
+    const prev = prevPos.current;
+    const changed = prev.titleOX !== titleOX || prev.titleOY !== titleOY ||
+                    prev.subOX !== subOX || prev.subOY !== subOY ||
+                    prev.bodyOXv !== bodyOXv || prev.bodyOYv !== bodyOYv;
+    prevPos.current = { titleOX, titleOY, subOX, subOY, bodyOXv, bodyOYv };
+    if (changed) {
+      setGuidesVisible(true);
+      if (guidesTimer.current) clearTimeout(guidesTimer.current);
+      guidesTimer.current = setTimeout(() => setGuidesVisible(false), 600);
+    }
+  }, [titleOX, titleOY, subOX, subOY, bodyOXv, bodyOYv]);
 
   const handleThumbError = () => {
     if (tried === 0) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`); setTried(1); }
@@ -939,26 +1035,36 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
   // Center alignment guide lines
-  // Center alignment guide lines
   const snapPx = Math.round(8 * sc); // ~8px threshold in original coords, scaled
   const textItems = [
     { align: card.titleAlign, x: titleOX, y: titleOY, active: !!card.title },
     { align: card.subtitleAlign, x: subOX, y: subOY, active: !!card.subtitle },
     { align: card.bodyAlign, x: bodyOXv, y: bodyOYv, active: !!card.body },
   ];
-  // Horizontal center guide: center-aligned text with X near 0
-  const anyHCenter = textItems.some(t => t.active && t.align === 'center' && Math.abs(t.x) <= snapPx);
-  // Also show horizontal guide for left-aligned at X=0 or right-aligned at X=0
-  const anyLeftGuide = textItems.some(t => t.active && (t.align || 'left') === 'left' && Math.abs(t.x) <= snapPx);
-  const anyRightGuide = textItems.some(t => t.active && t.align === 'right' && Math.abs(t.x) <= snapPx);
-  // Vertical guide: any text with Y near 0 (= default position)
+
+  // Horizontal center guide: show when text is visually at card center, regardless of alignment
+  // For center-aligned: x ≈ 0
+  // For left-aligned: x ≈ (previewW/2 - padX)
+  // For right-aligned: x ≈ -(previewW/2 - padX)
+  const centerOffset = Math.round(previewW / 2 - padX);
+  const anyHCenter = textItems.some(t => {
+    if (!t.active) return false;
+    const align = t.align || 'left';
+    if (align === 'center') return Math.abs(t.x) <= snapPx;
+    if (align === 'left') return Math.abs(t.x - centerOffset) <= snapPx;
+    if (align === 'right') return Math.abs(t.x + centerOffset) <= snapPx;
+    return false;
+  });
+
+  // Vertical guide: show when text is near the card's vertical center
+  // For simplicity, show when offset is near 0 (default position)
   const anyVCenter = textItems.some(t => t.active && Math.abs(t.y) <= snapPx);
 
   const guideStyle = { position: 'absolute', zIndex: 20, pointerEvents: 'none' };
-  const CenterGuides = () => React.createElement(React.Fragment, null,
+  const CenterGuides = () => guidesVisible ? React.createElement(React.Fragment, null,
     anyHCenter && React.createElement("div", { style: { ...guideStyle, top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.7)', transform: 'translateX(-0.5px)' } }),
     anyVCenter && React.createElement("div", { style: { ...guideStyle, left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.5)', transform: 'translateY(-0.5px)' } }),
-  );
+  ) : null;
 
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
     card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
@@ -989,6 +1095,33 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement(CenterGuides),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
+        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
+        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
+        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+      ),
+    );
+  }
+
+  if (card.layout === "text_box") {
+    const boxW = previewW * (card.textBoxWidth || 80) / 100;
+    const boxX = (card.textBoxX || 50) / 100 * previewW - boxW / 2;
+    const boxY = (card.textBoxY || 70) / 100 * previewH;
+    const boxPad = Math.round((card.textBoxPadding || 20) * sc);
+    const boxRad = Math.round((card.textBoxRadius || 12) * sc);
+    const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
+    const boxBgOp = card.textBoxBgOpacity ?? 0.6;
+
+    return React.createElement("div", { style: wrapper },
+      React.createElement(BgImage),
+      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+      React.createElement(OverlayImgs), React.createElement(TimestampLink),
+      React.createElement(CenterGuides),
+      React.createElement("div", { style: {
+        position: 'absolute', left: boxX, top: boxY, width: boxW,
+        background: `rgba(${boxBgRgb.join(',')},${boxBgOp})`,
+        borderRadius: boxRad, padding: boxPad, zIndex: 3,
+        transform: 'translateY(-50%)', boxSizing: 'border-box'
+      }},
         card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
         card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
         card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
@@ -1189,13 +1322,30 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 레이아웃
           React.createElement(Section, { title: "레이아웃" },
-            React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-              LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+            React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
             ),
             (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
-            card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
-            // 텍스트 배경 설정
-            React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
+            card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            // 텍스트 박스 설정
+            card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
+              React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "박스 설정"),
+              React.createElement(SliderRow, { label: "좌우 위치", value: card.textBoxX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("textBoxX", v), suffix: '%', defaultValue: 50 }),
+              React.createElement(SliderRow, { label: "위아래 위치", value: card.textBoxY ?? 70, min: 0, max: 100, step: 1, onChange: (v) => update("textBoxY", v), suffix: '%', defaultValue: 70 }),
+              React.createElement(SliderRow, { label: "박스 너비", value: card.textBoxWidth ?? 80, min: 20, max: 100, step: 5, onChange: (v) => update("textBoxWidth", v), suffix: '%', defaultValue: 80 }),
+              React.createElement(SliderRow, { label: "안쪽 여백", value: card.textBoxPadding ?? 20, min: 5, max: 60, step: 1, onChange: (v) => update("textBoxPadding", v), suffix: 'px', defaultValue: 20 }),
+              React.createElement(SliderRow, { label: "둥글기", value: card.textBoxRadius ?? 12, min: 0, max: 40, step: 1, onChange: (v) => update("textBoxRadius", v), suffix: 'px', defaultValue: 12 }),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
+                React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "배경색"),
+                React.createElement("input", { type: "color", value: card.textBoxBgColor ?? "#000000", onChange: (e) => update("textBoxBgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+                React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBgColor ?? "#000000"),
+              ),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
+                React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.textBoxBgOpacity ?? 0.6, min: 0, max: 1, step: 0.05, onChange: (v) => update("textBoxBgOpacity", v), defaultValue: 0.6 })),
+              ),
+            ),
+            // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
+            card.layout !== "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "텍스트 배경 설정"),
               React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
               card.useBg !== false && React.createElement(React.Fragment, null,
@@ -1785,8 +1935,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", null,
       React.createElement("label", { style: labelBase }, "레이아웃"),
-      React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+      React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
       )
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
@@ -2047,8 +2197,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Layout Tab \u2500\u2500
   const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-      LAYOUT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+      LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "\uadf8\ub77c\ub370\uc774\uc158", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
     card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
