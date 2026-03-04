@@ -319,8 +319,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
 
-  // Determine background image: card-level > global-level > thumbnail
-  const bgImageSrc = card.bgImage || globalBgImage || null;
+  // Determine background image priority:
+  // 1) Card-level uploaded image (imageSource=upload) > card bgImage > global bgImage
+  // 2) Card's own URL thumbnail > global URL thumbnail
+  const cardUpload = (card.imageSource === 'upload' && card.uploadedImage) ? card.uploadedImage : null;
+  const bgImageSrc = cardUpload || card.bgImage || globalBgImage || null;
 
   useEffect(() => {
     if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
@@ -332,8 +335,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
-  // Use uploaded image or thumbnail
-  const displayImage = bgImageSrc || thumbSrc;
+  // Display priority: card-level overrides > global > fallback
+  // If card has explicit image content (upload/bgImage/own URL), it takes priority over global
+  const hasCardOverride = cardUpload || card.bgImage || (card.url && card.url.trim());
+  const displayImage = hasCardOverride
+    ? (cardUpload || card.bgImage || thumbSrc)
+    : (globalBgImage || thumbSrc);
 
   const bgRgb = card.bgColor.replace("#", "").match(/.{2}/g)?.map(h => parseInt(h, 16)) || [18,18,18];
   const vScale = (card.videoScale || 110) / 100;
@@ -347,8 +354,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: lhVal, letterSpacing: lsVal, whiteSpace: "pre-wrap" } }, card.body),
   );
 
+  const isStaticImage = cardUpload || card.bgImage || globalBgImage;
+  const isThumb = displayImage === thumbSrc && !isStaticImage;
   const BgImage = () => displayImage
-    ? React.createElement("img", { src: displayImage, alt: "", onError: bgImageSrc ? undefined : handleThumbError, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: bgImageSrc ? 'none' : `scale(${vScale})`, transformOrigin: bgImageSrc ? 'center' : `${card.videoX}% ${card.videoY}%` } })
+    ? React.createElement("img", { src: displayImage, alt: "", onError: isThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: isThumb ? `scale(${vScale})` : 'none', transformOrigin: isThumb ? `${card.videoX}% ${card.videoY}%` : 'center' } })
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
@@ -411,25 +420,52 @@ function Section({ title, children }) {
 
 /* ── Image Upload Field ── */
 function ImageUploadField({ value, onChange, label = "이미지 업로드", maxMb = 3 }) {
-  return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
-    React.createElement("input", {
-      type: "file", accept: "image/*",
-      onChange: (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        if (file.size > maxMb * 1024 * 1024) { alert(`${maxMb}MB 이하 이미지만 업로드 가능합니다.`); e.target.value = ''; return; }
-        const reader = new FileReader();
-        reader.onload = () => onChange(reader.result);
-        reader.readAsDataURL(file);
-      },
-      style: { fontSize: 12, color: T.textSecondary },
-    }),
-    value && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-      React.createElement("img", { src: value, style: { width: 48, height: 48, borderRadius: 6, objectFit: 'cover' } }),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "업로드 완료"),
-      React.createElement("button", { onClick: () => onChange(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer' } }, "삭제"),
+  const fileRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFile = (file) => {
+    if (!file) return;
+    if (file.size > maxMb * 1024 * 1024) { alert(`${maxMb}MB 이하 이미지만 업로드 가능합니다.`); return; }
+    const reader = new FileReader();
+    reader.onload = () => onChange(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  if (value) {
+    return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, padding: 10, background: 'rgba(99,102,241,0.06)', borderRadius: T.radiusSm, border: `1px solid rgba(99,102,241,0.15)` } },
+      React.createElement("img", { src: value, style: { width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: `1px solid ${T.border}` } }),
+      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.accent, fontWeight: 500 } }, "\u2713 이미지 적용됨"),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+          React.createElement("button", { onClick: () => fileRef.current?.click(), style: { background: 'none', border: 'none', color: T.textSecondary, fontSize: 11, cursor: 'pointer', padding: 0, textDecoration: 'underline' } }, "변경"),
+          React.createElement("button", { onClick: () => onChange(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: 0, textDecoration: 'underline' } }, "삭제"),
+        ),
+      ),
+      React.createElement("input", { ref: fileRef, type: "file", accept: "image/*", onChange: (e) => handleFile(e.target.files?.[0]), style: { display: 'none' } }),
+    );
+  }
+
+  return React.createElement("div", {
+    onClick: () => fileRef.current?.click(),
+    onDragOver: (e) => { e.preventDefault(); setDragOver(true); },
+    onDragLeave: () => setDragOver(false),
+    onDrop: (e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); },
+    style: {
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
+      padding: '20px 16px', borderRadius: T.radiusSm,
+      border: `2px dashed ${dragOver ? T.accent : T.border}`,
+      background: dragOver ? 'rgba(99,102,241,0.06)' : 'transparent',
+      cursor: 'pointer', transition: 'all 0.2s', userSelect: 'none',
+    },
+    onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.background = 'rgba(99,102,241,0.04)'; },
+    onMouseLeave: (e) => { if (!dragOver) { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'transparent'; } },
+  },
+    React.createElement("div", { style: { width: 36, height: 36, borderRadius: '50%', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+      React.createElement("span", { style: { fontSize: 18, color: T.accent } }, "\u2191"),
     ),
-    !value && React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `${maxMb}MB 이하 \u00B7 JPG, PNG 권장`),
+    React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, fontWeight: 500 } }, "클릭 또는 드래그하여 업로드"),
+    React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `${maxMb}MB 이하 \u00B7 JPG, PNG 권장`),
+    React.createElement("input", { ref: fileRef, type: "file", accept: "image/*", onChange: (e) => handleFile(e.target.files?.[0]), style: { display: 'none' } }),
   );
 }
 
@@ -1152,8 +1188,8 @@ export default function App() {
         )
       ),
 
-      // Global background image upload (when image format)
-      outputFormat === 'image' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow } },
+      // Global background image upload (only when image format + upload source)
+      outputFormat === 'image' && globalImageSource === 'upload' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow } },
         React.createElement("label", { style: labelBase }, "공통 배경 이미지"),
         React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
       ),
