@@ -677,7 +677,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
 
   const toggleMute = () => {
     if (!playerRef.current) return;
-    if (muted) { playerRef.current.unMute(); playerRef.current.setVolume(50); setMuted(false); }
+    if (muted) {
+      playerRef.current.unMute(); playerRef.current.setVolume(50); setMuted(false);
+      if (onClipUnmute) onClipUnmute(); // 카드리스트 미리보기 음소거 처리
+    }
     else { playerRef.current.mute(); setMuted(true); }
   };
 
