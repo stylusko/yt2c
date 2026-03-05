@@ -740,17 +740,25 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const markStart = () => {
     const t = currentTime;
     lastStartRef.current = t;
+    // Immediately update refs so auto-loop tick uses new values this frame
+    startSecRef.current = t;
     onStartChange(fmtMM(t));
     const es = parseTime(end);
+    let newEnd;
     // Reset end if it's before the new start, or no end set → default 10s
     if (es == null || es <= t) {
-      onEndChange(fmtMM(Math.min(t + 10, duration || t + 10)));
+      newEnd = Math.min(t + 10, duration || t + 10);
     }
     // If end is set and clip > 30s, adjust end
     else if (es - t > 30) {
-      onEndChange(fmtMM(t + 30));
+      newEnd = t + 30;
       showWarn();
+    } else {
+      newEnd = es; // keep existing end
     }
+    if (newEnd !== es) onEndChange(fmtMM(newEnd));
+    endSecRef.current = newEnd;
+    manualSeekOutside.current = false;
   };
 
   const markEnd = () => {
@@ -758,12 +766,16 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     // Use ref first (most recent markStart), fall back to prop
     const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
     if (ss != null && t < ss) return; // end before start — ignore
+    let newEnd;
     if (ss != null && t - ss > 30) {
-      onEndChange(fmtMM(ss + 30));
+      newEnd = ss + 30;
       showWarn();
     } else {
-      onEndChange(fmtMM(t));
+      newEnd = t;
     }
+    onEndChange(fmtMM(newEnd));
+    endSecRef.current = newEnd;
+    manualSeekOutside.current = false;
   };
 
   const MAX_CLIP = 30;
