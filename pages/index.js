@@ -895,7 +895,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { if (!cancelled) { e.target.setVolume(0); e.target.playVideo(); setReady(true); } },
+          onReady: (e) => { if (!cancelled) { if (mutedProp === false) { e.target.unMute(); e.target.setVolume(80); } else { e.target.mute(); e.target.setVolume(0); } e.target.playVideo(); setReady(true); } },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
               e.target.seekTo(Math.floor(startSec), true);
@@ -1090,7 +1090,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (card.layout === "full_bg") {
     return React.createElement("div", { style: wrapper },
       React.createElement(BgImage),
-      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement(CenterGuides),
@@ -1113,7 +1113,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
     return React.createElement("div", { style: wrapper },
       React.createElement(BgImage),
-      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement(CenterGuides),
       React.createElement("div", { style: {
@@ -1136,7 +1136,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
       ),
       React.createElement(OverlayImgs), React.createElement(TimestampLink),
       React.createElement(CenterGuides),
@@ -1154,7 +1154,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale }),
+    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
     React.createElement(OverlayImgs), React.createElement(TimestampLink),
     React.createElement(CenterGuides),
     bgOverlay,
