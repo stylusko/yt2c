@@ -741,7 +741,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const markStart = () => {
     // Pause loop to prevent tick from seeking during state transition
     loopPaused.current = true;
-    const t = currentTime;
+    // Read player position directly to avoid stale React state from rAF tick race
+    const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
     const es = parseTime(end);
     // New start at current position
     const newStart = t;
@@ -770,7 +771,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
 
   const markEnd = () => {
     loopPaused.current = true;
-    const t = currentTime;
+    // Read player position directly to avoid stale React state from rAF tick race
+    const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
     const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
     const prevClipLen = (startSec != null && endSec != null && endSec > startSec) ? Math.min(endSec - startSec, 30) : 10;
 
