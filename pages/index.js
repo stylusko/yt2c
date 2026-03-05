@@ -579,6 +579,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const warnTimer = useRef(null);
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
+  const loopPaused = useRef(false);
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -658,7 +659,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
         const t = playerRef.current.getCurrentTime();
         setCurrent(t);
         const ss = startSecRef.current, es = endSecRef.current;
-        if (!manualSeekOutside.current && ss != null && es != null && es > ss && t >= es - 0.15) {
+        if (!manualSeekOutside.current && !loopPaused.current && ss != null && es != null && es > ss && t >= es - 0.15) {
           playerRef.current.seekTo(ss, true);
         }
       }
@@ -738,44 +739,64 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   };
 
   const markStart = () => {
+    // Pause loop to prevent tick from seeking during state transition
+    loopPaused.current = true;
     const t = currentTime;
-    lastStartRef.current = t;
-    // Immediately update refs so auto-loop tick uses new values this frame
-    startSecRef.current = t;
-    onStartChange(fmtMM(t));
     const es = parseTime(end);
+    // New start at current position
+    const newStart = t;
     let newEnd;
-    // Reset end if it's before the new start, or no end set → default 10s
     if (es == null || es <= t) {
+      // No end, or end is before new start → default +10s
       newEnd = Math.min(t + 10, duration || t + 10);
-    }
-    // If end is set and clip > 30s, adjust end
-    else if (es - t > 30) {
+    } else if (es - t > 30) {
+      // Clip would exceed 30s → cap at 30s
       newEnd = t + 30;
       showWarn();
     } else {
-      newEnd = es; // keep existing end
+      newEnd = es; // keep existing end as-is
     }
-    if (newEnd !== es) onEndChange(fmtMM(newEnd));
+    // Update refs immediately (before React re-render)
+    startSecRef.current = newStart;
     endSecRef.current = newEnd;
+    lastStartRef.current = newStart;
     manualSeekOutside.current = false;
+    // Update parent state
+    onStartChange(fmtMM(newStart));
+    if (newEnd !== es) onEndChange(fmtMM(newEnd));
+    // Resume loop after a short delay to let React settle
+    setTimeout(() => { loopPaused.current = false; }, 100);
   };
 
   const markEnd = () => {
+    loopPaused.current = true;
     const t = currentTime;
-    // Use ref first (most recent markStart), fall back to prop
     const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
-    if (ss != null && t < ss) return; // end before start — ignore
-    let newEnd;
-    if (ss != null && t - ss > 30) {
-      newEnd = ss + 30;
+    const prevClipLen = (startSec != null && endSec != null && endSec > startSec) ? Math.min(endSec - startSec, 30) : 10;
+
+    if (ss == null || t < ss) {
+      // No start set, or current time is before start → auto-set start
+      // Place start marker [prevClipLen] seconds before current time
+      const newStart = Math.max(0, t - prevClipLen);
+      const newEnd = t;
+      startSecRef.current = newStart;
+      endSecRef.current = newEnd;
+      lastStartRef.current = newStart;
+      onStartChange(fmtMM(newStart));
+      onEndChange(fmtMM(newEnd));
+    } else if (t - ss > 30) {
+      // Exceeds 30s → cap at start + 30s
+      const newEnd = ss + 30;
+      endSecRef.current = newEnd;
+      onEndChange(fmtMM(newEnd));
       showWarn();
     } else {
-      newEnd = t;
+      // Normal case: set end at current time
+      endSecRef.current = t;
+      onEndChange(fmtMM(t));
     }
-    onEndChange(fmtMM(newEnd));
-    endSecRef.current = newEnd;
     manualSeekOutside.current = false;
+    setTimeout(() => { loopPaused.current = false; }, 100);
   };
 
   const MAX_CLIP = 30;
