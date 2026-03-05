@@ -180,10 +180,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   };
   const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz));
 
-  function wrapText(text, fontSize, fontName, fieldLS) {
+  function wrapText(text, fontSize, fontName, fieldLS, customMaxW) {
     if (!text) return [];
     ctx.font = getFont(fontName, fontSize);
-    const effectiveMaxW = maxTextW;
+    const effectiveMaxW = customMaxW || maxTextW;
     const lines = [];
     for (const para of text.split("\n")) {
       if (!para.trim()) { lines.push(""); continue; }
@@ -241,8 +241,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     let curY = h - padTop;
     const allItems = [];
     if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
-    if (card.subtitle) { allItems.push({ type: "gap", size: 12 }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
-    if (card.body) { allItems.push({ type: "gap", size: 24 }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' }); }
+    if (card.subtitle) { allItems.push({ type: "gap", size: Math.round(3 * w / 320) }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
+    if (card.body) { allItems.push({ type: "gap", size: Math.round(5 * w / 320) }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
@@ -254,7 +254,6 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   } else if (layout === "text_box") {
     // Text box layout: rounded box with text inside
     const boxW = w * (card.textBoxWidth || 80) / 100;
-    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxW;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     const boxY = (card.textBoxY || 70) / 100 * h;
     const boxPad = card.textBoxPadding || 20;
@@ -262,6 +261,20 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
     const boxBgOp = card.textBoxBgOpacity ?? 0.6;
     const boxBorderW = card.textBoxBorderWidth || 0;
+    const textContentBoxW = boxW - boxPad * 2;
+
+    // Pre-wrap text using box width constraint (not full canvas width)
+    const titleLines = card.title ? wrapText(card.title, titleSz, card.titleFont, titleLS, textContentBoxW) : [];
+    const subtitleLines = card.subtitle ? wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS, textContentBoxW) : [];
+    const bodyLines = card.body ? wrapText(card.body, bodySz, card.bodyFont, bodyLS, textContentBoxW) : [];
+
+    // Calculate actual text content height for auto-height (matching preview CSS auto-height)
+    let contentH = 0;
+    if (titleLines.length > 0) contentH += titleLines.length * titleLh;
+    if (subtitleLines.length > 0) { if (titleLines.length > 0) contentH += Math.round(5 * w / 320); contentH += subtitleLines.length * subLh; }
+    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(7 * w / 320); contentH += bodyLines.length * bodyLh; }
+
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
 
     // Draw rounded rectangle for box background
     ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
@@ -279,18 +292,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
 
     // Draw text inside box
-    let curY = boxY - boxH/2 + boxPad + Math.round(titleSz * 0.85);
-    const textContentBoxW = boxW - boxPad * 2;
     const alignXForBox = (text, align, fieldLS) => {
       const tw = measureTextLS(text, fieldLS);
       if (align === 'center') return boxX + boxW/2 - tw/2;
       if (align === 'right') return boxX + boxW - boxPad - tw;
       return boxX + boxPad;
     };
-
-    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
+    let curY = boxY - boxH/2 + boxPad + Math.round(titleSz * 0.85);
+    if (titleLines.length > 0) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of titleLines) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleOY, titleLS); curY += titleLh; } }
+    if (subtitleLines.length > 0) { if (titleLines.length > 0) curY += Math.round(5 * w / 320); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of subtitleLines) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(7 * w / 320); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
     const yStart = layout === "photo_top" ? h - textH : 0;
@@ -317,8 +328,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
     let curY = yStart + padTop;
     if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleSz * 0.85 + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += 8; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += 16; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
+    if (card.subtitle) { if (card.title) curY += Math.round(3 * w / 320); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (card.body) { if (card.title || card.subtitle) curY += Math.round(7 * w / 320); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   }
   // Draw overlay images
   const overlays = card.overlays || [];
