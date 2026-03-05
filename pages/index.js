@@ -78,6 +78,7 @@ const DEFAULT_CARD = () => ({
   captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
+  textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
 });
 
 /* ── Responsive Hook ── */
@@ -253,25 +254,32 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
   } else if (layout === "text_box") {
     // Text box layout: rounded box with text inside
     const boxW = w * (card.textBoxWidth || 80) / 100;
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxW;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     const boxY = (card.textBoxY || 70) / 100 * h;
     const boxPad = card.textBoxPadding || 20;
     const boxRad = card.textBoxRadius || 12;
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
     const boxBgOp = card.textBoxBgOpacity ?? 0.6;
+    const boxBorderW = card.textBoxBorderWidth || 0;
 
     // Draw rounded rectangle for box background
     ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
     ctx.beginPath();
-    ctx.moveTo(boxX + boxRad, boxY - boxW/2);
-    ctx.arcTo(boxX + boxW, boxY - boxW/2, boxX + boxW, boxY - boxW/2 + boxRad, boxRad);
-    ctx.arcTo(boxX + boxW, boxY + boxW/2, boxX + boxW - boxRad, boxY + boxW/2, boxRad);
-    ctx.arcTo(boxX, boxY + boxW/2, boxX, boxY + boxW/2 - boxRad, boxRad);
-    ctx.arcTo(boxX, boxY - boxW/2, boxX + boxRad, boxY - boxW/2, boxRad);
+    ctx.moveTo(boxX + boxRad, boxY - boxH/2);
+    ctx.arcTo(boxX + boxW, boxY - boxH/2, boxX + boxW, boxY - boxH/2 + boxRad, boxRad);
+    ctx.arcTo(boxX + boxW, boxY + boxH/2, boxX + boxW - boxRad, boxY + boxH/2, boxRad);
+    ctx.arcTo(boxX, boxY + boxH/2, boxX, boxY + boxH/2 - boxRad, boxRad);
+    ctx.arcTo(boxX, boxY - boxH/2, boxX + boxRad, boxY - boxH/2, boxRad);
     ctx.fill();
+    if (boxBorderW > 0) {
+      ctx.strokeStyle = card.textBoxBorderColor || '#ffffff';
+      ctx.lineWidth = boxBorderW;
+      ctx.stroke();
+    }
 
     // Draw text inside box
-    let curY = boxY - boxW/2 + boxPad + Math.round(titleSz * 0.85);
+    let curY = boxY - boxH/2 + boxPad + Math.round(titleSz * 0.85);
     const textContentBoxW = boxW - boxPad * 2;
     const alignXForBox = (text, align, fieldLS) => {
       const tw = measureTextLS(text, fieldLS);
@@ -1192,9 +1200,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       React.createElement(CenterGuides),
       React.createElement("div", { style: {
         position: 'absolute', left: boxX, top: boxY, width: boxW,
+        ...((card.textBoxHeight || 0) > 0 ? { height: previewH * (card.textBoxHeight / 100) } : {}),
         background: `rgba(${boxBgRgb.join(',')},${boxBgOp})`,
         borderRadius: boxRad, padding: boxPad, zIndex: 3,
-        transform: 'translateY(-50%)', boxSizing: 'border-box'
+        transform: 'translateY(-50%)', boxSizing: 'border-box',
+        ...((card.textBoxBorderWidth || 0) > 0 ? { border: `${Math.round((card.textBoxBorderWidth) * sc)}px solid ${card.textBoxBorderColor || '#ffffff'}` } : {}),
+        overflow: 'hidden',
       }},
         card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
         card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
@@ -1402,6 +1413,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "좌우 위치", value: card.textBoxX ?? 50, min: 0, max: 100, step: 1, onChange: (v) => update("textBoxX", v), suffix: '%', defaultValue: 50 }),
               React.createElement(SliderRow, { label: "위아래 위치", value: card.textBoxY ?? 70, min: 0, max: 100, step: 1, onChange: (v) => update("textBoxY", v), suffix: '%', defaultValue: 70 }),
               React.createElement(SliderRow, { label: "박스 너비", value: card.textBoxWidth ?? 80, min: 20, max: 100, step: 5, onChange: (v) => update("textBoxWidth", v), suffix: '%', defaultValue: 80 }),
+              React.createElement(SliderRow, { label: "박스 높이", value: card.textBoxHeight ?? 0, min: 0, max: 100, step: 5, onChange: (v) => update("textBoxHeight", v), suffix: (card.textBoxHeight ?? 0) === 0 ? ' 자동' : '%', defaultValue: 0 }),
               React.createElement(SliderRow, { label: "안쪽 여백", value: card.textBoxPadding ?? 20, min: 5, max: 60, step: 1, onChange: (v) => update("textBoxPadding", v), suffix: 'px', defaultValue: 20 }),
               React.createElement(SliderRow, { label: "둥글기", value: card.textBoxRadius ?? 12, min: 0, max: 40, step: 1, onChange: (v) => update("textBoxRadius", v), suffix: 'px', defaultValue: 12 }),
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
@@ -1412,6 +1424,12 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
                 React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.textBoxBgOpacity ?? 0.6, min: 0, max: 1, step: 0.05, onChange: (v) => update("textBoxBgOpacity", v), defaultValue: 0.6 })),
               ),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
+                React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "테두리 색"),
+                React.createElement("input", { type: "color", value: card.textBoxBorderColor ?? "#ffffff", onChange: (e) => update("textBoxBorderColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
+                React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBorderColor ?? "#ffffff"),
+              ),
+              React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 영상 채우기
             card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 8 } },
