@@ -561,7 +561,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -768,6 +768,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       onStartChange(fmtMM(newStart));
       if (newEnd !== es) onEndChange(fmtMM(newEnd));
     }
+    if (onClipConfirmed) onClipConfirmed();
   };
 
   const markEnd = () => {
@@ -797,6 +798,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       if (newStart !== ss) onStartChange(fmtMM(newStart));
       onEndChange(fmtMM(newEnd));
     }
+    if (onClipConfirmed) onClipConfirmed();
   };
 
   const MAX_CLIP = 30;
@@ -2255,7 +2257,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); } }),
+      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); } }),
       card.layout !== "full_bg" && React.createElement("div", null,
         React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
         React.createElement("div", { style: { display: 'flex', gap: 6 } },
