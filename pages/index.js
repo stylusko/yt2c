@@ -576,6 +576,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const [muted, setMuted] = useState(clipMuted !== undefined ? clipMuted : true);
   const [warnToast, setWarnToast] = useState(false);
   const warnTimer = useRef(null);
+  const manualSeekOutside = useRef(false);
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -584,6 +585,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const startSec = parseTime(start);
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
+
+  // Reset manual seek flag when clip range changes
+  useEffect(() => { manualSeekOutside.current = false; }, [startSec, endSec]);
 
   // Load YT API
   useEffect(() => {
@@ -638,22 +642,37 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
   }, [videoId]);
 
-  // Poll current time
+  // Poll current time + auto-loop within clip range
   useEffect(() => {
     const tick = () => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
-        setCurrent(playerRef.current.getCurrentTime());
+        const t = playerRef.current.getCurrentTime();
+        setCurrent(t);
+        // Auto-loop: if playing and within clip range, loop back to start when reaching end
+        if (!manualSeekOutside.current && startSec != null && endSec != null && endSec > startSec && t >= endSec - 0.15) {
+          playerRef.current.seekTo(startSec, true);
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, []);
+  }, [startSec, endSec]);
 
   const togglePlay = () => {
     if (!playerRef.current) return;
-    if (playing) playerRef.current.pauseVideo();
-    else playerRef.current.playVideo();
+    if (playing) { playerRef.current.pauseVideo(); }
+    else {
+      // If clip range exists and playhead is outside range, seek to start
+      if (startSec != null && endSec != null && endSec > startSec) {
+        const t = playerRef.current.getCurrentTime();
+        if (t < startSec || t >= endSec) {
+          playerRef.current.seekTo(startSec, true);
+          manualSeekOutside.current = false;
+        }
+      }
+      playerRef.current.playVideo();
+    }
   };
 
   const toggleMute = () => {
@@ -681,12 +700,17 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const handleSeekDown = (e) => {
     e.preventDefault();
     const { time, x } = calcSeekTime(e);
+    // Track if user seeks outside the clip range
+    const inRange = startSec != null && endSec != null && time >= startSec && time <= endSec;
+    manualSeekOutside.current = !inRange;
     seekTo(time);
     setDragging(true);
     setDragTime(time);
     setDragX(x);
     const onMove = (ev) => {
       const { time: t, x: mx } = calcSeekTime(ev);
+      const inR = startSec != null && endSec != null && t >= startSec && t <= endSec;
+      manualSeekOutside.current = !inR;
       seekTo(t);
       setDragTime(t);
       setDragX(mx);
