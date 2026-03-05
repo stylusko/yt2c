@@ -418,11 +418,11 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
 }
 
 /* ── Text Field Row (checkbox + input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle }) {
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId }) {
   const disabled = enabled === false;
   const input = rows
-    ? React.createElement("textarea", { value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
-    : React.createElement("input", { type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
+    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
 
   return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
     React.createElement("div", {
@@ -1037,7 +1037,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -1141,10 +1141,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     anyVCenter && React.createElement("div", { style: { ...guideStyle, left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.5)', transform: 'translateY(-0.5px)' } }),
   ) : null;
 
+  const textClickStyle = onTextClick ? { cursor: 'pointer' } : {};
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
-    card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
-    card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+    card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+    card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+    card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
   );
 
   const BgImage = () => baseImage
@@ -1170,9 +1171,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement(CenterGuides),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+        card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
       ),
     );
   }
@@ -1197,9 +1198,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         borderRadius: boxRad, padding: boxPad, zIndex: 3,
         transform: 'translateY(-50%)', boxSizing: 'border-box'
       }},
-        card.title && React.createElement("div", { style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)` } }, card.title),
-        card.subtitle && React.createElement("div", { style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)` } }, card.subtitle),
-        card.body && React.createElement("div", { style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)` } }, card.body),
+        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+        card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
       ),
     );
   }
@@ -1379,12 +1380,6 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
               React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
               React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
-              card.layout !== "full_bg" && React.createElement("div", null,
-                React.createElement("label", { style: labelBase }, "영상 채우기"),
-                React.createElement("div", { style: { display: 'flex', gap: 6 } },
-                  VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-                )
-              ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
@@ -1419,6 +1414,13 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
                 React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.textBoxBgOpacity ?? 0.6, min: 0, max: 1, step: 0.05, onChange: (v) => update("textBoxBgOpacity", v), defaultValue: 0.6 })),
               ),
+            ),
+            // 영상 채우기
+            card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 8 } },
+              React.createElement("label", { style: labelBase }, "영상 채우기"),
+              React.createElement("div", { style: { display: 'flex', gap: 6 } },
+                VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+              )
             ),
             // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
             card.layout !== "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
@@ -1985,6 +1987,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   const previewCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
 
+  const handlePreviewTextClick = (field) => {
+    setActiveTab('text');
+    setTimeout(() => {
+      const el = document.getElementById('mob-text-' + field);
+      if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }, 50);
+  };
+
   // Tab content renderers
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
@@ -1995,12 +2005,6 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-      ),
-      card.layout !== "full_bg" && React.createElement("div", { style: { marginBottom: 8 } },
-        React.createElement("label", { style: labelBase }, "영상 채우기"),
-        React.createElement("div", { style: { display: 'flex', gap: 6 } },
-          VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-        )
       ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
@@ -2018,6 +2022,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
     card.layout !== "full_bg" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+    // 영상 채우기
+    card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 4 } },
+      React.createElement("label", { style: labelBase }, "영상 채우기"),
+      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+        VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+      )
+    ),
     // 텍스트 배경 설정
     React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
       React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 배경 설정"),
@@ -2038,7 +2049,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     // 제목
-    React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", {
       onClick: () => setShowDetailTitle(!showDetailTitle),
       style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 4 },
@@ -2059,7 +2070,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 부제목
-    React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
     React.createElement("div", {
       onClick: () => setShowDetailSubtitle(!showDetailSubtitle),
       style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0', marginBottom: 4 },
@@ -2080,7 +2091,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 본문
-    React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
     React.createElement("div", {
       onClick: () => setShowDetailBody(!showDetailBody),
       style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '4px 0' },
@@ -2180,7 +2191,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32) }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick }),
     ),
 
     // Tab pills
@@ -2245,6 +2256,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const goTo = (idx) => { if (idx >= 0 && idx < cards.length) onActiveChange(idx); };
 
+  const handlePreviewTextClick = (field) => {
+    setActiveTab('text');
+    setTimeout(() => {
+      const el = document.getElementById('desk-text-' + field);
+      if (el) el.focus();
+    }, 50);
+  };
+
   if (!card) return null;
 
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
@@ -2258,12 +2277,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
       React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); } }),
-      card.layout !== "full_bg" && React.createElement("div", null,
-        React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
-        React.createElement("div", { style: { display: 'flex', gap: 6 } },
-          VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-        )
-      ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
@@ -2280,6 +2293,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "\uadf8\ub77c\ub370\uc774\uc158", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
     card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 5, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+    // 영상 채우기
+    card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 4 } },
+      React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
+      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+        VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
+      )
+    ),
     React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
       React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815"),
       React.createElement(CheckboxRow, { label: "\ubc30\uacbd\uc0c9 \uc0ac\uc6a9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
@@ -2299,7 +2319,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Text Tab \u2500\u2500
   const renderText = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-    React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
@@ -2316,7 +2336,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
-    React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
@@ -2333,7 +2353,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 5, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 5, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
     ),
-    React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
@@ -2402,7 +2422,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
