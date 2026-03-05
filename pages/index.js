@@ -388,6 +388,10 @@ function LayoutThumb({ type, label, active, onClick }) {
     layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: imgColor, position: 'relative' } },
       React.createElement("div", { style: { width: '100%', background: 'rgba(0,0,0,0.5)', padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '1px' } }, textLines),
     );
+  } else if (type === "text_box") {
+    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: h, width: w, background: imgColor, position: 'relative' } },
+      React.createElement("div", { style: { width: '70%', background: 'rgba(0,0,0,0.55)', borderRadius: 4, padding: '4px 4px', display: 'flex', flexDirection: 'column', gap: '1px', alignItems: 'center' } }, textLines),
+    );
   }
 
   return React.createElement("button", {
