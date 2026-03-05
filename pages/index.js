@@ -899,7 +899,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         }),
       ),
       // Clip duration (inline)
-      clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, border: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.3)' : T.border), borderRadius: 4, fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, textAlign: 'center', whiteSpace: 'nowrap', flexShrink: 0 } }, '\uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
+      clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, border: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.3)' : T.border), borderRadius: 4, fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, textAlign: 'center', whiteSpace: 'nowrap', flexShrink: 0 } }, React.createElement("span", { style: { fontWeight: 700 } }, '\uAD6C\uAC04 \uAE38\uC774'), ' ' + Math.round(clipLen) + '\uCD08'),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
     startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
