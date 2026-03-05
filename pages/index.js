@@ -756,7 +756,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     } else {
       newEnd = es;
     }
-    // Update ALL refs BEFORE resuming loop — this is the key fix
+    console.log('[markStart] getCurrentTime=', t, 'currentTime(state)=', currentTime, 'oldStart=', start, 'oldEnd=', end, '→ newStart=', fmtMM(newStart), 'newEnd=', fmtMM(newEnd), 'manualSeekOutside=', manualSeekOutside.current);
+    // Update ALL refs BEFORE resuming loop
     startSecRef.current = newStart;
     endSecRef.current = newEnd;
     lastStartRef.current = newStart;
