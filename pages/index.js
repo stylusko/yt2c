@@ -551,8 +551,9 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       // End marker (visible line + wider hit area)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + ePct + '% - 1px)', width: 3, height: 18, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 7px)' } }),
-      // Playhead
+      // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
+      !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 20, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
     ),
@@ -577,6 +578,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const [warnToast, setWarnToast] = useState(false);
   const warnTimer = useRef(null);
   const manualSeekOutside = useRef(false);
+  const lastStartRef = useRef(null);
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -592,8 +594,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   startSecRef.current = startSec;
   endSecRef.current = endSec;
 
-  // Reset manual seek flag when clip range changes
+  // Reset flags when clip range changes
   useEffect(() => { manualSeekOutside.current = false; }, [startSec, endSec]);
+  useEffect(() => { if (startSec != null) lastStartRef.current = startSec; }, [startSec]);
 
   // Load YT API
   useEffect(() => {
@@ -736,6 +739,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
 
   const markStart = () => {
     const t = currentTime;
+    lastStartRef.current = t;
     onStartChange(fmtMM(t));
     const es = parseTime(end);
     // Reset end if it's before the new start, or no end set → default 10s
@@ -751,7 +755,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
 
   const markEnd = () => {
     const t = currentTime;
-    const ss = parseTime(start);
+    // Use ref first (most recent markStart), fall back to prop
+    const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
+    if (ss != null && t < ss) return; // end before start — ignore
     if (ss != null && t - ss > 30) {
       onEndChange(fmtMM(ss + 30));
       showWarn();
@@ -807,8 +813,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
         React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC885\uB8CC ' + fmtMM(endSec))
       ),
-      // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + pct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: dragging ? 'none' : 'left 0.05s linear' } }),
+      // Playhead + time label
+      React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + pct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: dragging ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+      !dragging && playing && React.createElement("div", { style: { position: 'absolute', top: 24, left: pct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: 'left 0.05s linear' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
     ),
