@@ -241,8 +241,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     let curY = h - padTop;
     const allItems = [];
     if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
-    if (card.subtitle) { allItems.push({ type: "gap", size: Math.round(3 * w / 320) }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
-    if (card.body) { allItems.push({ type: "gap", size: Math.round(5 * w / 320) }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' }); }
+    if (card.subtitle) { allItems.push({ type: "gap", size: 10 }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
+    if (card.body) { allItems.push({ type: "gap", size: 15 }); for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) allItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' }); }
     allItems.reverse();
     for (const item of allItems) {
       if (item.type === "gap") { curY -= item.size; continue; }
@@ -271,8 +271,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     // Calculate actual text content height for auto-height (matching preview CSS auto-height)
     let contentH = 0;
     if (titleLines.length > 0) contentH += titleLines.length * titleLh;
-    if (subtitleLines.length > 0) { if (titleLines.length > 0) contentH += Math.round(5 * w / 320); contentH += subtitleLines.length * subLh; }
-    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(7 * w / 320); contentH += bodyLines.length * bodyLh; }
+    if (subtitleLines.length > 0) { if (titleLines.length > 0) contentH += 10; contentH += subtitleLines.length * subLh; }
+    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += 15; contentH += bodyLines.length * bodyLh; }
 
     const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
 
@@ -300,8 +300,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     };
     let curY = boxY - boxH/2 + boxPad + Math.round(titleSz * 0.85);
     if (titleLines.length > 0) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of titleLines) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleOY, titleLS); curY += titleLh; } }
-    if (subtitleLines.length > 0) { if (titleLines.length > 0) curY += Math.round(5 * w / 320); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of subtitleLines) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
-    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(7 * w / 320); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
+    if (subtitleLines.length > 0) { if (titleLines.length > 0) curY += 10; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of subtitleLines) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += 15; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
     const yStart = layout === "photo_top" ? h - textH : 0;
@@ -328,8 +328,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     }
     let curY = yStart + padTop;
     if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + titleSz * 0.85 + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += Math.round(3 * w / 320); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += Math.round(7 * w / 320); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
+    if (card.subtitle) { if (card.title) curY += 10; ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + subSz * 0.85 + subOY, subtitleLS); curY += subLh; } }
+    if (card.body) { if (card.title || card.subtitle) curY += 21; ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + bodySz * 0.85 + bodyOY, bodyLS); curY += bodyLh; } }
   }
   // Draw overlay images
   const overlays = card.overlays || [];
@@ -1168,9 +1168,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   ) : null;
 
   const textClickStyle = onTextClick ? { cursor: 'pointer' } : {};
+  const gapTitle = Math.round(10 * sc);
+  const gapSub = Math.round(15 * sc);
+  const gapSubWide = Math.round(21 * sc);
   const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-    card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 7, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+    card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+    card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: gapSubWide, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
     card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
   );
 
@@ -1197,8 +1200,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
       React.createElement(CenterGuides),
       React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
-        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: gapSub, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
         card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
       ),
     );
@@ -1227,8 +1230,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         ...((card.textBoxBorderWidth || 0) > 0 ? { border: `${Math.round((card.textBoxBorderWidth) * sc)}px solid ${card.textBoxBorderColor || '#ffffff'}` } : {}),
         overflow: 'hidden',
       }},
-        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: 3, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: 5, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
+        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: 700, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
+        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, color: card.subtitleColor, marginBottom: gapSub, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
         card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
       ),
     );
