@@ -66,9 +66,9 @@ const DEFAULT_CARD = () => ({
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
-  title: "", titleSize: 56, titleFont: "Pretendard-Bold.otf",
-  subtitle: "", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
-  body: "", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
+  title: "제목을 입력하세요", titleSize: 56, titleFont: "Pretendard-Bold.otf",
+  subtitle: "부제목을 입력하세요", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
+  body: "본문 내용을 입력하세요", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
@@ -1860,7 +1860,7 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '얹기' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -2053,8 +2053,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     onTouchMove: handleTouchMove,
     onTouchEnd: handleTouchEnd,
   },
-    // Carousel indicator (dots + arrows)
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0' } },
+    // Carousel indicator (dots + arrows) — hidden if hidePreview
+    !hidePreview && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0' } },
       React.createElement("button", {
         onClick: () => goTo(activeIndex - 1),
         disabled: activeIndex === 0,
@@ -2077,8 +2077,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       }, "\u25B6"),
     ),
 
-    // Card header (name, actions)
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px', gap: 8 } },
+    // Card header (name, actions) — hidden if hidePreview
+    !hidePreview && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px', gap: 8 } },
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
         React.createElement("span", { style: { width: 26, height: 26, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
         editingName
@@ -2101,8 +2101,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
     ),
 
-    // Sticky preview
-    React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
+    // Sticky preview — hidden if hidePreview
+    !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
       React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32) }),
     ),
 
@@ -2596,7 +2596,7 @@ export default function App() {
     finally { setDownloading(false); }
   };
 
-  return React.createElement("div", { style: { minHeight: "100vh", background: T.bg } },
+  return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
     React.createElement(Head, null,
       React.createElement("title", null, "YOUMECA \u2014 유메카"),
       React.createElement("link", { rel: "icon", href: "/favicon.ico" }),
@@ -2609,7 +2609,7 @@ export default function App() {
     ),
 
     // ── Header ──
-    React.createElement("header", { style: { position: 'sticky', top: 0, zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
+    React.createElement("header", { style: { ...(mob ? { position: 'relative', flexShrink: 0 } : { position: 'sticky', top: 0 }), zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
       React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 8 : 16, flexWrap: mob ? 'wrap' : 'nowrap' } },
 
         // Logo area
@@ -2664,8 +2664,55 @@ export default function App() {
       )
     ),
 
+
+    // ── Fixed Card Preview (mobile only) ──
+    mob && React.createElement("div", { style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
+      // Carousel indicator (dots + arrows)
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0' } },
+        React.createElement("button", {
+          onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
+          disabled: activeCardIdx === 0,
+          style: { background: 'none', border: 'none', color: activeCardIdx === 0 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx === 0 ? 'default' : 'pointer', padding: '4px 8px', opacity: activeCardIdx === 0 ? 0.3 : 1 },
+        }, "◀"),
+        cards.map((_, i) => React.createElement("div", {
+          key: i,
+          onClick: () => setActiveCardIdx(i),
+          style: { width: i === activeCardIdx ? 20 : 8, height: 8, borderRadius: 4, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
+        })),
+        React.createElement("div", {
+          onClick: () => { if (cards.length > 0) { addCard(); setActiveCardIdx(cards.length); } },
+          style: { width: 8, height: 8, borderRadius: 4, background: 'transparent', border: `1.5px solid ${T.accent}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: T.accent, lineHeight: 1 },
+        }),
+        React.createElement("button", {
+          onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
+          disabled: activeCardIdx >= cards.length - 1,
+          style: { background: 'none', border: 'none', color: activeCardIdx >= cards.length - 1 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx >= cards.length - 1 ? 'default' : 'pointer', padding: '4px 8px', opacity: activeCardIdx >= cards.length - 1 ? 0.3 : 1 },
+        }, "▶"),
+      ),
+      
+      // Card header (name, actions)
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 4px', gap: 8 } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
+          React.createElement("span", { style: { width: 26, height: 26, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, cards.length > 0 ? (activeCardIdx + 1) : '−'),
+          cards.length > 0 && React.createElement("span", {
+            style: { color: T.text, fontWeight: 500, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' },
+          }, cards[activeCardIdx]?.name || cards[activeCardIdx]?.title || cards[activeCardIdx]?.subtitle || `카드 ${activeCardIdx + 1}`),
+        ),
+        React.createElement("div", { style: { display: 'flex', gap: 6, flexShrink: 0 } },
+          React.createElement("button", { onClick: () => setShowReorder(true), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "☰"),
+          cards.length > 0 && React.createElement("button", { onClick: () => duplicateCard(activeCardIdx), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "복제"),
+          cards.length > 1 && React.createElement("button", { onClick: () => { removeCard(activeCardIdx); setActiveCardIdx(Math.min(activeCardIdx, Math.max(0, cards.length - 2))); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusPill } }, "삭제"),
+        ),
+      ),
+      
+      // Card preview
+      cards.length > 0 && React.createElement("div", { style: { display: 'flex', justifyContent: 'center', paddingBottom: 8 } },
+        React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32) }),
+      ),
+    ),
+
     // ── Main ──
-    React.createElement("main", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 10px 32px' : '12px 24px 48px', display: 'flex', flexDirection: 'column', gap: mob ? 10 : 12 } },
+    React.createElement("main", { style: { ...(mob ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', padding: '8px 10px 32px' } : { maxWidth: 1200, margin: '0 auto', padding: '12px 24px 48px' }), display: 'flex', flexDirection: 'column', gap: mob ? 10 : 12 } },
 
       // Mobile Project Tabs
       mob && projects.length > 0 && React.createElement("div", { style: { overflowX: 'auto', paddingBottom: 4 } },
@@ -2731,6 +2778,7 @@ export default function App() {
           onAdd: addCard,
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
+          hidePreview: true,
         }),
       ) : React.createElement(DesktopCardPanel, {
         cards,
