@@ -586,6 +586,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
 
+  // Keep refs for latest clip range (so tick always reads current values)
+  const startSecRef = useRef(startSec);
+  const endSecRef = useRef(endSec);
+  startSecRef.current = startSec;
+  endSecRef.current = endSec;
+
   // Reset manual seek flag when clip range changes
   useEffect(() => { manualSeekOutside.current = false; }, [startSec, endSec]);
 
@@ -642,22 +648,22 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
   }, [videoId]);
 
-  // Poll current time + auto-loop within clip range
+  // Poll current time + auto-loop within clip range (uses refs for always-current values)
   useEffect(() => {
     const tick = () => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
         setCurrent(t);
-        // Auto-loop: if playing and within clip range, loop back to start when reaching end
-        if (!manualSeekOutside.current && startSec != null && endSec != null && endSec > startSec && t >= endSec - 0.15) {
-          playerRef.current.seekTo(startSec, true);
+        const ss = startSecRef.current, es = endSecRef.current;
+        if (!manualSeekOutside.current && ss != null && es != null && es > ss && t >= es - 0.15) {
+          playerRef.current.seekTo(ss, true);
         }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [startSec, endSec]);
+  }, []);
 
   const togglePlay = () => {
     if (!playerRef.current) return;
