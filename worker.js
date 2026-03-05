@@ -1,4 +1,4 @@
-const { Worker } = require('bullmq');
+const { Worker, Queue } = require('bullmq');
 const path = require('path');
 const fs = require('fs');
 
@@ -13,6 +13,16 @@ const connection = {
   ...(redisConfig.password && { password: redisConfig.password }),
   maxRetriesPerRequest: null,
 };
+
+// Dynamically import ESM telegram module
+let tg = null;
+async function getTelegram() {
+  if (!tg) tg = await import('./lib/telegram.js');
+  return tg;
+}
+
+// Queue instance for checking job group status
+const queue = new Queue('video-generation', { connection });
 
 function saveOverlay(name, base64Data) {
   const dir = path.join(STORAGE_DIR, 'overlays');
@@ -79,16 +89,104 @@ const worker = new Worker('video-generation', async (job) => {
 }, { connection, concurrency: 3 });
 
 // Worker events
-worker.on('completed', (job) => {
+worker.on('completed', async (job) => {
   console.log(`Job ${job.id} completed`);
+  try {
+    const { jobId, cardIdx } = job.data;
+    const t = await getTelegram();
+
+    // Track stats
+    const duration = job.finishedOn && job.processedOn
+      ? (job.finishedOn - job.processedOn) / 1000
+      : 0;
+    await t.trackJob(jobId, 1, 'completed', duration);
+
+    // Check if all jobs in this group are done
+    const allJobs = await queue.getJobs(['completed', 'active', 'waiting', 'failed']);
+    const groupJobs = allJobs.filter(j => j.data?.jobId === jobId);
+    const allDone = groupJobs.every(j => j.finishedOn || j.failedReason);
+
+    if (allDone && groupJobs.length > 0) {
+      const completedJobs = groupJobs.filter(j => j.finishedOn && !j.failedReason);
+      const failedJobs = groupJobs.filter(j => j.failedReason);
+      // Total duration from first processedOn to last finishedOn
+      const starts = groupJobs.map(j => j.processedOn).filter(Boolean);
+      const ends = groupJobs.map(j => j.finishedOn).filter(Boolean);
+      const totalDuration = starts.length && ends.length
+        ? (Math.max(...ends) - Math.min(...starts)) / 1000
+        : 0;
+      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration);
+    }
+  } catch (err) {
+    console.error('[telegram] completed hook error:', err.message);
+  }
 });
 
-worker.on('failed', (job, err) => {
+worker.on('failed', async (job, err) => {
   console.error(`Job ${job.id} failed:`, err.message);
+  try {
+    const { jobId, cardIdx } = job.data;
+    const t = await getTelegram();
+
+    // Track stats
+    await t.trackJob(jobId, 0, 'failed');
+
+    // Notify failure
+    await t.notifyJobFailed(jobId, cardIdx, err.message);
+
+    // Check for low resolution indicator (cookie expiry)
+    if (err.message && err.message.includes('640')) {
+      await t.notifyLowResolution(jobId, 640, 360);
+    }
+  } catch (e) {
+    console.error('[telegram] failed hook error:', e.message);
+  }
 });
 
 worker.on('error', (err) => {
   console.error('Worker error:', err.message);
 });
+
+// Worker start notification
+(async () => {
+  try {
+    const t = await getTelegram();
+    await t.notifyWorkerStart();
+  } catch (err) {
+    console.error('[telegram] worker start notification error:', err.message);
+  }
+})();
+
+// Daily report cron (KST 00:00)
+function scheduleDailyReport() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const tomorrow = new Date(kst);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  const msUntilMidnight = tomorrow.getTime() - kst.getTime();
+
+  console.log(`[telegram] Daily report scheduled in ${Math.round(msUntilMidnight / 60000)}min`);
+
+  setTimeout(async () => {
+    try {
+      const t = await getTelegram();
+      await t.sendDailyReport();
+    } catch (err) {
+      console.error('[telegram] daily report error:', err.message);
+    }
+    // Then repeat every 24h
+    setInterval(async () => {
+      try {
+        const t = await getTelegram();
+        await t.sendDailyReport();
+      } catch (err) {
+        console.error('[telegram] daily report error:', err.message);
+      }
+    }, 24 * 60 * 60 * 1000);
+  }, msUntilMidnight);
+}
+
+scheduleDailyReport();
 
 console.log('Video generation worker started (concurrency: 3)');
