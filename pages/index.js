@@ -699,7 +699,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   };
 
   const seekTo = (sec) => {
-    if (playerRef.current) { playerRef.current.seekTo(sec, true); setCurrent(sec); }
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(sec, true);
+    setCurrent(sec);
+    // Mark if seeking outside clip range (prevents auto-loop from pulling back)
+    const ss = startSecRef.current, es = endSecRef.current;
+    const inRange = ss != null && es != null && sec >= ss && sec <= es;
+    manualSeekOutside.current = !inRange;
   };
 
   const calcSeekTime = (e) => {
