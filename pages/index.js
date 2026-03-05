@@ -561,7 +561,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMuted, onClipUnmute }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -743,7 +743,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
   };
 
   const markStart = () => {
-    // Read player position directly — React state may be stale due to rAF tick race
     const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
     const es = parseTime(end);
     const newStart = t;
@@ -756,23 +755,22 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     } else {
       newEnd = es;
     }
-    console.log('[markStart] getCurrentTime=', t, 'currentTime(state)=', currentTime, 'oldStart=', start, 'oldEnd=', end, '→ newStart=', fmtMM(newStart), 'newEnd=', fmtMM(newEnd), 'manualSeekOutside=', manualSeekOutside.current);
-    // Update ALL refs BEFORE resuming loop
     startSecRef.current = newStart;
     endSecRef.current = newEnd;
     lastStartRef.current = newStart;
     manualSeekOutside.current = false;
-    // Seek player to new start so loop operates from correct position
     if (playerRef.current) playerRef.current.seekTo(newStart, true);
     setCurrent(newStart);
-    // Update parent state
-    onStartChange(fmtMM(newStart));
-    if (newEnd !== es) onEndChange(fmtMM(newEnd));
-    // loopPaused is NOT used — refs are already correct so tick will loop correctly
+    // Update parent state atomically to avoid React batching issue
+    if (onClipChange) {
+      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+    } else {
+      onStartChange(fmtMM(newStart));
+      if (newEnd !== es) onEndChange(fmtMM(newEnd));
+    }
   };
 
   const markEnd = () => {
-    // Read player position directly — React state may be stale due to rAF tick race
     const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
     const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
     const prevClipLen = (startSec != null && endSec != null && endSec > startSec) ? Math.min(endSec - startSec, 30) : 10;
@@ -782,20 +780,23 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, clipMu
     if (ss == null || t < ss) {
       newStart = Math.max(0, t - prevClipLen);
       newEnd = t;
-      startSecRef.current = newStart;
-      lastStartRef.current = newStart;
-      onStartChange(fmtMM(newStart));
     } else if (t - ss > 30) {
       newEnd = ss + 30;
       showWarn();
     } else {
       newEnd = t;
     }
-    // Update refs BEFORE anything else
+    startSecRef.current = newStart;
     endSecRef.current = newEnd;
+    lastStartRef.current = newStart;
     manualSeekOutside.current = false;
-    onEndChange(fmtMM(newEnd));
-    // loopPaused is NOT used — refs are already correct so tick will loop correctly
+    // Update parent state atomically
+    if (onClipChange) {
+      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+    } else {
+      if (newStart !== ss) onStartChange(fmtMM(newStart));
+      onEndChange(fmtMM(newEnd));
+    }
   };
 
   const MAX_CLIP = 30;
@@ -1304,6 +1305,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [nameValue, setNameValue] = useState('');
   const nameRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
+  const updateMulti = (obj) => onChange({ ...card, ...obj });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
 
@@ -1374,7 +1376,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
               React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-              React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v) }),
+              React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
               card.layout !== "full_bg" && React.createElement("div", null,
                 React.createElement("label", { style: labelBase }, "영상 채우기"),
                 React.createElement("div", { style: { display: 'flex', gap: 6 } },
@@ -1944,6 +1946,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const totalSlides = cards.length + 1; // +1 for add card
   const card = cards[activeIndex];
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
+  const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
 
   // Name editing
   const [editingName, setEditingName] = useState(false);
@@ -2230,6 +2233,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const nextCard = activeIndex < cards.length - 1 ? cards[activeIndex + 1] : null;
   const prevCard = activeIndex > 0 ? cards[activeIndex - 1] : null;
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
+  const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
 
@@ -2251,7 +2255,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); } }),
+      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); } }),
       card.layout !== "full_bg" && React.createElement("div", null,
         React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
         React.createElement("div", { style: { display: 'flex', gap: 6 } },
