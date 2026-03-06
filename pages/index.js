@@ -980,7 +980,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   );
 }
 
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp, volume: volumeProp = 80 }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const timerRef = useRef(null);
@@ -994,10 +994,17 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   // Sync mute state with prop
   useEffect(() => {
     if (playerRef.current && playerRef.current.isMuted) {
-      if (mutedProp === false) { playerRef.current.unMute(); playerRef.current.setVolume(80); }
+      if (mutedProp === false) { playerRef.current.unMute(); playerRef.current.setVolume(volumeProp || 80); }
       else { playerRef.current.mute(); playerRef.current.setVolume(0); }
     }
   }, [mutedProp]);
+
+  // Sync volume with prop
+  useEffect(() => {
+    if (playerRef.current && playerRef.current.setVolume && !mutedProp) {
+      playerRef.current.setVolume(volumeProp || 80);
+    }
+  }, [volumeProp]);
 
   // High-res iframe (YouTube serves better quality at larger sizes)
   const iW = 1920;
@@ -1038,7 +1045,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { if (!cancelled) { if (mutedProp === false) { e.target.unMute(); e.target.setVolume(80); } else { e.target.mute(); e.target.setVolume(0); } e.target.playVideo(); setReady(true); } },
+          onReady: (e) => { if (!cancelled) { if (mutedProp === false) { e.target.unMute(); e.target.setVolume(volumeProp || 80); } else { e.target.mute(); e.target.setVolume(0); } e.target.playVideo(); setReady(true); } },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
               e.target.seekTo(Math.floor(startSec), true);
@@ -1105,7 +1112,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick, onCardUpdate, selectedHandle, onSelectHandle }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, previewVolume, onTextClick, onCardUpdate, selectedHandle, onSelectHandle }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -1432,7 +1439,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
+        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
       ),
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
@@ -1449,7 +1456,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
+    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -3063,7 +3070,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -3318,7 +3325,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, previewVolume, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -3373,6 +3380,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             },
               React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
             ),
+            videoPreviewOn && !previewMuted && React.createElement("input", {
+              type: 'range', min: 0, max: 100, step: 5, value: previewVolume,
+              onChange: (e) => onPreviewVolumeChange(Number(e.target.value)),
+              style: { width: 80, height: 14, accentColor: T.accent, cursor: 'pointer', marginLeft: 2 },
+            }),
           ),
         ),
       ),
@@ -3417,6 +3429,7 @@ export default function App() {
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const [previewMuted, setPreviewMuted] = useState(true);
+  const [previewVolume, setPreviewVolume] = useState(80);
   const [showPreview, setShowPreview] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
@@ -3979,6 +3992,7 @@ export default function App() {
         onReorder: () => setShowReorder(true),
         videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
         previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
+        previewVolume, onPreviewVolumeChange: setPreviewVolume,
       }),
     ),
 
