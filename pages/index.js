@@ -2290,14 +2290,37 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
     border: `1.5px solid ${T.border}`, cursor: 'pointer',
     transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', gap: mob ? 12 : 16,
   };
+  const flowSteps = [
+    { icon: "\uD83D\uDD17", label: "\uB9C1\uD06C \uC785\uB825" },
+    { icon: "\u2728", label: "\uC2A4\uD0C0\uC77C \uC120\uD0DD" },
+    { icon: "\uD83D\uDCF1", label: "\uCE74\uB4DC\uB274\uC2A4 \uC644\uC131" },
+  ];
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
-    React.createElement("div", { style: { textAlign: 'center', marginBottom: mob ? 28 : 40 } },
+    React.createElement("style", null, `
+      @keyframes modeStepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes modeArrowPulse { 0%,100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 1; transform: translateX(3px); } }
+    `),
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: mob ? 20 : 32 } },
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 } },
         React.createElement("img", { src: "/icon-round.png", style: { width: 36, height: 36, borderRadius: 8 } }),
         React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 26, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
       ),
-      React.createElement("h1", { style: { fontSize: mob ? 22 : 28, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC5B4\uB5BB\uAC8C \uC2DC\uC791\uD560\uAE4C\uC694?"),
-      React.createElement("p", { style: { fontSize: mob ? 14 : 16, color: T.textSecondary, margin: 0 } }, "\uCE74\uB4DC\uB274\uC2A4 \uB9CC\uB4E4\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694"),
+      React.createElement("h1", { style: { fontSize: mob ? 20 : 26, fontWeight: 700, color: T.text, margin: 0, marginBottom: 6 } }, "\uC720\uBA54\uCE74, \uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
+      React.createElement("p", { style: { fontSize: mob ? 13 : 15, color: T.textSecondary, margin: 0 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
+    ),
+    // 3-step flow
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: mob ? 8 : 16, marginBottom: mob ? 24 : 36 } },
+      flowSteps.map((s, i) => React.createElement(React.Fragment, { key: i },
+        React.createElement("div", {
+          style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, animation: `modeStepIn 0.5s ease ${i * 0.3}s both` },
+        },
+          React.createElement("div", { style: { width: mob ? 44 : 52, height: mob ? 44 : 52, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: `1.5px solid rgba(99,102,241,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: mob ? 20 : 24 } }, s.icon),
+          React.createElement("span", { style: { fontSize: mob ? 11 : 12, color: T.textSecondary, fontWeight: 500, whiteSpace: 'nowrap' } }, s.label),
+        ),
+        i < 2 && React.createElement("span", {
+          style: { fontSize: mob ? 14 : 18, color: T.accent, marginBottom: mob ? 18 : 20, animation: `modeStepIn 0.5s ease ${i * 0.3 + 0.15}s both, modeArrowPulse 2s ease-in-out ${1.2 + i * 0.3}s infinite` },
+        }, "\u203A"),
+      )),
     ),
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 16 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
