@@ -1220,8 +1220,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   // TextBoxHandles: drag to move/resize the text box overlay
   const [tbDrag, setTbDrag] = useState(null); // { type: 'move'|'resize', startX, startY, origX, origY, origW, origH }
+  const [tbSnap, setTbSnap] = useState({ x: false, y: false }); // snap guide visibility
   const tbDragRef = useRef(null);
   tbDragRef.current = tbDrag;
+  const SNAP_THRESH = 2; // ±2% snap threshold
 
   useEffect(() => {
     if (!tbDrag) return;
@@ -1233,8 +1235,13 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       const dx = clientX - d.startX;
       const dy = clientY - d.startY;
       if (d.type === 'move') {
-        const newX = Math.max(0, Math.min(100, d.origX + dx / previewW * 100));
-        const newY = Math.max(0, Math.min(100, d.origY + dy / previewH * 100));
+        let newX = Math.max(0, Math.min(100, d.origX + dx / previewW * 100));
+        let newY = Math.max(0, Math.min(100, d.origY + dy / previewH * 100));
+        const snapX = Math.abs(newX - 50) <= SNAP_THRESH;
+        const snapY = Math.abs(newY - 50) <= SNAP_THRESH;
+        if (snapX) newX = 50;
+        if (snapY) newY = 50;
+        setTbSnap({ x: snapX, y: snapY });
         if (onCardUpdate) onCardUpdate({ textBoxX: Math.round(newX * 10) / 10, textBoxY: Math.round(newY * 10) / 10 });
       } else {
         const newW = Math.max(20, Math.min(100, d.origW + dx / previewW * 100 * 2));
@@ -1244,7 +1251,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         if (onCardUpdate) onCardUpdate(updates);
       }
     };
-    const onUp = () => setTbDrag(null);
+    const onUp = () => { setTbDrag(null); setTbSnap({ x: false, y: false }); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onMove, { passive: false });
@@ -1256,6 +1263,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       window.removeEventListener('touchend', onUp);
     };
   }, [!!tbDrag]);
+
+  // Snap guide lines (shown during drag when snapped to center)
+  const tbSnapGuides = (tbDrag && tbDrag.type === 'move') ? React.createElement(React.Fragment, null,
+    tbSnap.x && React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.8)', zIndex: 7, pointerEvents: 'none', transform: 'translateX(-0.5px)' } }),
+    tbSnap.y && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.8)', zIndex: 7, pointerEvents: 'none', transform: 'translateY(-0.5px)' } }),
+  ) : null;
 
   const textBoxHandles = card.layout === 'text_box' && onCardUpdate && (() => {
     const bW = previewW * (card.textBoxWidth || 80) / 100;
@@ -1294,10 +1307,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", {
       style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: Math.round((card.textBoxRadius || 12) * sc), pointerEvents: 'none', boxSizing: 'border-box' }
     },
-      // Move handle (top-right)
+      // Move handle (top-right) — double-click to center
       React.createElement("div", {
         style: { ...handleStyle, top: -handleSize / 2, right: -handleSize / 2, cursor: 'move', pointerEvents: 'auto' },
         onMouseDown: (e) => startDrag('move', e), onTouchStart: (e) => startDrag('move', e),
+        onDoubleClick: (e) => { e.stopPropagation(); if (onCardUpdate) onCardUpdate({ textBoxX: 50, textBoxY: 50 }); },
       }, "\u2725"),
       // Resize handle (bottom-right)
       React.createElement("div", {
@@ -1322,6 +1336,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       canvasOverlay,
       React.createElement(OverlayImgsAbove),
       textBoxHandles,
+      tbSnapGuides,
       clickTarget,
     );
   }
@@ -1335,6 +1350,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     canvasOverlay,
     React.createElement(OverlayImgsAbove),
     textBoxHandles,
+    tbSnapGuides,
     clickTarget,
   );
 }
