@@ -1094,7 +1094,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick, onCardUpdate }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick, onCardUpdate, selectedHandle, onSelectHandle }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -1209,71 +1209,29 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     style: { position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 3, pointerEvents: "none" }
   });
 
-  // Click target for text field switching (transparent, on top of canvas overlay)
-  const clickTarget = onTextClick && React.createElement("div", {
+  // Click target for text field switching + deselection (transparent, on top of canvas overlay)
+  const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
     style: { position: "absolute", inset: 0, zIndex: 4, cursor: "pointer" },
     onClick: () => {
-      const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
-      if (fields.length > 0) onTextClick(fields[0]);
+      if (onSelectHandle) onSelectHandle(null);
+      if (onTextClick) {
+        const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+        if (fields.length > 0) onTextClick(fields[0]);
+      }
     }
   });
 
-  // TextBoxHandles: drag to move/resize the text box overlay
-  const [tbDrag, setTbDrag] = useState(null); // { type: 'move'|'resize', startX, startY, origX, origY, origW, origH }
-  const [tbSnap, setTbSnap] = useState({ x: false, y: false }); // snap guide visibility
-  const tbDragRef = useRef(null);
-  tbDragRef.current = tbDrag;
+  // ── Unified drag system (textbox + overlay) ──
+  const [uDrag, setUDrag] = useState(null); // { target: 'textbox'|'overlay-N', type: 'move'|'resize', startX, startY, orig* }
+  const [uSnap, setUSnap] = useState({ x: false, y: false });
+  const uDragRef = useRef(null);
+  uDragRef.current = uDrag;
   const SNAP_THRESH = 2; // ±2% snap threshold
 
-  useEffect(() => {
-    if (!tbDrag) return;
-    const onMove = (e) => {
-      const d = tbDragRef.current;
-      if (!d) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const dx = clientX - d.startX;
-      const dy = clientY - d.startY;
-      if (d.type === 'move') {
-        let newX = Math.max(0, Math.min(100, d.origX + dx / previewW * 100));
-        let newY = Math.max(0, Math.min(100, d.origY + dy / previewH * 100));
-        const snapX = Math.abs(newX - 50) <= SNAP_THRESH;
-        const snapY = Math.abs(newY - 50) <= SNAP_THRESH;
-        if (snapX) newX = 50;
-        if (snapY) newY = 50;
-        setTbSnap({ x: snapX, y: snapY });
-        if (onCardUpdate) onCardUpdate({ textBoxX: Math.round(newX * 10) / 10, textBoxY: Math.round(newY * 10) / 10 });
-      } else {
-        const newW = Math.max(20, Math.min(100, d.origW + dx / previewW * 100 * 2));
-        const newH = Math.max(5, Math.min(100, d.origH + dy / previewH * 100));
-        const updates = { textBoxWidth: Math.round(newW * 10) / 10 };
-        updates.textBoxHeight = Math.round(newH * 10) / 10;
-        if (onCardUpdate) onCardUpdate(updates);
-      }
-    };
-    const onUp = () => { setTbDrag(null); setTbSnap({ x: false, y: false }); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
-    };
-  }, [!!tbDrag]);
-
-  // Snap guide lines (shown during drag when snapped to center)
-  const tbSnapGuides = (tbDrag && tbDrag.type === 'move') ? React.createElement(React.Fragment, null,
-    tbSnap.x && React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.8)', zIndex: 7, pointerEvents: 'none', transform: 'translateX(-0.5px)' } }),
-    tbSnap.y && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.8)', zIndex: 7, pointerEvents: 'none', transform: 'translateY(-0.5px)' } }),
-  ) : null;
-
-  const textBoxHandles = card.layout === 'text_box' && onCardUpdate && (() => {
+  // Helper: estimate text box geometry (reused for click target + handles)
+  const getTextBoxGeom = () => {
     const bW = previewW * (card.textBoxWidth || 80) / 100;
     const bX = (card.textBoxX || 50) / 100 * previewW - bW / 2;
-    // Estimate box height for auto mode
     const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
     const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
     const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
@@ -1288,35 +1246,169 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         + boxPadPx * 2);
     const bH = Math.max(20, estH);
     const bY = (card.textBoxY || 70) / 100 * previewH - bH / 2;
-    const handleSize = 18;
-    const handleStyle = {
-      position: 'absolute', width: handleSize, height: handleSize, borderRadius: '50%',
-      background: 'rgba(124,58,237,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 10, color: '#fff', userSelect: 'none', touchAction: 'none',
-    };
-    const startDrag = (type, e) => {
-      e.stopPropagation(); e.preventDefault();
+    return { bW, bH, bX, bY };
+  };
+
+  useEffect(() => {
+    if (!uDrag) return;
+    const onMove = (e) => {
+      const d = uDragRef.current;
+      if (!d || !onCardUpdate) return;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      setTbDrag({
-        type, startX: clientX, startY: clientY,
-        origX: card.textBoxX ?? 50, origY: card.textBoxY ?? 70,
-        origW: card.textBoxWidth ?? 80, origH: (card.textBoxHeight ?? 0) > 0 ? card.textBoxHeight : bH / previewH * 100,
-      });
+      const dx = clientX - d.startX;
+      const dy = clientY - d.startY;
+      if (d.target === 'textbox') {
+        if (d.type === 'move') {
+          let newX = Math.max(0, Math.min(100, d.origX + dx / previewW * 100));
+          let newY = Math.max(0, Math.min(100, d.origY + dy / previewH * 100));
+          const snapX = Math.abs(newX - 50) <= SNAP_THRESH;
+          const snapY = Math.abs(newY - 50) <= SNAP_THRESH;
+          if (snapX) newX = 50;
+          if (snapY) newY = 50;
+          setUSnap({ x: snapX, y: snapY });
+          onCardUpdate({ textBoxX: Math.round(newX * 10) / 10, textBoxY: Math.round(newY * 10) / 10 });
+        } else {
+          const newW = Math.max(20, Math.min(100, d.origW + dx / previewW * 100 * 2));
+          const newH = Math.max(5, Math.min(100, d.origH + dy / previewH * 100));
+          onCardUpdate({ textBoxWidth: Math.round(newW * 10) / 10, textBoxHeight: Math.round(newH * 10) / 10 });
+        }
+      } else {
+        // overlay-N
+        const oi = parseInt(d.target.split('-')[1]);
+        const ovs = [...(card.overlays || [])];
+        if (!ovs[oi]) return;
+        if (d.type === 'move') {
+          let newX = Math.max(0, Math.min(100, d.origX + dx * 50 / previewW));
+          let newY = Math.max(0, Math.min(100, d.origY + dy * 50 / previewH));
+          const snapX = Math.abs(newX - 50) <= SNAP_THRESH;
+          const snapY = Math.abs(newY - 50) <= SNAP_THRESH;
+          if (snapX) newX = 50;
+          if (snapY) newY = 50;
+          setUSnap({ x: snapX, y: snapY });
+          ovs[oi] = { ...ovs[oi], x: Math.round(newX * 10) / 10, y: Math.round(newY * 10) / 10 };
+          onCardUpdate({ overlays: ovs });
+        } else {
+          const newScale = Math.max(10, Math.min(300, d.origScale + dx * 200 / previewW));
+          ovs[oi] = { ...ovs[oi], scale: Math.round(newScale) };
+          onCardUpdate({ overlays: ovs });
+        }
+      }
     };
+    const onUp = () => { setUDrag(null); setUSnap({ x: false, y: false }); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [!!uDrag]);
+
+  // Snap guide lines (shown during move drag when snapped to center)
+  const uSnapGuides = (uDrag && uDrag.type === 'move') ? React.createElement(React.Fragment, null,
+    uSnap.x && React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.8)', zIndex: 8, pointerEvents: 'none', transform: 'translateX(-0.5px)' } }),
+    uSnap.y && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.8)', zIndex: 8, pointerEvents: 'none', transform: 'translateY(-0.5px)' } }),
+  ) : null;
+
+  // ── Click targets ──
+  // Overlay click targets (z:6) — transparent copies for click detection
+  const overlayClickTargets = onSelectHandle && overlays.map((ov, i) => {
+    if (!ov.image) return null;
     return React.createElement("div", {
-      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: Math.round((card.textBoxRadius || 12) * sc), pointerEvents: 'none', boxSizing: 'border-box' }
+      key: 'ovct-' + i,
+      style: {
+        position: 'absolute', zIndex: 6, top: '50%', left: '50%', width: previewW, height: previewW, // square reference
+        transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`,
+        cursor: 'pointer', pointerEvents: 'auto',
+      },
+      onClick: (e) => { e.stopPropagation(); onSelectHandle('overlay-' + i); },
+    });
+  });
+
+  // Text box click target (z:6)
+  const textBoxClickTarget = card.layout === 'text_box' && onSelectHandle && (() => {
+    const { bW, bH, bX, bY } = getTextBoxGeom();
+    return React.createElement("div", {
+      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
+      onClick: (e) => { e.stopPropagation(); onSelectHandle('textbox'); },
+    });
+  })();
+
+  // ── Selection handles (z:7) ──
+  const handleSize = 18;
+  const handleStyle = {
+    position: 'absolute', width: handleSize, height: handleSize, borderRadius: '50%',
+    background: 'rgba(124,58,237,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 10, color: '#fff', userSelect: 'none', touchAction: 'none',
+  };
+
+  const startUnifiedDrag = (target, type, e, extras) => {
+    e.stopPropagation(); e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    setUDrag({ target, type, startX: clientX, startY: clientY, ...extras });
+  };
+
+  const selectionHandles = (() => {
+    if (!selectedHandle || !onCardUpdate) return null;
+    if (selectedHandle === 'textbox') {
+      if (card.layout !== 'text_box') return null;
+      const { bW, bH, bX, bY } = getTextBoxGeom();
+      return React.createElement("div", {
+        style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 7, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: Math.round((card.textBoxRadius || 12) * sc), pointerEvents: 'none', boxSizing: 'border-box' }
+      },
+        // Move handle (top-right) — double-click to center
+        React.createElement("div", {
+          style: { ...handleStyle, top: -handleSize / 2, right: -handleSize / 2, cursor: 'move', pointerEvents: 'auto' },
+          onMouseDown: (e) => startUnifiedDrag('textbox', 'move', e, { origX: card.textBoxX ?? 50, origY: card.textBoxY ?? 70 }),
+          onTouchStart: (e) => startUnifiedDrag('textbox', 'move', e, { origX: card.textBoxX ?? 50, origY: card.textBoxY ?? 70 }),
+          onDoubleClick: (e) => { e.stopPropagation(); onCardUpdate({ textBoxX: 50, textBoxY: 50 }); },
+        }, "\u2725"),
+        // Resize handle (bottom-right)
+        React.createElement("div", {
+          style: { ...handleStyle, bottom: -handleSize / 2, right: -handleSize / 2, cursor: 'nwse-resize', pointerEvents: 'auto' },
+          onMouseDown: (e) => startUnifiedDrag('textbox', 'resize', e, { origW: card.textBoxWidth ?? 80, origH: (card.textBoxHeight ?? 0) > 0 ? card.textBoxHeight : bH / previewH * 100 }),
+          onTouchStart: (e) => startUnifiedDrag('textbox', 'resize', e, { origW: card.textBoxWidth ?? 80, origH: (card.textBoxHeight ?? 0) > 0 ? card.textBoxHeight : bH / previewH * 100 }),
+        }, "\u2922"),
+      );
+    }
+    // overlay-N
+    const match = selectedHandle.match(/^overlay-(\d+)$/);
+    if (!match) return null;
+    const oi = parseInt(match[1]);
+    const ov = overlays[oi];
+    if (!ov || !ov.image) return null;
+    const ovScale = (ov.scale || 100) / 100;
+    const ovX = ((ov.x ?? 50) - 50) * previewW / 50;
+    const ovY = ((ov.y ?? 50) - 50) * previewH / 50;
+    const counterScale = 1 / ovScale;
+    return React.createElement("div", {
+      style: {
+        position: 'absolute', zIndex: 7, top: '50%', left: '50%', width: previewW, height: 'auto',
+        transform: `translate(-50%, -50%) translate(${ovX}px, ${ovY}px) scale(${ovScale})`,
+        pointerEvents: 'none', boxSizing: 'border-box',
+      }
     },
-      // Move handle (top-right) — double-click to center
+      // Invisible reference image for sizing
+      React.createElement("img", { src: ov.image, alt: "", style: { width: '100%', height: 'auto', visibility: 'hidden', display: 'block' } }),
+      // Dashed border overlay
+      React.createElement("div", { style: { position: 'absolute', inset: 0, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' } }),
+      // Move handle (top-right)
       React.createElement("div", {
-        style: { ...handleStyle, top: -handleSize / 2, right: -handleSize / 2, cursor: 'move', pointerEvents: 'auto' },
-        onMouseDown: (e) => startDrag('move', e), onTouchStart: (e) => startDrag('move', e),
-        onDoubleClick: (e) => { e.stopPropagation(); if (onCardUpdate) onCardUpdate({ textBoxX: 50, textBoxY: 50 }); },
+        style: { ...handleStyle, position: 'absolute', top: -handleSize * counterScale / 2, right: -handleSize * counterScale / 2, cursor: 'move', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
+        onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+        onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+        onDoubleClick: (e) => { e.stopPropagation(); const ovs = [...(card.overlays || [])]; ovs[oi] = { ...ovs[oi], x: 50, y: 50 }; onCardUpdate({ overlays: ovs }); },
       }, "\u2725"),
       // Resize handle (bottom-right)
       React.createElement("div", {
-        style: { ...handleStyle, bottom: -handleSize / 2, right: -handleSize / 2, cursor: 'nwse-resize', pointerEvents: 'auto' },
-        onMouseDown: (e) => startDrag('resize', e), onTouchStart: (e) => startDrag('resize', e),
+        style: { ...handleStyle, position: 'absolute', bottom: -handleSize * counterScale / 2, right: -handleSize * counterScale / 2, cursor: 'nwse-resize', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
+        onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'resize', e, { origScale: ov.scale ?? 100 }),
+        onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'resize', e, { origScale: ov.scale ?? 100 }),
       }, "\u2922"),
     );
   })();
@@ -1334,10 +1426,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
       canvasOverlay,
-      React.createElement(OverlayImgsAbove),
-      textBoxHandles,
-      tbSnapGuides,
       clickTarget,
+      React.createElement(OverlayImgsAbove),
+      overlayClickTargets,
+      textBoxClickTarget,
+      selectionHandles,
+      uSnapGuides,
     );
   }
 
@@ -1348,10 +1442,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
-    React.createElement(OverlayImgsAbove),
-    textBoxHandles,
-    tbSnapGuides,
     clickTarget,
+    React.createElement(OverlayImgsAbove),
+    overlayClickTargets,
+    textBoxClickTarget,
+    selectionHandles,
+    uSnapGuides,
   );
 }
 
@@ -2084,6 +2180,12 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
   const [showDetailBody, setShowDetailBody] = useState(false);
+  const [selectedHandle, setSelectedHandle] = useState(null);
+  const handleSelectHandle = (val) => {
+    setSelectedHandle(val);
+    if (val === 'textbox') setActiveTab('text');
+    else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
+  };
 
   const totalSlides = cards.length + 1; // +1 for add card
   const card = cards[activeIndex];
@@ -2105,6 +2207,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     setTransitioning(true);
     onActiveChange(idx);
     setActiveTab('fill');
+    setSelectedHandle(null);
     setTimeout(() => setTransitioning(false), 200);
   };
 
@@ -2278,7 +2381,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
-      (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+      (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
             React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
@@ -2292,7 +2395,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
             React.createElement("button", { disabled: oi === 0, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi-1]; ovs[oi-1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === 0 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === 0 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === 0 ? 0.4 : 1 } }, "\u25B2"),
             React.createElement("button", { disabled: oi === (card.overlays||[]).length - 1, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi+1]; ovs[oi+1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === (card.overlays||[]).length - 1 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === (card.overlays||[]).length - 1 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === (card.overlays||[]).length - 1 ? 0.4 : 1 } }, "\u25BC"),
-            React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
+            React.createElement("button", { onClick: () => { setSelectedHandle(null); const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
           ),
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
@@ -2368,12 +2471,12 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj) }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
     ),
 
     // Tab pills
     React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
-      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) })),
+      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } })),
     ),
 
     // Tab content
@@ -2401,11 +2504,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const nameRef = useRef(null);
   const [animDir, setAnimDir] = useState(null);
   const prevIdxRef = useRef(activeIndex);
+  const [selectedHandle, setSelectedHandle] = useState(null);
+  const handleSelectHandle = (val) => {
+    setSelectedHandle(val);
+    if (val === 'textbox') setActiveTab('text');
+    else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
+  };
 
   useEffect(() => {
     if (prevIdxRef.current !== activeIndex) {
       setAnimDir(activeIndex > prevIdxRef.current ? 'down' : 'up');
       prevIdxRef.current = activeIndex;
+      setSelectedHandle(null);
       const t = setTimeout(() => setAnimDir(null), 300);
       return () => clearTimeout(t);
     }
@@ -2431,7 +2541,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
   const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
-  const goTo = (idx) => { if (idx >= 0 && idx < cards.length) onActiveChange(idx); };
+  const goTo = (idx) => { if (idx >= 0 && idx < cards.length) { setSelectedHandle(null); onActiveChange(idx); } };
 
   const handlePreviewTextClick = (field) => {
     setActiveTab('text');
@@ -2578,7 +2688,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   // \u2500\u2500 Overlay Tab \u2500\u2500
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
-      (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+      (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
             React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
@@ -2592,7 +2702,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
             React.createElement("button", { disabled: oi === 0, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi-1]; ovs[oi-1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === 0 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === 0 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === 0 ? 0.4 : 1 } }, "\u25B2"),
             React.createElement("button", { disabled: oi === (card.overlays||[]).length - 1, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi+1]; ovs[oi+1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === (card.overlays||[]).length - 1 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === (card.overlays||[]).length - 1 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === (card.overlays||[]).length - 1 ? 0.4 : 1 } }, "\u25BC"),
-            React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
+            React.createElement("button", { onClick: () => { setSelectedHandle(null); const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
           ),
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
@@ -2639,7 +2749,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj) })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -2708,7 +2818,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // Tab bar
       React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
-        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => setActiveTab(t.id) }))
+        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
