@@ -60,12 +60,12 @@ const VIDEO_FILL_OPTIONS = [
 ];
 
 const STYLE_PRESETS = [
-  { id: 'modern_dark', label: '\uBAA8\uB358 \uB2E4\uD06C', desc: '\uC804\uCCB4 \uBC30\uACBD \uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC5B4\uB450\uC6B4 \uBD84\uC704\uAE30', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'clean_box', label: '\uD074\uB9B0 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8, \uAE54\uB054\uD55C \uB290\uB08C', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'classic_top', label: '\uD074\uB798\uC2DD \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8 \uBC18\uBC18', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_top', label: '\uC0AC\uC9C4 \uC704', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_bottom', label: '\uC0AC\uC9C4 \uC544\uB798', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'simple_bottom', label: '\uC2EC\uD50C \uD558\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1 \uBC30\uCE58', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'bold_full', label: '\uBCFC\uB4DC \uC804\uCCB4', desc: '\uD070 \uC81C\uBAA9\uC774 \uC911\uC559\uC5D0, \uC784\uD329\uD2B8 \uC788\uB294 \uAD6C\uC131', layout: 'full_bg', bgColor: '#0d0d0d', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#d0d0d0', bodyColor: '#e8e8e8', titleSize: 68, subtitleSize: 48, bodySize: 38, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
+  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#0e0e0e', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const DEFAULT_CARD = () => ({
@@ -2009,6 +2009,11 @@ function StylePresetThumb({ preset }) {
       React.createElement("rect", { key: "t", x: 16, y: h * 0.38, width: w * 0.5, height: 5, rx: 2, fill: tc }),
       React.createElement("rect", { key: "s", x: 16, y: h * 0.52, width: w * 0.35, height: 4, rx: 2, fill: sc }),
     ],
+    none: [
+      React.createElement("rect", { key: "t", x: w * 0.15, y: h * 0.3, width: w * 0.7, height: 6, rx: 2, fill: tc }),
+      React.createElement("rect", { key: "s", x: w * 0.2, y: h * 0.45, width: w * 0.6, height: 4, rx: 2, fill: sc }),
+      React.createElement("rect", { key: "b", x: w * 0.22, y: h * 0.58, width: w * 0.56, height: 3, rx: 1, fill: sc, opacity: 0.6 }),
+    ],
   };
   const content = layouts[preset.layout] || layouts.full_bg;
   return React.createElement("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, style: { borderRadius: 8, overflow: 'hidden', display: 'block' } },
@@ -3128,7 +3133,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' });
+  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
   const infoRef = useRef(null);
@@ -3217,7 +3222,7 @@ export default function App() {
     setGenProgress(''); setResults([]);
     setEditorMode(null);
     setWizardStep(1);
-    setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' });
+    setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
     setPendingProjectId(proj.id);
   };
 
@@ -3398,7 +3403,7 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob,
-      onSelectEasy: () => { setEditorMode('wizard'); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' }); },
+      onSelectEasy: () => { setEditorMode('wizard'); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
 
@@ -3420,7 +3425,7 @@ export default function App() {
 
         // Home button
         React.createElement("button", {
-          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' }); },
+          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
           title: "\uD648",
           style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
           onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.text; },
