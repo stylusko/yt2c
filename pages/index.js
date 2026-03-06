@@ -1151,7 +1151,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     overlayTimer.current = setTimeout(async () => {
       try {
         const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
-        const url = await generateOverlayPng(card, Math.round(previewW * dpr), aspectRatio, { skipOverlays: true, skipBorder: true });
+        const canvasW = Math.max(Math.round(previewW * dpr), 720);
+        const url = await generateOverlayPng(card, canvasW, aspectRatio, { skipOverlays: true, skipBorder: true });
         setOverlayUrl(url);
       } catch (e) {}
     }, 30);
@@ -1806,7 +1807,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Right: Preview (sticky on desktop, top on mobile)
         React.createElement("div", { style: { flexShrink: 0, ...(mob ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } : { position: 'sticky', top: 80, alignSelf: 'flex-start' }) } },
           React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
-          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(320, 280) : 320 }),
+          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(360, window.innerWidth - 32) : 320 }),
         )
       )
     )
@@ -1822,7 +1823,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const [currentIdx, setCurrentIdx] = useState(0);
   const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
-  const previewW = isMob ? Math.min(window.innerWidth - 64, 400) : 480;
+  const previewW = isMob ? Math.min(window.innerWidth - 40, 480) : 480;
   const cardSlotW = previewW + 40;
 
   useEffect(() => {
@@ -3265,7 +3266,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
     ),
 
     // Tab pills
@@ -4145,7 +4146,7 @@ export default function App() {
       // Card preview
       cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
         React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(120, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
+          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
           React.createElement("button", {
