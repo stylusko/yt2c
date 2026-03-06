@@ -148,7 +148,7 @@ const labelBase = { display: 'block', fontSize: 12, color: T.textSecondary, font
 const sectionTitle = { fontSize: 13, fontWeight: 600, color: T.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 };
 
 /* ── Overlay Canvas ── */
-async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
+async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipOverlays = false, skipBorder = false } = {}) {
   const w = outputSize;
   const h = aspectRatio === '3:4' ? Math.round(outputSize * 4 / 3) : outputSize;
   const canvas = document.createElement("canvas");
@@ -347,27 +347,31 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1') {
     if (card.body) { if (card.title || card.subtitle) curY += Math.round(21 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
   }
   // Draw overlay images
-  const overlays = card.overlays || [];
-  for (const ov of overlays) {
-    if (!ov.image) continue;
-    try {
-      const oImg = new Image();
-      await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
-      const oScale = (ov.scale || 100) / 100;
-      const fitRatio = w / oImg.width;
-      const oW = oImg.width * fitRatio * oScale;
-      const oH = oImg.height * fitRatio * oScale;
-      const oX = (ov.x ?? 50) / 100 * w - oW / 2;
-      const oY = (ov.y ?? 50) / 100 * h - oH / 2;
-      ctx.globalAlpha = ov.opacity ?? 1;
-      ctx.drawImage(oImg, oX, oY, oW, oH);
-      ctx.globalAlpha = 1;
-    } catch (e) { /* ignore */ }
+  if (!skipOverlays) {
+    const overlays = card.overlays || [];
+    for (const ov of overlays) {
+      if (!ov.image) continue;
+      try {
+        const oImg = new Image();
+        await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
+        const oScale = (ov.scale || 100) / 100;
+        const fitRatio = w / oImg.width;
+        const oW = oImg.width * fitRatio * oScale;
+        const oH = oImg.height * fitRatio * oScale;
+        const oX = (ov.x ?? 50) / 100 * w - oW / 2;
+        const oY = (ov.y ?? 50) / 100 * h - oH / 2;
+        ctx.globalAlpha = ov.opacity ?? 1;
+        ctx.drawImage(oImg, oX, oY, oW, oH);
+        ctx.globalAlpha = 1;
+      } catch (e) { /* ignore */ }
+    }
   }
 
-  ctx.fillStyle = "rgba(0,0,0,0.78)";
-  ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
-  ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
+  if (!skipBorder) {
+    ctx.fillStyle = "rgba(0,0,0,0.78)";
+    ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
+    ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
+  }
   return canvas.toDataURL("image/png");
 }
 
@@ -1082,26 +1086,40 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textRatio = 1 - pRatio;
-  const textH = card.layout === "full_bg" ? previewH : Math.round(previewH * textRatio);
+  const textH = card.layout === "full_bg" ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
-  const useBg = card.useBg !== false;
-  const useGradient = card.useGradient === true;
   const sc = previewW / 1080;
-  const titleFs = Math.round(card.titleSize * sc);
-  const subtitleFs = Math.round(card.subtitleSize * sc);
-  const bodyFs = Math.round(card.bodySize * sc);
-  const fwMap = { "Pretendard-Bold.otf": 700, "Pretendard-SemiBold.otf": 600, "Pretendard-Regular.otf": 400 };
-  const titleFw = fwMap[card.titleFont] || 400;
-  const subtitleFw = fwMap[card.subtitleFont] || 400;
-  const bodyFw = fwMap[card.bodyFont] || 400;
-  const titleLSv = (card.titleLetterSpacing ?? 0) * sc;
-  const titleLHv = card.titleLineHeight ?? 1.4;
-  const subtitleLSv = (card.subtitleLetterSpacing ?? 0) * sc;
-  const subtitleLHv = card.subtitleLineHeight ?? 1.4;
-  const bodyLSv = (card.bodyLetterSpacing ?? 0) * sc;
-  const bodyLHv = card.bodyLineHeight ?? 1.4;
+  const vScale = (card.videoScale || 110) / 100;
+  const videoUrl = card.url || globalUrl || "";
+  const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  const [thumbSrc, setThumbSrc] = useState(null);
+  const [tried, setTried] = useState(0);
+
+  // Canvas overlay state
+  const [overlayUrl, setOverlayUrl] = useState(null);
+  const overlayTimer = useRef(null);
+
+  useEffect(() => {
+    if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
+    else setThumbSrc(null);
+  }, [thumbnailId]);
+
+  // Generate canvas overlay (debounced) — same engine as final render
+  const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = card;
+  const cardKey = JSON.stringify(cardTextProps);
+  useEffect(() => {
+    if (overlayTimer.current) clearTimeout(overlayTimer.current);
+    overlayTimer.current = setTimeout(async () => {
+      try {
+        const url = await generateOverlayPng(card, previewW, aspectRatio, { skipOverlays: true, skipBorder: true });
+        setOverlayUrl(url);
+      } catch (e) {}
+    }, 30);
+    return () => { if (overlayTimer.current) clearTimeout(overlayTimer.current); };
+  }, [cardKey, previewW, aspectRatio]);
+
+  // Center guides
   const titleOX = Math.round((card.titleX ?? 0) * sc);
   const titleOY = Math.round((card.titleY ?? 0) * sc);
   const subOX = Math.round((card.subtitleX ?? 0) * sc);
@@ -1109,22 +1127,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const bodyOXv = Math.round((card.bodyX ?? 0) * sc);
   const bodyOYv = Math.round((card.bodyY ?? 0) * sc);
   const padX = Math.round(60 * sc);
-  const padTop = Math.round(40 * sc);
-  const videoUrl = card.url || globalUrl || "";
-  const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
-  const seekTime = parseTime(card.start) ?? 0;
-  const [thumbSrc, setThumbSrc] = useState(null);
-  const [tried, setTried] = useState(0);
   const [guidesVisible, setGuidesVisible] = useState(false);
   const guidesTimer = useRef(null);
   const prevPos = useRef({ titleOX: 0, titleOY: 0, subOX: 0, subOY: 0, bodyOXv: 0, bodyOYv: 0 });
-
-  useEffect(() => {
-    if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
-    else setThumbSrc(null);
-  }, [thumbnailId]);
-
-  // Track when position values change and show guides temporarily
   useEffect(() => {
     const prev = prevPos.current;
     const changed = prev.titleOX !== titleOX || prev.titleOY !== titleOY ||
@@ -1148,25 +1153,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : (thumbSrc || globalBgImage);
   const isBaseThumb = baseImage === thumbSrc && fillSource === 'video';
   const overlays = card.overlays || [];
-  const bgRgb = card.bgColor.replace("#", "").match(/.{2}/g)?.map(h => parseInt(h, 16)) || [18,18,18];
-  const vScale = (card.videoScale || 110) / 100;
-  const ytLink = thumbnailId && seekTime > 0
-    ? `https://www.youtube.com/watch?v=${thumbnailId}&t=${Math.floor(seekTime)}s`
-    : thumbnailId ? `https://www.youtube.com/watch?v=${thumbnailId}` : null;
 
-  // Center alignment guide lines
-  const snapPx = Math.round(8 * sc); // ~8px threshold in original coords, scaled
+  const snapPx = Math.round(8 * sc);
+  const centerOffset = Math.round(previewW / 2 - padX);
   const textItems = [
     { align: card.titleAlign, x: titleOX, y: titleOY, active: !!card.title },
     { align: card.subtitleAlign, x: subOX, y: subOY, active: !!card.subtitle },
     { align: card.bodyAlign, x: bodyOXv, y: bodyOYv, active: !!card.body },
   ];
-
-  // Horizontal center guide: show when text is visually at card center, regardless of alignment
-  // For center-aligned: x ≈ 0
-  // For left-aligned: x ≈ (previewW/2 - padX)
-  // For right-aligned: x ≈ -(previewW/2 - padX)
-  const centerOffset = Math.round(previewW / 2 - padX);
   const anyHCenter = textItems.some(t => {
     if (!t.active) return false;
     const align = t.align || 'left';
@@ -1175,26 +1169,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     if (align === 'right') return Math.abs(t.x + centerOffset) <= snapPx;
     return false;
   });
-
-  // Vertical guide: show when text is near the card's vertical center
-  // For simplicity, show when offset is near 0 (default position)
   const anyVCenter = textItems.some(t => t.active && Math.abs(t.y) <= snapPx);
-
   const guideStyle = { position: 'absolute', zIndex: 20, pointerEvents: 'none' };
   const CenterGuides = () => guidesVisible ? React.createElement(React.Fragment, null,
     anyHCenter && React.createElement("div", { style: { ...guideStyle, top: 0, bottom: 0, left: '50%', width: 0, borderLeft: '1px dashed rgba(124,58,237,0.7)', transform: 'translateX(-0.5px)' } }),
     anyVCenter && React.createElement("div", { style: { ...guideStyle, left: 0, right: 0, top: '50%', height: 0, borderTop: '1px dashed rgba(124,58,237,0.5)', transform: 'translateY(-0.5px)' } }),
   ) : null;
-
-  const textClickStyle = onTextClick ? { cursor: 'pointer' } : {};
-  const gapTitle = Math.round(10 * sc);
-  const gapSub = Math.round(15 * sc);
-  const gapSubWide = Math.round(21 * sc);
-  const TextContent = () => React.createElement("div", { style: { position: "relative", padding: `${padTop}px ${padX}px`, height: "100%", boxSizing: "border-box" } },
-    card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: titleFw, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-    card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, fontWeight: subtitleFw, color: card.subtitleColor, marginBottom: gapSubWide, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
-    card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, fontWeight: bodyFw, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
-  );
 
   const BgImage = () => baseImage
     ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center' } })
@@ -1207,87 +1187,49 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     ? React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null))
     : null;
 
-  const TimestampLink = () => null;
-
   const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
-  if (card.layout === "full_bg") {
-    return React.createElement("div", { style: wrapper },
-      React.createElement(BgImage),
-      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
-      React.createElement(OverlayImgs), React.createElement(TimestampLink),
-      useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})`, zIndex: 2 } }),
-      React.createElement(CenterGuides),
-      React.createElement("div", { style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: `${padTop*3}px ${padX}px ${padTop}px`, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" } },
-        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: titleFw, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, fontWeight: subtitleFw, color: card.subtitleColor, marginBottom: gapSub, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
-        card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, fontWeight: bodyFw, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
-      ),
-    );
-  }
+  // Canvas overlay replaces all HTML text + background rendering
+  const canvasOverlay = overlayUrl && React.createElement("img", {
+    src: overlayUrl, alt: "",
+    style: { position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 3, pointerEvents: "none" }
+  });
 
-  if (card.layout === "text_box") {
-    const boxW = previewW * (card.textBoxWidth || 80) / 100;
-    const boxX = (card.textBoxX || 50) / 100 * previewW - boxW / 2;
-    const boxY = (card.textBoxY || 70) / 100 * previewH;
-    const boxPad = Math.round((card.textBoxPadding || 20) * sc);
-    const boxRad = Math.round((card.textBoxRadius || 12) * sc);
-    const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
-    const boxBgOp = card.textBoxBgOpacity ?? 0.6;
-
-    return React.createElement("div", { style: wrapper },
-      React.createElement(BgImage),
-      videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
-      React.createElement(OverlayImgs), React.createElement(TimestampLink),
-      React.createElement(CenterGuides),
-      React.createElement("div", { style: {
-        position: 'absolute', left: boxX, top: boxY, width: boxW,
-        ...((card.textBoxHeight || 0) > 0 ? { height: previewH * (card.textBoxHeight / 100) } : {}),
-        background: `rgba(${boxBgRgb.join(',')},${boxBgOp})`,
-        borderRadius: boxRad, padding: boxPad, zIndex: 3,
-        transform: 'translateY(-50%)', boxSizing: 'border-box',
-        ...((card.textBoxBorderWidth || 0) > 0 ? { border: `${Math.round((card.textBoxBorderWidth) * sc)}px solid ${card.textBoxBorderColor || '#ffffff'}` } : {}),
-        overflow: 'hidden',
-      }},
-        card.title && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('title'); } : undefined, style: { fontSize: titleFs, fontWeight: titleFw, color: card.titleColor, marginBottom: gapTitle, lineHeight: titleLHv, letterSpacing: titleLSv, textAlign: card.titleAlign || 'left', transform: `translate(${titleOX}px,${titleOY}px)`, ...textClickStyle } }, card.title),
-        card.subtitle && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('subtitle'); } : undefined, style: { fontSize: subtitleFs, fontWeight: subtitleFw, color: card.subtitleColor, marginBottom: gapSub, lineHeight: subtitleLHv, letterSpacing: subtitleLSv, textAlign: card.subtitleAlign || 'left', transform: `translate(${subOX}px,${subOY}px)`, ...textClickStyle } }, card.subtitle),
-        card.body && React.createElement("div", { onClick: onTextClick ? (e) => { e.stopPropagation(); onTextClick('body'); } : undefined, style: { fontSize: bodyFs, fontWeight: bodyFw, color: card.bodyColor, lineHeight: bodyLHv, letterSpacing: bodyLSv, textAlign: card.bodyAlign || 'left', whiteSpace: "pre-wrap", transform: `translate(${bodyOXv}px,${bodyOYv}px)`, ...textClickStyle } }, card.body),
-      ),
-    );
-  }
+  // Click target for text field switching (transparent, on top of canvas overlay)
+  const clickTarget = onTextClick && React.createElement("div", {
+    style: { position: "absolute", inset: 0, zIndex: 4, cursor: "pointer" },
+    onClick: () => {
+      const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+      if (fields.length > 0) onTextClick(fields[0]);
+    }
+  });
 
   const isTop = card.layout === "photo_top";
   const videoAreaH = previewH - textH;
 
-  if (videoFill === "split" && fillSource === 'video') {
+  // Split mode: constrain video to video area
+  if (videoFill === "split" && fillSource === 'video' && card.layout !== "full_bg" && card.layout !== "text_box") {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
         videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
       ),
-      React.createElement(OverlayImgs), React.createElement(TimestampLink),
+      React.createElement(OverlayImgs),
       React.createElement(CenterGuides),
-      React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
-        useBg && React.createElement("div", { style: { position: "absolute", inset: 0, background: `rgb(${bgRgb.join(",")})` } }),
-        React.createElement(TextContent)
-      ));
+      canvasOverlay,
+      clickTarget,
+    );
   }
 
-  // photo_top / photo_bottom with optional gradient
-  const bgOverlay = useBg ? (useGradient
-    ? React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH + Math.round(previewH * 0.15), zIndex: 1, background: isTop ? `linear-gradient(to bottom, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` : `linear-gradient(to top, transparent 0%, rgba(${bgRgb.join(",")},${card.bgOpacity * 0.5}) 20%, rgba(${bgRgb.join(",")},${card.bgOpacity}) 50%)` } })
-    : React.createElement("div", { style: { position: "absolute", ...(isTop ? { bottom: 0 } : { top: 0 }), left: 0, right: 0, height: textH, zIndex: 1, background: `rgba(${bgRgb.join(",")},${card.bgOpacity})` } })
-  ) : null;
-
+  // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
     videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
-    React.createElement(OverlayImgs), React.createElement(TimestampLink),
+    React.createElement(OverlayImgs),
     React.createElement(CenterGuides),
-    bgOverlay,
-    React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: textH, zIndex: 2, ...(isTop ? { bottom: 0 } : { top: 0 }), overflow: "hidden" } },
-      React.createElement(TextContent)
-    ));
+    canvasOverlay,
+    clickTarget,
+  );
 }
 
 /* ── Section Box ── */
