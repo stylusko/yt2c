@@ -3824,15 +3824,26 @@ export default function App() {
           onClose: closeProject, onRename: renameProject,
         }),
 
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, flexShrink: 0 } },
-          !mob && React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-          React.createElement("button", { onClick: shareProject, style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
-          React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
-          React.createElement("button", {
-            onClick: handleGenerate, disabled: generating,
-            style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
-          }, generating ? "생성 중..." : "생성하기"),
-        )
+        mob
+          ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
+              projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
+              React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
+              React.createElement("button", { onClick: shareProject, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2197"),
+              React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+              React.createElement("button", {
+                onClick: handleGenerate, disabled: generating,
+                style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
+              }, generating ? "생성 중..." : "\u2728 생성"),
+            )
+          : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
+              React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
+              React.createElement("button", { onClick: shareProject, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
+              React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+              React.createElement("button", {
+                onClick: handleGenerate, disabled: generating,
+                style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
+              }, generating ? "생성 중..." : "생성하기"),
+            )
       )
     ),
 
@@ -3895,42 +3906,20 @@ export default function App() {
       // Card preview
       cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
         React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32) }),
+          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(120, window.innerWidth - 32) }),
         ),
         React.createElement("button", {
           onClick: () => setMobilePreviewExpanded(v => !v),
           style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 12px' },
-        }, mobilePreviewExpanded ? "\u25B2 \uC801\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
+        }, mobilePreviewExpanded ? "\u25B2 \uC791\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
       ),
     ),
 
     // ── Main ──
     React.createElement("main", { style: { ...(mob ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', padding: '8px 10px 32px' } : { maxWidth: 1200, margin: '0 auto', padding: '12px 24px 48px' }), display: 'flex', flexDirection: 'column', gap: mob ? 10 : 12 } },
 
-      // Mobile Project Selector Button
-      mob && projects.length > 0 && React.createElement("button", {
-        onClick: () => setShowProjectSelector(true),
-        style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, cursor: 'pointer', width: '100%', justifyContent: 'space-between' },
-      },
-        React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500 } }, "\uD504\uB85C\uC81D\uD2B8: " + (projects.find(p => p.id === activeProjectId)?.name || '')),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, "\u25BE"),
-      ),
-
-      // Global Settings
-      mob
-        ? React.createElement("button", {
-            onClick: () => setShowGlobalSettings(true),
-            style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, cursor: 'pointer', boxShadow: T.shadow },
-          },
-            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
-              React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, "\uACF5\uD1B5 \uC124\uC815"),
-              React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
-                "\xB7 " + aspectRatio + " \xB7 " + (outputFormat === 'video' ? '\uC601\uC0C1' : '\uC774\uBBF8\uC9C0') + " \xB7 " + outputSize + "p"
-              ),
-            ),
-            React.createElement("span", { style: { fontSize: 12, color: T.accent, fontWeight: 500, flexShrink: 0, marginLeft: 8 } }, "\uC218\uC815"),
-          )
-        : React.createElement(React.Fragment, null,
+      // Global Settings (desktop only — mobile uses header icon)
+      !mob && React.createElement(React.Fragment, null,
           React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
             React.createElement("div", { style: { flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 8 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', flexShrink: 0 } }, "URL"),
