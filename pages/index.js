@@ -2233,7 +2233,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
 /* ── Desktop Card Panel (left preview + right tabs) ── */
 const DESKTOP_TABS = [
-  { id: 'fill', label: '\ucc44\uc6b0\uae30' },
+  { id: 'fill', label: '클립 자르기' },
   { id: 'layout', label: '\ub808\uc774\uc544\uc6c3' },
   { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9' },
   { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
