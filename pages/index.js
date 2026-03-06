@@ -1624,7 +1624,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 레이아웃
           React.createElement(Section, { title: "레이아웃" },
-            React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+            React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
               LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
             ),
             (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "그라데이션", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
@@ -2834,7 +2834,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", null,
       React.createElement("label", { style: labelBase }, "레이아웃"),
-      React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+      React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
         LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
       )
     ),
@@ -3152,7 +3152,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Layout Tab \u2500\u2500
   const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+    React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
       LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: card.layout === opt.id, onClick: () => update("layout", opt.id) }))
     ),
     (card.layout === "photo_top" || card.layout === "photo_bottom") && React.createElement(CheckboxRow, { label: "\uadf8\ub77c\ub370\uc774\uc158", checked: card.useGradient === true, onChange: (v) => update("useGradient", v) }),
@@ -3787,7 +3787,7 @@ export default function App() {
     // ── Editor ──
     editorMode === 'editor' && React.createElement(React.Fragment, null,
     React.createElement("header", { style: { ...(mob ? { position: 'relative', flexShrink: 0 } : { position: 'sticky', top: 0 }), zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 8 : 16, flexWrap: mob ? 'wrap' : 'nowrap' } },
+      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 6 : 16, flexWrap: 'nowrap' } },
 
         // Home button
         React.createElement("button", {
@@ -3799,15 +3799,15 @@ export default function App() {
         }, "\u2302"),
 
         // Logo area
-        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: mob ? 6 : 10, flexShrink: 0 } },
+        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: mob ? 6 : 10, flexShrink: mob ? 1 : 0, minWidth: 0 } },
           React.createElement("div", {
             onClick: () => setShowInfo(!showInfo),
             style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, transition: 'background 0.15s' },
             onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)',
             onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
           },
-            React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 24 : 28, height: mob ? 24 : 28, borderRadius: 7 } }),
-            React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: mob ? 18 : 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
+            React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 24 : 28, height: mob ? 24 : 28, borderRadius: 7, flexShrink: 0 } }),
+            !mob && React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
             !mob && React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
           ),
           !mob && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
