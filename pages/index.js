@@ -59,6 +59,15 @@ const VIDEO_FILL_OPTIONS = [
   { id: "split", label: "분리형" },
 ];
 
+const STYLE_PRESETS = [
+  { id: 'modern_dark', label: '모던 다크', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'clean_box', label: '클린 박스', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
+  { id: 'classic_top', label: '클래식 상단', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_fade', label: '그라데이션', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'simple_bottom', label: '심플 하단', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'bold_full', label: '볼드 전체', layout: 'full_bg', bgColor: '#0d0d0d', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#d0d0d0', bodyColor: '#e8e8e8', titleSize: 68, subtitleSize: 48, bodySize: 38, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+];
+
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
@@ -1970,6 +1979,265 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
+/* ── Style Preset Thumbnail ── */
+function StylePresetThumb({ preset }) {
+  const w = 80, h = 80;
+  const bg = preset.bgColor || '#121212';
+  const tc = preset.titleColor || '#fff';
+  const sc = preset.subtitleColor || '#aaa';
+  const layouts = {
+    photo_top: [
+      React.createElement("rect", { key: "img", x: 4, y: 4, width: w - 8, height: (h - 8) * 0.45, rx: 3, fill: '#555' }),
+      React.createElement("rect", { key: "t", x: 8, y: h * 0.52, width: w * 0.6, height: 5, rx: 2, fill: tc }),
+      React.createElement("rect", { key: "s", x: 8, y: h * 0.62, width: w * 0.45, height: 4, rx: 2, fill: sc }),
+      React.createElement("rect", { key: "b", x: 8, y: h * 0.72, width: w * 0.55, height: 3, rx: 1, fill: sc, opacity: 0.6 }),
+    ],
+    photo_bottom: [
+      React.createElement("rect", { key: "t", x: 8, y: 8, width: w * 0.6, height: 5, rx: 2, fill: tc }),
+      React.createElement("rect", { key: "s", x: 8, y: 18, width: w * 0.45, height: 4, rx: 2, fill: sc }),
+      React.createElement("rect", { key: "img", x: 4, y: h * 0.45, width: w - 8, height: (h - 8) * 0.5, rx: 3, fill: '#555' }),
+    ],
+    full_bg: [
+      React.createElement("rect", { key: "bg2", x: 0, y: 0, width: w, height: h, rx: 6, fill: '#555', opacity: 0.3 }),
+      React.createElement("rect", { key: "t", x: 10, y: h * 0.35, width: w * 0.65, height: 6, rx: 2, fill: tc }),
+      React.createElement("rect", { key: "s", x: 10, y: h * 0.5, width: w * 0.5, height: 4, rx: 2, fill: sc }),
+      React.createElement("rect", { key: "b", x: 10, y: h * 0.62, width: w * 0.55, height: 3, rx: 1, fill: sc, opacity: 0.6 }),
+    ],
+    text_box: [
+      React.createElement("rect", { key: "bg2", x: 0, y: 0, width: w, height: h, rx: 6, fill: '#555', opacity: 0.25 }),
+      React.createElement("rect", { key: "box", x: 10, y: h * 0.25, width: w - 20, height: h * 0.5, rx: 6, fill: 'rgba(0,0,0,0.5)', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 1 }),
+      React.createElement("rect", { key: "t", x: 16, y: h * 0.38, width: w * 0.5, height: 5, rx: 2, fill: tc }),
+      React.createElement("rect", { key: "s", x: 16, y: h * 0.52, width: w * 0.35, height: 4, rx: 2, fill: sc }),
+    ],
+  };
+  const content = layouts[preset.layout] || layouts.full_bg;
+  return React.createElement("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, style: { borderRadius: 8, overflow: 'hidden', display: 'block' } },
+    React.createElement("rect", { width: w, height: h, fill: bg, rx: 6 }),
+    preset.useGradient && React.createElement("defs", null,
+      React.createElement("linearGradient", { id: `g_${preset.id}`, x1: 0, y1: 0, x2: 0, y2: 1 },
+        React.createElement("stop", { offset: "0%", stopColor: "transparent" }),
+        React.createElement("stop", { offset: "100%", stopColor: bg }),
+      ),
+    ),
+    preset.useGradient && React.createElement("rect", { width: w, height: h, fill: `url(#g_${preset.id})`, rx: 6 }),
+    ...content
+  );
+}
+
+/* ── Mode Selection Screen ── */
+function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
+  const [hovered, setHovered] = useState(null);
+  const cardBase = {
+    flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
+    background: T.surface, borderRadius: 16, padding: mob ? 24 : 32,
+    border: `1.5px solid ${T.border}`, cursor: 'pointer',
+    transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', gap: mob ? 12 : 16,
+  };
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: mob ? 28 : 40 } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 } },
+        React.createElement("img", { src: "/icon-round.png", style: { width: 36, height: 36, borderRadius: 8 } }),
+        React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 26, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
+      ),
+      React.createElement("h1", { style: { fontSize: mob ? 22 : 28, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC5B4\uB5BB\uAC8C \uC2DC\uC791\uD560\uAE4C\uC694?"),
+      React.createElement("p", { style: { fontSize: mob ? 14 : 16, color: T.textSecondary, margin: 0 } }, "\uCE74\uB4DC\uB274\uC2A4 \uB9CC\uB4E4\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694"),
+    ),
+    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 16 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
+      // Easy mode card
+      React.createElement("div", {
+        onClick: onSelectEasy,
+        onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
+        style: { ...cardBase, borderColor: hovered === 'easy' ? T.accent : T.border, background: hovered === 'easy' ? 'rgba(99,102,241,0.06)' : T.surface },
+      },
+        React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
+        React.createElement("div", null,
+          React.createElement("h2", { style: { fontSize: mob ? 18 : 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+          React.createElement("p", { style: { fontSize: mob ? 13 : 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694.\n\uB9CC\uB4E4\uC5B4\uC9C4 \uCD08\uC548\uC5D0\uC11C \uC138\uBD80 \uC218\uC815\uC774 \uAC00\uB2A5\uD574\uC694."),
+        ),
+        React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+        ),
+      ),
+      // Free mode card
+      React.createElement("div", {
+        onClick: onSelectFree,
+        onMouseEnter: () => setHovered('free'), onMouseLeave: () => setHovered(null),
+        style: { ...cardBase, borderColor: hovered === 'free' ? T.accent : T.border, background: hovered === 'free' ? 'rgba(99,102,241,0.06)' : T.surface },
+      },
+        React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFA8"),
+        React.createElement("div", null,
+          React.createElement("h2", { style: { fontSize: mob ? 18 : 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
+          React.createElement("p", { style: { fontSize: mob ? 13 : 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3, \uD14D\uC2A4\uD2B8, \uC774\uBBF8\uC9C0 \uB4F1\n\uBAA8\uB4E0 \uC124\uC815\uC744 \uC9C1\uC811 \uC870\uC815\uD574\uC694."),
+        ),
+        React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+        ),
+      ),
+    ),
+  );
+}
+
+/* ── Wizard Screen ── */
+function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel }) {
+  const [presetHover, setPresetHover] = useState(null);
+  const update = (k, v) => onDataChange({ ...data, [k]: v });
+
+  const stepIndicator = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
+    [1, 2].map(s => React.createElement("div", { key: s, style: {
+      width: s === step ? 32 : 10, height: 10, borderRadius: 5,
+      background: s === step ? T.accent : 'rgba(255,255,255,0.15)',
+      transition: 'all 0.3s ease',
+    } })),
+  );
+
+  const step1 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "YouTube URL"),
+      React.createElement("input", {
+        type: "text", placeholder: "https://youtube.com/watch?v=...",
+        value: data.url || '', onChange: (e) => update('url', e.target.value),
+        style: { ...inputBase, fontSize: 15, padding: '14px 16px' },
+        onFocus: (e) => e.target.style.borderColor = T.accent,
+        onBlur: (e) => e.target.style.borderColor = T.border,
+      }),
+    ),
+    React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 10 } },
+        ASPECT_OPTIONS.map(opt => React.createElement("button", {
+          key: opt.id, onClick: () => update('aspectRatio', opt.id),
+          style: {
+            flex: 1, padding: '12px 0', borderRadius: T.radiusPill, border: `1.5px solid ${data.aspectRatio === opt.id ? T.accent : T.border}`,
+            background: data.aspectRatio === opt.id ? 'rgba(99,102,241,0.15)' : 'transparent',
+            color: data.aspectRatio === opt.id ? T.accentHover : T.textSecondary,
+            fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+          },
+        }, opt.label)),
+      ),
+    ),
+  );
+
+  const step2 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    // Card count stepper
+    React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uC218"),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
+        React.createElement("button", {
+          onClick: () => update('cardCount', Math.max(2, (data.cardCount || 3) - 1)),
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: T.text, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        }, "\u2212"),
+        React.createElement("span", { style: { fontSize: 28, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center' } }, data.cardCount || 3),
+        React.createElement("button", {
+          onClick: () => { if ((data.cardCount || 3) < 6) update('cardCount', (data.cardCount || 3) + 1); },
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 6 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 6 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        }, "+"),
+      ),
+      (data.cardCount || 3) >= 6 && React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, marginTop: 8, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\uD560 \uC218 \uC788\uC5B4\uC694"),
+    ),
+    // Style presets
+    React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC2A4\uD0C0\uC77C"),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12 } },
+        STYLE_PRESETS.map(p => React.createElement("div", {
+          key: p.id,
+          onClick: () => update('presetId', p.id),
+          onMouseEnter: () => setPresetHover(p.id), onMouseLeave: () => setPresetHover(null),
+          style: {
+            padding: 12, borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+            border: `1.5px solid ${data.presetId === p.id ? T.accent : presetHover === p.id ? T.borderHover : T.border}`,
+            background: data.presetId === p.id ? 'rgba(99,102,241,0.1)' : presetHover === p.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+          },
+        },
+          React.createElement(StylePresetThumb, { preset: p }),
+          React.createElement("span", { style: { fontSize: 12, fontWeight: 500, color: data.presetId === p.id ? T.accentHover : T.textSecondary } }, p.label),
+        )),
+      ),
+    ),
+  );
+
+  const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : (data.presetId);
+
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', overflow: 'auto' } },
+    // Top bar
+    React.createElement("div", { style: { padding: mob ? '12px 16px' : '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.border}` } },
+      React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+      React.createElement("button", { onClick: onCancel, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+    ),
+    // Content
+    React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
+      React.createElement("div", { style: { width: '100%', maxWidth: 480 } },
+        stepIndicator,
+        step === 1 ? step1 : step2,
+      ),
+    ),
+    // Bottom bar
+    React.createElement("div", { style: { padding: mob ? '12px 16px' : '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', gap: 12 } },
+      step === 2
+        ? React.createElement("button", { onClick: onBack, style: { padding: '12px 24px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 14, cursor: 'pointer' } }, "\u2190 \uC774\uC804")
+        : React.createElement("div"),
+      step === 1
+        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
+        : React.createElement("button", { onClick: onComplete, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB9CC\uB4E4\uAE30 \u2728"),
+    ),
+  );
+}
+
+/* ── Wizard Loading Screen ── */
+function WizardLoadingScreen({ mob }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 600);
+    const t2 = setTimeout(() => setPhase(2), 1500);
+    const t3 = setTimeout(() => setPhase(3), 2200);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const steps = [
+    { label: '\uCE74\uB4DC \uAD6C\uC870 \uC0DD\uC131 \uC911...', done: phase >= 1 },
+    { label: '\uC2A4\uD0C0\uC77C \uC801\uC6A9 \uC911...', done: phase >= 2 },
+    { label: '\uCD08\uC548 \uC644\uC131!', done: phase >= 3 },
+  ];
+
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a1035 0%, #0d1b2a 50%, #1a0a2e 100%)', backgroundSize: '400% 400%', animation: 'wizardGradient 6s ease infinite', overflow: 'hidden' } },
+    // Shimmer overlay
+    React.createElement("div", { style: { position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease-in-out infinite' } }),
+    // Card fan icon
+    React.createElement("div", { style: { position: 'relative', width: 120, height: 100, marginBottom: 40, animation: 'wizardPulse 2s ease-in-out infinite' } },
+      [-12, 0, 12].map((rot, i) => React.createElement("div", { key: i, style: {
+        position: 'absolute', left: '50%', top: '50%',
+        width: 56, height: 72, marginLeft: -28, marginTop: -36,
+        background: `rgba(99,102,241,${0.15 + i * 0.1})`,
+        border: '1.5px solid rgba(99,102,241,0.3)',
+        borderRadius: 10, transform: `rotate(${rot}deg)`,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+      } })),
+    ),
+    // Steps
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' } },
+      steps.map((s, i) => React.createElement("div", { key: i, style: {
+        display: 'flex', alignItems: 'center', gap: 10,
+        opacity: i <= phase ? 1 : 0.25,
+        transform: i <= phase ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'all 0.4s ease',
+      } },
+        s.done
+          ? React.createElement("span", { style: { fontSize: 18, color: T.success } }, "\u2713")
+          : i === phase
+            ? React.createElement("div", { style: { width: 16, height: 16, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+            : React.createElement("div", { style: { width: 16, height: 16 } }),
+        React.createElement("span", { style: { fontSize: mob ? 14 : 16, color: s.done ? T.text : T.textSecondary, fontWeight: s.done ? 600 : 400 } }, s.label),
+      )),
+    ),
+    // Keyframes
+    React.createElement("style", null, `
+      @keyframes wizardGradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+      @keyframes wizardPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+      @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    `),
+  );
+}
+
 /* ── Reorder Modal ── */
 function ReorderModal({ cards, onReorder, onClose }) {
   const [order, setOrder] = useState(cards.map((_, i) => i));
@@ -2846,6 +3114,11 @@ export default function App() {
   const [videoPreviewOn, setVideoPreviewOn] = useState(false);
   const [previewMuted, setPreviewMuted] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [editorMode, setEditorMode] = useState(null);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' });
+  const [wizardLoading, setWizardLoading] = useState(false);
+  const [pendingProjectId, setPendingProjectId] = useState(null);
   const infoRef = useRef(null);
 
   // Close info panel on outside click
@@ -2861,10 +3134,13 @@ export default function App() {
     if (saved) {
       setProjects(saved.projects);
       setActiveProjectId(saved.activeId || saved.projects[0]?.id);
+      setEditorMode('editor');
     } else {
-      const first = DEFAULT_PROJECT('프로젝트 1');
+      const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
       setProjects([first]);
       setActiveProjectId(first.id);
+      setPendingProjectId(first.id);
+      setEditorMode(null);
     }
   }, []);
 
@@ -2921,12 +3197,16 @@ export default function App() {
 
   // Project tab actions
   const addProject = () => {
-    const name = prompt('새 프로젝트 이름을 입력하세요:', `프로젝트 ${projects.length + 1}`);
+    const name = prompt('\uC0C8 \uD504\uB85C\uC81D\uD2B8 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694:', `\uD504\uB85C\uC81D\uD2B8 ${projects.length + 1}`);
     if (!name?.trim()) return;
     const proj = DEFAULT_PROJECT(name.trim());
     setProjects(prev => [...prev, proj]);
     setActiveProjectId(proj.id);
     setGenProgress(''); setResults([]);
+    setEditorMode(null);
+    setWizardStep(1);
+    setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' });
+    setPendingProjectId(proj.id);
   };
 
   const closeProject = (id) => { setConfirmClose(id); };
@@ -3031,8 +3311,65 @@ export default function App() {
     if (results.length === 0) return;
     setDownloading(true);
     try { await downloadAllAsZip(results, outputFormat); }
-    catch (e) { alert('ZIP 다운로드 실패: ' + e.message); }
+    catch (e) { alert('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
     finally { setDownloading(false); }
+  };
+
+  const generateWizardCards = (d) => {
+    const preset = STYLE_PRESETS.find(p => p.id === d.presetId) || STYLE_PRESETS[0];
+    const count = d.cardCount || 3;
+    const newCards = [];
+    for (let i = 0; i < count; i++) {
+      const card = DEFAULT_CARD();
+      card.url = d.url || '';
+      card.layout = preset.layout;
+      card.bgColor = preset.bgColor;
+      card.bgOpacity = preset.bgOpacity;
+      card.useGradient = preset.useGradient || false;
+      card.titleColor = preset.titleColor;
+      card.subtitleColor = preset.subtitleColor;
+      card.bodyColor = preset.bodyColor;
+      card.titleSize = preset.titleSize;
+      card.subtitleSize = preset.subtitleSize;
+      card.bodySize = preset.bodySize;
+      card.titleAlign = preset.titleAlign;
+      card.subtitleAlign = preset.subtitleAlign;
+      card.bodyAlign = preset.bodyAlign;
+      if (preset.photoRatio != null) card.photoRatio = preset.photoRatio;
+      if (preset.textBoxX != null) card.textBoxX = preset.textBoxX;
+      if (preset.textBoxY != null) card.textBoxY = preset.textBoxY;
+      if (preset.textBoxWidth != null) card.textBoxWidth = preset.textBoxWidth;
+      if (preset.textBoxPadding != null) card.textBoxPadding = preset.textBoxPadding;
+      if (preset.textBoxRadius != null) card.textBoxRadius = preset.textBoxRadius;
+      if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
+      if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
+      const startSec = i * 10;
+      const endSec = (i + 1) * 10;
+      card.start = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
+      card.end = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
+      card.title = `\uCE74\uB4DC ${i + 1} \uC81C\uBAA9`;
+      card.subtitle = `\uCE74\uB4DC ${i + 1} \uBD80\uC81C\uBAA9`;
+      card.body = '\uBCF8\uBB38 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694';
+      newCards.push(card);
+    }
+    return newCards;
+  };
+
+  const handleWizardComplete = () => {
+    setWizardLoading(true);
+    setTimeout(() => {
+      const newCards = generateWizardCards(wizardData);
+      const targetId = pendingProjectId || activeProjectId;
+      setProjects(prev => prev.map(p => {
+        if (p.id !== targetId) return p;
+        return { ...p, globalUrl: wizardData.url, aspectRatio: wizardData.aspectRatio, cards: newCards };
+      }));
+      setActiveProjectId(targetId);
+      setTimeout(() => {
+        setWizardLoading(false);
+        setEditorMode('editor');
+      }, 500);
+    }, 2500);
   };
 
   return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
@@ -3047,7 +3384,25 @@ export default function App() {
       React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&display=swap", rel: "stylesheet" }),
     ),
 
-    // ── Header ──
+    editorMode === null && React.createElement(ModeSelectionScreen, {
+      mob,
+      onSelectEasy: () => { setEditorMode('wizard'); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' }); },
+      onSelectFree: () => { setEditorMode('editor'); },
+    }),
+
+    editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
+      mob, step: wizardStep, data: wizardData,
+      onDataChange: setWizardData,
+      onNext: () => setWizardStep(2),
+      onBack: () => setWizardStep(1),
+      onComplete: handleWizardComplete,
+      onCancel: () => { setEditorMode(null); setWizardStep(1); },
+    }),
+
+    wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
+
+    // ── Editor ──
+    editorMode === 'editor' && React.createElement(React.Fragment, null,
     React.createElement("header", { style: { ...(mob ? { position: 'relative', flexShrink: 0 } : { position: 'sticky', top: 0 }), zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
       React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 8 : 16, flexWrap: mob ? 'wrap' : 'nowrap' } },
 
@@ -3238,6 +3593,8 @@ export default function App() {
       onReorder: (newCards) => setCards(newCards),
       onClose: () => setShowReorder(false),
     }),
+    ), // end editor Fragment
+
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
   );
 }
