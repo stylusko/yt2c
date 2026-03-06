@@ -2634,6 +2634,20 @@ export default function App() {
     }
   }, []);
 
+  // Visitor tracking
+  useEffect(() => {
+    const startTime = Date.now();
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'visit' }) }).catch(() => {});
+    const sendDuration = () => {
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      if (duration > 0) navigator.sendBeacon('/api/track', new Blob([JSON.stringify({ type: 'duration', duration })], { type: 'application/json' }));
+    };
+    const onVisChange = () => { if (document.visibilityState === 'hidden') sendDuration(); };
+    document.addEventListener('visibilitychange', onVisChange);
+    window.addEventListener('beforeunload', sendDuration);
+    return () => { document.removeEventListener('visibilitychange', onVisChange); window.removeEventListener('beforeunload', sendDuration); };
+  }, []);
+
   // Auto-save to localStorage
   useEffect(() => {
     if (projects.length > 0 && activeProjectId) saveProjects(projects, activeProjectId);
