@@ -773,7 +773,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const showWarn = () => {
     setWarnToast(true);
     if (warnTimer.current) clearTimeout(warnTimer.current);
-    warnTimer.current = setTimeout(() => setWarnToast(false), 3000);
+    warnTimer.current = setTimeout(() => setWarnToast(false), 4000);
   };
 
   const seekTo = (sec) => {
@@ -976,14 +976,23 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
-      // Clip duration (inline)
-      clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, border: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.3)' : T.border), borderRadius: 4, fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, textAlign: 'center', whiteSpace: 'nowrap', flexShrink: 0 } }, React.createElement("span", { style: { fontWeight: 700 } }, '\uAD6C\uAC04 \uAE38\uC774'), ' ' + Math.round(clipLen) + '\uCD08'),
+    ),
+    // Clip duration bar (separate row for mobile visibility)
+    clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+        React.createElement("span", { style: { fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
+        React.createElement("span", { style: { fontSize: 10, color: overLimit ? '#ef4444' : T.textMuted } }, Math.round(clipLen) + ' / 30\uCD08'),
+      ),
+      // Progress bar
+      React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+        React.createElement("div", { style: { width: Math.min(100, (clipLen / MAX_CLIP) * 100) + '%', height: '100%', background: overLimit ? '#ef4444' : clipLen / MAX_CLIP > 0.8 ? '#f59e0b' : accentC, borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+      ),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
     startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
-    // Warning toast (absolute positioned to avoid layout shift)
-    warnToast && React.createElement("div", { style: { padding: '6px 12px', marginTop: 4, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', transition: 'opacity 0.3s' } },
-      '\u26A0 \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
+    // Warning toast (prominent for mobile)
+    warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+      '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
   );
 }
