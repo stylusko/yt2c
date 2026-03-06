@@ -1852,6 +1852,11 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose })
       ),
     ),
 
+    // Disclaimer (only when video preview is on)
+    videoPreviewOn && React.createElement("div", { style: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '0 16px 8px' } },
+      "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"
+    ),
+
     // Scroll area
     React.createElement("div", {
       ref: scrollRef,
@@ -2034,6 +2039,135 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
         React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.danger, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "닫기"),
       )
     )
+  );
+}
+
+/* ── Project Selector Modal (mobile) ── */
+function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, onRename, onDismiss }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const inputRef = useRef(null);
+  useEffect(() => { if (editingId && inputRef.current) inputRef.current.focus(); }, [editingId]);
+  const startRename = (proj) => { setEditingId(proj.id); setEditName(proj.name); };
+  const commitRename = () => {
+    if (editingId && editName.trim()) onRename(editingId, editName.trim());
+    setEditingId(null);
+  };
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onDismiss(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: '16px 16px 0 0', width: '100%', maxHeight: '60vh', display: 'flex', flexDirection: 'column', boxShadow: T.shadowLg } },
+      // Header
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
+        React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, "\uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD"),
+        React.createElement("button", { onClick: onDismiss, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer' } }, "\u2715"),
+      ),
+      // List
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '8px 12px' } },
+        projects.map(proj => {
+          const isActive = proj.id === activeId;
+          const isEditing = proj.id === editingId;
+          return React.createElement("div", {
+            key: proj.id,
+            onClick: () => { if (!isEditing) { onSwitch(proj.id); onDismiss(); } },
+            style: { display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: T.radiusSm, cursor: 'pointer', background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent', marginBottom: 4, transition: 'background 0.15s' }
+          },
+            React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: isActive ? T.accent : 'transparent', flexShrink: 0 } }),
+            isEditing
+              ? React.createElement("input", {
+                  ref: inputRef, value: editName,
+                  onChange: (e) => setEditName(e.target.value),
+                  onBlur: commitRename,
+                  onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
+                  onClick: (e) => e.stopPropagation(),
+                  style: { flex: 1, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.text, fontSize: 14, fontWeight: 500, outline: 'none', padding: '4px 8px', borderRadius: T.radiusSm },
+                })
+              : React.createElement("span", { style: { flex: 1, fontSize: 14, fontWeight: isActive ? 600 : 400, color: isActive ? T.text : T.textSecondary } }, proj.name),
+            React.createElement("button", {
+              onClick: (e) => { e.stopPropagation(); startRename(proj); },
+              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '4px 6px' },
+            }, "\u270E"),
+            projects.length > 1 && React.createElement("button", {
+              onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+              style: { background: 'none', border: 'none', color: T.danger, fontSize: 16, cursor: 'pointer', padding: '4px 6px', opacity: 0.7 },
+            }, "\u00D7"),
+          );
+        }),
+      ),
+      // Add button
+      React.createElement("div", { style: { padding: '12px 16px', borderTop: `1px solid ${T.border}` } },
+        React.createElement("button", {
+          onClick: () => { onAdd(); },
+          style: { width: '100%', padding: '10px', background: 'rgba(99,102,241,0.1)', color: T.accent, border: `1px solid rgba(99,102,241,0.2)`, borderRadius: T.radiusSm, fontSize: 14, fontWeight: 500, cursor: 'pointer' },
+        }, "+ \uC0C8 \uD504\uB85C\uC81D\uD2B8"),
+      ),
+    ),
+  );
+}
+
+/* ── Global Settings Modal (mobile) ── */
+function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRatio, outputFormat, setOutputFormat, outputSize, setOutputSize, globalBgImage, setGlobalBgImage, onDismiss }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onDismiss(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: '16px 16px 0 0', width: '100%', maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: T.shadowLg } },
+      // Header
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
+        React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, "\uACF5\uD1B5 \uC124\uC815"),
+        React.createElement("button", { onClick: onDismiss, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer' } }, "\u2715"),
+      ),
+      // Content
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 } },
+        // URL
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "YouTube URL"),
+          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '8px 12px', fontSize: 14 } }),
+        ),
+        // Aspect ratio
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uBE44\uC728"),
+          React.createElement("div", { style: { display: 'flex', gap: 8 } },
+            ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => setAspectRatio(opt.id) }, opt.label)),
+          ),
+        ),
+        // Format
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uD615\uC2DD"),
+          React.createElement("div", { style: { display: 'flex', gap: 8 } },
+            React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
+            React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "\uC774\uBBF8\uC9C0"),
+          ),
+        ),
+        // Resolution
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uD574\uC0C1\uB3C4"),
+          React.createElement("div", { style: { display: 'flex', gap: 8 } },
+            React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
+            React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
+          ),
+        ),
+        // Global image (when outputFormat === 'image')
+        outputFormat === 'image' && React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uACF5\uD1B5 \uC774\uBBF8\uC9C0"),
+          globalBgImage
+            ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("img", { src: globalBgImage, style: { width: 40, height: 40, borderRadius: 6, objectFit: 'cover' } }),
+                React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC801\uC6A9 \uC911"),
+                React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "\uC0AD\uC81C"),
+              )
+            : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+        ),
+      ),
+      // Done button
+      React.createElement("div", { style: { padding: '12px 20px', borderTop: `1px solid ${T.border}` } },
+        React.createElement("button", {
+          onClick: onDismiss,
+          style: { width: '100%', padding: '10px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
+        }, "\uC644\uB8CC"),
+      ),
+    ),
   );
 }
 
@@ -3284,6 +3418,9 @@ export default function App() {
   const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const [previewMuted, setPreviewMuted] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
@@ -3743,58 +3880,79 @@ export default function App() {
       ),
       
       // Card preview
-      cards.length > 0 && React.createElement("div", { style: { display: 'flex', justifyContent: 'center', paddingBottom: 8 } },
-        React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32) }),
+      cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
+        React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
+          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32) }),
+        ),
+        React.createElement("button", {
+          onClick: () => setMobilePreviewExpanded(v => !v),
+          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 12px' },
+        }, mobilePreviewExpanded ? "\u25B2 \uC801\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
       ),
     ),
 
     // ── Main ──
     React.createElement("main", { style: { ...(mob ? { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxWidth: '100%', padding: '8px 10px 32px' } : { maxWidth: 1200, margin: '0 auto', padding: '12px 24px 48px' }), display: 'flex', flexDirection: 'column', gap: mob ? 10 : 12 } },
 
-      // Mobile Project Tabs
-      mob && projects.length > 0 && React.createElement("div", { style: { overflowX: 'auto', paddingBottom: 4 } },
-        React.createElement(ProjectTabs, {
-          projects, activeId: activeProjectId,
-          onSwitch: switchProject, onAdd: addProject,
-          onClose: closeProject, onRename: renameProject,
-        }),
+      // Mobile Project Selector Button
+      mob && projects.length > 0 && React.createElement("button", {
+        onClick: () => setShowProjectSelector(true),
+        style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, cursor: 'pointer', width: '100%', justifyContent: 'space-between' },
+      },
+        React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500 } }, "\uD504\uB85C\uC81D\uD2B8: " + (projects.find(p => p.id === activeProjectId)?.name || '')),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, "\u25BE"),
       ),
 
       // Global Settings
-      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '8px 10px' : '8px 12px', boxShadow: T.shadow, display: 'flex', gap: mob ? 8 : 14, alignItems: 'center', flexWrap: 'wrap' } },
-        React.createElement("div", { style: { flex: 1, minWidth: mob ? '100%' : 200, display: 'flex', alignItems: 'center', gap: 8 } },
-          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', flexShrink: 0 } }, "URL"),
-          React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '6px 10px', fontSize: 13 } })
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "비율"),
-          ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => setAspectRatio(opt.id) }, opt.label))
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "형식"),
-          React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "영상"),
-          React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "이미지"),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "해상도"),
-          React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
-          React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
-        ),
-      ),
+      mob
+        ? React.createElement("button", {
+            onClick: () => setShowGlobalSettings(true),
+            style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, cursor: 'pointer', boxShadow: T.shadow },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 } },
+              React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, "\uACF5\uD1B5 \uC124\uC815"),
+              React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } },
+                "\xB7 " + aspectRatio + " \xB7 " + (outputFormat === 'video' ? '\uC601\uC0C1' : '\uC774\uBBF8\uC9C0') + " \xB7 " + outputSize + "p"
+              ),
+            ),
+            React.createElement("span", { style: { fontSize: 12, color: T.accent, fontWeight: 500, flexShrink: 0, marginLeft: 8 } }, "\uC218\uC815"),
+          )
+        : React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
+            React.createElement("div", { style: { flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 8 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', flexShrink: 0 } }, "URL"),
+              React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '6px 10px', fontSize: 13 } })
+            ),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uBE44\uC728"),
+              ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => setAspectRatio(opt.id) }, opt.label))
+            ),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uD615\uC2DD"),
+              React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
+              React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "\uC774\uBBF8\uC9C0"),
+            ),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uD574\uC0C1\uB3C4"),
+              React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
+              React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
+            ),
+          ),
 
-      // Global fallback image (only when output format is image)
-      outputFormat === 'image' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? '12px' : '16px 20px', boxShadow: T.shadow, display: 'flex', alignItems: 'center', gap: 12 } },
-        React.createElement("label", { style: { ...labelBase, marginBottom: 0, whiteSpace: 'nowrap' } }, "공통 이미지"),
-        React.createElement("div", { style: { flex: 1 } },
-          globalBgImage
-            ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                React.createElement("img", { src: globalBgImage, style: { width: 40, height: 40, borderRadius: 6, objectFit: 'cover' } }),
-                React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "적용 중"),
-                React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "삭제"),
-              )
-            : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+          // Global fallback image (only when output format is image, desktop only inline)
+          outputFormat === 'image' && React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '16px 20px', boxShadow: T.shadow, display: 'flex', alignItems: 'center', gap: 12 } },
+            React.createElement("label", { style: { ...labelBase, marginBottom: 0, whiteSpace: 'nowrap' } }, "\uACF5\uD1B5 \uC774\uBBF8\uC9C0"),
+            React.createElement("div", { style: { flex: 1 } },
+              globalBgImage
+                ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                    React.createElement("img", { src: globalBgImage, style: { width: 40, height: 40, borderRadius: 6, objectFit: 'cover' } }),
+                    React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC801\uC6A9 \uC911"),
+                    React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "\uC0AD\uC81C"),
+                  )
+                : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+            ),
+          ),
         ),
-      ),
 
       // Cards — mobile carousel vs desktop list
       mob ? React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
@@ -3835,6 +3993,18 @@ export default function App() {
       cards,
       onReorder: (newCards) => setCards(newCards),
       onClose: () => setShowReorder(false),
+    }),
+    showProjectSelector && React.createElement(ProjectSelectorModal, {
+      projects, activeId: activeProjectId,
+      onSwitch: switchProject, onAdd: addProject,
+      onClose: closeProject, onRename: renameProject,
+      onDismiss: () => setShowProjectSelector(false),
+    }),
+    showGlobalSettings && React.createElement(GlobalSettingsModal, {
+      globalUrl, setGlobalUrl, aspectRatio, setAspectRatio,
+      outputFormat, setOutputFormat, outputSize, setOutputSize,
+      globalBgImage, setGlobalBgImage,
+      onDismiss: () => setShowGlobalSettings(false),
     }),
     ), // end editor Fragment
 
