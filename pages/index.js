@@ -1366,8 +1366,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
 
-          // 채우기
-          React.createElement(Section, { title: "채우기" },
+          // 클립 자르기
+          React.createElement(Section, { title: "클립 자르기" },
             React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
@@ -1933,7 +1933,7 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'fill', label: '채우기' },
+  { id: 'fill', label: '클립 자르기' },
   { id: 'layout', label: '레이아웃' },
   { id: 'text', label: '텍스트' },
   { id: 'overlay', label: '얹기' },
