@@ -4009,6 +4009,7 @@ export default function App() {
     mob && React.createElement("div", { style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0' } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, fontWeight: 500, minWidth: 28, textAlign: 'center' } }, (activeCardIdx + 1) + "/" + cards.length),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
           disabled: activeCardIdx === 0,
