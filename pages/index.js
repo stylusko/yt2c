@@ -976,11 +976,11 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     }
   }, [mutedProp]);
 
-  // Cover-fit dimensions: make iframe big enough to fill container (YouTube = 16:9)
-  const containerAR = width / height;
-  const videoAR = 16 / 9;
-  const iW = containerAR > videoAR ? width : Math.ceil(height * videoAR);
-  const iH = containerAR > videoAR ? Math.ceil(width / videoAR) : height;
+  // High-res iframe (YouTube serves better quality at larger sizes)
+  const iW = 1920;
+  const iH = 1080;
+  // Scale to cover the container
+  const coverScale = Math.max(width / iW, height / iH);
 
   // Load YouTube IFrame API once
   useEffect(() => {
@@ -1070,7 +1070,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     React.createElement("div", {
       style: {
         position: 'absolute', top: '50%', left: '50%', width: iW, height: iH,
-        transform: 'translate(-50%, -50%) scale(' + vsc + ')',
+        transform: 'translate(-50%, -50%) scale(' + (coverScale * vsc) + ')',
         transformOrigin: (videoX ?? 50) + '% ' + (videoY ?? 50) + '%',
       },
     },
