@@ -60,12 +60,12 @@ const VIDEO_FILL_OPTIONS = [
 ];
 
 const STYLE_PRESETS = [
-  { id: 'modern_dark', label: '모던 다크', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'clean_box', label: '클린 박스', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'classic_top', label: '클래식 상단', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '그라데이션', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'simple_bottom', label: '심플 하단', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'bold_full', label: '볼드 전체', layout: 'full_bg', bgColor: '#0d0d0d', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#d0d0d0', bodyColor: '#e8e8e8', titleSize: 68, subtitleSize: 48, bodySize: 38, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'modern_dark', label: '\uBAA8\uB358 \uB2E4\uD06C', desc: '\uC804\uCCB4 \uBC30\uACBD \uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC5B4\uB450\uC6B4 \uBD84\uC704\uAE30', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'clean_box', label: '\uD074\uB9B0 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8, \uAE54\uB054\uD55C \uB290\uB08C', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
+  { id: 'classic_top', label: '\uD074\uB798\uC2DD \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8 \uBC18\uBC18', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'simple_bottom', label: '\uC2EC\uD50C \uD558\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1 \uBC30\uCE58', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'bold_full', label: '\uBCFC\uB4DC \uC804\uCCB4', desc: '\uD070 \uC81C\uBAA9\uC774 \uC911\uC559\uC5D0, \uC784\uD329\uD2B8 \uC788\uB294 \uAD6C\uC131', layout: 'full_bg', bgColor: '#0d0d0d', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#d0d0d0', bodyColor: '#e8e8e8', titleSize: 68, subtitleSize: 48, bodySize: 38, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const DEFAULT_CARD = () => ({
@@ -2091,10 +2091,15 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
   );
 
   const step1 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    // Step title
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC601\uC0C1\uC744 \uC54C\uB824\uC8FC\uC138\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4 YouTube \uC601\uC0C1\uC758 \uB9C1\uD06C\uB97C \uBD99\uC5EC\uB123\uC5B4 \uC8FC\uC138\uC694"),
+    ),
     React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "YouTube URL"),
       React.createElement("input", {
-        type: "text", placeholder: "https://youtube.com/watch?v=...",
+        type: "text", placeholder: "\uB9C1\uD06C\uB97C \uBD99\uC5EC\uB123\uC73C\uC138\uC694",
         value: data.url || '', onChange: (e) => update('url', e.target.value),
         style: { ...inputBase, fontSize: 15, padding: '14px 16px' },
         onFocus: (e) => e.target.style.borderColor = T.accent,
@@ -2102,7 +2107,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       }),
     ),
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
       React.createElement("div", { style: { display: 'flex', gap: 10 } },
         ASPECT_OPTIONS.map(opt => React.createElement("button", {
           key: opt.id, onClick: () => update('aspectRatio', opt.id),
@@ -2114,29 +2119,35 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
           },
         }, opt.label)),
       ),
+      React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uC778\uC2A4\uD0C0 \uD53C\uB4DC\uB294 1:1, \uB9B4\uC2A4\xB7\uC20F\uCE20\uB294 3:4\uAC00 \uC798 \uB9DE\uC544\uC694"),
     ),
   );
 
   const step2 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    // Step title
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC2A4\uD0C0\uC77C\uC744 \uACE8\uB77C\uC8FC\uC138\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uB098\uC911\uC5D0 \uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
+    ),
     // Card count stepper
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uC218"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB9CC\uB4E4 \uCE74\uB4DC \uC7A5\uC218"),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
         React.createElement("button", {
-          onClick: () => update('cardCount', Math.max(2, (data.cardCount || 3) - 1)),
-          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: T.text, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          onClick: () => update('cardCount', Math.max(1, (data.cardCount || 3) - 1)),
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) <= 1 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) <= 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         }, "\u2212"),
         React.createElement("span", { style: { fontSize: 28, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center' } }, data.cardCount || 3),
         React.createElement("button", {
-          onClick: () => { if ((data.cardCount || 3) < 6) update('cardCount', (data.cardCount || 3) + 1); },
-          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 6 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 6 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          onClick: () => { if ((data.cardCount || 3) < 8) update('cardCount', (data.cardCount || 3) + 1); },
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 8 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 8 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         }, "+"),
       ),
-      (data.cardCount || 3) >= 6 && React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, marginTop: 8, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\uD560 \uC218 \uC788\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\xB7\uC0AD\uC81C\uD560 \uC218 \uC788\uC5B4\uC694"),
     ),
     // Style presets
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC2A4\uD0C0\uC77C"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uBD84\uC704\uAE30"),
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12 } },
         STYLE_PRESETS.map(p => React.createElement("div", {
           key: p.id,
@@ -2150,7 +2161,8 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
           },
         },
           React.createElement(StylePresetThumb, { preset: p }),
-          React.createElement("span", { style: { fontSize: 12, fontWeight: 500, color: data.presetId === p.id ? T.accentHover : T.textSecondary } }, p.label),
+          React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: data.presetId === p.id ? T.accentHover : T.text } }, p.label),
+          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, textAlign: 'center', lineHeight: 1.3 } }, p.desc),
         )),
       ),
     ),
