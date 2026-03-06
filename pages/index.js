@@ -2134,7 +2134,7 @@ async function downloadAllAsZip(urls, outputFormat) {
   const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(content);
-  a.download = `yt2c_cards_${Date.now()}.zip`;
+  a.download = `youmeca_cards_${Date.now()}.zip`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
@@ -3622,7 +3622,7 @@ export default function App() {
           else { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
         } catch (e) { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
       }
-      setEditorMode(null);
+      setEditorMode('editor');
     } else if (path === '/easy') {
       setEditorMode('wizard');
       setWizardStep(1);
@@ -3952,15 +3952,15 @@ export default function App() {
         }, "\u2302"),
 
         // Logo area
-        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: mob ? 6 : 10, flexShrink: mob ? 1 : 0, minWidth: 0 } },
+        React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: mob ? 'center' : 'flex-start', gap: mob ? 6 : 10, flexShrink: mob ? 1 : 0, flex: mob ? 1 : 'none', minWidth: 0 } },
           React.createElement("div", {
             onClick: () => setShowInfo(!showInfo),
-            style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, cursor: 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, transition: 'background 0.15s' },
+            style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, cursor: 'pointer', padding: mob ? '4px 4px' : '4px 8px', borderRadius: T.radiusSm, transition: 'background 0.15s' },
             onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)',
             onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
           },
             mob
-              ? React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 18, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1, whiteSpace: 'nowrap' } }, "YOUMECA")
+              ? React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 15, fontWeight: 400, letterSpacing: '0.04em', color: T.text, lineHeight: 1, whiteSpace: 'nowrap' } }, "YOUMECA")
               : React.createElement(React.Fragment, null,
                   React.createElement("img", { src: "/icon-round.png", style: { width: 28, height: 28, borderRadius: 7, flexShrink: 0 } }),
                   React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
@@ -4018,10 +4018,10 @@ export default function App() {
           onClick: () => setActiveCardIdx(i),
           style: { width: i === activeCardIdx ? 20 : 8, height: 8, borderRadius: 4, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
         })),
-        React.createElement("div", {
-          onClick: () => { if (cards.length > 0) { addCard(); setActiveCardIdx(cards.length); } },
-          style: { width: 8, height: 8, borderRadius: 4, background: 'transparent', border: `1.5px solid ${T.accent}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, color: T.accent, lineHeight: 1 },
-        }),
+        React.createElement("button", {
+          onClick: () => { addCard(); setActiveCardIdx(cards.length); },
+          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.15)', border: `1px solid ${T.accent}`, color: T.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s' },
+        }, "+ \uCD94\uAC00"),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
           disabled: activeCardIdx >= cards.length - 1,
