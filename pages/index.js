@@ -1791,7 +1791,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose })
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [videoPreviewOn, setVideoPreviewOn] = useState(false);
+  const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
   const previewW = isMob ? Math.min(window.innerWidth - 64, 400) : 480;
   const cardSlotW = previewW + 40;
@@ -2245,16 +2245,18 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
 function WizardLoadingScreen({ mob }) {
   const [phase, setPhase] = useState(0);
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 600);
-    const t2 = setTimeout(() => setPhase(2), 1500);
-    const t3 = setTimeout(() => setPhase(3), 2200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => setPhase(1), 800);
+    const t2 = setTimeout(() => setPhase(2), 2000);
+    const t3 = setTimeout(() => setPhase(3), 3200);
+    const t4 = setTimeout(() => setPhase(4), 4500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
   const steps = [
     { label: '\uCE74\uB4DC \uAD6C\uC870 \uC0DD\uC131 \uC911...', done: phase >= 1 },
-    { label: '\uC2A4\uD0C0\uC77C \uC801\uC6A9 \uC911...', done: phase >= 2 },
-    { label: '\uCD08\uC548 \uC644\uC131!', done: phase >= 3 },
+    { label: '\uAD6C\uAC04 \uB098\uB204\uB294 \uC911...', done: phase >= 2 },
+    { label: '\uC2A4\uD0C0\uC77C \uC801\uC6A9 \uC911...', done: phase >= 3 },
+    { label: '\uCD08\uC548 \uC644\uC131!', done: phase >= 4 },
   ];
 
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1a1035 0%, #0d1b2a 50%, #1a0a2e 100%)', backgroundSize: '400% 400%', animation: 'wizardGradient 6s ease infinite', overflow: 'hidden' } },
@@ -3169,7 +3171,7 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
-  const [videoPreviewOn, setVideoPreviewOn] = useState(false);
+  const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const [previewMuted, setPreviewMuted] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
@@ -3426,8 +3428,8 @@ export default function App() {
       setTimeout(() => {
         setWizardLoading(false);
         setEditorMode('editor');
-      }, 500);
-    }, 2500);
+      }, 700);
+    }, 4800);
   };
 
   return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
