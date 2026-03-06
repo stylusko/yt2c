@@ -3036,18 +3036,18 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
-          var ss = parseTime(e.target.value); var es = parseTime(card.end);
-          if (ss != null && es != null && es > ss && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
-          update("start", e.target.value);
+          var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
+          if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
+          else update("start", e.target.value);
         }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
-          var ss = parseTime(card.start); var es = parseTime(e.target.value);
-          if (ss != null && es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
+          var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
+          if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
           else update("end", e.target.value);
         }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
       ),
       // Clip duration bar
-      (() => { var ss = parseTime(card.start), es = parseTime(card.end); var cl = (ss != null && es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
+      (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
           React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
           React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
