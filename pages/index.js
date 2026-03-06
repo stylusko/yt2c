@@ -1366,8 +1366,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
 
-          // 클립 자르기
-          React.createElement(Section, { title: "클립 자르기" },
+          // 클립 편집
+          React.createElement(Section, { title: "클립 편집" },
             React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
@@ -1933,7 +1933,7 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'fill', label: '클립 자르기' },
+  { id: 'fill', label: '클립 편집' },
   { id: 'layout', label: '레이아웃' },
   { id: 'text', label: '텍스트' },
   { id: 'overlay', label: '얹기' },
@@ -2233,7 +2233,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
 /* ── Desktop Card Panel (left preview + right tabs) ── */
 const DESKTOP_TABS = [
-  { id: 'fill', label: '클립 자르기' },
+  { id: 'fill', label: '클립 편집' },
   { id: 'layout', label: '\ub808\uc774\uc544\uc6c3' },
   { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9' },
   { id: 'overlay', label: '\uc774\ubbf8\uc9c0 \uc5b9\uae30' },
