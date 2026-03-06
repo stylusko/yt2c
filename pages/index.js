@@ -39,11 +39,11 @@ const RECENT_FEATURES = [
 ];
 
 const LAYOUT_OPTIONS = [
-  { id: "photo_top", label: "\uD14D\uC2A4\uD2B8 \uD558\uB2E8" },
-  { id: "photo_bottom", label: "\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8" },
-  { id: "gradient_fade", label: "\uADF8\uB77C\uB370\uC774\uC158" },
-  { id: "full_bg", label: "\uC804\uCCB4 \uBC30\uACBD" },
-  { id: "text_box", label: "\uD14D\uC2A4\uD2B8 \uBC15\uC2A4" },
+  { id: "photo_top", label: "\uD14D\uC2A4\uD2B8\n\uD558\uB2E8" },
+  { id: "photo_bottom", label: "\uD14D\uC2A4\uD2B8\n\uC0C1\uB2E8" },
+  { id: "gradient_fade", label: "\uADF8\uB77C\uB370\n\uC774\uC158" },
+  { id: "full_bg", label: "\uC804\uCCB4\n\uBC30\uACBD" },
+  { id: "text_box", label: "\uD14D\uC2A4\uD2B8\n\uBC15\uC2A4" },
   { id: "none", label: "\uD14D\uC2A4\uD2B8\uB9CC" },
 ];
 
@@ -462,7 +462,7 @@ function LayoutThumb({ type, label, active, onClick }) {
     }
   },
     React.createElement("div", { style: { borderRadius: 4, overflow: 'hidden', border: `1px solid rgba(255,255,255,0.2)` } }, layout),
-    React.createElement("span", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 500, textAlign: 'center', maxWidth: 64, lineHeight: 1.2 } }, label),
+    React.createElement("span", { style: { fontSize: 10, color: T.textSecondary, fontWeight: 500, textAlign: 'center', maxWidth: 64, lineHeight: 1.2, whiteSpace: 'pre-line' } }, label),
   );
 }
 
@@ -1536,7 +1536,7 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange }) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -1633,6 +1633,11 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(Section, { title: "레이아웃" },
             React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
               LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+            ),
+            // 카드 비율
+            onAspectRatioChange && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+              ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
             card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
             // 텍스트 박스 설정
@@ -2754,7 +2759,7 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -2843,6 +2848,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
         LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
       )
+    ),
+    // 카드 비율
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
     ),
     card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
@@ -3083,7 +3093,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange, onAspectRatioChange }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -3167,6 +3177,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
       LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+    ),
+    // 카드 비율
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
     ),
     card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
@@ -3826,8 +3841,12 @@ export default function App() {
             onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)',
             onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
           },
-            React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 24 : 28, height: mob ? 24 : 28, borderRadius: 7, flexShrink: 0 } }),
-            !mob && React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
+            mob
+              ? React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 18, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1, whiteSpace: 'nowrap' } }, "YOUMECA")
+              : React.createElement(React.Fragment, null,
+                  React.createElement("img", { src: "/icon-round.png", style: { width: 28, height: 28, borderRadius: 7, flexShrink: 0 } }),
+                  React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
+                ),
             !mob && React.createElement("span", { style: { fontSize: 10, color: T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: T.radiusPill } }, VERSION),
           ),
           !mob && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
@@ -3926,7 +3945,7 @@ export default function App() {
       // Card preview
       cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
         React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(120, window.innerWidth - 32) }),
+          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(120, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
           React.createElement("button", {
@@ -4005,6 +4024,7 @@ export default function App() {
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
           hidePreview: true,
+          onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
         }),
       ) : React.createElement(DesktopCardPanel, {
         cards,
@@ -4019,6 +4039,7 @@ export default function App() {
         videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
         previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
         previewVolume, onPreviewVolumeChange: setPreviewVolume,
+        onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
       }),
     ),
 
