@@ -2683,6 +2683,8 @@ function ReorderModal({ cards, onReorder, onClose }) {
   const [order, setOrder] = useState(cards.map((_, i) => i));
   const [dragging, setDragging] = useState(null);
   const [dragOver, setDragOver] = useState(null);
+  const listRef = useRef(null);
+  const touchStartY = useRef(0);
 
   const handleDragStart = (idx) => { setDragging(idx); };
   const handleDragOver = (e, idx) => { e.preventDefault(); setDragOver(idx); };
@@ -2697,6 +2699,49 @@ function ReorderModal({ cards, onReorder, onClose }) {
   };
   const handleDragEnd = () => { setDragging(null); setDragOver(null); };
 
+  // Touch handlers for mobile drag
+  const handleTouchStart = (idx, e) => {
+    touchStartY.current = e.touches[0].clientY;
+    setDragging(idx);
+  };
+  const handleTouchMove = (e) => {
+    if (dragging === null || !listRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const items = listRef.current.querySelectorAll('[data-reorder-item]');
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect();
+      if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+        setDragOver(i);
+        return;
+      }
+    }
+  };
+  const handleTouchEnd = () => {
+    if (dragging !== null && dragOver !== null && dragging !== dragOver) {
+      const newOrder = [...order];
+      const [moved] = newOrder.splice(dragging, 1);
+      newOrder.splice(dragOver, 0, moved);
+      setOrder(newOrder);
+    }
+    setDragging(null);
+    setDragOver(null);
+  };
+
+  // Move up/down buttons for easier mobile use
+  const moveUp = (idx) => {
+    if (idx <= 0) return;
+    const newOrder = [...order];
+    [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+    setOrder(newOrder);
+  };
+  const moveDown = (idx) => {
+    if (idx >= order.length - 1) return;
+    const newOrder = [...order];
+    [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+    setOrder(newOrder);
+  };
+
   const confirm = () => {
     const reordered = order.map(i => cards[i]);
     onReorder(reordered);
@@ -2706,56 +2751,60 @@ function ReorderModal({ cards, onReorder, onClose }) {
   return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 } },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, maxWidth: 480, width: '100%', boxShadow: T.shadowLg, maxHeight: '85vh', display: 'flex', flexDirection: 'column' } },
       React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
-        React.createElement("h3", { style: { fontWeight: 600, fontSize: 15, color: T.text } }, "카드 순서 변경"),
+        React.createElement("h3", { style: { fontWeight: 600, fontSize: 15, color: T.text } }, "\uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD"),
         React.createElement("button", { onClick: onClose, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer' } }, "\u2715"),
       ),
-      React.createElement("div", { style: { padding: '12px 20px', overflowY: 'auto', flex: 1 } },
-        React.createElement("p", { style: { fontSize: 12, color: T.textMuted, marginBottom: 12 } }, "드래그하여 순서를 변경하세요"),
-        // Column headers
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px 8px', borderBottom: `1px solid ${T.border}`, marginBottom: 8 } },
-          React.createElement("span", { style: { width: 16 } }), // drag handle spacer
-          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, width: 28, textAlign: 'center', flexShrink: 0 } }, "순서"),
-          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, width: 40, textAlign: 'center', flexShrink: 0 } }, "원래"),
-          React.createElement("span", { style: { fontSize: 10, color: T.textMuted, fontWeight: 600, flex: 1 } }, "이름"),
-        ),
+      React.createElement("div", { ref: listRef, style: { padding: '12px 20px', overflowY: 'auto', flex: 1, touchAction: dragging !== null ? 'none' : 'auto' } },
+        React.createElement("p", { style: { fontSize: 12, color: T.textMuted, marginBottom: 12 } }, "\uBC84\uD2BC\uC744 \uB20C\uB7EC \uC21C\uC11C\uB97C \uBCC0\uACBD\uD558\uC138\uC694"),
         order.map((cardIdx, visualIdx) => {
           const card = cards[cardIdx];
           const isDragging = dragging === visualIdx;
           const isDragOver = dragOver === visualIdx;
-          const moved = cardIdx !== visualIdx; // card moved from original position
+          const moved = cardIdx !== visualIdx;
           return React.createElement("div", {
             key: card.id,
+            'data-reorder-item': true,
             draggable: true,
             onDragStart: () => handleDragStart(visualIdx),
             onDragOver: (e) => handleDragOver(e, visualIdx),
             onDrop: () => handleDrop(visualIdx),
             onDragEnd: handleDragEnd,
+            onTouchStart: (e) => handleTouchStart(visualIdx, e),
+            onTouchMove: handleTouchMove,
+            onTouchEnd: handleTouchEnd,
             style: {
-              display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px',
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
               background: isDragging ? 'rgba(99,102,241,0.15)' : isDragOver ? 'rgba(99,102,241,0.08)' : moved ? 'rgba(34,197,94,0.05)' : 'rgba(255,255,255,0.02)',
               borderRadius: T.radiusSm, marginBottom: 4, cursor: 'grab',
               border: `1px solid ${isDragOver ? T.accent : moved ? 'rgba(34,197,94,0.2)' : T.border}`,
               opacity: isDragging ? 0.6 : 1,
               transition: 'all 0.15s',
+              userSelect: 'none', WebkitUserSelect: 'none',
             },
           },
-            React.createElement("span", { style: { color: T.textMuted, fontSize: 14 } }, "\u2630"),
+            // Up/down buttons
+            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 } },
+              React.createElement("button", {
+                onClick: () => moveUp(visualIdx), disabled: visualIdx === 0,
+                style: { width: 24, height: 20, border: 'none', borderRadius: 4, background: visualIdx === 0 ? 'transparent' : 'rgba(255,255,255,0.08)', color: visualIdx === 0 ? T.textMuted : T.textSecondary, fontSize: 10, cursor: visualIdx === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: visualIdx === 0 ? 0.3 : 1 }
+              }, "\u25B2"),
+              React.createElement("button", {
+                onClick: () => moveDown(visualIdx), disabled: visualIdx === order.length - 1,
+                style: { width: 24, height: 20, border: 'none', borderRadius: 4, background: visualIdx === order.length - 1 ? 'transparent' : 'rgba(255,255,255,0.08)', color: visualIdx === order.length - 1 ? T.textMuted : T.textSecondary, fontSize: 10, cursor: visualIdx === order.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, opacity: visualIdx === order.length - 1 ? 0.3 : 1 }
+              }, "\u25BC"),
+            ),
             // New order number
             React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: moved ? T.success : T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0, transition: 'background 0.2s' } }, visualIdx + 1),
-            // Original card number (dimmed)
-            React.createElement("span", { style: { width: 40, textAlign: 'center', flexShrink: 0 } },
-              React.createElement("span", { style: { fontSize: 11, color: moved ? T.textSecondary : T.textMuted, background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: T.radiusPill } }, `#${cardIdx + 1}`)
-            ),
             // Card name
-            React.createElement("span", { style: { color: T.text, fontSize: 13, fontWeight: 500, flex: 1 } }, card.name || card.title || card.subtitle || `카드 ${cardIdx + 1}`),
+            React.createElement("span", { style: { color: T.text, fontSize: 13, fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.name || card.title || card.subtitle || `\uCE74\uB4DC ${cardIdx + 1}`),
             // Move indicator
-            moved && React.createElement("span", { style: { fontSize: 10, color: T.success, fontWeight: 600 } }, `${cardIdx + 1}\u2192${visualIdx + 1}`),
+            moved && React.createElement("span", { style: { fontSize: 10, color: T.success, fontWeight: 600, flexShrink: 0 } }, `${cardIdx + 1}\u2192${visualIdx + 1}`),
           );
         })
       ),
       React.createElement("div", { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 20px', borderTop: `1px solid ${T.border}` } },
-        React.createElement("button", { onClick: onClose, style: { padding: '8px 20px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "취소"),
-        React.createElement("button", { onClick: confirm, style: { padding: '8px 20px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "적용"),
+        React.createElement("button", { onClick: onClose, style: { padding: '8px 20px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: confirm, style: { padding: '8px 20px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uC801\uC6A9"),
       )
     )
   );
