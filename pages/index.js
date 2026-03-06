@@ -1821,7 +1821,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, generating }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -1931,6 +1931,84 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose })
         disabled: currentIdx === cards.length - 1,
         style: { width: 36, height: 36, borderRadius: '50%', background: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)', border: 'none', color: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)', fontSize: 16, cursor: currentIdx === cards.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }
       }, "\u25B6"),
+      // Generate button
+      onGenerate && React.createElement("button", {
+        onClick: () => { onClose(); onGenerate(); },
+        disabled: generating,
+        style: { marginLeft: 8, padding: '8px 20px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
+      }, generating ? "\uC0DD\uC131 \uC911..." : "\u2728 \uC0DD\uC131\uD558\uAE30"),
+    ),
+  );
+}
+
+function GeneratingModal({ mob, generating, genProgress, results, downloading, onDownloadAll, onClose }) {
+  const pctMatch = genProgress && genProgress.match(/(\d+)%/);
+  const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
+  const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
+  const failed = !generating && genProgress && genProgress.includes('\uC2E4\uD328') && results.length === 0;
+  const canClose = done || failed || !generating;
+
+  return React.createElement("div", {
+    style: { position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
+  },
+    React.createElement("div", {
+      style: { maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }
+    },
+      // Close button (only when closeable)
+      canClose && React.createElement("button", {
+        onClick: onClose,
+        style: { alignSelf: 'flex-end', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' },
+        onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)',
+        onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)',
+      }, "\u2715"),
+
+      // Ad placeholder (app intro)
+      React.createElement("div", {
+        style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, position: 'relative', overflow: 'hidden' }
+      },
+        // Decorative circles
+        React.createElement("div", { style: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(99,102,241,0.15)' } }),
+        React.createElement("div", { style: { position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.12)' } }),
+        // Logo icon
+        React.createElement("div", { style: { width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: '0 4px 16px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }, "\uD83C\uDFA5"),
+        // Brand name
+        React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '0.08em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
+        // Sub copy
+        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.65)', fontWeight: 400, position: 'relative', zIndex: 1 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
+        // Sponsored label
+        React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em' } }, "Sponsored"),
+      ),
+
+      // Progress area
+      React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
+        // Progress bar
+        React.createElement("div", { style: { width: '100%', height: 6, borderRadius: 3, background: T.border, overflow: 'hidden' } },
+          React.createElement("div", {
+            style: { height: '100%', borderRadius: 3, background: done ? T.success : T.accent, width: pct + '%', transition: 'width 0.4s ease, background 0.3s' }
+          })
+        ),
+        // Status text with spinner
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' } },
+          generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
+          React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
+        ),
+      ),
+
+      // Download buttons (when done)
+      done && results.length > 0 && React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
+        React.createElement("div", { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } },
+          results.map((url, i) => React.createElement("a", {
+            key: i, href: url, download: true,
+            style: { padding: '8px 18px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'opacity 0.15s' },
+            onMouseEnter: (e) => e.currentTarget.style.opacity = '0.85',
+            onMouseLeave: (e) => e.currentTarget.style.opacity = '1',
+          }, "\uCE74\uB4DC " + (i + 1))),
+        ),
+        results.length > 1 && React.createElement("button", {
+          onClick: onDownloadAll, disabled: downloading,
+          style: { width: '100%', padding: '10px 0', background: T.success, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer', transition: 'all 0.15s', boxShadow: '0 2px 8px rgba(34,197,94,0.3)', opacity: downloading ? 0.7 : 1 }
+        }, downloading ? "\uC555\uCD95 \uC911..." : "\uD55C \uBC88\uC5D0 \uB2E4\uC6B4\uB85C\uB4DC"),
+      ),
     ),
   );
 }
@@ -3503,6 +3581,7 @@ export default function App() {
   const [previewMuted, setPreviewMuted] = useState(true);
   const [previewVolume, setPreviewVolume] = useState(80);
   const [showPreview, setShowPreview] = useState(false);
+  const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
@@ -3726,7 +3805,7 @@ export default function App() {
     for (let i = 0; i < cards.length; i++) {
       if (!cards[i].start || !cards[i].end) { alert(`카드 ${i + 1}의 시작/종료 시간을 입력하세요.`); return; }
     }
-    setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중...");
+    setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
       const overlays = [];
       for (let i = 0; i < cards.length; i++) {
@@ -3925,22 +4004,6 @@ export default function App() {
       )
     ),
 
-    // ── Progress ──
-    (generating || genProgress) && React.createElement("div", { style: { background: T.surface, borderBottom: `1px solid ${T.border}`, padding: mob ? '8px 12px' : '10px 24px' } },
-      React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', gap: mob ? 8 : 12, flexWrap: 'wrap' } },
-        generating && React.createElement("div", { style: { width: 14, height: 14, border: `2px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' } }),
-        React.createElement("span", { style: { fontSize: mob ? 12 : 13, color: generating ? T.accent : T.success, fontWeight: 500 } }, genProgress),
-        results.length > 0 && !generating && React.createElement("div", { style: { marginLeft: mob ? 0 : 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', width: mob ? '100%' : 'auto' } },
-          results.map((url, i) => React.createElement("a", { key: i, href: url, download: true, style: { padding: '5px 14px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 12, textDecoration: 'none', fontWeight: 500 } }, `카드 ${i+1}`)),
-          results.length > 1 && React.createElement("button", {
-            onClick: handleDownloadAll, disabled: downloading,
-            style: { padding: '6px 16px', background: T.success, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: downloading ? 'not-allowed' : 'pointer', transition: 'all 0.15s', marginLeft: 4 }
-          }, downloading ? "압축 중..." : "한 번에 다운로드"),
-        ),
-      )
-    ),
-
-
     // ── Fixed Card Preview (mobile only) ──
     mob && React.createElement("div", { style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
@@ -4083,7 +4146,12 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false) }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onGenerate: handleGenerate, generating }),
+    showGeneratingModal && React.createElement(GeneratingModal, {
+      mob, generating, genProgress, results, downloading,
+      onDownloadAll: handleDownloadAll,
+      onClose: () => { setShowGeneratingModal(false); setGenProgress(""); }
+    }),
     confirmClose && React.createElement(ConfirmDialog, {
       message: "지금 저장된 내용이 날아갑니다.\n정말로 닫으시겠습니까?",
       onConfirm: confirmCloseProject,
