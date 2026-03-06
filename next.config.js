@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      { source: '/easy', destination: '/' },
+      { source: '/free', destination: '/' },
+    ];
+  },
   // API route body size limit (overlay PNG can be large)
   api: {
     bodyParser: {

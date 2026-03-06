@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 
 /* ── Constants ── */
@@ -3166,6 +3167,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 /* ── App ── */
 export default function App() {
   const mob = useIsMobile();
+  const router = useRouter();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [showJson, setShowJson] = useState(false);
@@ -3195,21 +3197,51 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handler);
   }, [showInfo]);
 
-  // Load from localStorage on mount
+  // Load from localStorage on mount + URL-based initial mode
   useEffect(() => {
     const saved = loadProjects();
     if (saved) {
       setProjects(saved.projects);
       setActiveProjectId(saved.activeId || saved.projects[0]?.id);
-      setEditorMode('editor');
     } else {
       const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
       setProjects([first]);
       setActiveProjectId(first.id);
       setPendingProjectId(first.id);
+    }
+    const path = window.location.pathname;
+    if (path === '/easy') {
+      setEditorMode('wizard');
+      setWizardStep(1);
+    } else if (path === '/free') {
+      setEditorMode('editor');
+    } else {
+      // '/' — home: existing users also see mode selection
       setEditorMode(null);
     }
   }, []);
+
+  // Sync editorMode → URL (shallow)
+  useEffect(() => {
+    if (editorMode === null && wizardLoading) return;
+    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/free' : '/';
+    if (window.location.pathname !== targetPath) {
+      router.push(targetPath, undefined, { shallow: true });
+    }
+  }, [editorMode, wizardLoading]);
+
+  // Handle browser back/forward
+  useEffect(() => {
+    const onRouteChange = (url) => {
+      if (wizardLoading) return;
+      const p = url.split('?')[0];
+      if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
+      else if (p === '/free' && editorMode !== 'editor') { setEditorMode('editor'); }
+      else if (p === '/' && editorMode !== null) { setEditorMode(null); }
+    };
+    router.events.on('routeChangeComplete', onRouteChange);
+    return () => router.events.off('routeChangeComplete', onRouteChange);
+  }, [editorMode, wizardLoading, router]);
 
   // Visitor tracking
   useEffect(() => {
