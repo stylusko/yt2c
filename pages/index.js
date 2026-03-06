@@ -1112,7 +1112,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
     overlayTimer.current = setTimeout(async () => {
       try {
-        const url = await generateOverlayPng(card, previewW, aspectRatio, { skipOverlays: true, skipBorder: true });
+        const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
+        const url = await generateOverlayPng(card, Math.round(previewW * dpr), aspectRatio, { skipOverlays: true, skipBorder: true });
         setOverlayUrl(url);
       } catch (e) {}
     }, 30);
