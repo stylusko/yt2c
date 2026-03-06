@@ -562,6 +562,12 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     return { time: zStart + pct * zDur, x: e.clientX - rect.left };
   };
 
+  const calcZTimeTouch = (touch) => {
+    const rect = zoomRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+    return { time: zStart + pct * zDur, x: touch.clientX - rect.left };
+  };
+
   const startMarkerDrag = (type, e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -569,10 +575,11 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     frozenRange.current = { zStart, zEnd };
     const snapEndSec = endSec;
     const snapStartSec = startSec;
-    const { time, x } = calcZTime(e);
+    const isTouch = e.type === 'touchstart';
+    const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
     const onMove = (ev) => {
-      const r = calcZTime(ev);
+      const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev);
       const t = Math.max(0, Math.min(duration, r.time));
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
@@ -589,23 +596,30 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       setZDrag(false); setZDragTime(null); setZDragType(null);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
   };
 
   const handleZDown = (e) => {
     e.preventDefault();
-    const { time, x } = calcZTime(e);
+    const isTouch = e.type === 'touchstart';
+    const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
     onSeek(time);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType('seek');
-    const onMove = (ev) => { const r = calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
-    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    const onMove = (ev) => { const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
+    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
   };
 
-  const markerHit = { position: 'absolute', top: 0, width: 14, height: 24, cursor: 'ew-resize', zIndex: 3 };
+  const markerHit = { position: 'absolute', top: 0, width: 20, height: 28, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
 
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
@@ -615,8 +629,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     ),
     React.createElement("div", {
       ref: zoomRef,
-      onMouseDown: handleZDown,
-      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none' },
+      onMouseDown: handleZDown, onTouchStart: handleZDown,
+      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -624,10 +638,10 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
       // Start marker (visible line + wider hit area)
       React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + sPct + '% - 1px)', width: 3, height: 18, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 7px)' } }),
+      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), onTouchStart: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 10px)' } }),
       // End marker (visible line + wider hit area)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + ePct + '% - 1px)', width: 3, height: 18, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 7px)' } }),
+      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), onTouchStart: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 10px)' } }),
       // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
       !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 20, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
@@ -981,7 +995,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     // Zoomed region seekbar (shows +-30s around start point)
     startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
     // Warning toast (absolute positioned to avoid layout shift)
-    warnToast && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, bottom: -32, zIndex: 10, padding: '6px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', transition: 'opacity 0.3s' } },
+    warnToast && React.createElement("div", { style: { padding: '6px 12px', marginTop: 4, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', transition: 'opacity 0.3s' } },
       '\u26A0 \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
   );
