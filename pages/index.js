@@ -3717,7 +3717,9 @@ export default function App() {
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
             clearInterval(pollInterval); setResults(downloadUrls);
+            const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
+            if (failedErrors.length > 0) alert(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
             setGenerating(false);
           }
         } catch (e) {}
