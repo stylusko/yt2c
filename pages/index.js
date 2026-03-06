@@ -3406,6 +3406,15 @@ export default function App() {
     React.createElement("header", { style: { ...(mob ? { position: 'relative', flexShrink: 0 } : { position: 'sticky', top: 0 }), zIndex: 20, background: 'rgba(9,9,11,0.8)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${T.border}` } },
       React.createElement("div", { style: { maxWidth: 1200, margin: '0 auto', padding: mob ? '8px 12px' : '10px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: mob ? 8 : 16, flexWrap: mob ? 'wrap' : 'nowrap' } },
 
+        // Home button
+        React.createElement("button", {
+          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'modern_dark' }); },
+          title: "\uD648",
+          style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
+          onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.text; },
+          onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.textSecondary; },
+        }, "\u2302"),
+
         // Logo area
         React.createElement("div", { ref: infoRef, style: { position: 'relative', display: 'flex', alignItems: 'center', gap: mob ? 6 : 10, flexShrink: 0 } },
           React.createElement("div", {
