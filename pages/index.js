@@ -75,7 +75,7 @@ const DEFAULT_CARD = () => ({
   titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
-  captureTime: "", videoX: 50, videoY: 50, videoScale: 110,
+  captureTime: "", videoX: 50, videoY: 50, videoScale: 110, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
@@ -859,7 +859,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
-  return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000' } },
+  return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000', minWidth: 0 } },
     // Player area
     React.createElement("div", { style: { position: 'relative', width: '100%', height: 200, background: '#000' } },
       React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
@@ -957,7 +957,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   );
 }
 
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, muted: mutedProp }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const timerRef = useRef(null);
@@ -1064,7 +1064,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const vsc = (videoScale || 110) / 100;
 
   return React.createElement("div", {
-    style: { position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s' },
+    style: { position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
     // Iframe: centered & scaled to cover, respecting user's position/scale
     React.createElement("div", {
@@ -1213,7 +1213,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
+        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
       ),
       React.createElement(OverlayImgs),
       React.createElement(CenterGuides),
@@ -1225,7 +1225,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, muted: previewMuted !== false }),
+    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
     React.createElement(OverlayImgs),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -1382,6 +1382,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
               React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+              React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -50, max: 50, step: 5, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
           ),
 
@@ -2012,6 +2013,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+    React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -50, max: 50, step: 5, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -2308,6 +2310,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
       React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale || 110, min: 100, max: 200, step: 5, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+      React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -50, max: 50, step: 5, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
   );
 
@@ -2692,7 +2695,7 @@ export default function App() {
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
       body: c.body, body_size: c.bodySize, body_font: c.bodyFont, body_color: c.bodyColor,
       text_bg_color: hexToRgb(c.bgColor), text_bg_opacity: c.useBg !== false ? c.bgOpacity : 0,
-      video_position: [c.videoX, c.videoY], video_scale: c.videoScale || 110,
+      video_position: [c.videoX, c.videoY], video_scale: c.videoScale || 110, video_brightness: c.videoBrightness || 0,
       output_size: outputSize,
       aspect_ratio: aspectRatio,
       fill_source: c.fillSource || 'video',
