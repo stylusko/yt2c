@@ -1102,7 +1102,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const vsc = (videoScale || 110) / 100;
 
   return React.createElement("div", {
-    style: { position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
+    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
     // Iframe: centered & scaled to cover, respecting user's position/scale
     React.createElement("div", {
@@ -1227,7 +1227,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
   const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
-  const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
+  const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg, background: '#000' };
 
   // Canvas overlay replaces all HTML text + background rendering
   const canvasOverlay = overlayUrl && React.createElement("img", {
