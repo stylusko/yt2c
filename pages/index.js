@@ -860,7 +860,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
-  return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000', minWidth: 0 } },
+  return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
     React.createElement("div", { style: { position: 'relative', width: '100%', height: 200, background: '#000' } },
       React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
@@ -951,8 +951,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     ),
     // Zoomed region seekbar (shows +-30s around start point)
     startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
-    // Warning toast
-    warnToast && React.createElement("div", { style: { padding: '6px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', margin: '4px 0', transition: 'opacity 0.3s' } },
+    // Warning toast (absolute positioned to avoid layout shift)
+    warnToast && React.createElement("div", { style: { position: 'absolute', left: 0, right: 0, bottom: -32, zIndex: 10, padding: '6px 12px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', transition: 'opacity 0.3s' } },
       '\u26A0 \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
   );
