@@ -1094,7 +1094,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, onTextClick, onCardUpdate }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -1218,6 +1218,95 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     }
   });
 
+  // TextBoxHandles: drag to move/resize the text box overlay
+  const [tbDrag, setTbDrag] = useState(null); // { type: 'move'|'resize', startX, startY, origX, origY, origW, origH }
+  const tbDragRef = useRef(null);
+  tbDragRef.current = tbDrag;
+
+  useEffect(() => {
+    if (!tbDrag) return;
+    const onMove = (e) => {
+      const d = tbDragRef.current;
+      if (!d) return;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - d.startX;
+      const dy = clientY - d.startY;
+      if (d.type === 'move') {
+        const newX = Math.max(0, Math.min(100, d.origX + dx / previewW * 100));
+        const newY = Math.max(0, Math.min(100, d.origY + dy / previewH * 100));
+        if (onCardUpdate) onCardUpdate({ textBoxX: Math.round(newX * 10) / 10, textBoxY: Math.round(newY * 10) / 10 });
+      } else {
+        const newW = Math.max(20, Math.min(100, d.origW + dx / previewW * 100 * 2));
+        const newH = Math.max(5, Math.min(100, d.origH + dy / previewH * 100));
+        const updates = { textBoxWidth: Math.round(newW * 10) / 10 };
+        updates.textBoxHeight = Math.round(newH * 10) / 10;
+        if (onCardUpdate) onCardUpdate(updates);
+      }
+    };
+    const onUp = () => setTbDrag(null);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [!!tbDrag]);
+
+  const textBoxHandles = card.layout === 'text_box' && onCardUpdate && (() => {
+    const bW = previewW * (card.textBoxWidth || 80) / 100;
+    const bX = (card.textBoxX || 50) / 100 * previewW - bW / 2;
+    // Estimate box height for auto mode
+    const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
+    const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
+    const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
+    const boxPadPx = Math.round((card.textBoxPadding || 20) * sc);
+    const estH = (card.textBoxHeight || 0) > 0
+      ? previewH * card.textBoxHeight / 100
+      : (titleLineCount * Math.round((card.titleSize || 56) * sc * (card.titleLineHeight || 1.4))
+        + subLineCount * Math.round((card.subtitleSize || 44) * sc * (card.subtitleLineHeight || 1.4))
+        + bodyLineCount * Math.round((card.bodySize || 36) * sc * (card.bodyLineHeight || 1.4))
+        + (titleLineCount > 0 && subLineCount > 0 ? Math.round(10 * sc) : 0)
+        + ((titleLineCount > 0 || subLineCount > 0) && bodyLineCount > 0 ? Math.round(15 * sc) : 0)
+        + boxPadPx * 2);
+    const bH = Math.max(20, estH);
+    const bY = (card.textBoxY || 70) / 100 * previewH - bH / 2;
+    const handleSize = 18;
+    const handleStyle = {
+      position: 'absolute', width: handleSize, height: handleSize, borderRadius: '50%',
+      background: 'rgba(124,58,237,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: 10, color: '#fff', userSelect: 'none', touchAction: 'none',
+    };
+    const startDrag = (type, e) => {
+      e.stopPropagation(); e.preventDefault();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      setTbDrag({
+        type, startX: clientX, startY: clientY,
+        origX: card.textBoxX ?? 50, origY: card.textBoxY ?? 70,
+        origW: card.textBoxWidth ?? 80, origH: (card.textBoxHeight ?? 0) > 0 ? card.textBoxHeight : bH / previewH * 100,
+      });
+    };
+    return React.createElement("div", {
+      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: Math.round((card.textBoxRadius || 12) * sc), pointerEvents: 'none', boxSizing: 'border-box' }
+    },
+      // Move handle (top-right)
+      React.createElement("div", {
+        style: { ...handleStyle, top: -handleSize / 2, right: -handleSize / 2, cursor: 'move', pointerEvents: 'auto' },
+        onMouseDown: (e) => startDrag('move', e), onTouchStart: (e) => startDrag('move', e),
+      }, "\u2725"),
+      // Resize handle (bottom-right)
+      React.createElement("div", {
+        style: { ...handleStyle, bottom: -handleSize / 2, right: -handleSize / 2, cursor: 'nwse-resize', pointerEvents: 'auto' },
+        onMouseDown: (e) => startDrag('resize', e), onTouchStart: (e) => startDrag('resize', e),
+      }, "\u2922"),
+    );
+  })();
+
   const isTop = card.layout === "photo_top";
   const videoAreaH = previewH - textH;
 
@@ -1232,6 +1321,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       React.createElement(CenterGuides),
       canvasOverlay,
       React.createElement(OverlayImgsAbove),
+      textBoxHandles,
       clickTarget,
     );
   }
@@ -1244,6 +1334,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     React.createElement(CenterGuides),
     canvasOverlay,
     React.createElement(OverlayImgsAbove),
+    textBoxHandles,
     clickTarget,
   );
 }
@@ -2249,7 +2340,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj) }),
     ),
 
     // Tab pills
@@ -2514,7 +2605,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj) })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
