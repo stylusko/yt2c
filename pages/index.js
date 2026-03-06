@@ -3069,7 +3069,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Tab content
-    React.createElement("div", { style: { padding: '8px 0 20px' } },
+    React.createElement("div", { style: { padding: '8px 0 20px' }, onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation() },
       tabContent[activeTab] ? tabContent[activeTab]() : null,
     ),
   );
