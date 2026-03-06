@@ -1675,7 +1675,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             ),
             // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
             card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
-              React.createElement("div", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "텍스트 배경 설정"),
+              React.createElement(SectionTitleWithReset, { title: "텍스트 배경 설정", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
               React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
               card.useBg !== false && React.createElement(React.Fragment, null,
                 React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
@@ -3058,7 +3058,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
     card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement("div", { style: { ...sectionTitle, marginBottom: 8 } }, "텍스트 배경 설정"),
+      React.createElement(SectionTitleWithReset, { title: "텍스트 배경 설정", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
       React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
       card.useBg !== false && React.createElement(React.Fragment, null,
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
@@ -3394,7 +3394,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
     card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815"),
+      React.createElement(SectionTitleWithReset, { title: "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
       React.createElement(CheckboxRow, { label: "\ubc30\uacbd\uc0c9 \uc0ac\uc6a9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
       card.useBg !== false && React.createElement(React.Fragment, null,
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
