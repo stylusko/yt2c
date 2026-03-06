@@ -5,6 +5,7 @@ const nextConfig = {
     return [
       { source: '/easy', destination: '/' },
       { source: '/free', destination: '/' },
+      { source: '/share', destination: '/' },
     ];
   },
   // API route body size limit (overlay PNG can be large)

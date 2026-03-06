@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import JSZip from 'jszip';
+import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0304';
@@ -1949,6 +1950,41 @@ function saveProjects(projects, activeId) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, activeId })); } catch (e) {}
 }
 
+/* ── Project Share Helpers ── */
+function encodeProject(project) {
+  const shareable = {
+    name: project.name,
+    globalUrl: project.globalUrl,
+    outputFormat: project.outputFormat,
+    outputSize: project.outputSize,
+    aspectRatio: project.aspectRatio,
+    globalImageSource: project.globalImageSource,
+    cards: (project.cards || []).map(c => {
+      const copy = { ...c };
+      delete copy.uploadedImage;
+      if (copy.overlays) {
+        copy.overlays = copy.overlays.map(o => {
+          const oc = { ...o };
+          delete oc.imageData;
+          return oc;
+        });
+      }
+      return copy;
+    }),
+  };
+  return LZString.compressToEncodedURIComponent(JSON.stringify(shareable));
+}
+
+function decodeProject(encoded) {
+  const json = LZString.decompressFromEncodedURIComponent(encoded);
+  if (!json) return null;
+  const parsed = JSON.parse(json);
+  parsed.id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  parsed.globalBgImage = null;
+  if (!parsed.cards) parsed.cards = [DEFAULT_CARD()];
+  return parsed;
+}
+
 /* ── Download All as ZIP ── */
 async function downloadAllAsZip(urls, outputFormat) {
   const zip = new JSZip();
@@ -1975,6 +2011,48 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
       React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
         React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "취소"),
         React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.danger, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "닫기"),
+      )
+    )
+  );
+}
+
+/* ── Share Modal ── */
+function ShareModal({ url, onClose }) {
+  const inputRef = React.useRef(null);
+  const copyLink = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(url);
+    else if (inputRef.current) { inputRef.current.select(); document.execCommand('copy'); }
+  };
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }, onClick: onClose },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 440, width: '90%', boxShadow: T.shadowLg }, onClick: e => e.stopPropagation() },
+      React.createElement("h3", { style: { color: T.text, fontSize: 16, fontWeight: 600, marginBottom: 16, textAlign: 'center' } }, "\uACF5\uC720 \uB9C1\uD06C\uAC00 \uBCF5\uC0AC\uB418\uC5C8\uC5B4\uC694"),
+      React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 16 } },
+        React.createElement("input", { ref: inputRef, readOnly: true, value: url, style: { flex: 1, padding: '8px 12px', background: T.surfaceHover, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12, outline: 'none', minWidth: 0 } }),
+        React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' } }, "\uBCF5\uC0AC"),
+      ),
+      React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, textAlign: 'center', marginBottom: 20 } },
+        "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC2E4\uC2DC\uAC04 \uACF5\uB3D9\uD3B8\uC9D1\uC740 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC73C\uBA70, \uAC01\uC790 \uB3C5\uB9BD\uC801\uC73C\uB85C \uD3B8\uC9D1\uB429\uB2C8\uB2E4."
+      ),
+      React.createElement("div", { style: { textAlign: 'center' } },
+        React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uB2EB\uAE30"),
+      )
+    )
+  );
+}
+
+/* ── Import Dialog ── */
+function ImportDialog({ project, onImport, onCancel }) {
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 400, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+      React.createElement("h3", { style: { color: T.text, fontSize: 16, fontWeight: 600, marginBottom: 8 } }, "\uACF5\uC720\uB41C \uD504\uB85C\uC81D\uD2B8"),
+      React.createElement("p", { style: { color: T.accent, fontSize: 14, fontWeight: 500, marginBottom: 4 } }, project.name || '\uC0C8 \uD504\uB85C\uC81D\uD2B8'),
+      React.createElement("p", { style: { color: T.textMuted, fontSize: 12, marginBottom: 16 } }, `\uCE74\uB4DC ${(project.cards || []).length}\uAC1C`),
+      React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, marginBottom: 24 } },
+        "\uC774 \uD504\uB85C\uC81D\uD2B8\uB97C \uAC00\uC838\uC624\uBA74 \uB0B4 \uD3B8\uC9D1 \uD654\uBA74\uC5D0 \uC0C8 \uD0ED\uC73C\uB85C \uCD94\uAC00\uB429\uB2C8\uB2E4.\n\uC6D0\uBCF8\uACFC\uB294 \uBCC4\uAC1C\uB85C, \uC790\uC720\uB86D\uAC8C \uC218\uC815\uD560 \uC218 \uC788\uC5B4\uC694."
+      ),
+      React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: onImport, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uAC00\uC838\uC624\uAE30"),
       )
     )
   );
@@ -3177,6 +3255,8 @@ export default function App() {
   const [results, setResults] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [confirmClose, setConfirmClose] = useState(null);
+  const [shareUrl, setShareUrl] = useState(null);
+  const [importProject, setImportProject] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
@@ -3210,13 +3290,23 @@ export default function App() {
       setPendingProjectId(first.id);
     }
     const path = window.location.pathname;
-    if (path === '/easy') {
+    if (path === '/share') {
+      const params = new URLSearchParams(window.location.search);
+      const d = params.get('d');
+      if (d) {
+        try {
+          const decoded = decodeProject(d);
+          if (decoded) { setImportProject(decoded); }
+          else { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+        } catch (e) { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+      }
+      setEditorMode(null);
+    } else if (path === '/easy') {
       setEditorMode('wizard');
       setWizardStep(1);
     } else if (path === '/free') {
       setEditorMode('editor');
     } else {
-      // '/' — home: existing users also see mode selection
       setEditorMode(null);
     }
   }, []);
@@ -3224,11 +3314,12 @@ export default function App() {
   // Sync editorMode → URL (shallow)
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
+    if (importProject) return; // don't change URL while import dialog is open
     const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/free' : '/';
     if (window.location.pathname !== targetPath) {
       router.push(targetPath, undefined, { shallow: true });
     }
-  }, [editorMode, wizardLoading]);
+  }, [editorMode, wizardLoading, importProject]);
 
   // Handle browser back/forward
   useEffect(() => {
@@ -3330,6 +3421,28 @@ export default function App() {
   const switchProject = (id) => {
     setActiveProjectId(id);
     setGenProgress(''); setResults([]);
+  };
+
+  const shareProject = () => {
+    if (!activeProject) return;
+    const encoded = encodeProject(activeProject);
+    const url = `${window.location.origin}/share?d=${encoded}`;
+    if (url.length > 8000) {
+      alert('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
+      return;
+    }
+    if (navigator.clipboard) navigator.clipboard.writeText(url);
+    setShareUrl(url);
+  };
+
+  const handleImport = () => {
+    if (!importProject) return;
+    setProjects(prev => [...prev, importProject]);
+    setActiveProjectId(importProject.id);
+    setEditorMode('editor');
+    setGenProgress(''); setResults([]);
+    setImportProject(null);
+    router.push('/free', undefined, { shallow: true });
   };
 
   const effectiveCard = (card) => ({
@@ -3542,7 +3655,8 @@ export default function App() {
 
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: mob ? 6 : 8, flexShrink: 0 } },
           !mob && React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-          React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "미리보기"),
+          React.createElement("button", { onClick: shareProject, style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
+          React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: mob ? '6px 12px' : '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: mob ? 12 : 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
           React.createElement("button", {
             onClick: handleGenerate, disabled: generating,
             style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
@@ -3702,6 +3816,13 @@ export default function App() {
       onClose: () => setShowReorder(false),
     }),
     ), // end editor Fragment
+
+    shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
+    importProject && React.createElement(ImportDialog, {
+      project: importProject,
+      onImport: handleImport,
+      onCancel: () => { setImportProject(null); router.push('/', undefined, { shallow: true }); },
+    }),
 
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
   );

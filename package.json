@@ -9,14 +9,15 @@
     "worker": "node worker.js"
   },
   "dependencies": {
+    "bullmq": "^5.0.0",
+    "formidable": "^3.5.0",
+    "ioredis": "^5.3.0",
+    "jszip": "^3.10.1",
+    "lz-string": "^1.5.0",
+    "multer": "^1.4.5-lts.1",
     "next": "^14.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "bullmq": "^5.0.0",
-    "ioredis": "^5.3.0",
-    "uuid": "^9.0.0",
-    "multer": "^1.4.5-lts.1",
-    "formidable": "^3.5.0",
-    "jszip": "^3.10.1"
+    "uuid": "^9.0.0"
   }
 }
