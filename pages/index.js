@@ -62,7 +62,7 @@ const VIDEO_FILL_OPTIONS = [
 const STYLE_PRESETS = [
   { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
@@ -2052,15 +2052,22 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       React.createElement("div", {
         onClick: onSelectEasy,
         onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
-        style: { ...cardBase, borderColor: hovered === 'easy' ? T.accent : T.border, background: hovered === 'easy' ? 'rgba(99,102,241,0.06)' : T.surface },
+        style: {
+          ...cardBase,
+          background: hovered === 'easy'
+            ? 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #7c3aed 100%)'
+            : 'linear-gradient(135deg, #3b0764 0%, #5b21b6 40%, #6d28d9 100%)',
+          borderColor: hovered === 'easy' ? '#a78bfa' : 'rgba(139,92,246,0.3)',
+          boxShadow: hovered === 'easy' ? '0 8px 32px rgba(109,40,217,0.4)' : '0 4px 20px rgba(109,40,217,0.2)',
+        },
       },
         React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
         React.createElement("div", null,
-          React.createElement("h2", { style: { fontSize: mob ? 18 : 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 13 : 14, color: T.textSecondary, lineHeight: 1.6, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694.\n\uB9CC\uB4E4\uC5B4\uC9C4 \uCD08\uC548\uC5D0\uC11C \uC138\uBD80 \uC218\uC815\uC774 \uAC00\uB2A5\uD574\uC694."),
+          React.createElement("h2", { style: { fontSize: mob ? 18 : 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+          React.createElement("p", { style: { fontSize: mob ? 13 : 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694.\n\uB9CC\uB4E4\uC5B4\uC9C4 \uCD08\uC548\uC5D0\uC11C \uC138\uBD80 \uC218\uC815\uC774 \uAC00\uB2A5\uD574\uC694."),
         ),
         React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
-          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
         ),
       ),
       // Free mode card
