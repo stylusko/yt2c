@@ -248,6 +248,30 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
 
+  // Helper: draw overlay images filtered by aboveLayout flag
+  async function drawOverlays(above) {
+    if (skipOverlays) return;
+    for (const ov of (card.overlays || [])) {
+      if (!ov.image || !!ov.aboveLayout !== above) continue;
+      try {
+        const oImg = new Image();
+        await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
+        const oScale = (ov.scale || 100) / 100;
+        const fitRatio = w / oImg.width;
+        const oW = oImg.width * fitRatio * oScale;
+        const oH = oImg.height * fitRatio * oScale;
+        const oX = (ov.x ?? 50) / 100 * w - oW / 2;
+        const oY = (ov.y ?? 50) / 100 * h - oH / 2;
+        ctx.globalAlpha = ov.opacity ?? 1;
+        ctx.drawImage(oImg, oX, oY, oW, oH);
+        ctx.globalAlpha = 1;
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  // Draw below-layout overlays
+  await drawOverlays(false);
+
   if (layout === "none") {
     // 없음: 텍스트 오버레이 없이 영상/이미지만
   } else if (layout === "full_bg") {
@@ -349,26 +373,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (card.subtitle) { if (card.title) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
     if (card.body) { if (card.title || card.subtitle) curY += Math.round(21 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
   }
-  // Draw overlay images
-  if (!skipOverlays) {
-    const overlays = card.overlays || [];
-    for (const ov of overlays) {
-      if (!ov.image) continue;
-      try {
-        const oImg = new Image();
-        await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
-        const oScale = (ov.scale || 100) / 100;
-        const fitRatio = w / oImg.width;
-        const oW = oImg.width * fitRatio * oScale;
-        const oH = oImg.height * fitRatio * oScale;
-        const oX = (ov.x ?? 50) / 100 * w - oW / 2;
-        const oY = (ov.y ?? 50) / 100 * h - oH / 2;
-        ctx.globalAlpha = ov.opacity ?? 1;
-        ctx.drawImage(oImg, oX, oY, oW, oH);
-        ctx.globalAlpha = 1;
-      } catch (e) { /* ignore */ }
-    }
-  }
+  // Draw above-layout overlays
+  await drawOverlays(true);
 
   if (!skipBorder) {
     ctx.fillStyle = "rgba(0,0,0,0.78)";
@@ -1191,9 +1197,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
 
-  const OverlayImgs = () => overlays.length > 0
-    ? React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: 1, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null))
-    : null;
+  const overlayImg = (ov, i, z) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: z, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null;
+  const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
+  const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
   const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg };
 
@@ -1222,9 +1228,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         React.createElement(BgImage),
         videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
       ),
-      React.createElement(OverlayImgs),
+      React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
       canvasOverlay,
+      React.createElement(OverlayImgsAbove),
       clickTarget,
     );
   }
@@ -1233,9 +1240,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
     videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false }),
-    React.createElement(OverlayImgs),
+    React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
+    React.createElement(OverlayImgsAbove),
     clickTarget,
   );
 }
@@ -1520,7 +1528,15 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(Section, { title: "이미지 얹기" },
             (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 12, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-                React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                  React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+                  React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+                    React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+                      React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+                    ),
+                    React.createElement("span", { style: { fontSize: 10, color: ov.aboveLayout ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "레이아웃 위에 표시"),
+                  ),
+                ),
                 React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
               ),
               React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
@@ -2150,7 +2166,15 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-        React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+          React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+            React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+              React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+            ),
+            React.createElement("span", { style: { fontSize: 10, color: ov.aboveLayout ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "레이아웃 위에 표시"),
+          ),
+        ),
         React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
       ),
       React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
@@ -2436,7 +2460,15 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-        React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
+          React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+            React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+              React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+            ),
+            React.createElement("span", { style: { fontSize: 10, color: ov.aboveLayout ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "\ub808\uc774\uc544\uc6c3 \uc704\uc5d0 \ud45c\uc2dc"),
+          ),
+        ),
         React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
       ),
       React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
