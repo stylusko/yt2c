@@ -415,8 +415,9 @@ function LayoutThumb({ type, label, active, onClick }) {
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
     );
   } else if (type === "full_bg") {
-    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: imgColor, position: 'relative' } },
-      React.createElement("div", { style: { width: '100%', background: 'rgba(0,0,0,0.5)', padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '1px' } }, textLines),
+    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: 'rgba(255,255,255,0.25)', position: 'relative' } },
+      React.createElement("div", { style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)' } }),
+      React.createElement("div", { style: { position: 'relative', width: '100%', padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: '1px' } }, textLines),
     );
   } else if (type === "text_box") {
     layout = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: h, width: w, background: imgColor, position: 'relative' } },
@@ -1418,7 +1419,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 영상 채우기
-            card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 8 } },
+            card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement("div", { style: { marginTop: 8 } },
               React.createElement("label", { style: labelBase }, "영상 채우기"),
               React.createElement("div", { style: { display: 'flex', gap: 6 } },
                 VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -2050,7 +2051,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 4 } },
+    card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement("div", { style: { marginTop: 4 } },
       React.createElement("label", { style: labelBase }, "영상 채우기"),
       React.createElement("div", { style: { display: 'flex', gap: 6 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -2346,7 +2347,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\ud14c\ub450\ub9ac \ub450\uaed8", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && React.createElement("div", { style: { marginTop: 4 } },
+    card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement("div", { style: { marginTop: 4 } },
       React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
       React.createElement("div", { style: { display: 'flex', gap: 6 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
