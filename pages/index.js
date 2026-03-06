@@ -1821,7 +1821,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, generating }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, generating, previewMuted, onMuteToggle }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -1873,6 +1873,13 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
             React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
           ),
           React.createElement("span", { style: { fontSize: 11, color: videoPreviewOn ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: 500, userSelect: 'none' } }, "\uC601\uC0C1 \uBBF8\uB9AC\uBCF4\uAE30"),
+        ),
+        // Mute toggle
+        videoPreviewOn && onMuteToggle && React.createElement("div", {
+          onClick: onMuteToggle,
+          style: { width: 32, height: 32, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' },
+        },
+          React.createElement("span", { style: { fontSize: 15, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
         ),
         // Close
         React.createElement("button", {
@@ -1973,7 +1980,7 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
         // Font logo
         React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 28, color: '#fff', letterSpacing: '0.06em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
         // Sub copy
-        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFBF\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
+        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
         // Sponsored label
         React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
       ),
@@ -4148,7 +4155,7 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onGenerate: handleGenerate, generating }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onGenerate: handleGenerate, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, results, downloading,
       onDownloadAll: handleDownloadAll,
