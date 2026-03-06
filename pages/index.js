@@ -2088,9 +2088,10 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
   const update = (k, v) => onDataChange({ ...data, [k]: v });
 
   const stepIndicator = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
-    [1, 2].map(s => React.createElement("div", { key: s, style: {
+    [1, 2, 3].map(s => React.createElement("div", { key: s, style: {
       width: s === step ? 32 : 10, height: 10, borderRadius: 5,
-      background: s === step ? T.accent : 'rgba(255,255,255,0.15)',
+      background: s === step ? T.accent : s < step ? T.accent : 'rgba(255,255,255,0.15)',
+      opacity: s < step ? 0.4 : 1,
       transition: 'all 0.3s ease',
     } })),
   );
@@ -2173,7 +2174,47 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
   );
 
-  const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : (data.presetId);
+  const cardCount = data.cardCount || 3;
+  const segments = Array.from({ length: cardCount }, (_, i) => ({
+    start: i * 10, end: (i + 1) * 10,
+  }));
+  const totalDuration = cardCount * 10;
+
+  const step3 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uAD6C\uAC04\uC774 \uC790\uB3D9\uC73C\uB85C \uB098\uB258\uC5C8\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uAC01 \uCE74\uB4DC\uC5D0 10\uCD08\uC529 \uADE0\uB4F1\uD558\uAC8C \uBC30\uBD84\uD588\uC5B4\uC694"),
+    ),
+    // Timeline bar
+    React.createElement("div", { style: { background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 16 } },
+      React.createElement("div", { style: { display: 'flex', borderRadius: 6, overflow: 'hidden', height: 32, marginBottom: 16 } },
+        segments.map((seg, i) => React.createElement("div", { key: i, style: {
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: `hsl(${240 + i * (60 / Math.max(cardCount - 1, 1))}, 60%, ${28 + i * 3}%)`,
+          borderRight: i < cardCount - 1 ? '1px solid rgba(0,0,0,0.3)' : 'none',
+          fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.8)',
+        } }, `${i + 1}`)),
+      ),
+      // Segment list
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        segments.map((seg, i) => {
+          const fmtTime = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+          return React.createElement("div", { key: i, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)' } },
+            React.createElement("div", { style: { width: 28, height: 28, borderRadius: '50%', background: `hsl(${240 + i * (60 / Math.max(cardCount - 1, 1))}, 60%, 35%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, i + 1),
+            React.createElement("span", { style: { fontSize: 14, color: T.text } }, `${fmtTime(seg.start)} ~ ${fmtTime(seg.end)}`),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, marginLeft: 'auto' } }, "10\uCD08"),
+          );
+        }),
+      ),
+    ),
+    // Info
+    React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 8, padding: '12px 14px', background: 'rgba(99,102,241,0.08)', borderRadius: 10, border: '1px solid rgba(99,102,241,0.15)' } },
+      React.createElement("span", { style: { fontSize: 16, flexShrink: 0, lineHeight: 1.4 } }, "\uD83D\uDCA1"),
+      React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uAD6C\uAC04\uC758 \uC704\uCE58\uC640 \uAE38\uC774\uB97C \uC790\uC720\uB86D\uAC8C \uC870\uC815\uD560 \uC218 \uC788\uC5B4\uC694"),
+    ),
+  );
+
+  const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : true;
 
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', overflow: 'auto' } },
     // Top bar
@@ -2185,17 +2226,17 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
       React.createElement("div", { style: { width: '100%', maxWidth: 480 } },
         stepIndicator,
-        step === 1 ? step1 : step2,
+        step === 1 ? step1 : step === 2 ? step2 : step3,
       ),
     ),
     // Bottom bar
     React.createElement("div", { style: { padding: mob ? '12px 16px' : '16px 24px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'space-between', gap: 12 } },
-      step === 2
+      step > 1
         ? React.createElement("button", { onClick: onBack, style: { padding: '12px 24px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 14, cursor: 'pointer' } }, "\u2190 \uC774\uC804")
         : React.createElement("div"),
-      step === 1
+      step < 3
         ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
-        : React.createElement("button", { onClick: onComplete, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB9CC\uB4E4\uAE30 \u2728"),
+        : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, "\uB9CC\uB4E4\uAE30 \u2728"),
     ),
   );
 }
@@ -3410,8 +3451,8 @@ export default function App() {
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
       mob, step: wizardStep, data: wizardData,
       onDataChange: setWizardData,
-      onNext: () => setWizardStep(2),
-      onBack: () => setWizardStep(1),
+      onNext: () => setWizardStep(s => Math.min(s + 1, 3)),
+      onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
       onCancel: () => { setEditorMode(null); setWizardStep(1); },
     }),
