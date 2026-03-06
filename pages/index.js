@@ -1094,7 +1094,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       if (timerRef.current) clearInterval(timerRef.current);
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
-  }, [videoId, startSec, endSec, hasRange, width, height]);
+  }, [videoId, startSec, endSec, hasRange]);
 
   if (!videoId || !hasRange) return null;
 
