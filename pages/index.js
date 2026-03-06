@@ -773,7 +773,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const showWarn = () => {
     setWarnToast(true);
     if (warnTimer.current) clearTimeout(warnTimer.current);
-    warnTimer.current = setTimeout(() => setWarnToast(false), 3000);
+    warnTimer.current = setTimeout(() => setWarnToast(false), 4000);
   };
 
   const seekTo = (sec) => {
@@ -976,14 +976,23 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
-      // Clip duration (inline)
-      clipLen != null && React.createElement("div", { style: { padding: '3px 8px', background: T.surface, border: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.3)' : T.border), borderRadius: 4, fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, textAlign: 'center', whiteSpace: 'nowrap', flexShrink: 0 } }, React.createElement("span", { style: { fontWeight: 700 } }, '\uAD6C\uAC04 \uAE38\uC774'), ' ' + Math.round(clipLen) + '\uCD08'),
+    ),
+    // Clip duration bar (separate row for mobile visibility)
+    clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+        React.createElement("span", { style: { fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
+        React.createElement("span", { style: { fontSize: 10, color: overLimit ? '#ef4444' : T.textMuted } }, Math.round(clipLen) + ' / 30\uCD08'),
+      ),
+      // Progress bar
+      React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+        React.createElement("div", { style: { width: Math.min(100, (clipLen / MAX_CLIP) * 100) + '%', height: '100%', background: overLimit ? '#ef4444' : clipLen / MAX_CLIP > 0.8 ? '#f59e0b' : accentC, borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+      ),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
     startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
-    // Warning toast (absolute positioned to avoid layout shift)
-    warnToast && React.createElement("div", { style: { padding: '6px 12px', marginTop: 4, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 11, color: '#ef4444', textAlign: 'center', transition: 'opacity 0.3s' } },
-      '\u26A0 \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
+    // Warning toast (prominent for mobile)
+    warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+      '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
   );
 }
@@ -1151,7 +1160,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     overlayTimer.current = setTimeout(async () => {
       try {
         const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
-        const url = await generateOverlayPng(card, Math.round(previewW * dpr), aspectRatio, { skipOverlays: true, skipBorder: true });
+        const canvasW = Math.max(Math.round(previewW * dpr), 720);
+        const url = await generateOverlayPng(card, canvasW, aspectRatio, { skipOverlays: true, skipBorder: true });
         setOverlayUrl(url);
       } catch (e) {}
     }, 30);
@@ -1806,7 +1816,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         // Right: Preview (sticky on desktop, top on mobile)
         React.createElement("div", { style: { flexShrink: 0, ...(mob ? { width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' } : { position: 'sticky', top: 80, alignSelf: 'flex-start' }) } },
           React.createElement("div", { style: { ...sectionTitle, textAlign: 'center' } }, "미리보기"),
-          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(320, 280) : 320 }),
+          React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(360, window.innerWidth - 32) : 320 }),
         )
       )
     )
@@ -1822,7 +1832,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const [currentIdx, setCurrentIdx] = useState(0);
   const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
-  const previewW = isMob ? Math.min(window.innerWidth - 64, 400) : 480;
+  const previewW = isMob ? Math.min(window.innerWidth - 40, 480) : 480;
   const cardSlotW = previewW + 40;
 
   useEffect(() => {
@@ -2955,6 +2965,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
   const [showDetailBody, setShowDetailBody] = useState(false);
   const [selectedHandle, setSelectedHandle] = useState(null);
+  const [clipWarn, setClipWarn] = useState(false);
+  const clipWarnTimer = useRef(null);
+  const showClipWarn = () => {
+    setClipWarn(true);
+    if (clipWarnTimer.current) clearTimeout(clipWarnTimer.current);
+    clipWarnTimer.current = setTimeout(() => setClipWarn(false), 4000);
+  };
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -3017,9 +3034,31 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } },
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
+          var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
+          if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
+          else update("start", e.target.value);
+        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
+          var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
+          if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
+          else update("end", e.target.value);
+        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      ),
+      // Clip duration bar
+      (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+          React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
+          React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
+        ),
+        React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+          React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+        ),
+      ) : null; })(),
+      // Warning toast
+      clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+        '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
       ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
@@ -3265,7 +3304,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(280, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
     ),
 
     // Tab pills
@@ -4001,9 +4040,11 @@ export default function App() {
       React.createElement("meta", { property: "og:title", content: "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C" }),
       React.createElement("meta", { property: "og:description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
       React.createElement("meta", { property: "og:image", content: "https://youmeca.me/og-image.png" }),
+      React.createElement("meta", { property: "og:image:type", content: "image/png" }),
       React.createElement("meta", { property: "og:image:width", content: "1200" }),
       React.createElement("meta", { property: "og:image:height", content: "630" }),
       React.createElement("meta", { property: "og:site_name", content: "YOUMECA" }),
+      React.createElement("meta", { property: "og:locale", content: "ko_KR" }),
       React.createElement("meta", { name: "twitter:card", content: "summary_large_image" }),
       React.createElement("meta", { name: "twitter:title", content: "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C" }),
       React.createElement("meta", { name: "twitter:description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
@@ -4145,7 +4186,7 @@ export default function App() {
       // Card preview
       cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
         React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(120, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
+          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
         ),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
           React.createElement("button", {
