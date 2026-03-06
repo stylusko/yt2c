@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0306';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1998,12 +1998,30 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
       // Download buttons (when done)
       done && results.length > 0 && React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
         React.createElement("div", { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } },
-          results.map((url, i) => React.createElement("a", {
-            key: i, href: url, download: true,
-            style: { padding: '8px 18px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'opacity 0.15s' },
-            onMouseEnter: (e) => e.currentTarget.style.opacity = '0.85',
-            onMouseLeave: (e) => e.currentTarget.style.opacity = '1',
-          }, "\uCE74\uB4DC " + (i + 1))),
+          results.map((url, i) => {
+            const handleShare = async (e) => {
+              if (mob && navigator.share) {
+                e.preventDefault();
+                try {
+                  const res = await fetch(url);
+                  const blob = await res.blob();
+                  const ext = url.split('.').pop()?.split('?')[0] || 'mp4';
+                  const mime = ext === 'mp4' ? 'video/mp4' : ext === 'png' ? 'image/png' : 'image/jpeg';
+                  const file = new File([blob], `card-${i + 1}.${ext}`, { type: mime });
+                  await navigator.share({ files: [file] });
+                } catch (err) {
+                  if (err.name !== 'AbortError') window.open(url, '_blank');
+                }
+              }
+            };
+            return React.createElement("a", {
+              key: i, href: url, download: true,
+              onClick: handleShare,
+              style: { padding: '8px 18px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'opacity 0.15s', cursor: 'pointer' },
+              onMouseEnter: (e) => e.currentTarget.style.opacity = '0.85',
+              onMouseLeave: (e) => e.currentTarget.style.opacity = '1',
+            }, "\uCE74\uB4DC " + (i + 1));
+          }),
         ),
         results.length > 1 && React.createElement("button", {
           onClick: onDownloadAll, disabled: downloading,
@@ -3976,7 +3994,20 @@ export default function App() {
 
   return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
     React.createElement(Head, null,
-      React.createElement("title", null, "YOUMECA \u2014 유메카"),
+      React.createElement("title", null, "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
+      React.createElement("meta", { name: "description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
+      React.createElement("meta", { property: "og:type", content: "website" }),
+      React.createElement("meta", { property: "og:url", content: "https://youmeca.me" }),
+      React.createElement("meta", { property: "og:title", content: "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C" }),
+      React.createElement("meta", { property: "og:description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
+      React.createElement("meta", { property: "og:image", content: "https://youmeca.me/og-image.png" }),
+      React.createElement("meta", { property: "og:image:width", content: "1200" }),
+      React.createElement("meta", { property: "og:image:height", content: "630" }),
+      React.createElement("meta", { property: "og:site_name", content: "YOUMECA" }),
+      React.createElement("meta", { name: "twitter:card", content: "summary_large_image" }),
+      React.createElement("meta", { name: "twitter:title", content: "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C" }),
+      React.createElement("meta", { name: "twitter:description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
+      React.createElement("meta", { name: "twitter:image", content: "https://youmeca.me/og-image.png" }),
       React.createElement("link", { rel: "icon", href: "/favicon.ico" }),
       React.createElement("link", { rel: "apple-touch-icon", href: "/icon-192.png" }),
       React.createElement("meta", { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1" }),
