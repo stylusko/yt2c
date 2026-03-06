@@ -1185,7 +1185,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   const brightFilter = (card.videoBrightness) ? `brightness(${1 + (card.videoBrightness || 0) / 100})` : undefined;
   const BgImage = () => baseImage
-    ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center', zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: 'center', filter: brightFilter } })
+    ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center', filter: brightFilter } })
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
