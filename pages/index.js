@@ -1945,8 +1945,6 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
-  const failed = !generating && genProgress && genProgress.includes('\uC2E4\uD328') && results.length === 0;
-  const canClose = done || failed || !generating;
 
   return React.createElement("div", {
     style: { position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
@@ -1954,29 +1952,30 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
     React.createElement("div", {
       style: { maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }
     },
-      // Close button (only when closeable)
-      canClose && React.createElement("button", {
+      // Close / cancel button (always visible)
+      React.createElement("button", {
         onClick: onClose,
         style: { alignSelf: 'flex-end', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'rgba(255,255,255,0.7)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' },
         onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.25)',
         onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)',
+        title: generating ? '\uC911\uB2E8' : '\uB2EB\uAE30',
       }, "\u2715"),
 
-      // Ad placeholder (app intro)
+      // Ad placeholder (app intro with real logo)
       React.createElement("div", {
-        style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, position: 'relative', overflow: 'hidden' }
+        style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, position: 'relative', overflow: 'hidden' }
       },
         // Decorative circles
         React.createElement("div", { style: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(99,102,241,0.15)' } }),
         React.createElement("div", { style: { position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.12)' } }),
-        // Logo icon
-        React.createElement("div", { style: { width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, boxShadow: '0 4px 16px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }, "\uD83C\uDFA5"),
-        // Brand name
-        React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '0.08em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
+        // App logo (icon-round.png)
+        React.createElement("img", { src: "/icon-round.png", style: { width: 64, height: 64, borderRadius: 16, boxShadow: '0 4px 20px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }),
+        // Font logo
+        React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 28, color: '#fff', letterSpacing: '0.06em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
         // Sub copy
-        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.65)', fontWeight: 400, position: 'relative', zIndex: 1 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
+        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFBF\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
         // Sponsored label
-        React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.05em' } }, "Sponsored"),
+        React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
       ),
 
       // Progress area
@@ -3591,6 +3590,7 @@ export default function App() {
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
   const infoRef = useRef(null);
+  const pollIntervalRef = useRef(null);
 
   // Close info panel on outside click
   useEffect(() => {
@@ -3832,7 +3832,7 @@ export default function App() {
           }
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval); setResults(downloadUrls);
+            clearInterval(pollInterval); pollIntervalRef.current = null; setResults(downloadUrls);
             const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
             if (failedErrors.length > 0) alert(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
@@ -3840,6 +3840,7 @@ export default function App() {
           }
         } catch (e) {}
       }, 1500);
+      pollIntervalRef.current = pollInterval;
     } catch (err) { alert(`오류: ${err.message}`); setGenProgress(""); setGenerating(false); }
   };
 
@@ -4150,7 +4151,10 @@ export default function App() {
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, results, downloading,
       onDownloadAll: handleDownloadAll,
-      onClose: () => { setShowGeneratingModal(false); setGenProgress(""); }
+      onClose: () => {
+        if (generating && pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+        setGenerating(false); setShowGeneratingModal(false); setGenProgress("");
+      }
     }),
     confirmClose && React.createElement(ConfirmDialog, {
       message: "지금 저장된 내용이 날아갑니다.\n정말로 닫으시겠습니까?",
