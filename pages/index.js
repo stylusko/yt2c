@@ -5,37 +5,17 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0304';
-const BUILD_NUM = 13; // same-day deploy count
+const BUILD_DATE = '2026.0306';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
-  '카드 비율 선택 (1:1 / 3:4)',
-  '분리형 영상 모드',
-  '이미지 업로드 소스',
-  'ZIP 일괄 다운로드',
-  '프로젝트 탭',
-  '텍스트 필드 체크박스',
-  '카드 이름 수정',
-  '카드 순서 드래그 조정',
-  '배경 이미지 업로드',
-  '텍스트 설정 (크기/자간/줄간격)',
-  '이미지 업로드 UI 개선',
-  '개별 카드 우선 적용',
-  '모바일 캐러셀 카드 편집',
-  '채우기 통합 (영상/이미지)',
-  '이미지 얹기 (오버레이)',
-  '항목별 자간/줄간 세부조정',
-  'X/Y → 좌우/위아래 라벨 변경',
-  '오버레이 렌더링 일치 개선',
-  '데스크탑 미리보기 sticky',
-  '텍스트 배경 설정 이름 변경',
-  '탭 구조 개편 (채우기/레이아웃/텍스트/얹기)',
-  '다중 오버레이 이미지',
-  '그라데이션 옵션',
-  '투명하게 체크박스',
-  '데스크탑 UI 개편: 좌측 미리보기 + 우측 탭 도구',
+  '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
+  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
+  '\uBAA8\uBC14\uC77C \uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD \uD130\uCE58 \uC9C0\uC6D0',
+  '\uBAA8\uBC14\uC77C \uD648\uD654\uBA74 \uC5EC\uBC31 \uAC1C\uC120',
+  '\uACF5\uC720 \uB9C1\uD06C \uBC14\uB85C \uD3B8\uC9D1\uD654\uBA74 \uC9C4\uC785',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -2811,17 +2791,21 @@ function ReorderModal({ cards, onReorder, onClose }) {
 }
 
 /* ── Info Panel (header dropdown) ── */
-function InfoPanel({ onClose }) {
+function InfoPanel({ onClose, mob }) {
   return React.createElement("div", {
-    style: { position: 'absolute', top: '100%', left: 0, marginTop: 8, background: T.surface, borderRadius: T.radius, boxShadow: T.shadowLg, border: `1px solid ${T.border}`, padding: '20px 24px', width: 320, zIndex: 30 },
+    style: { position: mob ? 'fixed' : 'absolute', top: mob ? 'auto' : '100%', bottom: mob ? 0 : 'auto', left: mob ? 0 : 0, right: mob ? 0 : 'auto', marginTop: mob ? 0 : 8, background: T.surface, borderRadius: mob ? '16px 16px 0 0' : T.radius, boxShadow: T.shadowLg, border: `1px solid ${T.border}`, padding: '20px 24px', width: mob ? 'auto' : 320, zIndex: mob ? 9999 : 30 },
   },
-    // Logo + title
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 } },
+    // Logo + title + copy
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 } },
       React.createElement("img", { src: "/icon-round.png", style: { width: 40, height: 40, borderRadius: 10 } }),
       React.createElement("div", null,
         React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 20, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
         React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, VERSION),
       ),
+    ),
+    React.createElement("div", { style: { marginBottom: 16 } },
+      React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 600 } }, "\uC720\uBA54\uCE74, \uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
+      React.createElement("div", { style: { fontSize: 12, color: T.textMuted, marginTop: 2 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
     ),
     // Recent features
     React.createElement("div", { style: { marginBottom: 16 } },
@@ -3647,6 +3631,7 @@ export default function App() {
   const [pendingProjectId, setPendingProjectId] = useState(null);
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
+  const activeJobIdRef = useRef(null);
 
   // Close info panel on outside click
   useEffect(() => {
@@ -3874,6 +3859,7 @@ export default function App() {
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
+      activeJobIdRef.current = jobId;
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/jobs/${jobId}`);
@@ -3888,7 +3874,7 @@ export default function App() {
           }
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval); pollIntervalRef.current = null; setResults(downloadUrls);
+            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
             const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
             if (failedErrors.length > 0) alert(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
@@ -4028,7 +4014,7 @@ export default function App() {
             React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 600, whiteSpace: 'nowrap' } }, "유메카, 내가 꿈꾸던 카드뉴스 생성기"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "유튜브 영상을 쉽게 카드뉴스로 만들어보세요"),
           ),
-          showInfo && React.createElement(InfoPanel, { onClose: () => setShowInfo(false) }),
+          showInfo && React.createElement(InfoPanel, { onClose: () => setShowInfo(false), mob }),
         ),
 
         // Project Tabs
@@ -4209,7 +4195,10 @@ export default function App() {
       mob, generating, genProgress, results, downloading,
       onDownloadAll: handleDownloadAll,
       onClose: () => {
-        if (generating && pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+        if (generating) {
+          if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
+          if (activeJobIdRef.current) { fetch(`/api/jobs/${activeJobIdRef.current}`, { method: 'DELETE' }).catch(() => {}); activeJobIdRef.current = null; }
+        }
         setGenerating(false); setShowGeneratingModal(false); setGenProgress("");
       }
     }),

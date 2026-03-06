@@ -100,9 +100,42 @@ async function handleGet(req, res) {
   }
 }
 
+/**
+ * DELETE handler: Cancel/remove all jobs in a job group
+ */
+async function handleDelete(req, res) {
+  try {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'Job ID is required' });
+
+    const queue = getVideoQueue();
+    const allJobs = await queue.getJobs(['active', 'waiting', 'completed', 'failed', 'delayed']);
+    const groupJobs = allJobs.filter((job) => job?.data?.jobId === id);
+
+    let cancelled = 0;
+    for (const job of groupJobs) {
+      const state = await job.getState();
+      if (state === 'active') {
+        await job.moveToFailed(new Error('Cancelled by user'), true);
+        cancelled++;
+      } else if (state === 'waiting' || state === 'delayed') {
+        await job.remove();
+        cancelled++;
+      }
+    }
+
+    return res.status(200).json({ jobId: id, cancelled });
+  } catch (error) {
+    console.error('DELETE /api/jobs/[id] error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     return handleGet(req, res);
+  } else if (req.method === 'DELETE') {
+    return handleDelete(req, res);
   } else {
     return res.status(405).json({ error: 'Method not allowed' });
   }
