@@ -1951,38 +1951,59 @@ function saveProjects(projects, activeId) {
 }
 
 /* ── Project Share Helpers ── */
-function encodeProject(project) {
-  const shareable = {
-    name: project.name,
-    globalUrl: project.globalUrl,
-    outputFormat: project.outputFormat,
-    outputSize: project.outputSize,
-    aspectRatio: project.aspectRatio,
-    globalImageSource: project.globalImageSource,
-    cards: (project.cards || []).map(c => {
-      const copy = { ...c };
-      delete copy.uploadedImage;
-      if (copy.overlays) {
-        copy.overlays = copy.overlays.map(o => {
+const CARD_DEFAULTS = DEFAULT_CARD();
+const SKIP_CARD_KEYS = new Set(['id', 'uploadedImage']);
+
+function stripDefaults(obj, defaults) {
+  const out = {};
+  for (const k of Object.keys(obj)) {
+    if (SKIP_CARD_KEYS.has(k)) continue;
+    if (k === 'overlays') {
+      if (obj.overlays?.length > 0) {
+        out.overlays = obj.overlays.map(o => {
           const oc = { ...o };
           delete oc.imageData;
           return oc;
         });
       }
-      return copy;
-    }),
-  };
-  return LZString.compressToEncodedURIComponent(JSON.stringify(shareable));
+      continue;
+    }
+    if (obj[k] !== defaults[k]) out[k] = obj[k];
+  }
+  return out;
+}
+
+function restoreDefaults(obj) {
+  return { ...DEFAULT_CARD(), ...obj };
+}
+
+const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail' };
+
+function encodeProject(project) {
+  const s = { n: project.name, u: project.globalUrl };
+  if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
+  if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
+  if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
+  if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
+  s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
+  return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
 
 function decodeProject(encoded) {
   const json = LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) return null;
-  const parsed = JSON.parse(json);
-  parsed.id = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-  parsed.globalBgImage = null;
-  if (!parsed.cards) parsed.cards = [DEFAULT_CARD()];
-  return parsed;
+  const s = JSON.parse(json);
+  return {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    name: s.n || '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
+    globalUrl: s.u || '',
+    outputFormat: s.f || PROJ_DEFAULTS.outputFormat,
+    outputSize: s.s || PROJ_DEFAULTS.outputSize,
+    aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
+    globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
+    globalBgImage: null,
+    cards: (s.c || []).map(c => restoreDefaults(c)),
+  };
 }
 
 /* ── Download All as ZIP ── */
