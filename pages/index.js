@@ -2965,6 +2965,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
   const [showDetailBody, setShowDetailBody] = useState(false);
   const [selectedHandle, setSelectedHandle] = useState(null);
+  const [clipWarn, setClipWarn] = useState(false);
+  const clipWarnTimer = useRef(null);
+  const showClipWarn = () => {
+    setClipWarn(true);
+    if (clipWarnTimer.current) clearTimeout(clipWarnTimer.current);
+    clipWarnTimer.current = setTimeout(() => setClipWarn(false), 4000);
+  };
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -3027,9 +3034,31 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } },
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "시작"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => update("start", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "종료"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => update("end", e.target.value), style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
+          var ss = parseTime(e.target.value); var es = parseTime(card.end);
+          if (ss != null && es != null && es > ss && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
+          update("start", e.target.value);
+        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
+          var ss = parseTime(card.start); var es = parseTime(e.target.value);
+          if (ss != null && es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
+          else update("end", e.target.value);
+        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+      ),
+      // Clip duration bar
+      (() => { var ss = parseTime(card.start), es = parseTime(card.end); var cl = (ss != null && es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+          React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
+          React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
+        ),
+        React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+          React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+        ),
+      ) : null; })(),
+      // Warning toast
+      clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+        '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
       ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
