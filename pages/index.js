@@ -2372,24 +2372,26 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           }, "\u2715"),
         ),
       ),
-      // Card grid (scrollable)
-      React.createElement("div", { style: { flex:1, overflowY:'auto', padding:16, display:'grid', gridTemplateColumns: isMob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:12 } },
-        cards.map((card, i) => {
-          const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
-          return React.createElement("div", {
-            key: i,
-            onClick: () => toggle(i),
-            style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
-          },
-            React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio, globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
-            // Checkbox overlay
-            React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
-              selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
-            ),
-            // Card number
-            React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
-          );
-        })
+      // Card grid (scrollable wrapper → inner grid)
+      React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
+        React.createElement("div", { style: { display:'grid', gridTemplateColumns: isMob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:12 } },
+          cards.map((card, i) => {
+            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+            return React.createElement("div", {
+              key: i,
+              onClick: () => toggle(i),
+              style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
+            },
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio, globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
+              // Checkbox overlay
+              React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
+                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
+              ),
+              // Card number
+              React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
+            );
+          })
+        )
       ),
       // Footer: generate button
       React.createElement("div", { style: { padding:'12px 20px', paddingBottom:'env(safe-area-inset-bottom, 12px)', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
