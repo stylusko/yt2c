@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2517,6 +2517,33 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
   );
 }
 
+/* ── New Project Modal ── */
+function NewProjectModal({ defaultName, onConfirm, onCancel }) {
+  const [name, setName] = useState(defaultName);
+  const inputRef = useRef(null);
+  useEffect(() => { if (inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, []);
+  const submit = () => { if (name.trim()) onConfirm(name.trim()); };
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onCancel(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg } },
+      React.createElement("p", { style: { color: T.text, fontSize: 15, fontWeight: 600, marginBottom: 16 } }, "\uC0C8 \uD504\uB85C\uC81D\uD2B8"),
+      React.createElement("input", {
+        ref: inputRef, value: name,
+        onChange: (e) => setName(e.target.value),
+        onKeyDown: (e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onCancel(); },
+        placeholder: "\uD504\uB85C\uC81D\uD2B8 \uC774\uB984",
+        style: { width: '100%', padding: '10px 14px', background: 'rgba(255,255,255,0.06)', color: T.text, border: '1px solid ' + T.border, borderRadius: 8, fontSize: 14, outline: 'none' }
+      }),
+      React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: submit, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: name.trim() ? 1 : 0.4 } }, "\uB9CC\uB4E4\uAE30"),
+      )
+    )
+  );
+}
+
 /* ── Project Selector Modal (mobile) ── */
 function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, onRename, onDismiss }) {
   const [editingId, setEditingId] = useState(null);
@@ -4029,6 +4056,7 @@ export default function App() {
   const [results, setResults] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [confirmClose, setConfirmClose] = useState(null);
+  const [showNewProject, setShowNewProject] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
   const [importProject, setImportProject] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -4168,17 +4196,13 @@ export default function App() {
   const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]);
 
   // Project tab actions
-  const addProject = () => {
-    const name = prompt('\uC0C8 \uD504\uB85C\uC81D\uD2B8 \uC774\uB984\uC744 \uC785\uB825\uD558\uC138\uC694:', `\uD504\uB85C\uC81D\uD2B8 ${projects.length + 1}`);
-    if (!name?.trim()) return;
-    const proj = DEFAULT_PROJECT(name.trim());
+  const addProject = () => { setShowNewProject(true); };
+  const confirmNewProject = (name) => {
+    setShowNewProject(false);
+    const proj = DEFAULT_PROJECT(name);
     setProjects(prev => [...prev, proj]);
     setActiveProjectId(proj.id);
     setGenProgress(''); setResults([]);
-    setEditorMode(null);
-    setWizardStep(1);
-    setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
-    setPendingProjectId(proj.id);
   };
 
   const closeProject = (id) => { setConfirmClose(id); };
@@ -4654,6 +4678,11 @@ export default function App() {
       message: "지금 저장된 내용이 날아갑니다.\n정말로 닫으시겠습니까?",
       onConfirm: confirmCloseProject,
       onCancel: () => setConfirmClose(null),
+    }),
+    showNewProject && React.createElement(NewProjectModal, {
+      defaultName: `\uD504\uB85C\uC81D\uD2B8 ${projects.length + 1}`,
+      onConfirm: confirmNewProject,
+      onCancel: () => setShowNewProject(false),
     }),
     showReorder && cards.length > 1 && React.createElement(ReorderModal, {
       cards,
