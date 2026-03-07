@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1834,10 +1834,12 @@ function Section({ title, children }) {
 function ImageUploadField({ value, onChange, label = "이미지 업로드", maxMb = 3 }) {
   const fileRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
+  const [sizeError, setSizeError] = useState(false);
 
   const handleFile = (file) => {
     if (!file) return;
-    if (file.size > maxMb * 1024 * 1024) { alert(`${maxMb}MB 이하 이미지만 업로드 가능합니다.`); return; }
+    if (file.size > maxMb * 1024 * 1024) { setSizeError(true); setTimeout(() => setSizeError(false), 3000); return; }
+    setSizeError(false);
     const reader = new FileReader();
     reader.onload = () => onChange(reader.result);
     reader.readAsDataURL(file);
@@ -1876,7 +1878,9 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
       React.createElement("span", { style: { fontSize: 18, color: T.accent } }, "\u2191"),
     ),
     React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, fontWeight: 500 } }, "클릭 또는 드래그하여 업로드"),
-    React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `${maxMb}MB 이하 \u00B7 JPG, PNG 권장`),
+    sizeError
+      ? React.createElement("span", { style: { fontSize: 11, color: T.danger, fontWeight: 600 } }, `${maxMb}MB \uC774\uD558 \uC774\uBBF8\uC9C0\uB9CC \uC5C5\uB85C\uB4DC \uAC00\uB2A5\uD569\uB2C8\uB2E4`)
+      : React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `${maxMb}MB 이하 \u00B7 JPG, PNG 권장`),
     React.createElement("input", { ref: fileRef, type: "file", accept: "image/*", onChange: (e) => handleFile(e.target.files?.[0]), style: { display: 'none' } }),
   );
 }
@@ -2505,14 +2509,30 @@ async function downloadAllAsZip(urls, outputFormat) {
 }
 
 /* ── Confirm Dialog ── */
-function ConfirmDialog({ message, onConfirm, onCancel }) {
-  return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
+function ConfirmDialog({ message, onConfirm, onCancel, confirmText = "\uB2EB\uAE30", confirmColor }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onCancel(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+  },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
       React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
       React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
-        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "취소"),
-        React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.danger, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "닫기"),
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: confirmColor || T.danger, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, confirmText),
       )
+    )
+  );
+}
+
+/* ── Alert Modal ── */
+function AlertModal({ message, onClose }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+      React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
+      React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
     )
   );
 }
@@ -4057,6 +4077,8 @@ export default function App() {
   const [downloading, setDownloading] = useState(false);
   const [confirmClose, setConfirmClose] = useState(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [alertMsg, setAlertMsg] = useState(null);
+  const [pendingConfirm, setPendingConfirm] = useState(null); // { message, confirmText, confirmColor, onConfirm }
   const [shareUrl, setShareUrl] = useState(null);
   const [importProject, setImportProject] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
@@ -4107,8 +4129,8 @@ export default function App() {
         try {
           const decoded = decodeProject(d);
           if (decoded) { setImportProject(decoded); }
-          else { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
-        } catch (e) { alert('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+          else { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+        } catch (e) { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
       }
       setEditorMode('editor');
     } else if (path === '/easy') {
@@ -4234,7 +4256,7 @@ export default function App() {
     const encoded = encodeProject(activeProject);
     const url = `${window.location.origin}/share?d=${encoded}`;
     if (url.length > 8000) {
-      alert('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
+      setAlertMsg('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
       return;
     }
     if (navigator.clipboard) navigator.clipboard.writeText(url);
@@ -4285,9 +4307,9 @@ export default function App() {
 
   const handleGenerate = async () => {
     const url = globalUrl || cards[0]?.url || "";
-    if (!url) { alert("영상 URL을 입력하세요."); return; }
+    if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
     for (let i = 0; i < cards.length; i++) {
-      if (!cards[i].start || !cards[i].end) { alert(`카드 ${i + 1}의 시작/종료 시간을 입력하세요.`); return; }
+      if (!cards[i].start || !cards[i].end) { setAlertMsg(`\uCE74\uB4DC ${i + 1}\uC758 \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD558\uC138\uC694.`); return; }
     }
     setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
@@ -4320,20 +4342,20 @@ export default function App() {
             clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
             const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
-            if (failedErrors.length > 0) alert(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
+            if (failedErrors.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
             setGenerating(false);
           }
         } catch (e) {}
       }, 1500);
       pollIntervalRef.current = pollInterval;
-    } catch (err) { alert(`오류: ${err.message}`); setGenProgress(""); setGenerating(false); }
+    } catch (err) { setAlertMsg(`\uC624\uB958: ${err.message}`); setGenProgress(""); setGenerating(false); }
   };
 
   const handleDownloadAll = async () => {
     if (results.length === 0) return;
     setDownloading(true);
     try { await downloadAllAsZip(results, outputFormat); }
-    catch (e) { alert('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
+    catch (e) { setAlertMsg('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
     finally { setDownloading(false); }
   };
 
@@ -4642,7 +4664,7 @@ export default function App() {
           hidePreview: true,
           onClipExpandChange: (open) => setMobilePreviewHidden(h => open ? 'auto' : (h === 'auto' ? false : h)),
           onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
-          onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
+          onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
         }),
       ) : React.createElement(DesktopCardPanel, {
         cards,
@@ -4657,7 +4679,7 @@ export default function App() {
         videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
         previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
         previewVolume, onPreviewVolumeChange: setPreviewVolume,
-        onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
+        onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
       }),
     ),
 
@@ -4683,6 +4705,17 @@ export default function App() {
       defaultName: `\uD504\uB85C\uC81D\uD2B8 ${projects.length + 1}`,
       onConfirm: confirmNewProject,
       onCancel: () => setShowNewProject(false),
+    }),
+    alertMsg && React.createElement(AlertModal, {
+      message: alertMsg,
+      onClose: () => setAlertMsg(null),
+    }),
+    pendingConfirm && React.createElement(ConfirmDialog, {
+      message: pendingConfirm.message,
+      confirmText: pendingConfirm.confirmText,
+      confirmColor: pendingConfirm.confirmColor,
+      onConfirm: () => { pendingConfirm.onConfirm(); setPendingConfirm(null); },
+      onCancel: () => setPendingConfirm(null),
     }),
     showReorder && cards.length > 1 && React.createElement(ReorderModal, {
       cards,
