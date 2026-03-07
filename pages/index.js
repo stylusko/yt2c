@@ -6,12 +6,12 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
-  '\uC81C\uBAA9/\uBD80\uC81C\uBAA9 \uC5D4\uD130 \uAC1C\uD589 \uC9C0\uC6D0',
+  '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
   '\uACF5\uC720 URL \uD0A4 \uC555\uCD95\uC73C\uB85C \uB9C1\uD06C \uAE38\uC774 \uB300\uD3ED \uB2E8\uCD95',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
@@ -2210,7 +2210,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, generating, previewMuted, onMuteToggle }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating, previewMuted, onMuteToggle }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -2328,11 +2328,76 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
         style: { width: 36, height: 36, borderRadius: '50%', background: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.12)', border: 'none', color: currentIdx === cards.length - 1 ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.8)', fontSize: 16, cursor: currentIdx === cards.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }
       }, "\u25B6"),
       // Generate button
-      onGenerate && React.createElement("button", {
-        onClick: () => { onClose(); onGenerate(); },
+      onOpenCardSelect && React.createElement("button", {
+        onClick: () => { onOpenCardSelect(); },
         disabled: generating,
         style: { marginLeft: 8, padding: '8px 20px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
       }, generating ? "\uC0DD\uC131 \uC911..." : "\u2728 \uC0DD\uC131\uD558\uAE30"),
+    ),
+  );
+}
+
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate }) {
+  const [selected, setSelected] = useState(() => cards.map(() => true));
+  const allSelected = selected.every(Boolean);
+  const noneSelected = selected.every(s => !s);
+  const selectedCount = selected.filter(Boolean).length;
+
+  const toggleAll = () => setSelected(cards.map(() => !allSelected));
+  const toggle = (i) => setSelected(s => s.map((v, j) => j === i ? !v : v));
+  const pvW = 150;
+
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', backdropFilter:'blur(6px)', padding:16 }
+  },
+    React.createElement("div", { style: { maxWidth:560, width:'100%', maxHeight:'80vh', display:'flex', flexDirection:'column', background:T.surface, borderRadius:T.radius, overflow:'hidden' } },
+      // Header
+      React.createElement("div", { style: { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px', borderBottom:`1px solid ${T.border}` } },
+        React.createElement("div", { style: { display:'flex', alignItems:'center', gap:10 } },
+          React.createElement("span", { style: { fontSize:15, fontWeight:600, color:T.text } }, "\uC0DD\uC131\uD560 \uCE74\uB4DC \uC120\uD0DD"),
+          React.createElement("span", { style: { fontSize:12, color:T.textMuted } }, `${selectedCount}/${cards.length}\uAC1C`),
+        ),
+        React.createElement("div", { style: { display:'flex', alignItems:'center', gap:8 } },
+          React.createElement("button", {
+            onClick: toggleAll,
+            style: { padding:'6px 14px', background:'rgba(255,255,255,0.06)', color:T.textSecondary, borderRadius:T.radiusPill, border:'none', fontSize:12, cursor:'pointer', minHeight:44 }
+          }, allSelected ? "\uC804\uCCB4 \uD574\uC81C" : "\uC804\uCCB4 \uC120\uD0DD"),
+          React.createElement("button", {
+            onClick: onClose,
+            style: { width:28, height:28, borderRadius:'50%', background:'rgba(255,255,255,0.06)', border:'none', color:T.textMuted, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }
+          }, "\u2715"),
+        ),
+      ),
+      // Card grid (scrollable wrapper → inner grid)
+      React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
+        React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 } },
+          cards.map((card, i) => {
+            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+            return React.createElement("div", {
+              key: i,
+              onClick: () => toggle(i),
+              style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
+            },
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
+              // Checkbox overlay
+              React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
+                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
+              ),
+              // Card number
+              React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
+            );
+          })
+        )
+      ),
+      // Footer: generate button
+      React.createElement("div", { style: { padding:'12px 20px', paddingBottom:'env(safe-area-inset-bottom, 12px)', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
+        React.createElement("button", {
+          onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+          disabled: noneSelected,
+          style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
+        }, noneSelected ? "\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694" : `\u2728 ${selectedCount}\uAC1C \uC0DD\uC131\uD558\uAE30`),
+      ),
     ),
   );
 }
@@ -4188,6 +4253,7 @@ export default function App() {
   const [previewMuted, setPreviewMuted] = useState(true);
   const [previewVolume, setPreviewVolume] = useState(80);
   const [showPreview, setShowPreview] = useState(false);
+  const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
@@ -4405,22 +4471,24 @@ export default function App() {
     setJsonStr(JSON.stringify(config, null, 2)); setShowJson(true);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
     if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
-    for (let i = 0; i < cards.length; i++) {
+    const indices = selectedIndices || cards.map((_, i) => i);
+    for (const i of indices) {
       if (!cards[i].start || !cards[i].end) { setAlertMsg(`\uCE74\uB4DC ${i + 1}\uC758 \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD558\uC138\uC694.`); return; }
     }
+    const targetCards = indices.map(i => cards[i]);
     setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
       const overlays = [];
-      for (let i = 0; i < cards.length; i++) {
-        setGenProgress(`카드 ${i + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(cards[i]), outputSize, aspectRatio));
+      for (let j = 0; j < targetCards.length; j++) {
+        setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
+        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: cards.map((card, i) => ({ cardConfig: buildConfig(card), overlayData: overlays[i] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
@@ -4611,7 +4679,7 @@ export default function App() {
               React.createElement("button", { onClick: shareProject, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2197"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
-                onClick: handleGenerate, disabled: generating,
+                onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
@@ -4620,7 +4688,7 @@ export default function App() {
               React.createElement("button", { onClick: shareProject, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
-                onClick: handleGenerate, disabled: generating,
+                onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "생성하기"),
             )
@@ -4784,7 +4852,8 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onGenerate: handleGenerate, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, results, downloading,
       onDownloadAll: handleDownloadAll,
