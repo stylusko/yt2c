@@ -4525,22 +4525,22 @@ export default function App() {
         ? React.createElement("div", { style: { display: 'flex', justifyContent: 'center', paddingBottom: 4 } },
             React.createElement("button", {
               onClick: () => setMobilePreviewHidden(false),
-              style: { background: 'none', border: '1px solid ' + T.border, borderRadius: 6, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '6px 14px' },
-            }, '\u25BC \uBBF8\uB9AC\uBCF4\uAE30 \uC5F4\uAE30'),
+              style: { background: T.surface, border: '1px solid ' + T.border, borderRadius: 12, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '5px 14px' },
+            }, '\uBBF8\uB9AC\uBCF4\uAE30 \uC5F4\uAE30'),
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
               React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
             ),
-            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
                 onClick: () => setMobilePreviewHidden('manual'),
-                style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
-              }, '\u25B2 \uC228\uAE30\uAE30'),
+                style: { background: T.surface, border: '1px solid ' + T.border, borderRadius: 12, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 10px' },
+              }, '\uC228\uAE30\uAE30'),
               React.createElement("button", {
                 onClick: () => setMobilePreviewExpanded(v => !v),
-                style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
-              }, mobilePreviewExpanded ? "\u25B2 \uC791\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
+                style: { background: T.surface, border: '1px solid ' + T.border, borderRadius: 12, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 10px' },
+              }, mobilePreviewExpanded ? "\uC791\uAC8C \uBCF4\uAE30" : "\uD06C\uAC8C \uBCF4\uAE30"),
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
                 React.createElement("div", {
                   onClick: () => setVideoPreviewOn(v => !v),
