@@ -6,16 +6,16 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD3F0\uD2B8 \uBCC0\uACBD \uAE30\uB2A5 (Black Han Sans \uCD94\uAC00)',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
   '\uBAA8\uBC14\uC77C \uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD \uD130\uCE58 \uC9C0\uC6D0',
-  '\uBAA8\uBC14\uC77C \uD648\uD654\uBA74 \uC5EC\uBC31 \uAC1C\uC120',
   '\uACF5\uC720 \uB9C1\uD06C \uBC14\uB85C \uD3B8\uC9D1\uD654\uBA74 \uC9C4\uC785',
 ];
 
@@ -41,6 +41,19 @@ const FILL_SOURCE_OPTIONS = [
 const VIDEO_FILL_OPTIONS = [
   { id: "full", label: "전체 채우기" },
   { id: "split", label: "분리형" },
+];
+
+const FONT_OPTIONS = [
+  { id: 'Pretendard', label: 'Pretendard', family: 'Pretendard, sans-serif',
+    variants: [
+      { id: 'Pretendard-Regular.otf', label: 'Regular', weight: 400 },
+      { id: 'Pretendard-SemiBold.otf', label: 'SemiBold', weight: 600 },
+      { id: 'Pretendard-Bold.otf', label: 'Bold', weight: 700 },
+    ]},
+  { id: 'BlackHanSans', label: 'Black Han Sans', family: "'Black Han Sans', sans-serif",
+    variants: [
+      { id: 'BlackHanSans-Regular', label: 'Regular', weight: 400 },
+    ]},
 ];
 
 const STYLE_PRESETS = [
@@ -141,6 +154,20 @@ const inputBase = {
 const labelBase = { display: 'block', fontSize: 12, color: T.textSecondary, fontWeight: 500, marginBottom: 6 };
 const sectionTitle = { fontSize: 13, fontWeight: 600, color: T.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 };
 const resetBtnStyle = { background: 'rgba(255,255,255,0.06)', border: 'none', color: T.textMuted, fontSize: 10, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill, transition: 'all 0.15s', whiteSpace: 'nowrap' };
+const fontSelectStyle = { background: T.surface, color: T.textSecondary, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, padding: '3px 6px', cursor: 'pointer', outline: 'none' };
+function FontSelectRow({ fontValue, onChange }) {
+  const curFamily = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === fontValue)) || FONT_OPTIONS[0];
+  const curVariant = curFamily.variants.find(v => v.id === fontValue) || curFamily.variants[0];
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+    React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uD3F0\uD2B8"),
+    React.createElement("select", { value: curFamily.id, onChange: (e) => { const f = FONT_OPTIONS.find(fo => fo.id === e.target.value); if (f) { const v = f.variants.find(vv => vv.weight === curVariant.weight) || f.variants[0]; onChange(v.id); } }, style: { ...fontSelectStyle, fontFamily: curFamily.family } },
+      FONT_OPTIONS.map(fo => React.createElement("option", { key: fo.id, value: fo.id }, fo.label))
+    ),
+    React.createElement("select", { value: curVariant.id, onChange: (e) => onChange(e.target.value), style: fontSelectStyle },
+      curFamily.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))
+    ),
+  );
+}
 function SectionTitleWithReset({ title, onReset }) {
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
     React.createElement("span", { style: { fontSize: 12, fontWeight: 500, color: T.textSecondary } }, title),
@@ -179,8 +206,18 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
+    "BlackHanSans-Regular": "400 {s}px 'Black Han Sans', sans-serif",
   };
   const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz));
+
+  // Preload fonts for canvas rendering
+  const fontsToLoad = new Set();
+  if (card.useTitle !== false && card.title) fontsToLoad.add(getFont(card.titleFont, 48));
+  if (card.useSubtitle !== false && card.subtitle) fontsToLoad.add(getFont(card.subtitleFont, 48));
+  if (card.useBody !== false && card.body) fontsToLoad.add(getFont(card.bodyFont, 48));
+  if (fontsToLoad.size > 0) {
+    await Promise.all([...fontsToLoad].map(f => document.fonts.load(f).catch(() => {})));
+  }
 
   function wrapText(text, fontSize, fontName, fieldLS, customMaxW) {
     if (!text) return [];
@@ -2051,9 +2088,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
+              React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
                 React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -2074,9 +2112,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
+              React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
                 React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -2097,9 +2136,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 4 } },
+              React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
               React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
                 React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3517,12 +3557,27 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
+  const setAllFont = (fontId) => {
+    const font = FONT_OPTIONS.find(f => f.id === fontId);
+    if (!font) return;
+    const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
+    const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+  };
   const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     // 전체 정렬
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uC815\uB82C"),
       React.createElement("div", { style: { display: 'flex', gap: 3 } },
         [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
+      ),
+    ),
+    // 전체 폰트
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+      React.createElement("div", { style: { display: 'flex', gap: 3 } },
+        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFont(fo.id), style: { fontFamily: fo.family } }, fo.label))
       ),
     ),
     // 제목
@@ -3534,9 +3589,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
       ),
-      showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+      showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
     ),
     showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3557,9 +3613,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
       ),
-      showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+      showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
     ),
     showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
+      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3580,9 +3637,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
       ),
-      showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+      showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
     ),
     showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
+      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3862,12 +3920,20 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
       ),
     ),
+    // 전체 폰트
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+      React.createElement("div", { style: { display: 'flex', gap: 3 } },
+        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFont(fo.id), style: { fontFamily: fo.family } }, fo.label))
+      ),
+    ),
     React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
     ),
     showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
+      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3885,6 +3951,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
     ),
     showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
+      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -3902,6 +3969,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
     ),
     showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
+      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
@@ -4440,7 +4508,7 @@ export default function App() {
       React.createElement("meta", { name: "theme-color", content: "#09090b" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.googleapis.com" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" }),
-      React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&display=swap", rel: "stylesheet" }),
+      React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&family=Black+Han+Sans&display=swap", rel: "stylesheet" }),
     ),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
