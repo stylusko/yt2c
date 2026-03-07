@@ -5,12 +5,13 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0306';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_DATE = '2026.0307';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
   '\uBAA8\uBC14\uC77C \uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD \uD130\uCE58 \uC9C0\uC6D0',
@@ -520,7 +521,7 @@ function CheckboxRow({ label, checked, onChange }) {
 
 
 /* ── ZoomedSeekbar: shows region around start ── */
-function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange, onWarn }) {
+function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange, onWarn, clipLen }) {
   const zoomRef = useRef(null);
   const [zDrag, setZDrag] = useState(false);
   const [zDragTime, setZDragTime] = useState(null);
@@ -611,7 +612,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
       React.createElement("span", null, fmtMM(zStart)),
-      React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
+      React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9', clipLen ? React.createElement("span", { style: { color: overLimit ? dangerC : T.textMuted, fontWeight: overLimit ? 700 : 400 } }, ' \u00B7 ' + Math.round(clipLen) + '\uCD08') : null),
       React.createElement("span", null, fmtMM(zEnd)),
     ),
     React.createElement("div", {
@@ -788,8 +789,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   const calcSeekTime = (e) => {
     const rect = seekRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    return { time: pct * duration, x: e.clientX - rect.left };
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const pct = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
+    return { time: pct * duration, x: cx - rect.left };
   };
 
   const handleSeekDown = (e) => {
@@ -803,6 +805,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     setDragTime(time);
     setDragX(x);
     const onMove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
       const { time: t, x: mx } = calcSeekTime(ev);
       const inR = startSec != null && endSec != null && t >= startSec && t <= endSec;
       manualSeekOutside.current = !inR;
@@ -815,9 +818,47 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       setDragTime(null);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  };
+
+  const startSeekMarkerDrag = (type, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const snapEndSec = endSec;
+    const snapStartSec = startSec;
+    const { time, x } = calcSeekTime(e);
+    setDragging(true); setDragTime(time); setDragX(x);
+    const onMove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
+      const r = calcSeekTime(ev);
+      const t = Math.max(0, Math.min(duration, r.time));
+      setDragTime(t); setDragX(r.x);
+      if (type === 'start') {
+        if (snapEndSec != null && t >= snapEndSec) return;
+        onStartChange(fmtMM(t));
+      } else {
+        if (t <= snapStartSec) return;
+        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
+        onEndChange(fmtMM(t));
+      }
+    };
+    const onUp = () => {
+      setDragging(false); setDragTime(null);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
   };
 
   const markStart = () => {
@@ -910,22 +951,25 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: 'pointer', userSelect: 'none', marginTop: 14, overflow: 'visible' },
+      onTouchStart: handleSeekDown,
+      style: { position: 'relative', height: 28, background: T.surface, cursor: 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, overflow: 'visible' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Selected range highlight
       startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: 12, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
-      // Start marker + label
+      // Start marker (visible line + label + hit area)
       startPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + startPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC2DC\uC791 ' + fmtMM(startSec))
       ),
-      // End marker + label
+      startPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + startPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
+      // End marker (visible line + label + hit area)
       endPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + endPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC885\uB8CC ' + fmtMM(endSec))
       ),
+      endPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + endPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
       // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + pct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: (dragging || playing) ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
       !dragging && playing && React.createElement("div", { style: { position: 'absolute', top: 24, left: pct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
@@ -977,19 +1021,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         }),
       ),
     ),
-    // Clip duration bar (separate row for mobile visibility)
-    clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-        React.createElement("span", { style: { fontSize: 11, color: overLimit ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
-        React.createElement("span", { style: { fontSize: 10, color: overLimit ? '#ef4444' : T.textMuted } }, Math.round(clipLen) + ' / 30\uCD08'),
-      ),
-      // Progress bar
-      React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-        React.createElement("div", { style: { width: Math.min(100, (clipLen / MAX_CLIP) * 100) + '%', height: '100%', background: overLimit ? '#ef4444' : clipLen / MAX_CLIP > 0.8 ? '#f59e0b' : accentC, borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-      ),
-    ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn, clipLen: clipLen }),
     // Warning toast (prominent for mobile)
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
@@ -1165,6 +1198,40 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     window.addEventListener('touchend', onUp);
   };
 
+  const startSeekMarkerDrag = (type, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const snapEndSec = endSec;
+    const snapStartSec = startSec;
+    const isTouch = e.type === 'touchstart';
+    const cx = isTouch ? e.touches[0].clientX : e.clientX;
+    const { time } = calcSeekTime(cx);
+    const onMove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
+      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
+      const r = calcSeekTime(mcx);
+      const t = Math.max(0, Math.min(duration, r.time));
+      if (type === 'start') {
+        if (snapEndSec != null && t >= snapEndSec) return;
+        onStartChange(fmtMM(t));
+      } else {
+        if (t <= snapStartSec) return;
+        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
+        onEndChange(fmtMM(t));
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  };
+
   const markStart = () => {
     const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
     const es = parseTime(end);
@@ -1233,10 +1300,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Selected range
       startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: 20, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.6 } }),
-      // Start marker
+      // Start marker (visible line + hit area)
       startPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + startPct + '% - 1px)', width: 3, height: 24, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      // End marker
+      startPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + startPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
+      // End marker (visible line + hit area)
       endPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      endPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + endPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
       // Playhead
       React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + pct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
     ),
@@ -1259,18 +1328,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
       ),
     ),
-    // Clip duration bar
-    clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-        React.createElement("span", { style: { fontSize: 11, color: overLimit ? dangerC : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
-        React.createElement("span", { style: { fontSize: 10, color: overLimit ? dangerC : T.textMuted } }, Math.round(clipLen) + ' / 30\uCD08'),
-      ),
-      React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-        React.createElement("div", { style: { width: Math.min(100, (clipLen / MAX_CLIP) * 100) + '%', height: '100%', background: overLimit ? dangerC : clipLen / MAX_CLIP > 0.8 ? '#f59e0b' : accentC, borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-      ),
-    ),
     // Zoomed seekbar for precision
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn, clipLen: clipLen }),
     // Warning toast
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
