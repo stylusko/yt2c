@@ -3290,7 +3290,7 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -3370,7 +3370,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
       // MobileClipSelector: visual clip picker
-      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); setMobilePreviewHidden(open); } }),
+      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
       // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
       !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -4526,7 +4526,7 @@ export default function App() {
             React.createElement("button", {
               onClick: () => setMobilePreviewHidden(false),
               style: { background: 'none', border: '1px solid ' + T.border, borderRadius: 6, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '6px 14px' },
-            }, '\u25BC \uCE74\uB4DC \uD504\uB9AC\uBDF0 \uBCF4\uAE30'),
+            }, '\u25BC \uBBF8\uB9AC\uBCF4\uAE30 \uC5F4\uAE30'),
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
@@ -4536,7 +4536,7 @@ export default function App() {
               React.createElement("button", {
                 onClick: () => setMobilePreviewHidden(true),
                 style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
-              }, '\u25B2 \uD504\uB9AC\uBDF0 \uC228\uAE30\uAE30'),
+              }, '\u25B2 \uC228\uAE30\uAE30'),
               React.createElement("button", {
                 onClick: () => setMobilePreviewExpanded(v => !v),
                 style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
@@ -4614,6 +4614,7 @@ export default function App() {
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
           hidePreview: true,
+          onClipExpandChange: (open) => setMobilePreviewHidden(open),
           onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
         }),
       ) : React.createElement(DesktopCardPanel, {
