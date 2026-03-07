@@ -1040,7 +1040,6 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
   const [collapsed, setCollapsed] = useState(true);
-  const [hidden, setHidden] = useState(false);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
@@ -1263,23 +1262,11 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
 
   // Collapsed: just a toggle button
-  if (hidden) return React.createElement("div", { style: { marginBottom: 8, display: 'flex', justifyContent: 'flex-end' } },
-    React.createElement("button", {
-      onClick: () => setHidden(false),
-      style: { padding: '6px 12px', borderRadius: 6, border: '1px solid ' + T.border, background: T.surface, color: T.textMuted, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 },
-    }, '\u25B6 \uD504\uB9AC\uBDF0'),
-  );
-
-  if (collapsed) return React.createElement("div", { style: { marginBottom: 8, display: 'flex', gap: 6 } },
+  if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
     React.createElement("button", {
       onClick: () => setCollapsedAndNotify(false),
-      style: { flex: 1, padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+      style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
     }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
-    React.createElement("button", {
-      onClick: () => setHidden(true),
-      title: '\uD504\uB9AC\uBDF0 \uC228\uAE30\uAE30',
-      style: { padding: '10px 12px', borderRadius: 8, border: '1px solid ' + T.border, background: T.surface, color: T.textMuted, fontSize: 13, cursor: 'pointer', flexShrink: 0 },
-    }, '\u2212'),
   );
 
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000', marginBottom: 8 } },
@@ -1294,11 +1281,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       ),
       // Time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
-      // Collapse + Hide buttons
-      React.createElement("div", { style: { position: 'absolute', top: 6, right: 8, zIndex: 3, display: 'flex', gap: 4 } },
-        React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); setHidden(true); }, style: { background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2212 \uC228\uAE30\uAE30'),
-        React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
-      ),
+      // Collapse button
+      React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
     ),
     // Seekbar (touch-friendly, 44px hit area)
     React.createElement("div", {
@@ -3386,7 +3370,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
       // MobileClipSelector: visual clip picker
-      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => setClipSelectorOpen(open) }),
+      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); setMobilePreviewHidden(open); } }),
       // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
       !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -4055,6 +4039,7 @@ export default function App() {
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
+  const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
@@ -4536,31 +4521,43 @@ export default function App() {
       ),
       
       // Card preview
-      cards.length > 0 && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
-        React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-          React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
-          React.createElement("button", {
-            onClick: () => setMobilePreviewExpanded(v => !v),
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
-          }, mobilePreviewExpanded ? "\u25B2 \uC791\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
-            React.createElement("div", {
-              onClick: () => setVideoPreviewOn(v => !v),
-              style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
-            },
-              React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+      cards.length > 0 && (mobilePreviewHidden
+        ? React.createElement("div", { style: { display: 'flex', justifyContent: 'center', paddingBottom: 4 } },
+            React.createElement("button", {
+              onClick: () => setMobilePreviewHidden(false),
+              style: { background: 'none', border: '1px solid ' + T.border, borderRadius: 6, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '6px 14px' },
+            }, '\u25BC \uCE74\uB4DC \uD504\uB9AC\uBDF0 \uBCF4\uAE30'),
+          )
+        : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
+            React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
             ),
-            React.createElement("span", { onClick: () => setVideoPreviewOn(v => !v), style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uC7AC\uC0DD"),
-            videoPreviewOn && React.createElement("div", {
-              onClick: () => setPreviewMuted(m => !m),
-              style: { width: 22, height: 22, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' },
-            },
-              React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
+              React.createElement("button", {
+                onClick: () => setMobilePreviewHidden(true),
+                style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
+              }, '\u25B2 \uD504\uB9AC\uBDF0 \uC228\uAE30\uAE30'),
+              React.createElement("button", {
+                onClick: () => setMobilePreviewExpanded(v => !v),
+                style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
+              }, mobilePreviewExpanded ? "\u25B2 \uC791\uAC8C \uBCF4\uAE30" : "\u25BC \uD06C\uAC8C \uBCF4\uAE30"),
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
+                React.createElement("div", {
+                  onClick: () => setVideoPreviewOn(v => !v),
+                  style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
+                },
+                  React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+                ),
+                React.createElement("span", { onClick: () => setVideoPreviewOn(v => !v), style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uC7AC\uC0DD"),
+                videoPreviewOn && React.createElement("div", {
+                  onClick: () => setPreviewMuted(m => !m),
+                  style: { width: 22, height: 22, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' },
+                },
+                  React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
+                ),
+              ),
             ),
-          ),
-        ),
+          )
       ),
     ),
 
