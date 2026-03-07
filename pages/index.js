@@ -3290,7 +3290,7 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -3645,7 +3645,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Tab pills
     React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
-      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } })),
+      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
     ),
 
     // Tab content
@@ -4039,7 +4039,7 @@ export default function App() {
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
-  const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false);
+  const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
@@ -4534,7 +4534,7 @@ export default function App() {
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, width: '100%' } },
               React.createElement("button", {
-                onClick: () => setMobilePreviewHidden(true),
+                onClick: () => setMobilePreviewHidden('manual'),
                 style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 8px' },
               }, '\u25B2 \uC228\uAE30\uAE30'),
               React.createElement("button", {
@@ -4614,7 +4614,8 @@ export default function App() {
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
           hidePreview: true,
-          onClipExpandChange: (open) => setMobilePreviewHidden(open),
+          onClipExpandChange: (open) => setMobilePreviewHidden(h => open ? 'auto' : (h === 'auto' ? false : h)),
+          onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
           onAspectRatioChange: (v) => { if (window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4. \uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) setAspectRatio(v); },
         }),
       ) : React.createElement(DesktopCardPanel, {
