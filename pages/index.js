@@ -1040,6 +1040,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
   const [collapsed, setCollapsed] = useState(true);
+  const [hidden, setHidden] = useState(false);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
@@ -1262,11 +1263,23 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
 
   // Collapsed: just a toggle button
-  if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
+  if (hidden) return React.createElement("div", { style: { marginBottom: 8, display: 'flex', justifyContent: 'flex-end' } },
+    React.createElement("button", {
+      onClick: () => setHidden(false),
+      style: { padding: '6px 12px', borderRadius: 6, border: '1px solid ' + T.border, background: T.surface, color: T.textMuted, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 },
+    }, '\u25B6 \uD504\uB9AC\uBDF0'),
+  );
+
+  if (collapsed) return React.createElement("div", { style: { marginBottom: 8, display: 'flex', gap: 6 } },
     React.createElement("button", {
       onClick: () => setCollapsedAndNotify(false),
-      style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+      style: { flex: 1, padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
     }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
+    React.createElement("button", {
+      onClick: () => setHidden(true),
+      title: '\uD504\uB9AC\uBDF0 \uC228\uAE30\uAE30',
+      style: { padding: '10px 12px', borderRadius: 8, border: '1px solid ' + T.border, background: T.surface, color: T.textMuted, fontSize: 13, cursor: 'pointer', flexShrink: 0 },
+    }, '\u2212'),
   );
 
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000', marginBottom: 8 } },
@@ -1281,8 +1294,11 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       ),
       // Time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
-      // Collapse button
-      React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
+      // Collapse + Hide buttons
+      React.createElement("div", { style: { position: 'absolute', top: 6, right: 8, zIndex: 3, display: 'flex', gap: 4 } },
+        React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); setHidden(true); }, style: { background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2212 \uC228\uAE30\uAE30'),
+        React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
+      ),
     ),
     // Seekbar (touch-friendly, 44px hit area)
     React.createElement("div", {
