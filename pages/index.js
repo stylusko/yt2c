@@ -786,7 +786,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     if (playing) { playerRef.current.pauseVideo(); }
     else {
       // If clip range exists and playhead is outside range, seek to start
-      if (startSec != null && endSec != null && endSec > startSec) {
+      if (startSec != null && endSec != null && endSec > startSec && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
         if (t < startSec || t >= endSec) {
           playerRef.current.seekTo(startSec, true);
@@ -1176,7 +1176,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     if (!playerRef.current) return;
     if (playing) { playerRef.current.pauseVideo(); }
     else {
-      if (startSec != null && endSec != null && endSec > startSec) {
+      if (startSec != null && endSec != null && endSec > startSec && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
         if (t < startSec || t >= endSec) { playerRef.current.seekTo(startSec, true); manualSeekOutside.current = false; }
       }
@@ -1610,7 +1610,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
 
-  const overlayImg = (ov, i, z) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: z, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null;
+  const overlayImg = (ov, i, z) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: z, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null;
   const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
   const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
@@ -1692,8 +1692,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         const ovs = [...(card.overlays || [])];
         if (!ovs[oi]) return;
         if (d.type === 'move') {
-          let newX = Math.max(0, Math.min(100, d.origX + dx * 50 / previewW));
-          let newY = Math.max(0, Math.min(100, d.origY + dy * 50 / previewH));
+          let newX = Math.max(0, Math.min(100, d.origX + dx * 100 / previewW));
+          let newY = Math.max(0, Math.min(100, d.origY + dy * 100 / previewH));
           const snapX = Math.abs(newX - 50) <= SNAP_THRESH;
           const snapY = Math.abs(newY - 50) <= SNAP_THRESH;
           if (snapX) newX = 50;
@@ -1735,7 +1735,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       key: 'ovct-' + i,
       style: {
         position: 'absolute', zIndex: 6, top: '50%', left: '50%', width: previewW, height: previewW, // square reference
-        transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 50}px, ${((ov.y ?? 50) - 50) * previewH / 50}px) scale(${(ov.scale || 100) / 100})`,
+        transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`,
         cursor: 'pointer', pointerEvents: 'auto',
       },
       onClick: (e) => { e.stopPropagation(); onSelectHandle('overlay-' + i); },
