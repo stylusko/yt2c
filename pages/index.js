@@ -607,7 +607,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     window.addEventListener('touchend', onUp);
   };
 
-  const markerHit = { position: 'absolute', top: 0, width: 20, height: 28, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
+  const markerHit = { position: 'absolute', top: -6, width: 36, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
 
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
@@ -618,21 +618,23 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onMouseDown: handleZDown, onTouchStart: handleZDown,
-      style: { position: 'relative', height: 24, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+      style: { position: 'relative', height: 28, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
-      React.createElement("div", { style: { position: 'absolute', top: 10, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
+      React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Range highlight (selected)
-      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
-      // Start marker (visible line + wider hit area)
-      React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + sPct + '% - 1px)', width: 3, height: 18, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), onTouchStart: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 10px)' } }),
-      // End marker (visible line + wider hit area)
-      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 3, left: 'calc(' + ePct + '% - 1px)', width: 3, height: 18, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), onTouchStart: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 10px)' } }),
+      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 12, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.5 } }),
+      // Start marker (visible line + handle + wider hit area)
+      React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + sPct + '% - 1.5px)', width: 3, height: 20, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + sPct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
+      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), onTouchStart: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 18px)' } }),
+      // End marker (visible line + handle + wider hit area)
+      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + ePct + '% - 1.5px)', width: 3, height: 20, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      ePct != null && React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + ePct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: overLimit ? dangerC : accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
+      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), onTouchStart: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)' } }),
       // Playhead + time label
-      React.createElement("div", { style: { position: 'absolute', top: 6, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
-      !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 20, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
+      !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
     ),
