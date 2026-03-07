@@ -998,7 +998,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 }
 
 /* ── MobileClipSelector: compact clip picker for mobile ── */
-function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange }) {
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1013,6 +1013,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
   const [collapsed, setCollapsed] = useState(true);
+  const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -1202,7 +1203,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
     React.createElement("button", {
-      onClick: () => setCollapsed(false),
+      onClick: () => setCollapsedAndNotify(false),
       style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
     }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
   );
@@ -1220,7 +1221,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
       // Collapse button
-      React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsed(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
+      React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
     ),
     // Seekbar (touch-friendly, 44px hit area)
     React.createElement("div", {
@@ -1240,17 +1241,23 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + pct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
     ),
     // Controls row
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
       // Play/Pause
-      React.createElement("button", { onClick: togglePlay, style: { width: 36, height: 36, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
+      React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
       // Mute
-      React.createElement("button", { onClick: toggleMute, style: { width: 36, height: 36, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+      React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
       // Spacer
       React.createElement("div", { style: { flex: 1 } }),
-      // Mark start
-      React.createElement("button", { onClick: markStart, style: { padding: '6px 12px', borderRadius: 6, border: '1.5px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC2DC\uC791 \uC7A1\uAE30'),
-      // Mark end
-      React.createElement("button", { onClick: markEnd, style: { padding: '6px 12px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC \uC7A1\uAE30'),
+      // Start: capture btn + input
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
+        React.createElement("button", { onClick: markStart, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC2DC\uC791'),
+        React.createElement("input", { type: 'text', value: start || '', placeholder: '0:00', onChange: (e) => { onStartChange(e.target.value); var es = parseTime(end); var ss = parseTime(e.target.value); if (es != null && ss != null && es <= ss) onEndChange(''); }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+      ),
+      // End: capture btn + input
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
+        React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
+        React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+      ),
     ),
     // Clip duration bar
     clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
@@ -3240,6 +3247,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [showDetailBody, setShowDetailBody] = useState(false);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [clipWarn, setClipWarn] = useState(false);
+  const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -3309,9 +3317,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
       // MobileClipSelector: visual clip picker
-      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
-      // Manual time inputs (secondary)
-      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
+      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => setClipSelectorOpen(open) }),
+      // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
+      !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
           var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
           if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
@@ -3323,8 +3331,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           else update("end", e.target.value);
         }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
       ),
-      // Clip duration bar
-      (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
+      !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
           React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
           React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
@@ -3333,8 +3340,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
         ),
       ) : null; })(),
-      // Warning toast
-      clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+      !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
         '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
       ),
     ),
