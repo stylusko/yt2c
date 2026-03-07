@@ -1527,7 +1527,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   }, [thumbnailId]);
 
   // Generate canvas overlay (debounced) — same engine as final render
-  const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = card;
+  const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+  const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
   const cardKey = JSON.stringify(cardTextProps);
   useEffect(() => {
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
@@ -1535,7 +1536,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       try {
         const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
         const canvasW = Math.max(Math.round(previewW * dpr), 720);
-        const url = await generateOverlayPng(card, canvasW, aspectRatio, { skipOverlays: true, skipBorder: true });
+        const url = await generateOverlayPng(pvCard, canvasW, aspectRatio, { skipOverlays: true, skipBorder: true });
         setOverlayUrl(url);
       } catch (e) {}
     }, 30);
@@ -2662,7 +2663,7 @@ function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, on
       // Add button
       React.createElement("div", { style: { padding: '12px 16px', borderTop: `1px solid ${T.border}` } },
         React.createElement("button", {
-          onClick: () => { onAdd(); },
+          onClick: () => { onDismiss(); onAdd(); },
           style: { width: '100%', padding: '10px', background: 'rgba(99,102,241,0.1)', color: T.accent, border: `1px solid rgba(99,102,241,0.2)`, borderRadius: T.radiusSm, fontSize: 14, fontWeight: 500, cursor: 'pointer' },
         }, "+ \uC0C8 \uD504\uB85C\uC81D\uD2B8"),
       ),
