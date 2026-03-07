@@ -567,6 +567,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
     const onMove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
       const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev);
       const t = Math.max(0, Math.min(duration, r.time));
       setZDragTime(t); setZDragX(r.x);
@@ -599,7 +600,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
     onSeek(time);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType('seek');
-    const onMove = (ev) => { const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
+    const onMove = (ev) => { if (ev.cancelable) ev.preventDefault(); const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
     const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
