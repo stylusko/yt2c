@@ -6,17 +6,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
-  '\uD3F0\uD2B8 \uBCC0\uACBD \uAE30\uB2A5 (Black Han Sans \uCD94\uAC00)',
+  '\uC81C\uBAA9/\uBD80\uC81C\uBAA9 \uC5D4\uD130 \uAC1C\uD589 \uC9C0\uC6D0',
+  '\uACF5\uC720 URL \uD0A4 \uC555\uCD95\uC73C\uB85C \uB9C1\uD06C \uAE38\uC774 \uB300\uD3ED \uB2E8\uCD95',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
   '\uBAA8\uBC14\uC77C \uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD \uD130\uCE58 \uC9C0\uC6D0',
-  '\uACF5\uC720 \uB9C1\uD06C \uBC14\uB85C \uD3B8\uC9D1\uD654\uBA74 \uC9C4\uC785',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -526,8 +526,10 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
   return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
     React.createElement("div", {
       onClick: onToggle,
-      style: { width: 20, height: 20, borderRadius: 4, border: `2px solid ${enabled !== false ? T.accent : T.textMuted}`, background: enabled !== false ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginTop: rows ? 8 : 0 },
-    }, enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
+      style: { position: 'relative', width: 20, height: 20, borderRadius: 4, border: `2px solid ${enabled !== false ? T.accent : T.textMuted}`, background: enabled !== false ? T.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginTop: rows ? 8 : 0 },
+    },
+      React.createElement("div", { style: { position: 'absolute', inset: -10 } }),
+      enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
     input,
     React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center', opacity: disabled ? 0.35 : 1 } },
       React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
@@ -2083,7 +2085,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           // 텍스트 내용
           React.createElement(Section, { title: "텍스트 내용" },
             // 제목
-            React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+            React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -2107,7 +2109,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 부제목
-            React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+            React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -2480,6 +2482,26 @@ function saveProjects(projects, activeId) {
 /* ── Project Share Helpers ── */
 const CARD_DEFAULTS = DEFAULT_CARD();
 const SKIP_CARD_KEYS = new Set(['id', 'uploadedImage']);
+const CARD_KEY_MAP = {
+  name:'a', url:'b', start:'c', end:'d',
+  layout:'e', photoRatio:'f', useGradient:'g',
+  fillSource:'h', videoFill:'i',
+  useTitle:'j', useSubtitle:'k', useBody:'l',
+  title:'m', titleSize:'n', titleFont:'o',
+  subtitle:'p', subtitleSize:'q', subtitleFont:'r',
+  body:'s', bodySize:'t', bodyFont:'u',
+  useBg:'v', bgColor:'w', bgOpacity:'x',
+  overlays:'y',
+  titleColor:'z', subtitleColor:'A', bodyColor:'B',
+  titleLetterSpacing:'C', titleLineHeight:'D', titleX:'E', titleY:'F', titleAlign:'G',
+  subtitleLetterSpacing:'H', subtitleLineHeight:'I', subtitleX:'J', subtitleY:'K', subtitleAlign:'L',
+  bodyLetterSpacing:'M', bodyLineHeight:'N', bodyX:'O', bodyY:'P', bodyAlign:'Q',
+  captureTime:'R', videoX:'S', videoY:'T', videoScale:'U', videoBrightness:'V',
+  textBoxX:'W', textBoxY:'X', textBoxWidth:'Y', textBoxPadding:'Z',
+  textBoxRadius:'0', textBoxBgColor:'1', textBoxBgOpacity:'2',
+  textBoxHeight:'3', textBoxBorderColor:'4', textBoxBorderWidth:'5',
+};
+const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
 function stripDefaults(obj, defaults) {
   const out = {};
@@ -2487,21 +2509,19 @@ function stripDefaults(obj, defaults) {
     if (SKIP_CARD_KEYS.has(k)) continue;
     if (k === 'overlays') {
       if (obj.overlays?.length > 0) {
-        out.overlays = obj.overlays.map(o => {
-          const oc = { ...o };
-          delete oc.imageData;
-          return oc;
-        });
+        out[CARD_KEY_MAP['overlays'] || 'overlays'] = obj.overlays.map(o => { const oc = {...o}; delete oc.imageData; return oc; });
       }
       continue;
     }
-    if (obj[k] !== defaults[k]) out[k] = obj[k];
+    if (obj[k] !== defaults[k]) out[CARD_KEY_MAP[k] || k] = obj[k];
   }
   return out;
 }
 
 function restoreDefaults(obj) {
-  return { ...DEFAULT_CARD(), ...obj };
+  const expanded = {};
+  for (const [k,v] of Object.entries(obj)) expanded[CARD_KEY_REV[k] || k] = v;
+  return { ...DEFAULT_CARD(), ...expanded };
 }
 
 const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail' };
@@ -2739,16 +2759,19 @@ function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRa
 /* ── Share Modal ── */
 function ShareModal({ url, onClose }) {
   const inputRef = React.useRef(null);
+  const [copied, setCopied] = React.useState(false);
   const copyLink = () => {
     if (navigator.clipboard) navigator.clipboard.writeText(url);
     else if (inputRef.current) { inputRef.current.select(); document.execCommand('copy'); }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
   return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }, onClick: onClose },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 440, width: '90%', boxShadow: T.shadowLg }, onClick: e => e.stopPropagation() },
       React.createElement("h3", { style: { color: T.text, fontSize: 16, fontWeight: 600, marginBottom: 16, textAlign: 'center' } }, "\uACF5\uC720 \uB9C1\uD06C\uAC00 \uBCF5\uC0AC\uB418\uC5C8\uC5B4\uC694"),
       React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 16 } },
         React.createElement("input", { ref: inputRef, readOnly: true, value: url, style: { flex: 1, padding: '8px 12px', background: T.surfaceHover, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12, outline: 'none', minWidth: 0 } }),
-        React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' } }, "\uBCF5\uC0AC"),
+        React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: copied ? '#22c55e' : T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' } }, copied ? "\uBCF5\uC0AC\uB428!" : "\uBCF5\uC0AC"),
       ),
       React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, textAlign: 'center', marginBottom: 20 } },
         "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC2E4\uC2DC\uAC04 \uACF5\uB3D9\uD3B8\uC9D1\uC740 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC73C\uBA70, \uAC01\uC790 \uB3C5\uB9BD\uC801\uC73C\uB85C \uD3B8\uC9D1\uB429\uB2C8\uB2E4."
@@ -3583,7 +3606,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
     ),
     // 제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", {
       style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
     },
@@ -3607,7 +3630,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 부제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
     React.createElement("div", {
       style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
     },
@@ -3936,7 +3959,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFontDesk(fo.id), style: { fontFamily: fo.family } }, fo.label))
       ),
     ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
@@ -3954,7 +3977,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
     ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+    React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
       React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
