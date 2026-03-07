@@ -6,12 +6,12 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
-  '\uD3F0\uD2B8 \uBCC0\uACBD \uAE30\uB2A5 (Black Han Sans \uCD94\uAC00)',
+  '\uACF5\uC720 URL \uD0A4 \uC555\uCD95\uC73C\uB85C \uB9C1\uD06C \uAE38\uC774 \uB300\uD3ED \uB2E8\uCD95',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
@@ -2480,6 +2480,26 @@ function saveProjects(projects, activeId) {
 /* ── Project Share Helpers ── */
 const CARD_DEFAULTS = DEFAULT_CARD();
 const SKIP_CARD_KEYS = new Set(['id', 'uploadedImage']);
+const CARD_KEY_MAP = {
+  name:'a', url:'b', start:'c', end:'d',
+  layout:'e', photoRatio:'f', useGradient:'g',
+  fillSource:'h', videoFill:'i',
+  useTitle:'j', useSubtitle:'k', useBody:'l',
+  title:'m', titleSize:'n', titleFont:'o',
+  subtitle:'p', subtitleSize:'q', subtitleFont:'r',
+  body:'s', bodySize:'t', bodyFont:'u',
+  useBg:'v', bgColor:'w', bgOpacity:'x',
+  overlays:'y',
+  titleColor:'z', subtitleColor:'A', bodyColor:'B',
+  titleLetterSpacing:'C', titleLineHeight:'D', titleX:'E', titleY:'F', titleAlign:'G',
+  subtitleLetterSpacing:'H', subtitleLineHeight:'I', subtitleX:'J', subtitleY:'K', subtitleAlign:'L',
+  bodyLetterSpacing:'M', bodyLineHeight:'N', bodyX:'O', bodyY:'P', bodyAlign:'Q',
+  captureTime:'R', videoX:'S', videoY:'T', videoScale:'U', videoBrightness:'V',
+  textBoxX:'W', textBoxY:'X', textBoxWidth:'Y', textBoxPadding:'Z',
+  textBoxRadius:'0', textBoxBgColor:'1', textBoxBgOpacity:'2',
+  textBoxHeight:'3', textBoxBorderColor:'4', textBoxBorderWidth:'5',
+};
+const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
 function stripDefaults(obj, defaults) {
   const out = {};
@@ -2487,21 +2507,19 @@ function stripDefaults(obj, defaults) {
     if (SKIP_CARD_KEYS.has(k)) continue;
     if (k === 'overlays') {
       if (obj.overlays?.length > 0) {
-        out.overlays = obj.overlays.map(o => {
-          const oc = { ...o };
-          delete oc.imageData;
-          return oc;
-        });
+        out[CARD_KEY_MAP['overlays'] || 'overlays'] = obj.overlays.map(o => { const oc = {...o}; delete oc.imageData; return oc; });
       }
       continue;
     }
-    if (obj[k] !== defaults[k]) out[k] = obj[k];
+    if (obj[k] !== defaults[k]) out[CARD_KEY_MAP[k] || k] = obj[k];
   }
   return out;
 }
 
 function restoreDefaults(obj) {
-  return { ...DEFAULT_CARD(), ...obj };
+  const expanded = {};
+  for (const [k,v] of Object.entries(obj)) expanded[CARD_KEY_REV[k] || k] = v;
+  return { ...DEFAULT_CARD(), ...expanded };
 }
 
 const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail' };
@@ -2739,16 +2757,19 @@ function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRa
 /* ── Share Modal ── */
 function ShareModal({ url, onClose }) {
   const inputRef = React.useRef(null);
+  const [copied, setCopied] = React.useState(false);
   const copyLink = () => {
     if (navigator.clipboard) navigator.clipboard.writeText(url);
     else if (inputRef.current) { inputRef.current.select(); document.execCommand('copy'); }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
   return React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }, onClick: onClose },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 440, width: '90%', boxShadow: T.shadowLg }, onClick: e => e.stopPropagation() },
       React.createElement("h3", { style: { color: T.text, fontSize: 16, fontWeight: 600, marginBottom: 16, textAlign: 'center' } }, "\uACF5\uC720 \uB9C1\uD06C\uAC00 \uBCF5\uC0AC\uB418\uC5C8\uC5B4\uC694"),
       React.createElement("div", { style: { display: 'flex', gap: 8, marginBottom: 16 } },
         React.createElement("input", { ref: inputRef, readOnly: true, value: url, style: { flex: 1, padding: '8px 12px', background: T.surfaceHover, color: T.text, border: `1px solid ${T.border}`, borderRadius: 8, fontSize: 12, outline: 'none', minWidth: 0 } }),
-        React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' } }, "\uBCF5\uC0AC"),
+        React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: copied ? '#22c55e' : T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' } }, copied ? "\uBCF5\uC0AC\uB428!" : "\uBCF5\uC0AC"),
       ),
       React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, textAlign: 'center', marginBottom: 20 } },
         "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC2E4\uC2DC\uAC04 \uACF5\uB3D9\uD3B8\uC9D1\uC740 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC73C\uBA70, \uAC01\uC790 \uB3C5\uB9BD\uC801\uC73C\uB85C \uD3B8\uC9D1\uB429\uB2C8\uB2E4."
