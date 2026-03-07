@@ -1300,8 +1300,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // End marker (visible line + hit area)
       endPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       endPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + endPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
-      // Playhead
+      // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + pct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+      playing && pct > 3 && pct < 97 && React.createElement("div", { style: { position: 'absolute', top: 32, left: pct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
     ),
     // Controls row
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
@@ -4678,6 +4679,15 @@ export default function App() {
       onImport: handleImport,
       onCancel: () => { setImportProject(null); router.push('/', undefined, { shallow: true }); },
     }),
+
+    // Floating footer
+    React.createElement("div", { style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '6px 16px', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', fontSize: 10, color: 'rgba(255,255,255,0.5)', pointerEvents: 'none' } },
+      React.createElement("span", null, 'Made by ' + CREATOR),
+      React.createElement("span", { style: { opacity: 0.3 } }, '\u00B7'),
+      React.createElement("a", { href: 'mailto:' + CONTACT_EMAIL, style: { color: 'rgba(255,255,255,0.5)', textDecoration: 'none', pointerEvents: 'auto' } }, CONTACT_EMAIL),
+      React.createElement("span", { style: { opacity: 0.3 } }, '\u00B7'),
+      React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
+    ),
 
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
   );
