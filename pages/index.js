@@ -544,31 +544,24 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const sPct = Math.max(0, Math.min(100, toZPct(startSec)));
   const ePct = endSec != null ? Math.max(0, Math.min(100, toZPct(endSec))) : null;
 
-  const calcZTime = (e) => {
+  const calcZPos = (ev) => {
     const rect = zoomRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    return { time: zStart + pct * zDur, x: e.clientX - rect.left };
-  };
-
-  const calcZTimeTouch = (touch) => {
-    const rect = zoomRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
-    return { time: zStart + pct * zDur, x: touch.clientX - rect.left };
+    const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+    return { time: zStart + pct * zDur, x: ev.clientX - rect.left };
   };
 
   const startMarkerDrag = (type, e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Freeze the zoom range so it doesn't jump during drag
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
     frozenRange.current = { zStart, zEnd };
     const snapEndSec = endSec;
     const snapStartSec = startSec;
-    const isTouch = e.type === 'touchstart';
-    const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
+    const { time, x } = calcZPos(e);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
     const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev);
+      const r = calcZPos(ev);
       const t = Math.max(0, Math.min(duration, r.time));
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
@@ -583,29 +576,27 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     const onUp = () => {
       frozenRange.current = null;
       setZDrag(false); setZDragTime(null); setZDragType(null);
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('lostpointercapture', onUp);
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('lostpointercapture', onUp);
   };
 
   const handleZDown = (e) => {
     e.preventDefault();
-    const isTouch = e.type === 'touchstart';
-    const { time, x } = isTouch ? calcZTimeTouch(e.touches[0]) : calcZTime(e);
+    const { time, x } = calcZPos(e);
     onSeek(time);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType('seek');
-    const onMove = (ev) => { if (ev.cancelable) ev.preventDefault(); const r = ev.type === 'touchmove' ? calcZTimeTouch(ev.touches[0]) : calcZTime(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
-    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
+    const el = e.currentTarget;
+    el.setPointerCapture(e.pointerId);
+    const onMove = (ev) => { const r = calcZPos(ev); onSeek(r.time); setZDragTime(r.time); setZDragX(r.x); };
+    const onUp = () => { setZDrag(false); setZDragTime(null); setZDragType(null); el.removeEventListener('pointermove', onMove); el.removeEventListener('pointerup', onUp); el.removeEventListener('lostpointercapture', onUp); };
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('lostpointercapture', onUp);
   };
 
   const markerHit = { position: 'absolute', top: -6, width: 36, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
@@ -618,7 +609,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     ),
     React.createElement("div", {
       ref: zoomRef,
-      onMouseDown: handleZDown, onTouchStart: handleZDown,
+      onPointerDown: handleZDown,
       style: { position: 'relative', height: 28, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
@@ -628,11 +619,11 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       // Start marker (visible line + handle + wider hit area)
       React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + sPct + '% - 1.5px)', width: 3, height: 20, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
       React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + sPct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      React.createElement("div", { onMouseDown: (e) => startMarkerDrag('start', e), onTouchStart: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 18px)' } }),
+      React.createElement("div", { onPointerDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 18px)' } }),
       // End marker (visible line + handle + wider hit area)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + ePct + '% - 1.5px)', width: 3, height: 20, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + ePct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: overLimit ? dangerC : accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      ePct != null && React.createElement("div", { onMouseDown: (e) => startMarkerDrag('end', e), onTouchStart: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)' } }),
+      ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)' } }),
       // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
       !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
