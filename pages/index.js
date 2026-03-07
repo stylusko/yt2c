@@ -997,6 +997,280 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   );
 }
 
+/* ── MobileClipSelector: compact clip picker for mobile ── */
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange }) {
+  const containerRef = useRef(null);
+  const playerRef = useRef(null);
+  const seekRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [currentTime, setCurrent] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [ready, setReady] = useState(false);
+  const rafRef = useRef(null);
+  const [muted, setMuted] = useState(true);
+  const [warnToast, setWarnToast] = useState(false);
+  const warnTimer = useRef(null);
+  const manualSeekOutside = useRef(false);
+  const lastStartRef = useRef(null);
+  const [collapsed, setCollapsed] = useState(true);
+
+  const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  const startSec = parseTime(start);
+  const endSec = parseTime(end);
+  const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
+  const MAX_CLIP = 30;
+  const overLimit = clipLen != null && clipLen > MAX_CLIP;
+  const accentC = '#6366f1';
+  const dangerC = '#ef4444';
+
+  const startSecRef = useRef(startSec);
+  const endSecRef = useRef(endSec);
+  startSecRef.current = startSec;
+  endSecRef.current = endSec;
+  useEffect(() => { if (startSec != null) lastStartRef.current = startSec; }, [startSec]);
+
+  // Load YT API
+  useEffect(() => {
+    if (window.YT && window.YT.Player) return;
+    if (document.getElementById('yt-iframe-api')) return;
+    const tag = document.createElement('script');
+    tag.id = 'yt-iframe-api';
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+  }, []);
+
+  // Create player
+  useEffect(() => {
+    if (!videoId || collapsed) return;
+    let cancelled = false;
+    const create = () => {
+      if (cancelled) return;
+      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      const el = containerRef.current;
+      if (!el) return;
+      const cid = 'mcs-' + videoId + '-' + Date.now();
+      el.id = cid;
+      playerRef.current = new window.YT.Player(cid, {
+        width: '100%', height: 160,
+        videoId: videoId,
+        playerVars: { autoplay: 0, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
+        events: {
+          onReady: (e) => {
+            if (cancelled) return;
+            setReady(true);
+            setDuration(e.target.getDuration() || 0);
+            const ss = parseTime(start);
+            if (ss != null) e.target.seekTo(ss, true);
+          },
+          onStateChange: (e) => { setPlaying(e.data === window.YT.PlayerState.PLAYING); },
+        },
+      });
+    };
+    const initDelay = setTimeout(() => {
+      if (cancelled) return;
+      if (window.YT && window.YT.Player) { create(); }
+      else {
+        const poll = setInterval(() => {
+          if (cancelled) { clearInterval(poll); return; }
+          if (window.YT && window.YT.Player) { clearInterval(poll); create(); }
+        }, 200);
+      }
+    }, 80);
+    return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; setReady(false); setPlaying(false); } };
+  }, [videoId, collapsed]);
+
+  // Poll current time + auto-loop
+  useEffect(() => {
+    if (collapsed) return;
+    const tick = () => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        const t = playerRef.current.getCurrentTime();
+        setCurrent(t);
+        const ss = startSecRef.current, es = endSecRef.current;
+        if (!manualSeekOutside.current && ss != null && es != null && es > ss && t >= es - 0.15) {
+          playerRef.current.seekTo(ss, true);
+        }
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [collapsed]);
+
+  const showWarn = () => {
+    setWarnToast(true);
+    if (warnTimer.current) clearTimeout(warnTimer.current);
+    warnTimer.current = setTimeout(() => setWarnToast(false), 4000);
+  };
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+    if (playing) { playerRef.current.pauseVideo(); }
+    else {
+      if (startSec != null && endSec != null && endSec > startSec) {
+        const t = playerRef.current.getCurrentTime();
+        if (t < startSec || t >= endSec) { playerRef.current.seekTo(startSec, true); manualSeekOutside.current = false; }
+      }
+      playerRef.current.playVideo();
+    }
+  };
+
+  const toggleMute = () => {
+    if (!playerRef.current) return;
+    if (muted) { playerRef.current.unMute(); playerRef.current.setVolume(50); setMuted(false); }
+    else { playerRef.current.mute(); setMuted(true); }
+  };
+
+  const seekTo = (sec) => {
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(sec, true);
+    setCurrent(sec);
+    const ss = startSecRef.current, es = endSecRef.current;
+    const inRange = ss != null && es != null && sec >= ss && sec <= es;
+    manualSeekOutside.current = !inRange;
+  };
+
+  // Touch-friendly seekbar handlers
+  const calcSeekTime = (clientX) => {
+    const rect = seekRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    return { time: pct * duration, x: clientX - rect.left };
+  };
+
+  const handleSeekDown = (e) => {
+    e.preventDefault();
+    const isTouch = e.type === 'touchstart';
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    const { time } = calcSeekTime(clientX);
+    const inRange = startSec != null && endSec != null && time >= startSec && time <= endSec;
+    manualSeekOutside.current = !inRange;
+    seekTo(time);
+    const onMove = (ev) => {
+      const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
+      const { time: t } = calcSeekTime(cx);
+      const inR = startSec != null && endSec != null && t >= startSec && t <= endSec;
+      manualSeekOutside.current = !inR;
+      seekTo(t);
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  };
+
+  const markStart = () => {
+    const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
+    const es = parseTime(end);
+    let newStart = t, newEnd;
+    if (es == null || es <= t) { newEnd = Math.min(t + 10, duration || t + 10); }
+    else if (es - t > 30) { newEnd = t + 30; showWarn(); }
+    else { newEnd = es; }
+    startSecRef.current = newStart; endSecRef.current = newEnd; lastStartRef.current = newStart;
+    manualSeekOutside.current = false;
+    if (playerRef.current) playerRef.current.seekTo(newStart, true);
+    setCurrent(newStart);
+    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
+    else { onStartChange(fmtMM(newStart)); if (newEnd !== es) onEndChange(fmtMM(newEnd)); }
+  };
+
+  const markEnd = () => {
+    const t = (playerRef.current && playerRef.current.getCurrentTime) ? playerRef.current.getCurrentTime() : currentTime;
+    const ss = lastStartRef.current != null ? lastStartRef.current : parseTime(start);
+    const prevClipLen = (startSec != null && endSec != null && endSec > startSec) ? Math.min(endSec - startSec, 30) : 10;
+    let newStart = ss, newEnd;
+    if (ss == null || t < ss) { newStart = Math.max(0, t - prevClipLen); newEnd = t; }
+    else if (t - ss > 30) { newEnd = ss + 30; showWarn(); }
+    else { newEnd = t; }
+    startSecRef.current = newStart; endSecRef.current = newEnd; lastStartRef.current = newStart;
+    manualSeekOutside.current = false;
+    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
+    else { if (newStart !== ss) onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+  };
+
+  if (!videoId) return null;
+
+  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const startPct = (startSec != null && duration > 0) ? (startSec / duration) * 100 : null;
+  const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
+
+  // Collapsed: just a toggle button
+  if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
+    React.createElement("button", {
+      onClick: () => setCollapsed(false),
+      style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+    }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
+  );
+
+  return React.createElement("div", { style: { borderRadius: 8, overflow: 'hidden', border: '1px solid ' + T.border, background: '#000', marginBottom: 8 } },
+    // Mini player
+    React.createElement("div", { style: { position: 'relative', width: '100%', height: 160, background: '#000' } },
+      React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
+      // Play overlay
+      React.createElement("div", { onClick: togglePlay, style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+        !playing && ready && React.createElement("div", { style: { width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
+          React.createElement("span", { style: { color: '#fff', fontSize: 20, marginLeft: 3 } }, '\u25B6')
+        )
+      ),
+      // Time badge
+      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+      // Collapse button
+      React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsed(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
+    ),
+    // Seekbar (touch-friendly, 44px hit area)
+    React.createElement("div", {
+      ref: seekRef,
+      onMouseDown: handleSeekDown, onTouchStart: handleSeekDown,
+      style: { position: 'relative', height: 44, background: T.surface, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+    },
+      // Track bg
+      React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
+      // Selected range
+      startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: 20, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.6 } }),
+      // Start marker
+      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + startPct + '% - 1px)', width: 3, height: 24, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      // End marker
+      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
+      // Playhead
+      React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + pct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+    ),
+    // Controls row
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
+      // Play/Pause
+      React.createElement("button", { onClick: togglePlay, style: { width: 36, height: 36, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
+      // Mute
+      React.createElement("button", { onClick: toggleMute, style: { width: 36, height: 36, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+      // Spacer
+      React.createElement("div", { style: { flex: 1 } }),
+      // Mark start
+      React.createElement("button", { onClick: markStart, style: { padding: '6px 12px', borderRadius: 6, border: '1.5px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC2DC\uC791 \uC7A1\uAE30'),
+      // Mark end
+      React.createElement("button", { onClick: markEnd, style: { padding: '6px 12px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 12, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC \uC7A1\uAE30'),
+    ),
+    // Clip duration bar
+    clipLen != null && React.createElement("div", { style: { padding: '6px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+        React.createElement("span", { style: { fontSize: 11, color: overLimit ? dangerC : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(clipLen) + '\uCD08'),
+        React.createElement("span", { style: { fontSize: 10, color: overLimit ? dangerC : T.textMuted } }, Math.round(clipLen) + ' / 30\uCD08'),
+      ),
+      React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+        React.createElement("div", { style: { width: Math.min(100, (clipLen / MAX_CLIP) * 100) + '%', height: '100%', background: overLimit ? dangerC : clipLen / MAX_CLIP > 0.8 ? '#f59e0b' : accentC, borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+      ),
+    ),
+    // Zoomed seekbar for precision
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onWarn: showWarn }),
+    // Warning toast
+    warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+      '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
+    ),
+  );
+}
+
 function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp, volume: volumeProp = 80 }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
@@ -3034,6 +3308,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
       React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
+      // MobileClipSelector: visual clip picker
+      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+      // Manual time inputs (secondary)
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
         React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
           var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
