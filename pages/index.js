@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2350,8 +2350,9 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
                 try {
                   const res = await fetch(url);
                   const blob = await res.blob();
-                  const ext = url.split('.').pop()?.split('?')[0] || 'mp4';
-                  const mime = ext === 'mp4' ? 'video/mp4' : ext === 'png' ? 'image/png' : 'image/jpeg';
+                  const urlExt = new URL(url, location.origin).searchParams.get('ext');
+                  const ext = urlExt || (url.match(/\.(\w{3,4})(?:\?|$)/) || [])[1] || 'mp4';
+                  const mime = ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : ext === 'png' ? 'image/png' : 'image/jpeg';
                   const file = new File([blob], `card-${i + 1}.${ext}`, { type: mime });
                   await navigator.share({ files: [file] });
                 } catch (err) {
