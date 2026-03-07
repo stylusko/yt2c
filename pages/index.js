@@ -2345,10 +2345,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
 
   const toggleAll = () => setSelected(cards.map(() => !allSelected));
   const toggle = (i) => setSelected(s => s.map((v, j) => j === i ? !v : v));
-  const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
-  const ar = aspectRatio === '3:4' ? 4/3 : 1;
-  const baseW = isMob ? 140 : 150;
-  const pvW = Math.round(baseW / Math.max(ar, 1));
+  const pvW = 150;
 
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
@@ -2374,7 +2371,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       ),
       // Card grid (scrollable wrapper → inner grid)
       React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
-        React.createElement("div", { style: { display:'grid', gridTemplateColumns: isMob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap:12 } },
+        React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 } },
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             return React.createElement("div", {
@@ -2382,7 +2379,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio, globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
               // Checkbox overlay
               React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
