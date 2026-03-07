@@ -786,7 +786,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     if (playing) { playerRef.current.pauseVideo(); }
     else {
       // If clip range exists and playhead is outside range, seek to start
-      if (startSec != null && endSec != null && endSec > startSec) {
+      if (startSec != null && endSec != null && endSec > startSec && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
         if (t < startSec || t >= endSec) {
           playerRef.current.seekTo(startSec, true);
@@ -1176,7 +1176,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     if (!playerRef.current) return;
     if (playing) { playerRef.current.pauseVideo(); }
     else {
-      if (startSec != null && endSec != null && endSec > startSec) {
+      if (startSec != null && endSec != null && endSec > startSec && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
         if (t < startSec || t >= endSec) { playerRef.current.seekTo(startSec, true); manualSeekOutside.current = false; }
       }
