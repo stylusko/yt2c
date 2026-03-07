@@ -56,6 +56,8 @@ const FONT_OPTIONS = [
     ]},
 ];
 
+const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
+
 const STYLE_PRESETS = [
   { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
@@ -3557,7 +3559,6 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
-  const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
   const setAllFont = (fontId) => {
     const font = FONT_OPTIONS.find(f => f.id === fontId);
     if (!font) return;
@@ -3912,6 +3913,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Text Tab \u2500\u2500
   const setAllAlignDesk = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const setAllFontDesk = (fontId) => {
+    const font = FONT_OPTIONS.find(f => f.id === fontId);
+    if (!font) return;
+    const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
+    const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+  };
   const renderText = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
     // 전체 정렬
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
@@ -3924,7 +3932,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
       React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFont(fo.id), style: { fontFamily: fo.family } }, fo.label))
+        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFontDesk(fo.id), style: { fontFamily: fo.family } }, fo.label))
       ),
     ),
     React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
