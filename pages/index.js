@@ -4797,8 +4797,9 @@ export default function App() {
         overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
+      const projectShareUrl = activeProject ? `${window.location.origin}/share?d=${encodeProject(activeProject)}` : '';
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();

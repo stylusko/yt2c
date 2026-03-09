@@ -133,7 +133,32 @@ worker.on('completed', async (job) => {
       const totalDuration = starts.length && ends.length
         ? (Math.max(...ends) - Math.min(...starts)) / 1000
         : 0;
-      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration);
+      const groupSample = groupJobs[0]?.data || {};
+      const baseUrl = groupSample.baseUrl || process.env.APP_BASE_URL || 'https://youmeca.me';
+      const projectUrl = groupSample.projectShareUrl || '';
+
+      const completedCards = completedJobs
+        .map((j) => ({
+          cardIdx: j.data?.cardIdx,
+          ext: j.data?.outputFormat || 'mp4',
+          url: `${baseUrl}/api/jobs/${jobId}?download=true&cardIdx=${j.data?.cardIdx}&ext=${j.data?.outputFormat || 'mp4'}`,
+        }))
+        .filter((c) => Number.isInteger(c.cardIdx))
+        .sort((a, b) => a.cardIdx - b.cardIdx);
+
+      const failedCards = failedJobs
+        .map((j) => ({
+          cardIdx: j.data?.cardIdx,
+          reason: String(j.failedReason || 'Unknown error').split('\n')[0].slice(0, 160),
+        }))
+        .filter((c) => Number.isInteger(c.cardIdx))
+        .sort((a, b) => a.cardIdx - b.cardIdx);
+
+      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration, {
+        projectUrl,
+        completedCards,
+        failedCards,
+      });
     }
   } catch (err) {
     console.error('[telegram] completed hook error:', err.message);
