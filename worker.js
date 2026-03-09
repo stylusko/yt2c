@@ -40,6 +40,23 @@ async function loadProcessCard() {
   return mod.processCard;
 }
 
+function detectCookieExpirySuspicion(errorMessage) {
+  const msg = String(errorMessage || '').toLowerCase();
+  if (!msg) return null;
+
+  const patterns = [
+    { re: /sign in to confirm your age|age-restricted|age restriction/, reason: '연령 제한/로그인 필요 문구 감지' },
+    { re: /private video|members-only|join this channel|this video is available to this channel members/, reason: '로그인/권한 필요 영상 문구 감지' },
+    { re: /cookies are no longer valid|cookie|session expired|authorization required/, reason: '쿠키/세션 만료 관련 문구 감지' },
+    { re: /http error 403|forbidden/, reason: '403/Forbidden 반복' },
+  ];
+
+  for (const ptn of patterns) {
+    if (ptn.re.test(msg)) return ptn.reason;
+  }
+  return null;
+}
+
 // Create worker
 const worker = new Worker('video-generation', async (job) => {
   const { jobId, cardIdx, cardConfig, url, overlayData, outputFormat, outputSize } = job.data;
@@ -135,9 +152,10 @@ worker.on('failed', async (job, err) => {
     // Notify failure
     await t.notifyJobFailed(jobId, cardIdx, err.message);
 
-    // Check for low resolution indicator (cookie expiry)
-    if (err.message && err.message.includes('640')) {
-      await t.notifyLowResolution(jobId, 640, 360);
+    // Cookie/session expiry suspicion alert
+    const suspicionReason = detectCookieExpirySuspicion(err.message);
+    if (suspicionReason) {
+      await t.notifyCookieExpirySuspected(jobId, cardIdx, suspicionReason);
     }
   } catch (e) {
     console.error('[telegram] failed hook error:', e.message);
