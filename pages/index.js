@@ -2686,7 +2686,56 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
   );
 }
 
-function GeneratingModal({ mob, generating, genProgress, results, downloading, onDownloadAll, onClose }) {
+function formatEtaLabel(seconds) {
+  const sec = Math.max(0, Math.round(seconds || 0));
+  if (sec < 60) return `${sec}초`;
+  const min = Math.floor(sec / 60);
+  const rem = sec % 60;
+  if (min < 60) return rem ? `${min}분 ${rem}초` : `${min}분`;
+  const hour = Math.floor(min / 60);
+  const remMin = min % 60;
+  return remMin ? `${hour}시간 ${remMin}분` : `${hour}시간`;
+}
+
+function getTrafficUi(queueStatus) {
+  const eta = Number(queueStatus?.estimatedWaitSeconds || 0);
+  if (eta >= 300) {
+    return {
+      level: '바쁨',
+      color: '#ef4444',
+      bg: 'rgba(239,68,68,0.12)',
+      border: 'rgba(239,68,68,0.35)',
+      etaLabel: '5분 이상',
+      message: '현재 요청이 많아 처리 시간이 길어질 수 있어요. 자동으로 순서대로 진행됩니다.',
+      wave: [0.9, 0.75, 0.95, 0.6, 0.85, 0.7, 0.92, 0.65, 0.82, 0.72],
+      speed: '0.75s',
+    };
+  }
+  if (eta >= 60) {
+    return {
+      level: '중간',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.12)',
+      border: 'rgba(245,158,11,0.35)',
+      etaLabel: '약 1~5분',
+      message: '요청이 조금 몰려 있어 평소보다 시간이 더 걸릴 수 있어요.',
+      wave: [0.55, 0.35, 0.6, 0.45, 0.52, 0.4, 0.62, 0.33, 0.5, 0.42],
+      speed: '1s',
+    };
+  }
+  return {
+    level: '여유',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,0.12)',
+    border: 'rgba(34,197,94,0.35)',
+    etaLabel: '1분 이내',
+    message: '곧 시작돼요. 잠시만 기다려 주세요.',
+    wave: [0.2, 0.32, 0.28, 0.24, 0.3, 0.22, 0.35, 0.25, 0.3, 0.26],
+    speed: '1.3s',
+  };
+}
+
+function GeneratingModal({ mob, generating, genProgress, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
@@ -2736,6 +2785,43 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
+        queueStatus && (() => {
+          const traffic = getTrafficUi(queueStatus);
+          return React.createElement("div", {
+            style: {
+              width: '100%',
+              borderRadius: 12,
+              border: `1px solid ${traffic.border}`,
+              background: `linear-gradient(135deg, ${traffic.bg}, rgba(255,255,255,0.02))`,
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("span", { style: { width: 10, height: 10, borderRadius: '50%', background: traffic.color, boxShadow: `0 0 14px ${traffic.color}` } }),
+                React.createElement("span", { style: { fontSize: 12, color: '#fff', fontWeight: 600 } }, `현재 서버 상태: ${traffic.level}`),
+              ),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `예상 대기 ${traffic.etaLabel}`),
+            ),
+            React.createElement("div", { style: { height: 24, display: 'flex', alignItems: 'flex-end', gap: 4 } },
+              traffic.wave.map((h, i) => React.createElement("span", {
+                key: i,
+                style: {
+                  flex: 1,
+                  height: `${Math.round(8 + h * 16)}px`,
+                  borderRadius: 999,
+                  background: `linear-gradient(180deg, ${traffic.color}, rgba(255,255,255,0.18))`,
+                  opacity: 0.9,
+                  animation: `trafficPulse ${traffic.speed} ease-in-out ${i * 0.08}s infinite alternate`,
+                }
+              }))
+            ),
+            React.createElement("div", { style: { textAlign: 'left', color: T.textSecondary, fontSize: 12, lineHeight: 1.45 } }, traffic.message),
+          );
+        })(),
       ),
 
       // Download buttons (when done)
@@ -4539,6 +4625,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
+  const [queueStatus, setQueueStatus] = useState(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
@@ -4755,6 +4842,16 @@ export default function App() {
     setJsonStr(JSON.stringify(config, null, 2)); setShowJson(true);
   };
 
+  const fetchQueueStatus = async (jobId = null) => {
+    try {
+      const query = jobId ? `?jobId=${encodeURIComponent(jobId)}` : '';
+      const res = await fetch(`/api/queue/status${query}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setQueueStatus(data);
+    } catch (_) {}
+  };
+
   const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
     if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
@@ -4763,7 +4860,7 @@ export default function App() {
       if (!cards[i].start || !cards[i].end) { setAlertMsg(`\uCE74\uB4DC ${i + 1}\uC758 \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD558\uC138\uC694.`); return; }
     }
     const targetCards = indices.map(i => cards[i]);
-    setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
+    setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
       const overlays = [];
       for (let j = 0; j < targetCards.length; j++) {
@@ -4771,15 +4868,18 @@ export default function App() {
         overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
+      const projectShareUrl = activeProject ? `${window.location.origin}/share?d=${encodeProject(activeProject)}` : '';
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
       activeJobIdRef.current = jobId;
+      fetchQueueStatus(jobId);
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/jobs/${jobId}`);
+          fetchQueueStatus(jobId);
           if (!statusRes.ok) return;
           const status = await statusRes.json();
           let completedCards = 0, failedCards = 0, totalProgress = 0;
@@ -4796,11 +4896,12 @@ export default function App() {
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
             if (failedErrors.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
             setGenerating(false);
+            fetchQueueStatus();
           }
         } catch (e) {}
       }, 1500);
       pollIntervalRef.current = pollInterval;
-    } catch (err) { setAlertMsg(`\uC624\uB958: ${err.message}`); setGenProgress(""); setGenerating(false); }
+    } catch (err) { setAlertMsg(`\uC624\uB958: ${err.message}`); setGenProgress(""); setGenerating(false); setQueueStatus(null); }
   };
 
   const handleDownloadAll = async () => {
@@ -5139,7 +5240,7 @@ export default function App() {
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
-      mob, generating, genProgress, results, downloading,
+      mob, generating, genProgress, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,
       onClose: () => {
         if (generating) {
@@ -5205,6 +5306,6 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }`)
   );
 }

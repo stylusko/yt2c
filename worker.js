@@ -23,6 +23,7 @@ async function getTelegram() {
 
 // Queue instance for checking job group status
 const queue = new Queue('video-generation', { connection });
+const workerConcurrency = Math.max(1, parseInt(process.env.WORKER_CONCURRENCY || '1', 10) || 1);
 
 function saveOverlay(name, base64Data) {
   const dir = path.join(STORAGE_DIR, 'overlays');
@@ -37,6 +38,23 @@ function saveOverlay(name, base64Data) {
 async function loadProcessCard() {
   const mod = await import('./lib/worker.js');
   return mod.processCard;
+}
+
+function detectCookieExpirySuspicion(errorMessage) {
+  const msg = String(errorMessage || '').toLowerCase();
+  if (!msg) return null;
+
+  const patterns = [
+    { re: /sign in to confirm your age|age-restricted|age restriction/, reason: '연령 제한/로그인 필요 문구 감지' },
+    { re: /private video|members-only|join this channel|this video is available to this channel members/, reason: '로그인/권한 필요 영상 문구 감지' },
+    { re: /cookies are no longer valid|cookie|session expired|authorization required/, reason: '쿠키/세션 만료 관련 문구 감지' },
+    { re: /http error 403|forbidden/, reason: '403/Forbidden 반복' },
+  ];
+
+  for (const ptn of patterns) {
+    if (ptn.re.test(msg)) return ptn.reason;
+  }
+  return null;
 }
 
 // Create worker
@@ -86,7 +104,7 @@ const worker = new Worker('video-generation', async (job) => {
     console.error(`[${jobId}] Error processing card ${cardIdx}:`, error.message);
     throw error;
   }
-}, { connection, concurrency: 3 });
+}, { connection, concurrency: workerConcurrency });
 
 // Worker events
 worker.on('completed', async (job) => {
@@ -115,7 +133,32 @@ worker.on('completed', async (job) => {
       const totalDuration = starts.length && ends.length
         ? (Math.max(...ends) - Math.min(...starts)) / 1000
         : 0;
-      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration);
+      const groupSample = groupJobs[0]?.data || {};
+      const baseUrl = groupSample.baseUrl || process.env.APP_BASE_URL || 'https://youmeca.me';
+      const projectUrl = groupSample.projectShareUrl || '';
+
+      const completedCards = completedJobs
+        .map((j) => ({
+          cardIdx: j.data?.cardIdx,
+          ext: j.data?.outputFormat || 'mp4',
+          url: `${baseUrl}/api/jobs/${jobId}?download=true&cardIdx=${j.data?.cardIdx}&ext=${j.data?.outputFormat || 'mp4'}`,
+        }))
+        .filter((c) => Number.isInteger(c.cardIdx))
+        .sort((a, b) => a.cardIdx - b.cardIdx);
+
+      const failedCards = failedJobs
+        .map((j) => ({
+          cardIdx: j.data?.cardIdx,
+          reason: String(j.failedReason || 'Unknown error').split('\n')[0].slice(0, 160),
+        }))
+        .filter((c) => Number.isInteger(c.cardIdx))
+        .sort((a, b) => a.cardIdx - b.cardIdx);
+
+      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration, {
+        projectUrl,
+        completedCards,
+        failedCards,
+      });
     }
   } catch (err) {
     console.error('[telegram] completed hook error:', err.message);
@@ -134,9 +177,10 @@ worker.on('failed', async (job, err) => {
     // Notify failure
     await t.notifyJobFailed(jobId, cardIdx, err.message);
 
-    // Check for low resolution indicator (cookie expiry)
-    if (err.message && err.message.includes('640')) {
-      await t.notifyLowResolution(jobId, 640, 360);
+    // Cookie/session expiry suspicion alert
+    const suspicionReason = detectCookieExpirySuspicion(err.message);
+    if (suspicionReason) {
+      await t.notifyCookieExpirySuspected(jobId, cardIdx, suspicionReason);
     }
   } catch (e) {
     console.error('[telegram] failed hook error:', e.message);
@@ -189,4 +233,4 @@ function scheduleDailyReport() {
 
 scheduleDailyReport();
 
-console.log('Video generation worker started (concurrency: 3)');
+console.log(`Video generation worker started (concurrency: ${workerConcurrency})`);
