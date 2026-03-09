@@ -23,6 +23,7 @@ async function getTelegram() {
 
 // Queue instance for checking job group status
 const queue = new Queue('video-generation', { connection });
+const workerConcurrency = Math.max(1, parseInt(process.env.WORKER_CONCURRENCY || '1', 10) || 1);
 
 function saveOverlay(name, base64Data) {
   const dir = path.join(STORAGE_DIR, 'overlays');
@@ -86,7 +87,7 @@ const worker = new Worker('video-generation', async (job) => {
     console.error(`[${jobId}] Error processing card ${cardIdx}:`, error.message);
     throw error;
   }
-}, { connection, concurrency: 3 });
+}, { connection, concurrency: workerConcurrency });
 
 // Worker events
 worker.on('completed', async (job) => {
@@ -189,4 +190,4 @@ function scheduleDailyReport() {
 
 scheduleDailyReport();
 
-console.log('Video generation worker started (concurrency: 3)');
+console.log(`Video generation worker started (concurrency: ${workerConcurrency})`);
