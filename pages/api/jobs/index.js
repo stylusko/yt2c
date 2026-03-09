@@ -11,12 +11,18 @@ export const config = {
   },
 };
 
+function getBaseUrl(req) {
+  const proto = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers['x-forwarded-host'] || req.headers.host || 'youmeca.me';
+  return `${proto}://${host}`;
+}
+
 /**
  * POST handler: Create new video generation jobs
  */
 async function handlePost(req, res) {
   try {
-    const { url, cards, outputFormat = 'video', outputSize = 1080 } = req.body;
+    const { url, cards, outputFormat = 'video', outputSize = 1080, projectShareUrl = '' } = req.body;
 
     // Validate input
     if (!url || typeof url !== 'string') {
@@ -33,6 +39,7 @@ async function handlePost(req, res) {
     // Create job group ID
     const jobId = uuidv4();
     const queue = getVideoQueue();
+    const baseUrl = getBaseUrl(req);
 
     // Create one job per card
     const jobIds = [];
@@ -47,6 +54,8 @@ async function handlePost(req, res) {
         overlayData: overlayData || '',
         outputFormat: outputFormat === 'video' ? 'mp4' : 'jpg',
         outputSize,
+        baseUrl,
+        projectShareUrl,
       };
 
       const job = await queue.add(

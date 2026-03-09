@@ -2686,7 +2686,18 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
   );
 }
 
-function GeneratingModal({ mob, generating, genProgress, results, downloading, onDownloadAll, onClose }) {
+function formatEtaLabel(seconds) {
+  const sec = Math.max(0, Math.round(seconds || 0));
+  if (sec < 60) return `${sec}초`;
+  const min = Math.floor(sec / 60);
+  const rem = sec % 60;
+  if (min < 60) return rem ? `${min}분 ${rem}초` : `${min}분`;
+  const hour = Math.floor(min / 60);
+  const remMin = min % 60;
+  return remMin ? `${hour}시간 ${remMin}분` : `${hour}시간`;
+}
+
+function GeneratingModal({ mob, generating, genProgress, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
@@ -2735,6 +2746,10 @@ function GeneratingModal({ mob, generating, genProgress, results, downloading, o
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' } },
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
+        ),
+        queueStatus && React.createElement("div", { style: { textAlign: 'center', color: T.textMuted, fontSize: 12, lineHeight: 1.5 } },
+          React.createElement("div", null, `현재 처리 ${queueStatus.active}개 · 대기 ${queueStatus.waiting}개 · 동시처리 ${queueStatus.concurrency}개`),
+          React.createElement("div", null, `큐 예상 대기 ${formatEtaLabel(queueStatus.estimatedWaitSeconds)}${queueStatus.estimatedGroupSeconds ? ` · 내 요청 완료까지 ${formatEtaLabel(queueStatus.estimatedGroupSeconds)}` : ''}`),
         ),
       ),
 
@@ -4539,6 +4554,7 @@ export default function App() {
   const [showPreview, setShowPreview] = useState(false);
   const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
+  const [queueStatus, setQueueStatus] = useState(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
@@ -4755,6 +4771,16 @@ export default function App() {
     setJsonStr(JSON.stringify(config, null, 2)); setShowJson(true);
   };
 
+  const fetchQueueStatus = async (jobId = null) => {
+    try {
+      const query = jobId ? `?jobId=${encodeURIComponent(jobId)}` : '';
+      const res = await fetch(`/api/queue/status${query}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setQueueStatus(data);
+    } catch (_) {}
+  };
+
   const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
     if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
@@ -4763,7 +4789,7 @@ export default function App() {
       if (!cards[i].start || !cards[i].end) { setAlertMsg(`\uCE74\uB4DC ${i + 1}\uC758 \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD558\uC138\uC694.`); return; }
     }
     const targetCards = indices.map(i => cards[i]);
-    setGenerating(true); setResults([]); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
+    setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
       const overlays = [];
       for (let j = 0; j < targetCards.length; j++) {
@@ -4771,15 +4797,18 @@ export default function App() {
         overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
+      const projectShareUrl = activeProject ? `${window.location.origin}/share?d=${encodeProject(activeProject)}` : '';
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
       activeJobIdRef.current = jobId;
+      fetchQueueStatus(jobId);
       const pollInterval = setInterval(async () => {
         try {
           const statusRes = await fetch(`/api/jobs/${jobId}`);
+          fetchQueueStatus(jobId);
           if (!statusRes.ok) return;
           const status = await statusRes.json();
           let completedCards = 0, failedCards = 0, totalProgress = 0;
@@ -4796,11 +4825,12 @@ export default function App() {
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
             if (failedErrors.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
             setGenerating(false);
+            fetchQueueStatus();
           }
         } catch (e) {}
       }, 1500);
       pollIntervalRef.current = pollInterval;
-    } catch (err) { setAlertMsg(`\uC624\uB958: ${err.message}`); setGenProgress(""); setGenerating(false); }
+    } catch (err) { setAlertMsg(`\uC624\uB958: ${err.message}`); setGenProgress(""); setGenerating(false); setQueueStatus(null); }
   };
 
   const handleDownloadAll = async () => {
@@ -5139,7 +5169,7 @@ export default function App() {
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
-      mob, generating, genProgress, results, downloading,
+      mob, generating, genProgress, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,
       onClose: () => {
         if (generating) {
