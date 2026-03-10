@@ -301,13 +301,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   };
   const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz));
 
-  // Preload fonts for canvas rendering
-  const fontsToLoad = new Set();
-  if (card.useTitle !== false && card.title) fontsToLoad.add(getFont(card.titleFont, 48));
-  if (card.useSubtitle !== false && card.subtitle) fontsToLoad.add(getFont(card.subtitleFont, 48));
-  if (card.useBody !== false && card.body) fontsToLoad.add(getFont(card.bodyFont, 48));
-  if (fontsToLoad.size > 0) {
-    await Promise.all([...fontsToLoad].map(f => document.fonts.load(f).catch(() => {})));
+  // Preload fonts for canvas rendering (pass actual text for Google Fonts unicode-range subsets)
+  const fontsToLoad = [];
+  if (card.useTitle !== false && card.title) fontsToLoad.push({ font: getFont(card.titleFont, 48), text: card.title });
+  if (card.useSubtitle !== false && card.subtitle) fontsToLoad.push({ font: getFont(card.subtitleFont, 48), text: card.subtitle });
+  if (card.useBody !== false && card.body) fontsToLoad.push({ font: getFont(card.bodyFont, 48), text: card.body });
+  if (fontsToLoad.length > 0) {
+    await Promise.all(fontsToLoad.map(({ font, text }) => document.fonts.load(font, text).catch(() => {})));
   }
 
   function wrapText(text, fontSize, fontName, fieldLS, customMaxW) {
@@ -4278,9 +4278,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
       React.createElement(FontDropdown, {
         options: FONT_OPTIONS,
-        value: (getFontFamily(card.titleFont) === getFontFamily(card.subtitleFont) && getFontFamily(card.subtitleFont) === getFontFamily(card.bodyFont)) ? getFontFamily(card.titleFont) : getFontFamily(card.titleFont),
+        value: getFontFamily(card.titleFont),
         onChange: (id) => setAllFont(id),
       }),
+      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement("select", { value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (e) => updateMulti({ titleFont: e.target.value, subtitleFont: e.target.value, bodyFont: e.target.value }), style: fontSelectStyle }, fo.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))) : null; })(),
     ),
     // 제목
     React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
@@ -4634,9 +4635,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
       React.createElement(FontDropdown, {
         options: FONT_OPTIONS,
-        value: (getFontFamily(card.titleFont) === getFontFamily(card.subtitleFont) && getFontFamily(card.subtitleFont) === getFontFamily(card.bodyFont)) ? getFontFamily(card.titleFont) : getFontFamily(card.titleFont),
+        value: getFontFamily(card.titleFont),
         onChange: (id) => setAllFontDesk(id),
       }),
+      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement("select", { value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (e) => updateMulti({ titleFont: e.target.value, subtitleFont: e.target.value, bodyFont: e.target.value }), style: fontSelectStyle }, fo.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))) : null; })(),
     ),
     React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
