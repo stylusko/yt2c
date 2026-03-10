@@ -2059,12 +2059,41 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Click target for text field switching + deselection (transparent, on top of canvas overlay)
   const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
     style: { position: "absolute", inset: 0, zIndex: 4, cursor: "pointer" },
-    onClick: () => {
+    onClick: (e) => {
       if (onSelectHandle) onSelectHandle(null);
-      if (onTextClick) {
-        const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
-        if (fields.length > 0) onTextClick(fields[0]);
+      if (!onTextClick) return;
+
+      const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+      if (fields.length === 0) return;
+      if (fields.length === 1) { onTextClick(fields[0]); return; }
+
+      // 클릭 위치를 프리뷰 상대 좌표로 변환
+      const rect = e.currentTarget.getBoundingClientRect();
+      const relY = (e.clientY - rect.top) / rect.height;
+
+      // 레이아웃별 텍스트 영역 범위
+      const layout = card.layout || 'photo_top';
+      const photoRatio = (card.photoRatio ?? 50) / 100;
+      let textStart, textEnd;
+
+      if (layout === 'none') { onTextClick(fields[0]); return; }
+      else if (layout === 'text_box') {
+        const bY = (card.textBoxY || 70) / 100;
+        const bH = (card.textBoxHeight || 30) / 100;
+        textStart = bY - bH / 2;
+        textEnd = bY + bH / 2;
+      } else if (layout === 'full_bg') {
+        textStart = 0; textEnd = 1;
+      } else if (layout === 'photo_top') {
+        textStart = photoRatio; textEnd = 1;
+      } else {
+        textStart = 0; textEnd = 1 - photoRatio;
       }
+
+      // 텍스트 영역 내 상대 위치 (0~1)
+      const textRel = Math.max(0, Math.min(1, (relY - textStart) / (textEnd - textStart)));
+      const idx = Math.min(fields.length - 1, Math.floor(textRel * fields.length));
+      onTextClick(fields[idx]);
     }
   });
 
