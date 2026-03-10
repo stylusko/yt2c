@@ -6,13 +6,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0310';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
   '\uC2DC\uD06C\uBC14 \uD540\uCE58/\uD720 \uC90C \uC9C0\uC6D0',
-  '\uC2DC\uD06C\uBC14 \uB9C8\uCEE4 \uB808\uC774\uBE14 \uAC9C\uCE68 \uBC29\uC9C0',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
@@ -53,6 +53,46 @@ const FONT_OPTIONS = [
   { id: 'BlackHanSans', label: 'Black Han Sans', family: "'Black Han Sans', sans-serif",
     variants: [
       { id: 'BlackHanSans-Regular', label: 'Regular', weight: 400 },
+    ]},
+  { id: 'NotoSansKR', label: 'Noto Sans KR', family: "'Noto Sans KR', sans-serif",
+    variants: [
+      { id: 'NotoSansKR-400', label: 'Regular', weight: 400 },
+      { id: 'NotoSansKR-500', label: 'Medium', weight: 500 },
+      { id: 'NotoSansKR-700', label: 'Bold', weight: 700 },
+      { id: 'NotoSansKR-900', label: 'Black', weight: 900 },
+    ]},
+  { id: 'NotoSerifKR', label: 'Noto Serif KR', family: "'Noto Serif KR', serif",
+    variants: [
+      { id: 'NotoSerifKR-400', label: 'Regular', weight: 400 },
+      { id: 'NotoSerifKR-700', label: 'Bold', weight: 700 },
+    ]},
+  { id: 'GothicA1', label: 'Gothic A1', family: "'Gothic A1', sans-serif",
+    variants: [
+      { id: 'GothicA1-400', label: 'Regular', weight: 400 },
+      { id: 'GothicA1-700', label: 'Bold', weight: 700 },
+      { id: 'GothicA1-900', label: 'Black', weight: 900 },
+    ]},
+  { id: 'Dongle', label: 'Dongle', family: "'Dongle', sans-serif",
+    variants: [
+      { id: 'Dongle-300', label: 'Light', weight: 300 },
+      { id: 'Dongle-400', label: 'Regular', weight: 400 },
+      { id: 'Dongle-700', label: 'Bold', weight: 700 },
+    ]},
+  { id: 'GamjaFlower', label: 'Gamja Flower', family: "'Gamja Flower', cursive",
+    variants: [
+      { id: 'GamjaFlower-400', label: 'Regular', weight: 400 },
+    ]},
+  { id: 'EastSeaDokdo', label: 'East Sea Dokdo', family: "'East Sea Dokdo', cursive",
+    variants: [
+      { id: 'EastSeaDokdo-400', label: 'Regular', weight: 400 },
+    ]},
+  { id: 'SingleDay', label: 'Single Day', family: "'Single Day', cursive",
+    variants: [
+      { id: 'SingleDay-400', label: 'Regular', weight: 400 },
+    ]},
+  { id: 'GasoekOne', label: 'Gasoek One', family: "'Gasoek One', sans-serif",
+    variants: [
+      { id: 'GasoekOne-400', label: 'Regular', weight: 400 },
     ]},
 ];
 
@@ -157,14 +197,47 @@ const labelBase = { display: 'block', fontSize: 12, color: T.textSecondary, font
 const sectionTitle = { fontSize: 13, fontWeight: 600, color: T.textSecondary, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 };
 const resetBtnStyle = { background: 'rgba(255,255,255,0.06)', border: 'none', color: T.textMuted, fontSize: 10, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill, transition: 'all 0.15s', whiteSpace: 'nowrap' };
 const fontSelectStyle = { background: T.surface, color: T.textSecondary, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11, padding: '3px 6px', cursor: 'pointer', outline: 'none' };
+function FontDropdown({ options, value, onChange, renderLabel, style: extraStyle }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+  const selected = options.find(o => o.id === value) || options[0];
+  return React.createElement("div", { ref, style: { position: 'relative', ...extraStyle } },
+    React.createElement("button", {
+      onClick: () => setOpen(!open),
+      style: { ...fontSelectStyle, display: 'flex', alignItems: 'center', gap: 4, fontFamily: selected.family || 'inherit', minWidth: 0, maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+    },
+      React.createElement("span", { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, renderLabel ? renderLabel(selected) : selected.label),
+      React.createElement("span", { style: { fontSize: 8, marginLeft: 2, flexShrink: 0 } }, "\u25BE"),
+    ),
+    open && React.createElement("div", {
+      style: { position: 'absolute', top: '100%', left: 0, zIndex: 1000, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, maxHeight: 240, overflowY: 'auto', minWidth: 140, marginTop: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }
+    },
+      options.map(o => React.createElement("div", {
+        key: o.id,
+        onClick: () => { onChange(o.id); setOpen(false); },
+        style: { padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: o.family || 'inherit', color: o.id === value ? T.accent : T.textSecondary, background: o.id === value ? 'rgba(99,102,241,0.12)' : 'transparent', whiteSpace: 'nowrap' },
+        onMouseEnter: (e) => { e.currentTarget.style.background = o.id === value ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.06)'; },
+        onMouseLeave: (e) => { e.currentTarget.style.background = o.id === value ? 'rgba(99,102,241,0.12)' : 'transparent'; },
+      }, renderLabel ? renderLabel(o) : o.label))
+    ),
+  );
+}
 function FontSelectRow({ fontValue, onChange }) {
   const curFamily = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === fontValue)) || FONT_OPTIONS[0];
   const curVariant = curFamily.variants.find(v => v.id === fontValue) || curFamily.variants[0];
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
     React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uD3F0\uD2B8"),
-    React.createElement("select", { value: curFamily.id, onChange: (e) => { const f = FONT_OPTIONS.find(fo => fo.id === e.target.value); if (f) { const v = f.variants.find(vv => vv.weight === curVariant.weight) || f.variants[0]; onChange(v.id); } }, style: { ...fontSelectStyle, fontFamily: curFamily.family } },
-      FONT_OPTIONS.map(fo => React.createElement("option", { key: fo.id, value: fo.id }, fo.label))
-    ),
+    React.createElement(FontDropdown, {
+      options: FONT_OPTIONS,
+      value: curFamily.id,
+      onChange: (id) => { const f = FONT_OPTIONS.find(fo => fo.id === id); if (f) { const v = f.variants.find(vv => vv.weight === curVariant.weight) || f.variants[0]; onChange(v.id); } },
+    }),
     React.createElement("select", { value: curVariant.id, onChange: (e) => onChange(e.target.value), style: fontSelectStyle },
       curFamily.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))
     ),
@@ -209,6 +282,22 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
     "BlackHanSans-Regular": "400 {s}px 'Black Han Sans', sans-serif",
+    "NotoSansKR-400": "400 {s}px 'Noto Sans KR', sans-serif",
+    "NotoSansKR-500": "500 {s}px 'Noto Sans KR', sans-serif",
+    "NotoSansKR-700": "700 {s}px 'Noto Sans KR', sans-serif",
+    "NotoSansKR-900": "900 {s}px 'Noto Sans KR', sans-serif",
+    "NotoSerifKR-400": "400 {s}px 'Noto Serif KR', serif",
+    "NotoSerifKR-700": "700 {s}px 'Noto Serif KR', serif",
+    "GothicA1-400": "400 {s}px 'Gothic A1', sans-serif",
+    "GothicA1-700": "700 {s}px 'Gothic A1', sans-serif",
+    "GothicA1-900": "900 {s}px 'Gothic A1', sans-serif",
+    "Dongle-300": "300 {s}px 'Dongle', sans-serif",
+    "Dongle-400": "400 {s}px 'Dongle', sans-serif",
+    "Dongle-700": "700 {s}px 'Dongle', sans-serif",
+    "GamjaFlower-400": "400 {s}px 'Gamja Flower', cursive",
+    "EastSeaDokdo-400": "400 {s}px 'East Sea Dokdo', cursive",
+    "SingleDay-400": "400 {s}px 'Single Day', cursive",
+    "GasoekOne-400": "400 {s}px 'Gasoek One', sans-serif",
   };
   const getFont = (name, sz) => (fontMap[name] || "400 {s}px Pretendard, sans-serif").replace("{s}", Math.round(sz));
 
@@ -4187,9 +4276,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     // 전체 폰트
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFont(fo.id), style: { fontFamily: fo.family } }, fo.label))
-      ),
+      React.createElement(FontDropdown, {
+        options: FONT_OPTIONS,
+        value: (getFontFamily(card.titleFont) === getFontFamily(card.subtitleFont) && getFontFamily(card.subtitleFont) === getFontFamily(card.bodyFont)) ? getFontFamily(card.titleFont) : getFontFamily(card.titleFont),
+        onChange: (id) => setAllFont(id),
+      }),
     ),
     // 제목
     React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
@@ -4541,9 +4632,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     // 전체 폰트
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
       React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        FONT_OPTIONS.map(fo => React.createElement(PillBtn, { key: fo.id, active: getFontFamily(card.titleFont) === fo.id && getFontFamily(card.subtitleFont) === fo.id && getFontFamily(card.bodyFont) === fo.id, onClick: () => setAllFontDesk(fo.id), style: { fontFamily: fo.family } }, fo.label))
-      ),
+      React.createElement(FontDropdown, {
+        options: FONT_OPTIONS,
+        value: (getFontFamily(card.titleFont) === getFontFamily(card.subtitleFont) && getFontFamily(card.subtitleFont) === getFontFamily(card.bodyFont)) ? getFontFamily(card.titleFont) : getFontFamily(card.titleFont),
+        onChange: (id) => setAllFontDesk(id),
+      }),
     ),
     React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
@@ -5144,7 +5237,7 @@ export default function App() {
       React.createElement("meta", { name: "theme-color", content: "#09090b" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.googleapis.com" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" }),
-      React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&family=Black+Han+Sans&display=swap", rel: "stylesheet" }),
+      React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700;900&family=Dongle:wght@300;400;700&family=Gamja+Flower&family=East+Sea+Dokdo&family=Single+Day&family=Gasoek+One&display=swap", rel: "stylesheet" }),
     ),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
