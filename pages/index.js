@@ -311,9 +311,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   // Draw below-layout overlays
   await drawOverlays(false);
 
-  if (layout === "none") {
-    // 없음: 텍스트 오버레이 없이 영상/이미지만
-  } else if (layout === "full_bg") {
+  if (layout === "none" || layout === "full_bg") {
     // 전체: solid bg covers entire card
     if (useBg) {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
@@ -2070,8 +2068,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       const rect = e.currentTarget.getBoundingClientRect();
       const relY = (e.clientY - rect.top) / rect.height;
       const layout = card.layout || 'photo_top';
-      if (layout === 'none') { onTextClick(fields[0]); return; }
-
       const photoRatio = (card.photoRatio ?? 50) / 100;
       const PAD = 40 / 1080;
       // 각 필드의 1줄 높이 추정 (카드 높이 대비 비율)
@@ -2081,7 +2077,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
       // 각 필드의 Y 중심 추정 → 가장 가까운 필드 선택
       const centers = [];
-      if (layout === 'full_bg') {
+      if (layout === 'full_bg' || layout === 'none') {
         // 하단 정렬: body가 맨 아래, title이 맨 위
         let y = 1 - PAD;
         for (let i = fields.length - 1; i >= 0; i--) {
