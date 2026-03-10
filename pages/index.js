@@ -6,17 +6,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0310';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uB370\uC2A4\uD06C\uD1B1 \uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD\uAE30 \uB4DC\uB86D\uB2E4\uC6B4 \uBC29\uC2DD\uC73C\uB85C \uAC1C\uC120',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
   '\uC2DC\uD06C\uBC14 \uD540\uCE58/\uD720 \uC90C \uC9C0\uC6D0',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
-  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -3997,62 +3997,121 @@ function InfoPanel({ onClose, mob }) {
   );
 }
 
-/* ── Project Tabs ── */
+/* ── Project Tabs (Dropdown) ── */
 function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename }) {
+  const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const ref = useRef(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   useEffect(() => { if (editingId && inputRef.current) inputRef.current.focus(); }, [editingId]);
 
+  const activeProj = projects.find(p => p.id === activeId) || projects[0];
   const startRename = (proj) => { setEditingId(proj.id); setEditName(proj.name); };
   const commitRename = () => {
     if (editingId && editName.trim()) onRename(editingId, editName.trim());
     setEditingId(null);
   };
 
-  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflow: 'auto', paddingRight: 8 } },
-    projects.map(proj => {
-      const isActive = proj.id === activeId;
-      const isEditing = proj.id === editingId;
-      return React.createElement("div", {
-        key: proj.id,
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 } },
+    React.createElement("div", { ref, style: { position: 'relative' } },
+      // Trigger button
+      React.createElement("button", {
+        onClick: () => setOpen(!open),
         style: {
-          display: 'flex', alignItems: 'center', gap: 4,
+          display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px', borderRadius: T.radiusPill, cursor: 'pointer',
-          background: isActive ? 'rgba(99,102,241,0.15)' : 'transparent',
-          border: `1px solid ${isActive ? 'rgba(99,102,241,0.3)' : 'transparent'}`,
-          transition: 'all 0.15s', flexShrink: 0,
+          background: 'rgba(99,102,241,0.10)', border: `1px solid rgba(99,102,241,0.25)`,
+          color: T.accent, fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
+          maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         },
-        onClick: () => !isEditing && onSwitch(proj.id),
+        onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; },
+        onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.10)'; },
       },
-        isEditing
-          ? React.createElement("input", {
-              ref: inputRef, value: editName,
-              onChange: (e) => setEditName(e.target.value),
-              onBlur: commitRename,
-              onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
-              onClick: (e) => e.stopPropagation(),
-              style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', width: Math.max(40, editName.length * 8), padding: 0 },
-            })
-          : React.createElement("span", {
-              style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, userSelect: 'none' },
-            }, proj.name),
-        isActive && !isEditing && React.createElement("button", {
-          onClick: (e) => { e.stopPropagation(); startRename(proj); },
-          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.5 },
-          onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-          onMouseLeave: (e) => e.currentTarget.style.opacity = 0.5,
-          title: '이름 수정',
-        }, "\u270E"),
-        projects.length > 1 && React.createElement("button", {
-          onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
-          style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.6 },
-          onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-          onMouseLeave: (e) => e.currentTarget.style.opacity = 0.6,
-        }, "\u00D7"),
-      );
-    }),
+        React.createElement("span", { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, activeProj ? activeProj.name : ''),
+        React.createElement("span", { style: { fontSize: 8, flexShrink: 0, opacity: 0.7 } }, "\u25BE"),
+      ),
+      // Dropdown panel
+      open && React.createElement("div", {
+        style: {
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 1000,
+          background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
+          maxHeight: 320, overflowY: 'auto', minWidth: 220,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+        }
+      },
+        projects.map(proj => {
+          const isActive = proj.id === activeId;
+          const isEditing = proj.id === editingId;
+          return React.createElement("div", {
+            key: proj.id,
+            style: {
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 12px', cursor: 'pointer',
+              background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
+              transition: 'background 0.12s',
+            },
+            onClick: () => { if (!isEditing) { onSwitch(proj.id); setOpen(false); } },
+            onMouseEnter: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.06)'; },
+            onMouseLeave: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.12)' : 'transparent'; },
+          },
+            // Active indicator
+            React.createElement("span", {
+              style: { fontSize: 8, color: isActive ? T.accent : 'transparent', flexShrink: 0, width: 10, textAlign: 'center' },
+            }, "\u25CF"),
+            // Name or edit input
+            isEditing
+              ? React.createElement("input", {
+                  ref: inputRef, value: editName,
+                  onChange: (e) => setEditName(e.target.value),
+                  onBlur: commitRename,
+                  onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
+                  onClick: (e) => e.stopPropagation(),
+                  style: { background: 'transparent', border: 'none', color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
+                })
+              : React.createElement("span", {
+                  style: { fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
+                }, proj.name),
+            // Rename button
+            !isEditing && React.createElement("button", {
+              onClick: (e) => { e.stopPropagation(); startRename(proj); },
+              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
+              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
+              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
+              title: '\uC774\uB984 \uC218\uC815',
+            }, "\u270E"),
+            // Close button
+            !isEditing && projects.length > 1 && React.createElement("button", {
+              onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
+              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
+              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
+            }, "\u00D7"),
+          );
+        }),
+        // Divider + Add button
+        React.createElement("div", { style: { borderTop: `1px solid ${T.border}` } },
+          React.createElement("div", {
+            onClick: () => { onAdd(); setOpen(false); },
+            style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', cursor: 'pointer', color: T.textMuted, fontSize: 13, transition: 'background 0.12s' },
+            onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.accent; },
+            onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.textMuted; },
+          },
+            React.createElement("span", { style: { fontSize: 14, width: 10, textAlign: 'center', flexShrink: 0 } }, "+"),
+            React.createElement("span", null, "\uC0C8 \uD504\uB85C\uC81D\uD2B8"),
+          ),
+        ),
+      ),
+    ),
+    // External + button
     React.createElement("button", {
       onClick: onAdd,
       style: { width: 26, height: 26, borderRadius: T.radiusPill, background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
