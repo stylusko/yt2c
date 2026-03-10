@@ -207,10 +207,11 @@ function FontDropdown({ options, value, onChange, renderLabel, style: extraStyle
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
   const selected = options.find(o => o.id === value) || options[0];
+  const itemStyle = (o) => ({ fontFamily: o.family || 'inherit', ...(o.weight ? { fontWeight: o.weight } : {}) });
   return React.createElement("div", { ref, style: { position: 'relative', ...extraStyle } },
     React.createElement("button", {
       onClick: () => setOpen(!open),
-      style: { ...fontSelectStyle, display: 'flex', alignItems: 'center', gap: 4, fontFamily: selected.family || 'inherit', minWidth: 0, maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
+      style: { ...fontSelectStyle, display: 'flex', alignItems: 'center', gap: 4, ...itemStyle(selected), minWidth: 0, maxWidth: 150, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }
     },
       React.createElement("span", { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, renderLabel ? renderLabel(selected) : selected.label),
       React.createElement("span", { style: { fontSize: 8, marginLeft: 2, flexShrink: 0 } }, "\u25BE"),
@@ -221,7 +222,7 @@ function FontDropdown({ options, value, onChange, renderLabel, style: extraStyle
       options.map(o => React.createElement("div", {
         key: o.id,
         onClick: () => { onChange(o.id); setOpen(false); },
-        style: { padding: '6px 10px', fontSize: 13, cursor: 'pointer', fontFamily: o.family || 'inherit', color: o.id === value ? T.accent : T.textSecondary, background: o.id === value ? 'rgba(99,102,241,0.12)' : 'transparent', whiteSpace: 'nowrap' },
+        style: { padding: '6px 10px', fontSize: 13, cursor: 'pointer', ...itemStyle(o), color: o.id === value ? T.accent : T.textSecondary, background: o.id === value ? 'rgba(99,102,241,0.12)' : 'transparent', whiteSpace: 'nowrap' },
         onMouseEnter: (e) => { e.currentTarget.style.background = o.id === value ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.06)'; },
         onMouseLeave: (e) => { e.currentTarget.style.background = o.id === value ? 'rgba(99,102,241,0.12)' : 'transparent'; },
       }, renderLabel ? renderLabel(o) : o.label))
@@ -231,6 +232,7 @@ function FontDropdown({ options, value, onChange, renderLabel, style: extraStyle
 function FontSelectRow({ fontValue, onChange }) {
   const curFamily = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === fontValue)) || FONT_OPTIONS[0];
   const curVariant = curFamily.variants.find(v => v.id === fontValue) || curFamily.variants[0];
+  const weightOptions = curFamily.variants.map(v => ({ id: v.id, label: v.label, family: curFamily.family, weight: v.weight }));
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
     React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uD3F0\uD2B8"),
     React.createElement(FontDropdown, {
@@ -238,9 +240,11 @@ function FontSelectRow({ fontValue, onChange }) {
       value: curFamily.id,
       onChange: (id) => { const f = FONT_OPTIONS.find(fo => fo.id === id); if (f) { const v = f.variants.find(vv => vv.weight === curVariant.weight) || f.variants[0]; onChange(v.id); } },
     }),
-    React.createElement("select", { value: curVariant.id, onChange: (e) => onChange(e.target.value), style: fontSelectStyle },
-      curFamily.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))
-    ),
+    curFamily.variants.length > 1 && React.createElement(FontDropdown, {
+      options: weightOptions,
+      value: curVariant.id,
+      onChange: (id) => onChange(id),
+    }),
   );
 }
 function SectionTitleWithReset({ title, onReset }) {
@@ -4281,7 +4285,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         value: getFontFamily(card.titleFont),
         onChange: (id) => setAllFont(id),
       }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement("select", { value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (e) => updateMulti({ titleFont: e.target.value, subtitleFont: e.target.value, bodyFont: e.target.value }), style: fontSelectStyle }, fo.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))) : null; })(),
+      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
     ),
     // 제목
     React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
@@ -4638,7 +4642,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         value: getFontFamily(card.titleFont),
         onChange: (id) => setAllFontDesk(id),
       }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement("select", { value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (e) => updateMulti({ titleFont: e.target.value, subtitleFont: e.target.value, bodyFont: e.target.value }), style: fontSelectStyle }, fo.variants.map(v => React.createElement("option", { key: v.id, value: v.id }, v.label))) : null; })(),
+      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
     ),
     React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
     React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
