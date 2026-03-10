@@ -2739,6 +2739,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
+  const hasStarted = Boolean(genProgress && genProgress.includes('개 완료'));
 
   return React.createElement("div", {
     style: { position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
@@ -2785,7 +2786,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
-        queueStatus && (() => {
+        queueStatus && !hasStarted && (() => {
           const traffic = getTrafficUi(queueStatus);
           return React.createElement("div", {
             style: {
