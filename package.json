@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "worker": "node worker.js"
+    "worker": "node worker.js",
+    "telegram:replay48h": "node scripts/replay-telegram-48h.mjs"
   },
   "dependencies": {
     "bullmq": "^5.0.0",

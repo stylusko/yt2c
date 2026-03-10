@@ -2697,10 +2697,49 @@ function formatEtaLabel(seconds) {
   return remMin ? `${hour}시간 ${remMin}분` : `${hour}시간`;
 }
 
+function getTrafficUi(queueStatus) {
+  const eta = Number(queueStatus?.estimatedWaitSeconds || 0);
+  if (eta >= 300) {
+    return {
+      level: '바쁨',
+      color: '#ef4444',
+      bg: 'rgba(239,68,68,0.12)',
+      border: 'rgba(239,68,68,0.35)',
+      etaLabel: '5분 이상',
+      message: '현재 요청이 많아 처리 시간이 길어질 수 있어요. 자동으로 순서대로 진행됩니다.',
+      wave: [0.9, 0.75, 0.95, 0.6, 0.85, 0.7, 0.92, 0.65, 0.82, 0.72],
+      speed: '0.75s',
+    };
+  }
+  if (eta >= 60) {
+    return {
+      level: '중간',
+      color: '#f59e0b',
+      bg: 'rgba(245,158,11,0.12)',
+      border: 'rgba(245,158,11,0.35)',
+      etaLabel: '약 1~5분',
+      message: '요청이 조금 몰려 있어 평소보다 시간이 더 걸릴 수 있어요.',
+      wave: [0.55, 0.35, 0.6, 0.45, 0.52, 0.4, 0.62, 0.33, 0.5, 0.42],
+      speed: '1s',
+    };
+  }
+  return {
+    level: '여유',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,0.12)',
+    border: 'rgba(34,197,94,0.35)',
+    etaLabel: '1분 이내',
+    message: '곧 시작돼요. 잠시만 기다려 주세요.',
+    wave: [0.2, 0.32, 0.28, 0.24, 0.3, 0.22, 0.35, 0.25, 0.3, 0.26],
+    speed: '1.3s',
+  };
+}
+
 function GeneratingModal({ mob, generating, genProgress, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
+  const hasStarted = Boolean(genProgress && genProgress.includes('개 완료'));
 
   return React.createElement("div", {
     style: { position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
@@ -2747,10 +2786,43 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
-        queueStatus && React.createElement("div", { style: { textAlign: 'center', color: T.textMuted, fontSize: 12, lineHeight: 1.5 } },
-          React.createElement("div", null, `현재 처리 ${queueStatus.active}개 · 대기 ${queueStatus.waiting}개 · 동시처리 ${queueStatus.concurrency}개`),
-          React.createElement("div", null, `큐 예상 대기 ${formatEtaLabel(queueStatus.estimatedWaitSeconds)}${queueStatus.estimatedGroupSeconds ? ` · 내 요청 완료까지 ${formatEtaLabel(queueStatus.estimatedGroupSeconds)}` : ''}`),
-        ),
+        queueStatus && !hasStarted && (() => {
+          const traffic = getTrafficUi(queueStatus);
+          return React.createElement("div", {
+            style: {
+              width: '100%',
+              borderRadius: 12,
+              border: `1px solid ${traffic.border}`,
+              background: `linear-gradient(135deg, ${traffic.bg}, rgba(255,255,255,0.02))`,
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("span", { style: { width: 10, height: 10, borderRadius: '50%', background: traffic.color, boxShadow: `0 0 14px ${traffic.color}` } }),
+                React.createElement("span", { style: { fontSize: 12, color: '#fff', fontWeight: 600 } }, `현재 서버 상태: ${traffic.level}`),
+              ),
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `예상 대기 ${traffic.etaLabel}`),
+            ),
+            React.createElement("div", { style: { height: 24, display: 'flex', alignItems: 'flex-end', gap: 4 } },
+              traffic.wave.map((h, i) => React.createElement("span", {
+                key: i,
+                style: {
+                  flex: 1,
+                  height: `${Math.round(8 + h * 16)}px`,
+                  borderRadius: 999,
+                  background: `linear-gradient(180deg, ${traffic.color}, rgba(255,255,255,0.18))`,
+                  opacity: 0.9,
+                  animation: `trafficPulse ${traffic.speed} ease-in-out ${i * 0.08}s infinite alternate`,
+                }
+              }))
+            ),
+            React.createElement("div", { style: { textAlign: 'left', color: T.textSecondary, fontSize: 12, lineHeight: 1.45 } }, traffic.message),
+          );
+        })(),
       ),
 
       // Download buttons (when done)
@@ -5235,6 +5307,6 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } }`)
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }`)
   );
 }
