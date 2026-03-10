@@ -5,18 +5,18 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0307';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_DATE = '2026.0310';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC2DC\uD06C\uBC14 \uD540\uCE58/\uD720 \uC90C \uC9C0\uC6D0',
+  '\uC2DC\uD06C\uBC14 \uB9C8\uCEE4 \uB808\uC774\uBE14 \uAC9C\uCE68 \uBC29\uC9C0',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
-  '\uACF5\uC720 URL \uD0A4 \uC555\uCD95\uC73C\uB85C \uB9C1\uD06C \uAE38\uC774 \uB300\uD3ED \uB2E8\uCD95',
   '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
   '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
-  '\uBAA8\uBC14\uC77C \uCE74\uB4DC \uC21C\uC11C \uBCC0\uACBD \uD130\uCE58 \uC9C0\uC6D0',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -824,6 +824,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
   const [rangeDragActive, setRangeDragActive] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomCenter, setZoomCenter] = useState(0.5);
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -953,11 +955,35 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     manualSeekOutside.current = !inRange;
   };
 
+  // Zoom helpers
+  const visibleDuration = duration / zoomLevel;
+  const visibleStart = Math.max(0, zoomCenter * duration - visibleDuration / 2);
+  const visibleEnd = Math.min(duration, visibleStart + visibleDuration);
+  const actualVisibleStart = visibleEnd - visibleDuration < 0 ? 0 : visibleStart;
+  const actualVisibleEnd = actualVisibleStart + visibleDuration;
+  const toVisualPct = (sec) => {
+    const p = ((sec - actualVisibleStart) / visibleDuration) * 100;
+    return Math.max(-5, Math.min(105, p));
+  };
+
   const calcSeekTime = (e) => {
     const rect = seekRef.current.getBoundingClientRect();
     const cx = e.touches ? e.touches[0].clientX : e.clientX;
     const pct = Math.max(0, Math.min(1, (cx - rect.left) / rect.width));
-    return { time: pct * duration, x: cx - rect.left };
+    const time = actualVisibleStart + pct * visibleDuration;
+    return { time: Math.max(0, Math.min(duration, time)), x: cx - rect.left };
+  };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const rect = seekRef.current.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / rect.width;
+    const mouseTime = actualVisibleStart + mouseX * visibleDuration;
+    const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
+    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
+    setZoomLevel(newZoom);
+    setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
   };
 
   const handleSeekDown = (e) => {
@@ -1042,6 +1068,24 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
+    } else if (zoomLevel > 1) {
+      // Panning mode when zoomed
+      const startPanCenter = zoomCenter;
+      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
+      const rect = seekRef.current.getBoundingClientRect();
+      const onMove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
+        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        const deltaPx = cx - startPanX;
+        const deltaRatio = -deltaPx / rect.width / zoomLevel;
+        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      };
+      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
       // Outside range: normal seek
       manualSeekOutside.current = !inRange;
@@ -1162,11 +1206,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   if (!videoId) return null;
 
-  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const startPct = (startSec != null && duration > 0) ? (startSec / duration) * 100 : null;
-  const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
+  const vPct = duration > 0 ? toVisualPct(currentTime) : 0;
+  const vStartPct = (startSec != null && duration > 0) ? toVisualPct(startSec) : null;
+  const vEndPct = (endSec != null && duration > 0) ? toVisualPct(endSec) : null;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
+  const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
@@ -1184,32 +1229,38 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       // Current time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
     ),
+    // Zoom indicator
+    zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, padding: '2px 8px 0', background: T.surface } },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, '\u00D7' + zoomLevel.toFixed(1)),
+      React.createElement("button", { onClick: () => { setZoomLevel(1); setZoomCenter(0.5); }, style: { fontSize: 9, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', textDecoration: 'underline' } }, '\uB9AC\uC14B'),
+    ),
     // Seekbar
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, overflow: 'visible' },
+      onWheel: handleWheel,
+      style: { position: 'relative', height: 28, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: zoomLevel > 1 ? 0 : 14, overflow: 'hidden' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Selected range highlight
-      startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 10 : 12, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: rangeDragActive ? 8 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.5, cursor: rangeDragActive ? 'grabbing' : 'grab', pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 8px ' + accentC : 'none' } }),
+      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 10 : 12, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: rangeDragActive ? 8 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.5, cursor: rangeDragActive ? 'grabbing' : 'grab', pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 8px ' + accentC : 'none' } }),
       // Start marker (visible line + label + hit area)
-      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + startPct + '% - 1px)', pointerEvents: 'none' } },
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC2DC\uC791 ' + fmtMM(startSec))
+        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
       ),
-      startPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + startPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // End marker (visible line + label + hit area)
-      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + endPct + '% - 1px)', pointerEvents: 'none' } },
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vEndPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, '\uC885\uB8CC ' + fmtMM(endSec))
+        React.createElement("div", { style: { position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
       ),
-      endPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + endPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Playhead + time label
-      React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + pct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: (dragging || playing) ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
-      !dragging && playing && React.createElement("div", { style: { position: 'absolute', top: 24, left: pct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + vPct + '% - 5px)', width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', transition: (dragging || playing) ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 24, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
     ),
@@ -1287,6 +1338,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomCenter, setZoomCenter] = useState(0.5);
+  const pinchRef = useRef(null);
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -1404,14 +1458,55 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     manualSeekOutside.current = !inRange;
   };
 
+  // Zoom helpers
+  const mVisibleDuration = duration / zoomLevel;
+  const mVisibleStart = Math.max(0, zoomCenter * duration - mVisibleDuration / 2);
+  const mVisibleEnd = Math.min(duration, mVisibleStart + mVisibleDuration);
+  const mActualVisibleStart = mVisibleEnd - mVisibleDuration < 0 ? 0 : mVisibleStart;
+  const mActualVisibleEnd = mActualVisibleStart + mVisibleDuration;
+  const mToVisualPct = (sec) => {
+    const p = ((sec - mActualVisibleStart) / mVisibleDuration) * 100;
+    return Math.max(-5, Math.min(105, p));
+  };
+
   // Touch-friendly seekbar handlers
   const calcSeekTime = (clientX) => {
     const rect = seekRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-    return { time: pct * duration, x: clientX - rect.left };
+    const time = mActualVisibleStart + pct * mVisibleDuration;
+    return { time: Math.max(0, Math.min(duration, time)), x: clientX - rect.left };
+  };
+
+  const handlePinch = (e) => {
+    if (e.touches.length < 2) return;
+    e.preventDefault();
+    const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    if (!pinchRef.current) {
+      pinchRef.current = { startDist: d, startZoom: zoomLevel };
+      return;
+    }
+    const scale = d / pinchRef.current.startDist;
+    const newZoom = Math.max(1, Math.min(20, pinchRef.current.startZoom * scale));
+    if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(newZoom); }
+  };
+
+  const handlePinchEnd = () => { pinchRef.current = null; };
+
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const rect = seekRef.current.getBoundingClientRect();
+    const mouseX = (e.clientX - rect.left) / rect.width;
+    const mouseTime = mActualVisibleStart + mouseX * mVisibleDuration;
+    const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
+    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
+    setZoomLevel(newZoom);
+    setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
   };
 
   const handleSeekDown = (e) => {
+    // Check for pinch (2+ touches)
+    if (e.touches && e.touches.length >= 2) { handlePinch(e); return; }
     e.preventDefault();
     const isTouch = e.type === 'touchstart';
     const startClientX = isTouch ? e.touches[0].clientX : e.clientX;
@@ -1490,6 +1585,24 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       };
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    } else if (zoomLevel > 1) {
+      // Panning mode when zoomed
+      const startPanCenter = zoomCenter;
+      const startPanX = startClientX;
+      const rect = seekRef.current.getBoundingClientRect();
+      const onMove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
+        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
+        const deltaPx = cx - startPanX;
+        const deltaRatio = -deltaPx / rect.width / zoomLevel;
+        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      };
+      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
       // Outside range: normal seek
       manualSeekOutside.current = true;
@@ -1575,9 +1688,10 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   if (!videoId) return null;
 
-  const pct = duration > 0 ? (currentTime / duration) * 100 : 0;
-  const startPct = (startSec != null && duration > 0) ? (startSec / duration) * 100 : null;
-  const endPct = (endSec != null && duration > 0) ? (endSec / duration) * 100 : null;
+  const mvPct = duration > 0 ? mToVisualPct(currentTime) : 0;
+  const mvStartPct = (startSec != null && duration > 0) ? mToVisualPct(startSec) : null;
+  const mvEndPct = (endSec != null && duration > 0) ? mToVisualPct(endSec) : null;
+  const markersClose = mvStartPct != null && mvEndPct != null && seekRef.current && (mvEndPct - mvStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
@@ -1602,32 +1716,46 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Collapse button
       React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
     ),
+    // Zoom indicator (mobile)
+    zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, padding: '2px 10px 0', background: T.surface } },
+      React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, '\u00D7' + zoomLevel.toFixed(1)),
+      React.createElement("button", { onClick: () => { setZoomLevel(1); setZoomCenter(0.5); }, style: { fontSize: 9, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', textDecoration: 'underline' } }, '\uB9AC\uC14B'),
+    ),
     // Seekbar (touch-friendly, 44px hit area)
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown, onTouchStart: handleSeekDown,
-      style: { position: 'relative', height: 44, background: T.surface, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+      onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
+      onTouchEnd: handlePinchEnd,
+      onWheel: handleWheel,
+      style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Selected range
-      startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 17 : 20, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', height: rangeDragActive ? 10 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.6, pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 10px ' + accentC : 'none' } }),
+      mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 17 : 20, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: rangeDragActive ? 10 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.6, pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 10px ' + accentC : 'none' } }),
       // First-time range drag tooltip
-      showRangeTip && startPct != null && endPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: startPct + '%', width: Math.max(0, endPct - startPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
+      showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
         React.createElement("div", { style: { background: 'rgba(99,102,241,0.95)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', position: 'relative' } },
           '\uAE38\uAC8C \uB20C\uB7EC \uAD6C\uAC04\uC744 \uC774\uB3D9\uD558\uC138\uC694',
           React.createElement("div", { style: { position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(99,102,241,0.95)' } })
         )
       ),
-      // Start marker (visible line + hit area)
-      startPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + startPct + '% - 1px)', width: 3, height: 24, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      startPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + startPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
-      // End marker (visible line + hit area)
-      endPct != null && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + endPct + '% - 1px)', width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
-      endPct != null && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + endPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none' } }),
+      // Start marker (visible line + label + hit area)
+      mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvStartPct + '% - 1px)', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 3, height: 24, background: accentC, borderRadius: 1 } }),
+        React.createElement("div", { style: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
+      ),
+      mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // End marker (visible line + label + hit area)
+      mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvEndPct + '% - 1px)', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
+        React.createElement("div", { style: { position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
+      ),
+      mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Playhead + time label
-      React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + pct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
-      playing && pct > 3 && pct < 97 && React.createElement("div", { style: { position: 'absolute', top: 32, left: pct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + mvPct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
+      playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
     ),
     // Controls row
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
@@ -2729,7 +2857,7 @@ function getTrafficUi(queueStatus) {
     bg: 'rgba(34,197,94,0.12)',
     border: 'rgba(34,197,94,0.35)',
     etaLabel: '1분 이내',
-    message: '곧 시작돼요. 잠시만 기다려 주세요.',
+    message: '바로 시작합니다. 잠시만 기다려주세요.',
     wave: [0.2, 0.32, 0.28, 0.24, 0.3, 0.22, 0.35, 0.25, 0.3, 0.26],
     speed: '1.3s',
   };
@@ -2786,7 +2914,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
-        queueStatus && !hasStarted && (() => {
+        queueStatus && (() => {
           const traffic = getTrafficUi(queueStatus);
           return React.createElement("div", {
             style: {
