@@ -1229,18 +1229,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       // Current time badge
       ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
     ),
-    // Zoom indicator
-    zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, padding: '2px 8px 0', background: T.surface } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, '\u00D7' + zoomLevel.toFixed(1)),
-      React.createElement("button", { onClick: () => { setZoomLevel(1); setZoomCenter(0.5); }, style: { fontSize: 9, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', textDecoration: 'underline' } }, '\uB9AC\uC14B'),
-    ),
     // Seekbar
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
       onWheel: handleWheel,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: zoomLevel > 1 ? 0 : 14, overflow: 'hidden' },
+      style: { position: 'relative', height: 28, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 16, marginBottom: 20, overflow: 'visible' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1263,6 +1258,22 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 24, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
+    ),
+    // Zoom control bar (always visible)
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '4px 8px', background: T.surface } },
+      React.createElement("button", {
+        onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
+        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+      }, '\u2212'),
+      React.createElement("span", { style: { fontSize: 11, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 32, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
+      React.createElement("button", {
+        onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+      }, '+'),
+      zoomLevel > 1 && React.createElement("button", {
+        onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
+        style: { fontSize: 10, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' },
+      }, '\uB9AC\uC14B'),
     ),
     // Controls row: play + start/end capture+input
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
@@ -1716,11 +1727,6 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Collapse button
       React.createElement("button", { onClick: () => { if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} } setCollapsedAndNotify(true); }, style: { position: 'absolute', top: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: 'pointer' } }, '\u2715 \uB2EB\uAE30'),
     ),
-    // Zoom indicator (mobile)
-    zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, padding: '2px 10px 0', background: T.surface } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, '\u00D7' + zoomLevel.toFixed(1)),
-      React.createElement("button", { onClick: () => { setZoomLevel(1); setZoomCenter(0.5); }, style: { fontSize: 9, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '1px 4px', textDecoration: 'underline' } }, '\uB9AC\uC14B'),
-    ),
     // Seekbar (touch-friendly, 44px hit area)
     React.createElement("div", {
       ref: seekRef,
@@ -1728,7 +1734,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
       onTouchEnd: handlePinchEnd,
       onWheel: handleWheel,
-      style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none' },
+      style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
     },
       // Track bg
       React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1756,6 +1762,22 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Playhead + time label
       mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 14, left: 'calc(' + mvPct + '% - 6px)', width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', transition: playing ? 'none' : 'left 0.05s linear', pointerEvents: 'none' } }),
       playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+    ),
+    // Zoom control bar (always visible)
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 10px', background: T.surface } },
+      React.createElement("button", {
+        onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
+        style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+      }, '\u2212'),
+      React.createElement("span", { style: { fontSize: 12, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 36, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
+      React.createElement("button", {
+        onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+        style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+      }, '+'),
+      zoomLevel > 1 && React.createElement("button", {
+        onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
+        style: { fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' },
+      }, '\uB9AC\uC14B'),
     ),
     // Controls row
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 10px', background: T.surface, borderTop: '1px solid ' + T.border } },
