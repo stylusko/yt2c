@@ -1677,6 +1677,14 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     manualSeekOutside.current = !inRange;
   };
 
+  const handleRangeDragEnd = (startTime) => {
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(startTime, true);
+    setCurrent(startTime);
+    manualSeekOutside.current = false;
+    playerRef.current.playVideo();
+  };
+
   // Zoom helpers
   const mVisibleDuration = duration / zoomLevel;
   const mVisibleStart = Math.max(0, zoomCenter * duration - mVisibleDuration / 2);
