@@ -5412,10 +5412,19 @@ export default function App() {
   const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
     if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
+    if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
     const indices = selectedIndices || cards.map((_, i) => i);
+    const errors = [];
     for (const i of indices) {
-      if (!cards[i].start || !cards[i].end) { setAlertMsg(`\uCE74\uB4DC ${i + 1}\uC758 \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD558\uC138\uC694.`); return; }
+      const c = cards[i];
+      const cardUrl = c.url || url;
+      if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
+      if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
+      const ss = parseTime(c.start), es = parseTime(c.end);
+      if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
+      if (es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
     }
+    if (errors.length) { setAlertMsg(errors.join('\n')); return; }
     const targetCards = indices.map(i => cards[i]);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
     try {
