@@ -4,6 +4,21 @@ import { getVideoQueue } from '../../../lib/queue.js';
 
 const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
 
+function classifyError(err) {
+  const e = (err || '').toLowerCase();
+  if (e.includes('invalid time range') || e.includes('start') && e.includes('end'))
+    return { msg: '시작/종료 시간을 확인해주세요.', type: 'user' };
+  if (e.includes('yt-dlp') || e.includes('unable to download') || e.includes('video unavailable') || e.includes('urlopen'))
+    return { msg: '영상을 불러올 수 없어요. URL이 유효한지 확인해주세요.', type: 'user' };
+  if (e.includes('padded dimensions') || e.includes('filter') && e.includes('invalid argument'))
+    return { msg: '레이아웃 설정에 문제가 있어요. 비율이나 레이아웃을 변경해보세요.', type: 'bug' };
+  if (e.includes('timeout') || e.includes('etimedout') || e.includes('timed out'))
+    return { msg: '처리 시간이 초과됐어요. 구간을 짧게 줄여보세요.', type: 'user' };
+  if (e.includes('no space') || e.includes('enospc'))
+    return { msg: '서버 저장 공간이 부족해요.', type: 'bug' };
+  return { msg: '알 수 없는 오류가 발생했어요.', type: 'bug' };
+}
+
 /**
  * GET handler: Get job status or download output file
  */
@@ -82,7 +97,9 @@ async function handleGet(req, res) {
         }
 
         if (state === 'failed') {
-          result.error = job.failedReason || 'Unknown error';
+          const rawError = job.failedReason || 'Unknown error';
+          result.error = rawError;
+          result.userMessage = classifyError(rawError);
         }
 
         return result;

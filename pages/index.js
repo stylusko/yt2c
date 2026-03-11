@@ -5208,9 +5208,14 @@ export default function App() {
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
             clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
-            const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
+            const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
+            const failedLines = failedCards2.map(c => {
+              const um = c.userMessage;
+              return `\uCE74\uB4DC ${c.cardIdx + 1}: ${um ? um.msg : (c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958')}`;
+            });
+            const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
-            if (failedErrors.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
+            if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
             fetchQueueStatus();
           }
