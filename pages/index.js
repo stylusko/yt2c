@@ -5737,6 +5737,11 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }`)
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }
+@media (pointer: coarse) {
+  input[type=range] { height: 32px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+}`)
   );
 }
