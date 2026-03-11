@@ -54,6 +54,11 @@ async function handlePost(req, res) {
     for (let cardIdx = 0; cardIdx < cards.length; cardIdx++) {
       const { cardConfig, overlayData, backgroundData } = cards[cardIdx];
 
+      // Image-only cards always produce jpg, even if global outputFormat is 'video'
+      const cardFormat = backgroundData
+        ? 'jpg'
+        : (outputFormat === 'video' ? 'mp4' : 'jpg');
+
       const jobData = {
         jobId,
         cardIdx,
@@ -62,7 +67,7 @@ async function handlePost(req, res) {
         url: cardConfig?.url || url || '',
         overlayData: overlayData || '',
         backgroundData: backgroundData || '',
-        outputFormat: outputFormat === 'video' ? 'mp4' : 'jpg',
+        outputFormat: cardFormat,
         outputSize,
         baseUrl,
         projectShareUrl,

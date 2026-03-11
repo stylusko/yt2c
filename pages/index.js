@@ -3600,11 +3600,14 @@ function decodeProject(encoded) {
 /* ── Download All as ZIP ── */
 async function downloadAllAsZip(urls, outputFormat) {
   const zip = new JSZip();
-  const ext = outputFormat === 'video' ? 'mp4' : 'jpg';
+  const defaultExt = outputFormat === 'video' ? 'mp4' : 'jpg';
   for (let i = 0; i < urls.length; i++) {
     const res = await fetch(urls[i]);
     if (!res.ok) continue;
     const blob = await res.blob();
+    // Detect per-card extension from URL's ext parameter
+    const urlExt = new URL(urls[i], window.location.origin).searchParams.get('ext');
+    const ext = urlExt || defaultExt;
     zip.file(`card_${i + 1}.${ext}`, blob);
   }
   const content = await zip.generateAsync({ type: 'blob' });
