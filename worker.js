@@ -174,8 +174,9 @@ worker.on('failed', async (job, err) => {
     // Track stats
     await t.trackJob(jobId, 0, 'failed');
 
-    // Notify failure
-    await t.notifyJobFailed(jobId, cardIdx, err.message);
+    // Notify failure (include project URL for context)
+    const projectUrl = job.data.projectShareUrl || '';
+    await t.notifyJobFailed(jobId, cardIdx, err.message, { projectUrl });
 
     // Cookie/session expiry suspicion alert
     const suspicionReason = detectCookieExpirySuspicion(err.message);
