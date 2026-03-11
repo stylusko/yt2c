@@ -766,6 +766,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setZDragTime(snapEndSec - 30); if (onWarn) onWarn(); return; }
         onStartChange(fmtMM(t));
       } else {
         if (t <= snapStartSec) return;
@@ -1346,6 +1347,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       setDragTime(t); setDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
         onStartChange(fmtMM(t));
       } else {
         if (t <= snapStartSec) return;
@@ -1460,6 +1462,18 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const dangerC = '#ef4444';
   const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
+  const handleMinimapDown = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
+    setPos(e.clientX);
+    const onMove = (ev) => { setPos(ev.clientX); };
+    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+  };
+
+  const mmStartPct = duration > 0 ? (actualVisibleStart / duration * 100) : 0;
+  const mmWidthPct = duration > 0 ? (visibleDuration / duration * 100) : 100;
+
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
     React.createElement("div", { style: { position: 'relative', width: '100%', height: 200, background: '#000' } },
@@ -1507,6 +1521,18 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 24, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
+    ),
+    // Minimap (visible when zoomed)
+    zoomLevel > 1 && duration > 0 && React.createElement("div", {
+      onMouseDown: handleMinimapDown,
+      style: { position: 'relative', height: 14, margin: '2px 8px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 3, cursor: 'pointer', overflow: 'hidden' },
+    },
+      // Visible window indicator
+      React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mmStartPct + '%', width: Math.max(mmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 3, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
+      // Selected range
+      startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 4, height: 6, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
+      // Playhead
+      React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 10, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
     ),
     // Zoom control bar (always visible)
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '4px 8px', background: T.surface } },
@@ -1909,6 +1935,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       const t = Math.max(0, Math.min(duration, r.time));
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
         onStartChange(fmtMM(t));
       } else {
         if (t <= snapStartSec) return;
@@ -1990,6 +2017,20 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const mvEndPct = (endSec != null && duration > 0) ? mToVisualPct(endSec) : null;
   const markersClose = mvStartPct != null && mvEndPct != null && seekRef.current && (mvEndPct - mvStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
+  const handleMobileMinimapDown = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const isTouch = e.type === 'touchstart';
+    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
+    setPos(isTouch ? e.touches[0].clientX : e.clientX);
+    const onMove = (ev) => { if (ev.cancelable) ev.preventDefault(); const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX; setPos(cx); };
+    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
+    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+  };
+
+  const mMmStartPct = duration > 0 ? (mActualVisibleStart / duration * 100) : 0;
+  const mMmWidthPct = duration > 0 ? (mVisibleDuration / duration * 100) : 100;
+
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
     React.createElement("button", {
@@ -2052,6 +2093,18 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       (playing || mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Playhead drag tooltip
       mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(mDragTime)),
+    ),
+    // Minimap (visible when zoomed)
+    zoomLevel > 1 && duration > 0 && React.createElement("div", {
+      onMouseDown: handleMobileMinimapDown, onTouchStart: handleMobileMinimapDown,
+      style: { position: 'relative', height: 16, margin: '2px 10px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 4, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
+    },
+      // Visible window indicator
+      React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 4, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
+      // Selected range
+      startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 5, height: 6, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
+      // Playhead
+      React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 12, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
     ),
     // Zoom control bar (always visible)
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 10px', background: T.surface } },
