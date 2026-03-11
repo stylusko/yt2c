@@ -6,15 +6,15 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
   '\uC0DD\uC131 \uC2E4\uD328 \uC2DC \uC6D0\uC778 \uC548\uB0B4 + \uAD00\uB9AC\uC790 \uC790\uB3D9 \uB9AC\uD3EC\uD2B8',
   '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
-  '\uB370\uC2A4\uD06C\uD1B1 \uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD\uAE30 \uB4DC\uB86D\uB2E4\uC6B4 \uBC29\uC2DD\uC73C\uB85C \uAC1C\uC120',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
 ];
@@ -124,7 +124,7 @@ const DEFAULT_CARD = () => ({
   titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
-  captureTime: "", videoX: 50, videoY: 50, videoScale: 110, videoBrightness: 0,
+  captureTime: "", videoX: 50, videoY: 50, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
@@ -2134,7 +2134,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
   if (!videoId || !hasRange) return null;
 
-  const vsc = (videoScale || 110) / 100;
+  const vsc = (videoScale ?? 100) / 100;
 
   // Crop-offset positioning (matches backend FFmpeg crop logic)
   const totalScale = coverScale * vsc;
@@ -2172,7 +2172,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
   const sc = previewW / 1080;
-  const vScale = (card.videoScale || 110) / 100;
+  const vScale = (card.videoScale ?? 100) / 100;
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const [thumbSrc, setThumbSrc] = useState(null);
@@ -2233,10 +2233,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
-  const baseImage = fillSource === 'image'
-    ? (card.uploadedImage || globalBgImage || thumbSrc)
-    : (thumbSrc || globalBgImage);
-  const isBaseThumb = baseImage === thumbSrc && fillSource === 'video';
+  const baseImage = card.uploadedImage
+    ? card.uploadedImage
+    : fillSource === 'image'
+      ? (globalBgImage || thumbSrc)
+      : (thumbSrc || globalBgImage);
+  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
   const overlays = card.overlays || [];
 
   const snapPx = Math.round(8 * sc);
@@ -2273,10 +2275,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbMaxOffY = Math.max(thumbScaledH - previewH, 0);
   const thumbOffX = thumbMaxOffX * (card.videoX ?? 50) / 100;
   const thumbOffY = thumbMaxOffY * (card.videoY ?? 50) / 100;
+  // Uploaded image: apply position/zoom/brightness via CSS transform
+  const imgPosX = 50 - (card.videoX ?? 50); // invert: videoX=0 means show left edge → translate right
+  const imgPosY = 50 - (card.videoY ?? 50);
+  const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
-      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter } })
+      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
@@ -2529,13 +2535,23 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       style: {
         position: 'absolute', zIndex: 7, top: '50%', left: '50%', width: previewW, height: 'auto',
         transform: `translate(-50%, -50%) translate(${ovX}px, ${ovY}px) scale(${ovScale})`,
-        pointerEvents: 'none', boxSizing: 'border-box',
-      }
+        pointerEvents: 'auto', boxSizing: 'border-box', cursor: 'move',
+      },
+      onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+      onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+      onDoubleClick: (e) => { e.stopPropagation(); const ovs = [...(card.overlays || [])]; ovs[oi] = { ...ovs[oi], x: 50, y: 50 }; onCardUpdate({ overlays: ovs }); },
     },
       // Invisible reference image for sizing
-      React.createElement("img", { src: ov.image, alt: "", style: { width: '100%', height: 'auto', visibility: 'hidden', display: 'block' } }),
+      React.createElement("img", { src: ov.image, alt: "", draggable: false, style: { width: '100%', height: 'auto', visibility: 'hidden', display: 'block' } }),
       // Dashed border overlay
       React.createElement("div", { style: { position: 'absolute', inset: 0, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' } }),
+      // Move handle (top-left)
+      React.createElement("div", {
+        style: { ...handleStyle, position: 'absolute', top: -handleSize * counterScale / 2, left: -handleSize * counterScale / 2, cursor: 'move', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
+        onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+        onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+        onDoubleClick: (e) => { e.stopPropagation(); const ovs = [...(card.overlays || [])]; ovs[oi] = { ...ovs[oi], x: 50, y: 50 }; onCardUpdate({ overlays: ovs }); },
+      }, "\u2725"),
       // Move handle (top-right)
       React.createElement("div", {
         style: { ...handleStyle, position: 'absolute', top: -handleSize * counterScale / 2, right: -handleSize * counterScale / 2, cursor: 'move', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
@@ -2543,6 +2559,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
         onDoubleClick: (e) => { e.stopPropagation(); const ovs = [...(card.overlays || [])]; ovs[oi] = { ...ovs[oi], x: 50, y: 50 }; onCardUpdate({ overlays: ovs }); },
       }, "\u2725"),
+      // Resize handle (bottom-left)
+      React.createElement("div", {
+        style: { ...handleStyle, position: 'absolute', bottom: -handleSize * counterScale / 2, left: -handleSize * counterScale / 2, cursor: 'nesw-resize', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
+        onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'resize', e, { origScale: ov.scale ?? 100 }),
+        onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'resize', e, { origScale: ov.scale ?? 100 }),
+      }, "\u2922"),
       // Resize handle (bottom-right)
       React.createElement("div", {
         style: { ...handleStyle, position: 'absolute', bottom: -handleSize * counterScale / 2, right: -handleSize * counterScale / 2, cursor: 'nwse-resize', pointerEvents: 'auto', width: handleSize * counterScale, height: handleSize * counterScale, fontSize: 10 * counterScale },
@@ -2556,7 +2578,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoAreaH = previewH - textH;
 
   // Split mode: constrain video to video area
-  if (videoFill === "split" && fillSource === 'video' && card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none") {
+  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none") {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
@@ -2577,7 +2599,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
+    videoPreviewOn && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -2733,17 +2755,24 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
-              React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-              React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+              card.uploadedImage
+                ? React.createElement(React.Fragment, null,
+                    React.createElement("input", { type: "text", value: card.url || globalUrl, disabled: true, style: { ...inputBase, opacity: 0.4, cursor: 'not-allowed' } }),
+                    React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
+                  )
+                : React.createElement(React.Fragment, null,
+                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+                  ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
             React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 50, videoY: 50, videoScale: 110, videoBrightness: 0 }) }),
+              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 50, videoY: 50, videoScale: 100, videoBrightness: 0 }) }),
               React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
-              React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
               React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
           ),
@@ -4366,6 +4395,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     if (val === 'textbox') setActiveTab('text');
     else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
   };
+  // Dismiss overlay/textbox selection when clicking outside preview
+  const mobilePreviewRef = useRef(null);
+  useEffect(() => {
+    if (!selectedHandle) return;
+    const handler = (e) => {
+      if (mobilePreviewRef.current && !mobilePreviewRef.current.contains(e.target)) setSelectedHandle(null);
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [selectedHandle]);
 
   const totalSlides = cards.length + 1; // +1 for add card
   const card = cards[activeIndex];
@@ -4422,40 +4461,47 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
-      React.createElement("input", { type: "text", value: card.url, placeholder: "개별 URL (비워두면 공통 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-      // MobileClipSelector: visual clip picker
-      React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
-      // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
-      !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
-          var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
-          if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
-          else update("start", e.target.value);
-        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-        React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
-          var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
-          if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
-          else update("end", e.target.value);
-        }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-      ),
-      !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-          React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
-          React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
-        ),
-        React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-          React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-        ),
-      ) : null; })(),
-      !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
-        '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
-      ),
+      card.uploadedImage
+        ? React.createElement(React.Fragment, null,
+            React.createElement("input", { type: "text", value: card.url || globalUrl, disabled: true, style: { ...inputBase, marginBottom: 4, opacity: 0.4, cursor: 'not-allowed' } }),
+            React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
+          )
+        : React.createElement(React.Fragment, null,
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
+            // MobileClipSelector: visual clip picker
+            React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
+            // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
+            !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
+              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
+                var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
+                if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
+                else update("start", e.target.value);
+              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
+                var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
+                if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
+                else update("end", e.target.value);
+              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
+            ),
+            !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
+                React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
+                React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
+              ),
+              React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
+                React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
+              ),
+            ) : null; })(),
+            !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
+              '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
+            ),
+          ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
-    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 50, videoY: 50, videoScale: 110, videoBrightness: 0 }) }),
+    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 50, videoY: 50, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
-    React.createElement(SliderRow, { label: "확대", value: card.videoScale || 110, min: 100, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
 
@@ -4713,7 +4759,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Sticky preview — hidden if hidePreview
-    !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
+    !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
       React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
     ),
 
@@ -4753,6 +4799,16 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     if (val === 'textbox') setActiveTab('text');
     else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
   };
+  // Dismiss overlay/textbox selection when clicking outside preview
+  const desktopPreviewRef = useRef(null);
+  useEffect(() => {
+    if (!selectedHandle) return;
+    const handler = (e) => {
+      if (desktopPreviewRef.current && !desktopPreviewRef.current.contains(e.target)) setSelectedHandle(null);
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [selectedHandle]);
 
   useEffect(() => {
     if (prevIdxRef.current !== activeIndex) {
@@ -4805,14 +4861,21 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
-      React.createElement("input", { type: "text", value: card.url, placeholder: "\uac1c\ubcc4 URL (\ube44\uc6cc\ub450\uba74 \uacf5\ud1b5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-      React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); } }),
+      card.uploadedImage
+        ? React.createElement(React.Fragment, null,
+            React.createElement("input", { type: "text", value: card.url || globalUrl, disabled: true, style: { ...inputBase, opacity: 0.4, cursor: 'not-allowed' } }),
+            React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
+          )
+        : React.createElement(React.Fragment, null,
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+            React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); } }),
+          ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 100, step: 1, onChange: (v) => update("videoX", v), defaultValue: 50 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 100, step: 1, onChange: (v) => update("videoY", v), defaultValue: 50 }),
-      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale || 110, min: 100, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 110 }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
       React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
   );
@@ -5015,7 +5078,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, `${activeIndex + 1}/${cards.length}`),
       ),
       // Card preview area (reduced padding)
-      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
+      React.createElement("div", { ref: desktopPreviewRef, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
         React.createElement("div", {
           key: 'card-' + activeIndex,
           style: {
@@ -5383,7 +5446,7 @@ export default function App() {
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
       body: c.body, body_size: c.bodySize, body_font: c.bodyFont, body_color: c.bodyColor,
       text_bg_color: hexToRgb(c.bgColor), text_bg_opacity: c.useBg !== false ? c.bgOpacity : 0,
-      video_position: [c.videoX, c.videoY], video_scale: c.videoScale || 110, video_brightness: c.videoBrightness || 0,
+      video_position: [c.videoX, c.videoY], video_scale: c.videoScale ?? 100, video_brightness: c.videoBrightness || 0,
       output_size: outputSize,
       aspect_ratio: aspectRatio,
       fill_source: c.fillSource || 'video',
@@ -5411,18 +5474,39 @@ export default function App() {
 
   const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
-    if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
-    if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
     const indices = selectedIndices || cards.map((_, i) => i);
+
+    // Check if all selected cards use image backgrounds (uploadedImage overrides fillSource)
+    const allImageBg = indices.every(i => cards[i].uploadedImage || (cards[i].fillSource || 'video') === 'image');
+
+    // URL validation: only required if at least one card needs video
+    if (!allImageBg) {
+      if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
+      if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
+    }
+
     const errors = [];
     for (const i of indices) {
       const c = cards[i];
-      const cardUrl = c.url || url;
-      if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
-      if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
-      const ss = parseTime(c.start), es = parseTime(c.end);
-      if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
-      if (es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+      const isImageCard = !!c.uploadedImage || (c.fillSource || 'video') === 'image';
+
+      if (isImageCard) {
+        // Image card: check uploaded image exists
+        if (!c.uploadedImage && !globalBgImage) { errors.push(`\uCE74\uB4DC ${i + 1}: \uBC30\uACBD \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC8FC\uC138\uC694.`); continue; }
+        // For MP4 output: only check duration (end > start) if times are provided
+        if (outputFormat === 'video' && c.start && c.end) {
+          const ss = parseTime(c.start), es = parseTime(c.end);
+          if (ss != null && es != null && es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+        }
+      } else {
+        // Video card: existing validation
+        const cardUrl = c.url || url;
+        if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
+        if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
+        const ss = parseTime(c.start), es = parseTime(c.end);
+        if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
+        if (es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+      }
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
     const targetCards = indices.map(i => cards[i]);
@@ -5444,7 +5528,15 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({
+          cardConfig: buildConfig(card),
+          overlayData: overlays[j],
+          backgroundData: card.uploadedImage
+            ? card.uploadedImage
+            : (card.fillSource || 'video') === 'image'
+              ? (globalBgImage || null)
+              : null,
+        })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();

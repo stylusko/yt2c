@@ -37,6 +37,19 @@ function saveOverlay(name, base64Data) {
   return filePath;
 }
 
+function saveBackground(name, base64Data) {
+  const dir = path.join(STORAGE_DIR, 'backgrounds');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  // Detect format from data URI prefix
+  const isJpeg = base64Data.startsWith('data:image/jpeg') || base64Data.startsWith('data:image/jpg');
+  const isWebP = base64Data.startsWith('data:image/webp');
+  const ext = isWebP ? 'webp' : isJpeg ? 'jpg' : 'png';
+  const filePath = path.join(dir, `${name}.${ext}`);
+  const data = base64Data.replace(/^data:image\/[a-z+]+;base64,/, '');
+  fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+  return filePath;
+}
+
 // Dynamically import ESM modules
 async function loadProcessCard() {
   const mod = await import('./lib/worker.js');
@@ -62,7 +75,7 @@ function detectCookieExpirySuspicion(errorMessage) {
 
 // Create worker
 const worker = new Worker('video-generation', async (job) => {
-  const { jobId, cardIdx, cardConfig, url, overlayData, outputFormat, outputSize } = job.data;
+  const { jobId, cardIdx, cardConfig, url, overlayData, backgroundData, outputFormat, outputSize } = job.data;
   const processCard = await loadProcessCard();
 
   console.log(`Processing job ${jobId}, card ${cardIdx}`);
@@ -73,9 +86,16 @@ const worker = new Worker('video-generation', async (job) => {
     console.log(`[${jobId}] Saving overlay for card ${cardIdx}`);
     const overlayPath = saveOverlay(`${jobId}_${cardIdx}`, overlayData);
 
+    // Save background image if provided
+    let backgroundPath = null;
+    if (backgroundData) {
+      console.log(`[${jobId}] Saving background image for card ${cardIdx}`);
+      backgroundPath = saveBackground(`${jobId}_${cardIdx}`, backgroundData);
+    }
+
     // Download segment (30%)
     await job.updateProgress(30);
-    console.log(`[${jobId}] Starting download for card ${cardIdx}`);
+    console.log(`[${jobId}] Starting ${backgroundPath ? 'image background' : 'download'} for card ${cardIdx}`);
 
     // Process card (80% during encoding)
     let progress = 30;
@@ -91,6 +111,7 @@ const worker = new Worker('video-generation', async (job) => {
         url,
         cardIdx,
         overlayPath,
+        backgroundPath,
         outputFormat: outputFormat || 'mp4',
         outputSize: outputSize || 1080,
       });

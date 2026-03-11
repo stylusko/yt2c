@@ -24,16 +24,21 @@ async function handlePost(req, res) {
   try {
     const { url, cards, outputFormat = 'video', outputSize = 1080, projectShareUrl = '' } = req.body;
 
-    // Validate input
-    if (!url || typeof url !== 'string') {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-    if (!/^https?:\/\/.+/.test(url)) {
-      return res.status(400).json({ error: 'Invalid URL format' });
-    }
-
     if (!Array.isArray(cards) || cards.length === 0) {
       return res.status(400).json({ error: 'Cards array is required' });
+    }
+
+    // Check if any card needs a YouTube video (no backgroundData)
+    const hasVideoCard = cards.some(c => !c.backgroundData);
+
+    // Validate URL only when at least one card needs video
+    if (hasVideoCard) {
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'URL is required' });
+      }
+      if (!/^https?:\/\/.+/.test(url)) {
+        return res.status(400).json({ error: 'Invalid URL format' });
+      }
     }
 
     // Ensure storage directory exists
@@ -47,15 +52,16 @@ async function handlePost(req, res) {
     // Create one job per card
     const jobIds = [];
     for (let cardIdx = 0; cardIdx < cards.length; cardIdx++) {
-      const { cardConfig, overlayData } = cards[cardIdx];
+      const { cardConfig, overlayData, backgroundData } = cards[cardIdx];
 
       const jobData = {
         jobId,
         cardIdx,
         cardCount: cards.length,
         cardConfig: cardConfig || {},
-        url: cardConfig?.url || url,
+        url: cardConfig?.url || url || '',
         overlayData: overlayData || '',
+        backgroundData: backgroundData || '',
         outputFormat: outputFormat === 'video' ? 'mp4' : 'jpg',
         outputSize,
         baseUrl,
