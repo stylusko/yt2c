@@ -5468,12 +5468,9 @@ export default function App() {
           },
             mob
               ? React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 15, fontWeight: 400, letterSpacing: '0.04em', color: T.text, lineHeight: 1, whiteSpace: 'nowrap' } }, "YOUMECA")
-              : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 1 } },
-                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                    React.createElement("img", { src: "/icon-round.png", style: { width: 24, height: 24, borderRadius: 6, flexShrink: 0 } }),
-                    React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 20, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
-                  ),
-                  React.createElement("span", { style: { fontSize: 10, color: T.textMuted, paddingLeft: 32 } }, VERSION),
+              : React.createElement(React.Fragment, null,
+                  React.createElement("img", { src: "/icon-round.png", style: { width: 28, height: 28, borderRadius: 7, flexShrink: 0 } }),
+                  React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 22, fontWeight: 400, letterSpacing: '0.05em', color: T.text, lineHeight: 1 } }, "YOUMECA"),
                 ),
           ),
           showInfo && React.createElement(InfoPanel, { onClose: () => setShowInfo(false), mob }),
