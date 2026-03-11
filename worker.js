@@ -110,13 +110,17 @@ const worker = new Worker('video-generation', async (job) => {
 }, { connection, concurrency: workerConcurrency });
 
 // Check if all jobs in a group are done and send group notification
-async function checkGroupComplete(jobId) {
+async function checkGroupComplete(jobId, cardCount) {
   try {
     const t = await getTelegram();
-    // Fetch up to 500 jobs per state to avoid missing group members
-    const allJobs = await queue.getJobs(['completed', 'active', 'waiting', 'failed'], 0, 500);
-    const groupJobs = allJobs.filter(j => j.data?.jobId === jobId);
-    const allDone = groupJobs.length > 0 && groupJobs.every(j => j.finishedOn || j.failedReason);
+    // Fetch by specific job ID pattern (deterministic, no scanning)
+    const groupJobs = [];
+    for (let i = 0; i < cardCount; i++) {
+      const j = await queue.getJob(`${jobId}-${i}`);
+      if (j) groupJobs.push(j);
+    }
+    const allDone = groupJobs.length === cardCount &&
+      groupJobs.every(j => j.finishedOn || j.failedReason);
 
     if (!allDone) return;
 
@@ -171,7 +175,7 @@ worker.on('completed', async (job) => {
       : 0;
     await t.trackJob(jobId, 1, 'completed', duration);
 
-    await checkGroupComplete(jobId);
+    await checkGroupComplete(jobId, job.data.cardCount || 1);
   } catch (err) {
     console.error('[telegram] completed hook error:', err.message);
   }
@@ -197,7 +201,7 @@ worker.on('failed', async (job, err) => {
     }
 
     // Check group completion (last job might be a failure)
-    await checkGroupComplete(jobId);
+    await checkGroupComplete(jobId, job.data.cardCount || 1);
   } catch (e) {
     console.error('[telegram] failed hook error:', e.message);
   }
