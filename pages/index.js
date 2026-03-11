@@ -5,18 +5,18 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0310';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_DATE = '2026.0311';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
+  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
+  '\uB370\uC2A4\uD06C\uD1B1 \uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD\uAE30 \uB4DC\uB86D\uB2E4\uC6B4 \uBC29\uC2DD\uC73C\uB85C \uAC1C\uC120',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
   '\uC2DC\uD06C\uBC14 \uD540\uCE58/\uD720 \uC90C \uC9C0\uC6D0',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
-  '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
-  '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
-  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -4934,8 +4934,18 @@ export default function App() {
     const path = window.location.pathname;
     if (path === '/share') {
       const params = new URLSearchParams(window.location.search);
+      const shareId = params.get('id');
       const d = params.get('d');
-      if (d) {
+      if (shareId) {
+        fetch(`/api/share/${shareId}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(({ data }) => {
+            const decoded = decodeProject(data);
+            if (decoded) setImportProject(decoded);
+            else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
+          })
+          .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'));
+      } else if (d) {
         try {
           const decoded = decodeProject(d);
           if (decoded) { setImportProject(decoded); }
@@ -5061,9 +5071,25 @@ export default function App() {
     setGenProgress(''); setResults([]);
   };
 
-  const shareProject = () => {
+  const shareProject = async () => {
     if (!activeProject) return;
     const encoded = encodeProject(activeProject);
+    // Try Supabase short URL first
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: encoded }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        const url = `${window.location.origin}/share?id=${id}`;
+        if (navigator.clipboard) navigator.clipboard.writeText(url);
+        setShareUrl(url);
+        return;
+      }
+    } catch (e) { /* fallback to d= method */ }
+    // Fallback: embed data in URL directly
     const url = `${window.location.origin}/share?d=${encoded}`;
     if (url.length > 8000) {
       setAlertMsg('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
@@ -5141,7 +5167,15 @@ export default function App() {
         overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
-      const projectShareUrl = activeProject ? `${window.location.origin}/share?d=${encodeProject(activeProject)}` : '';
+      let projectShareUrl = '';
+      if (activeProject) {
+        const encoded = encodeProject(activeProject);
+        try {
+          const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/share?id=${id}`; }
+        } catch (_) {}
+        if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+      }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
