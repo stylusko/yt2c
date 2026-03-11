@@ -6,15 +6,15 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
   '\uC0DD\uC131 \uC2E4\uD328 \uC2DC \uC6D0\uC778 \uC548\uB0B4 + \uAD00\uB9AC\uC790 \uC790\uB3D9 \uB9AC\uD3EC\uD2B8',
   '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
-  '\uB370\uC2A4\uD06C\uD1B1 \uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD\uAE30 \uB4DC\uB86D\uB2E4\uC6B4 \uBC29\uC2DD\uC73C\uB85C \uAC1C\uC120',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
 ];
@@ -5411,18 +5411,39 @@ export default function App() {
 
   const handleGenerate = async (selectedIndices) => {
     const url = globalUrl || cards[0]?.url || "";
-    if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
-    if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
     const indices = selectedIndices || cards.map((_, i) => i);
+
+    // Check if all selected cards use image backgrounds
+    const allImageBg = indices.every(i => (cards[i].fillSource || 'video') === 'image');
+
+    // URL validation: only required if at least one card needs video
+    if (!allImageBg) {
+      if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
+      if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
+    }
+
     const errors = [];
     for (const i of indices) {
       const c = cards[i];
-      const cardUrl = c.url || url;
-      if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
-      if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
-      const ss = parseTime(c.start), es = parseTime(c.end);
-      if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
-      if (es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+      const isImageCard = (c.fillSource || 'video') === 'image';
+
+      if (isImageCard) {
+        // Image card: check uploaded image exists
+        if (!c.uploadedImage && !globalBgImage) { errors.push(`\uCE74\uB4DC ${i + 1}: \uBC30\uACBD \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC8FC\uC138\uC694.`); continue; }
+        // For MP4 output: only check duration (end > start) if times are provided
+        if (outputFormat === 'video' && c.start && c.end) {
+          const ss = parseTime(c.start), es = parseTime(c.end);
+          if (ss != null && es != null && es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+        }
+      } else {
+        // Video card: existing validation
+        const cardUrl = c.url || url;
+        if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
+        if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
+        const ss = parseTime(c.start), es = parseTime(c.end);
+        if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
+        if (es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
+      }
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
     const targetCards = indices.map(i => cards[i]);
@@ -5444,7 +5465,13 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({
+          cardConfig: buildConfig(card),
+          overlayData: overlays[j],
+          backgroundData: (card.fillSource || 'video') === 'image'
+            ? (card.uploadedImage || globalBgImage || null)
+            : null,
+        })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
