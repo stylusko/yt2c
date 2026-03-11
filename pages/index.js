@@ -2579,7 +2579,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
+    videoPreviewOn && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
