@@ -5171,7 +5171,21 @@ export default function App() {
       setPendingProjectId(first.id);
     }
     const path = window.location.pathname;
-    if (path === '/share') {
+    const shortMatch = path.match(/^\/s\/([^/]+)$/);
+    if (shortMatch) {
+      const shareId = shortMatch[1];
+      setImportLoading(true);
+      fetch(`/api/share/${shareId}`)
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(({ data }) => {
+          const decoded = decodeProject(data);
+          if (decoded) setImportProject(decoded);
+          else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
+        })
+        .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
+        .finally(() => setImportLoading(false));
+      setEditorMode('editor');
+    } else if (path === '/share') {
       const params = new URLSearchParams(window.location.search);
       const shareId = params.get('id');
       const d = params.get('d');
@@ -5325,7 +5339,7 @@ export default function App() {
       });
       if (res.ok) {
         const { id } = await res.json();
-        const url = `${window.location.origin}/share?id=${id}`;
+        const url = `${window.location.origin}/s/${id}`;
         if (navigator.clipboard) navigator.clipboard.writeText(url);
         setShareLoading(false);
         setShareUrl(url);
@@ -5416,7 +5430,7 @@ export default function App() {
         const encoded = encodeProject(activeProject);
         try {
           const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
-          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/share?id=${id}`; }
+          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
         } catch (_) {}
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }

@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid data' });
   }
 
-  const id = crypto.randomBytes(4).toString('hex');
+  const id = crypto.randomBytes(4).toString('base64url');
 
   const { error } = await supabase
     .from('shared_projects')
