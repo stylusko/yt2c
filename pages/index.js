@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -674,8 +674,45 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const [rangeDragActive, setRangeDragActive] = useState(false);
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
+  const animFrameRef = useRef(null);
+  const [, setForceRender] = useState(0);
+  const lastRangePosRef = useRef(null);
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
+
+  const cancelZoomAnimation = () => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+      frozenRange.current = null;
+    }
+  };
+
+  const animateZoomTransition = (from, to, durationMs) => {
+    cancelZoomAnimation();
+    const startTime = performance.now();
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / durationMs);
+      // cubic ease-out: 1 - (1-t)^3
+      const eased = 1 - Math.pow(1 - progress, 3);
+      frozenRange.current = {
+        zStart: from.zStart + (to.zStart - from.zStart) * eased,
+        zEnd: from.zEnd + (to.zEnd - from.zEnd) * eased,
+      };
+      setForceRender(n => n + 1);
+      if (progress < 1) {
+        animFrameRef.current = requestAnimationFrame(step);
+      } else {
+        animFrameRef.current = null;
+        frozenRange.current = null;
+        setForceRender(n => n + 1);
+      }
+    };
+    animFrameRef.current = requestAnimationFrame(step);
+  };
+
+  useEffect(() => () => cancelZoomAnimation(), []);
 
   // Zoom range: freeze during start-marker drag to prevent jumping
   const liveZStart = Math.max(0, startSec - 5);
@@ -699,6 +736,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const startMarkerDrag = (type, e) => {
     e.preventDefault();
     e.stopPropagation();
+    cancelZoomAnimation();
     const el = e.currentTarget;
     el.setPointerCapture(e.pointerId);
     frozenRange.current = { zStart, zEnd };
@@ -764,7 +802,9 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 
       const startRangeDrag = () => {
         isDragging = true;
+        cancelZoomAnimation();
         frozenRange.current = { zStart, zEnd };
+        lastRangePosRef.current = null;
         setRangeDragActive(true);
         setZDrag(true); setZDragType('range');
       };
@@ -777,6 +817,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
         // Clamp
         if (newStart < 0) { newStart = 0; newEnd = clipDur; }
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
+        lastRangePosRef.current = { start: newStart, end: newEnd };
         setZDragTime(newStart); setZDragX(r.x);
         if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
         else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
@@ -818,7 +859,16 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
             // Short tap → seek
             onSeek(time);
           }
-          frozenRange.current = null;
+          if (isDragging && lastRangePosRef.current) {
+            const finalStart = lastRangePosRef.current.start;
+            const fromRange = { zStart: frozenRange.current.zStart, zEnd: frozenRange.current.zEnd };
+            const targetZStart = Math.max(0, finalStart - 5);
+            const targetZEnd = Math.min(duration, targetZStart + 40);
+            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300);
+          } else {
+            frozenRange.current = null;
+          }
+          lastRangePosRef.current = null;
           setRangeDragActive(false);
           setZDrag(false); setZDragTime(null); setZDragType(null);
           el.removeEventListener('pointermove', onMove);
@@ -842,7 +892,16 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
             // Click → seek
             onSeek(time);
           }
-          frozenRange.current = null;
+          if (isDragging && lastRangePosRef.current) {
+            const finalStart = lastRangePosRef.current.start;
+            const fromRange = { zStart: frozenRange.current.zStart, zEnd: frozenRange.current.zEnd };
+            const targetZStart = Math.max(0, finalStart - 5);
+            const targetZEnd = Math.min(duration, targetZStart + 40);
+            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300);
+          } else {
+            frozenRange.current = null;
+          }
+          lastRangePosRef.current = null;
           setRangeDragActive(false);
           setZDrag(false); setZDragTime(null); setZDragType(null);
           el.removeEventListener('pointermove', onMove);
@@ -900,8 +959,12 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
       !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
-      // Drag tooltip
-      zDrag && zDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : zDragType === 'range' ? '\uAD6C\uAC04 \uC774\uB3D9 ' : '') + fmtMM(zDragTime)),
+      // Drag tooltip — range drag shows dual labels on handles, others show single tooltip
+      zDrag && zDragTime != null && zDragType === 'range' && lastRangePosRef.current && [
+        React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.start)),
+        React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.end)),
+      ],
+      zDrag && zDragTime != null && zDragType !== 'range' && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
     ),
   );
 }
