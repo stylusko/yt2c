@@ -5,18 +5,18 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0310';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_DATE = '2026.0311';
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC0DD\uC131 \uC2E4\uD328 \uC2DC \uC6D0\uC778 \uC548\uB0B4 + \uAD00\uB9AC\uC790 \uC790\uB3D9 \uB9AC\uD3EC\uD2B8',
+  '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
+  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
   '\uB370\uC2A4\uD06C\uD1B1 \uD504\uB85C\uC81D\uD2B8 \uC120\uD0DD\uAE30 \uB4DC\uB86D\uB2E4\uC6B4 \uBC29\uC2DD\uC73C\uB85C \uAC1C\uC120',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
-  '\uC2DC\uD06C\uBC14 \uD540\uCE58/\uD720 \uC90C \uC9C0\uC6D0',
   '\uCE74\uB4DC \uC120\uD0DD \uC0DD\uC131 (\uD2B9\uC815 \uCE74\uB4DC\uB9CC \uACE8\uB77C\uC11C \uC0DD\uC131)',
-  '\uD074\uB9BD \uC2DC\uD06C\uBC14 \uD130\uCE58 \uB4DC\uB798\uADF8 + \uAD6C\uAC04\uAE38\uC774 \uD1B5\uD569',
-  '\uC0DD\uC131 \uC9C4\uD589 \uBAA8\uB2EC + \uC911\uB2E8 \uAE30\uB2A5',
 ];
 
 const LAYOUT_OPTIONS = [
@@ -2013,15 +2013,24 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
   const vsc = (videoScale || 110) / 100;
 
+  // Crop-offset positioning (matches backend FFmpeg crop logic)
+  const totalScale = coverScale * vsc;
+  const scaledW = iW * totalScale;
+  const scaledH = iH * totalScale;
+  const maxOffX = Math.max(scaledW - width, 0);
+  const maxOffY = Math.max(scaledH - height, 0);
+  const offX = maxOffX * (videoX ?? 50) / 100;
+  const offY = maxOffY * (videoY ?? 50) / 100;
+
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
-    // Iframe: centered & scaled to cover, respecting user's position/scale
+    // Iframe: scaled to cover, positioned via crop-offset
     React.createElement("div", {
       style: {
-        position: 'absolute', top: '50%', left: '50%', width: iW, height: iH,
-        transform: 'translate(-50%, -50%) scale(' + (coverScale * vsc) + ')',
-        transformOrigin: (videoX ?? 50) + '% ' + (videoY ?? 50) + '%',
+        position: 'absolute', top: 0, left: 0, width: iW, height: iH,
+        transform: 'scale(' + totalScale + ') translate(' + (-offX / totalScale) + 'px, ' + (-offY / totalScale) + 'px)',
+        transformOrigin: '0 0',
       },
     },
       React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
@@ -2130,8 +2139,22 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   ) : null;
 
   const brightFilter = (card.videoBrightness) ? `brightness(${1 + (card.videoBrightness || 0) / 100})` : undefined;
+  // BgImage: crop-offset positioning for thumbnails (matches backend FFmpeg crop logic)
+  // YouTube thumbnails are 16:9 (1920x1080)
+  const thumbW = 1920, thumbH = 1080;
+  const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
+  const thumbTotalScale = thumbCoverScale * vScale;
+  const thumbScaledW = thumbW * thumbTotalScale;
+  const thumbScaledH = thumbH * thumbTotalScale;
+  const thumbMaxOffX = Math.max(thumbScaledW - previewW, 0);
+  const thumbMaxOffY = Math.max(thumbScaledH - previewH, 0);
+  const thumbOffX = thumbMaxOffX * (card.videoX ?? 50) / 100;
+  const thumbOffY = thumbMaxOffY * (card.videoY ?? 50) / 100;
   const BgImage = () => baseImage
-    ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center', filter: brightFilter } })
+    ? (isBaseThumb
+      ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
+      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter } })
+    )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
@@ -3071,7 +3094,9 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
       // Download buttons (when done)
       done && results.length > 0 && React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
         React.createElement("div", { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } },
-          results.map((url, i) => {
+          results.map((r, i) => {
+            const url = r.url || r;
+            const label = r.cardIdx != null ? r.cardIdx + 1 : i + 1;
             const handleShare = async (e) => {
               if (mob && navigator.share) {
                 e.preventDefault();
@@ -3081,7 +3106,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
                   const urlExt = new URL(url, location.origin).searchParams.get('ext');
                   const ext = urlExt || (url.match(/\.(\w{3,4})(?:\?|$)/) || [])[1] || 'mp4';
                   const mime = ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : ext === 'png' ? 'image/png' : 'image/jpeg';
-                  const file = new File([blob], `card-${i + 1}.${ext}`, { type: mime });
+                  const file = new File([blob], `card-${label}.${ext}`, { type: mime });
                   await navigator.share({ files: [file] });
                 } catch (err) {
                   if (err.name !== 'AbortError') window.open(url, '_blank');
@@ -3094,7 +3119,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
               style: { padding: '8px 18px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'opacity 0.15s', cursor: 'pointer' },
               onMouseEnter: (e) => e.currentTarget.style.opacity = '0.85',
               onMouseLeave: (e) => e.currentTarget.style.opacity = '1',
-            }, "\uCE74\uB4DC " + (i + 1));
+            }, "\uCE74\uB4DC " + label);
           }),
         ),
         results.length > 1 && React.createElement("button", {
@@ -4924,6 +4949,8 @@ export default function App() {
   const [alertMsg, setAlertMsg] = useState(null);
   const [pendingConfirm, setPendingConfirm] = useState(null); // { message, confirmText, confirmColor, onConfirm }
   const [shareUrl, setShareUrl] = useState(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [importProject, setImportProject] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
@@ -4970,8 +4997,20 @@ export default function App() {
     const path = window.location.pathname;
     if (path === '/share') {
       const params = new URLSearchParams(window.location.search);
+      const shareId = params.get('id');
       const d = params.get('d');
-      if (d) {
+      if (shareId) {
+        setImportLoading(true);
+        fetch(`/api/share/${shareId}`)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(({ data }) => {
+            const decoded = decodeProject(data);
+            if (decoded) setImportProject(decoded);
+            else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
+          })
+          .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
+          .finally(() => setImportLoading(false));
+      } else if (d) {
         try {
           const decoded = decodeProject(d);
           if (decoded) { setImportProject(decoded); }
@@ -5097,10 +5136,29 @@ export default function App() {
     setGenProgress(''); setResults([]);
   };
 
-  const shareProject = () => {
-    if (!activeProject) return;
+  const shareProject = async () => {
+    if (!activeProject || shareLoading) return;
+    setShareLoading(true);
     const encoded = encodeProject(activeProject);
+    // Try Supabase short URL first
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: encoded }),
+      });
+      if (res.ok) {
+        const { id } = await res.json();
+        const url = `${window.location.origin}/share?id=${id}`;
+        if (navigator.clipboard) navigator.clipboard.writeText(url);
+        setShareLoading(false);
+        setShareUrl(url);
+        return;
+      }
+    } catch (e) { /* fallback to d= method */ }
+    // Fallback: embed data in URL directly
     const url = `${window.location.origin}/share?d=${encoded}`;
+    setShareLoading(false);
     if (url.length > 8000) {
       setAlertMsg('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
       return;
@@ -5177,7 +5235,15 @@ export default function App() {
         overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
       }
       setGenProgress("서버에 요청 중...");
-      const projectShareUrl = activeProject ? `${window.location.origin}/share?d=${encodeProject(activeProject)}` : '';
+      let projectShareUrl = '';
+      if (activeProject) {
+        const encoded = encodeProject(activeProject);
+        try {
+          const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/share?id=${id}`; }
+        } catch (_) {}
+        if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+      }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({ cardConfig: buildConfig(card), overlayData: overlays[j] })) }),
       });
@@ -5194,16 +5260,21 @@ export default function App() {
           let completedCards = 0, failedCards = 0, totalProgress = 0;
           const downloadUrls = [];
           for (const c of (status.cards || [])) {
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push(c.downloadUrl); }
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else totalProgress += (c.progress || 0);
           }
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
             clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
-            const failedErrors = (status.cards || []).filter(c => c.status === 'failed').map(c => `\uCE74\uB4DC ${c.cardIdx + 1}: ${c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'}`);
+            const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
+            const failedLines = failedCards2.map(c => {
+              const um = c.userMessage;
+              return `\uCE74\uB4DC ${c.cardIdx + 1}: ${um ? um.msg : (c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958')}`;
+            });
+            const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
-            if (failedErrors.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedErrors.join('\n')}`);
+            if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
             fetchQueueStatus();
           }
@@ -5216,7 +5287,7 @@ export default function App() {
   const handleDownloadAll = async () => {
     if (results.length === 0) return;
     setDownloading(true);
-    try { await downloadAllAsZip(results, outputFormat); }
+    try { await downloadAllAsZip(results.map(r => r.url || r), outputFormat); }
     catch (e) { setAlertMsg('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
     finally { setDownloading(false); }
   };
@@ -5370,7 +5441,7 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
-              React.createElement("button", { onClick: shareProject, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2197"),
+              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
                 onClick: () => setShowCardSelect(true), disabled: generating,
@@ -5379,7 +5450,7 @@ export default function App() {
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-              React.createElement("button", { onClick: shareProject, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
+              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uBCF4\uB0B4\uAE30"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
                 onClick: () => setShowCardSelect(true), disabled: generating,
@@ -5600,6 +5671,11 @@ export default function App() {
     ), // end editor Fragment
 
     shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
+    importLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, textAlign: 'center', boxShadow: T.shadowLg } },
+        React.createElement("p", { style: { color: T.text, fontSize: 14 } }, "\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8 \uBD88\uB7EC\uC624\uB294 \uC911..."),
+      )
+    ),
     importProject && React.createElement(ImportDialog, {
       project: importProject,
       onImport: handleImport,
