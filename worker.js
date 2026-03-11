@@ -109,21 +109,11 @@ const worker = new Worker('video-generation', async (job) => {
   }
 }, { connection, concurrency: workerConcurrency });
 
-// Worker events
-worker.on('completed', async (job) => {
-  console.log(`Job ${job.id} completed`);
+// Check if all jobs in a group are done and send group notification
+async function checkGroupComplete(jobId, cardCount) {
   try {
-    const { jobId, cardIdx } = job.data;
     const t = await getTelegram();
-
-    // Track stats
-    const duration = job.finishedOn && job.processedOn
-      ? (job.finishedOn - job.processedOn) / 1000
-      : 0;
-    await t.trackJob(jobId, 1, 'completed', duration);
-
-    // Check if all jobs in this group are done (fetch by specific job ID, not scanning all)
-    const cardCount = job.data.cardCount || 1;
+    // Fetch by specific job ID pattern (deterministic, no scanning)
     const groupJobs = [];
     for (let i = 0; i < cardCount; i++) {
       const j = await queue.getJob(`${jobId}-${i}`);
@@ -132,42 +122,60 @@ worker.on('completed', async (job) => {
     const allDone = groupJobs.length === cardCount &&
       groupJobs.every(j => j.finishedOn || j.failedReason);
 
-    if (allDone && groupJobs.length > 0) {
-      const completedJobs = groupJobs.filter(j => j.finishedOn && !j.failedReason);
-      const failedJobs = groupJobs.filter(j => j.failedReason);
-      // Total duration from first processedOn to last finishedOn
-      const starts = groupJobs.map(j => j.processedOn).filter(Boolean);
-      const ends = groupJobs.map(j => j.finishedOn).filter(Boolean);
-      const totalDuration = starts.length && ends.length
-        ? (Math.max(...ends) - Math.min(...starts)) / 1000
-        : 0;
-      const groupSample = groupJobs[0]?.data || {};
-      const baseUrl = groupSample.baseUrl || process.env.APP_BASE_URL || 'https://youmeca.me';
-      const projectUrl = groupSample.projectShareUrl || '';
+    if (!allDone) return;
 
-      const completedCards = completedJobs
-        .map((j) => ({
-          cardIdx: j.data?.cardIdx,
-          ext: j.data?.outputFormat || 'mp4',
-          url: `${baseUrl}/api/jobs/${jobId}?download=true&cardIdx=${j.data?.cardIdx}&ext=${j.data?.outputFormat || 'mp4'}`,
-        }))
-        .filter((c) => Number.isInteger(c.cardIdx))
-        .sort((a, b) => a.cardIdx - b.cardIdx);
+    const completedJobs = groupJobs.filter(j => j.finishedOn && !j.failedReason);
+    const failedJobs = groupJobs.filter(j => j.failedReason);
+    const starts = groupJobs.map(j => j.processedOn).filter(Boolean);
+    const ends = groupJobs.map(j => j.finishedOn).filter(Boolean);
+    const totalDuration = starts.length && ends.length
+      ? (Math.max(...ends) - Math.min(...starts)) / 1000
+      : 0;
+    const groupSample = groupJobs[0]?.data || {};
+    const baseUrl = groupSample.baseUrl || process.env.APP_BASE_URL || 'https://youmeca.me';
+    const projectUrl = groupSample.projectShareUrl || '';
 
-      const failedCards = failedJobs
-        .map((j) => ({
-          cardIdx: j.data?.cardIdx,
-          reason: String(j.failedReason || 'Unknown error').split('\n')[0].slice(0, 160),
-        }))
-        .filter((c) => Number.isInteger(c.cardIdx))
-        .sort((a, b) => a.cardIdx - b.cardIdx);
+    const completedCards = completedJobs
+      .map((j) => ({
+        cardIdx: j.data?.cardIdx,
+        ext: j.data?.outputFormat || 'mp4',
+        url: `${baseUrl}/api/jobs/${jobId}?download=true&cardIdx=${j.data?.cardIdx}&ext=${j.data?.outputFormat || 'mp4'}`,
+      }))
+      .filter((c) => Number.isInteger(c.cardIdx))
+      .sort((a, b) => a.cardIdx - b.cardIdx);
 
-      await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration, {
-        projectUrl,
-        completedCards,
-        failedCards,
-      });
-    }
+    const failedCards = failedJobs
+      .map((j) => ({
+        cardIdx: j.data?.cardIdx,
+        reason: String(j.failedReason || 'Unknown error').split('\n')[0].slice(0, 160),
+      }))
+      .filter((c) => Number.isInteger(c.cardIdx))
+      .sort((a, b) => a.cardIdx - b.cardIdx);
+
+    await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration, {
+      projectUrl,
+      completedCards,
+      failedCards,
+    });
+  } catch (err) {
+    console.error('[telegram] checkGroupComplete error:', err.message);
+  }
+}
+
+// Worker events
+worker.on('completed', async (job) => {
+  console.log(`Job ${job.id} completed`);
+  try {
+    const { jobId } = job.data;
+    const t = await getTelegram();
+
+    // Track stats
+    const duration = job.finishedOn && job.processedOn
+      ? (job.finishedOn - job.processedOn) / 1000
+      : 0;
+    await t.trackJob(jobId, 1, 'completed', duration);
+
+    await checkGroupComplete(jobId, job.data.cardCount || 1);
   } catch (err) {
     console.error('[telegram] completed hook error:', err.message);
   }
@@ -182,7 +190,7 @@ worker.on('failed', async (job, err) => {
     // Track stats
     await t.trackJob(jobId, 0, 'failed');
 
-    // Notify failure (include project URL for context)
+    // Notify individual failure (include project URL for context)
     const projectUrl = job.data.projectShareUrl || '';
     await t.notifyJobFailed(jobId, cardIdx, err.message, { projectUrl });
 
@@ -191,6 +199,9 @@ worker.on('failed', async (job, err) => {
     if (suspicionReason) {
       await t.notifyCookieExpirySuspected(jobId, cardIdx, suspicionReason);
     }
+
+    // Check group completion (last job might be a failure)
+    await checkGroupComplete(jobId, job.data.cardCount || 1);
   } catch (e) {
     console.error('[telegram] failed hook error:', e.message);
   }
