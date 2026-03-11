@@ -738,7 +738,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   if (zDur <= 0) return null;
 
   const toZPct = (t) => ((t - zStart) / zDur) * 100;
-  const curPct = Math.max(0, Math.min(100, toZPct(currentTime)));
+  const effectiveTime = (zDrag && zDragType === 'seek' && zDragTime != null) ? zDragTime : currentTime;
+  const curPct = Math.max(0, Math.min(100, toZPct(effectiveTime)));
   const sPct = Math.max(0, Math.min(100, toZPct(startSec)));
   const ePct = endSec != null ? Math.max(0, Math.min(100, toZPct(endSec))) : null;
 
@@ -992,13 +993,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)' } }),
       // Playhead + time label
       React.createElement("div", { style: { position: 'absolute', top: 8, left: 'calc(' + curPct + '% - 4px)', width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } }),
-      !zDrag && curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(effectiveTime)),
       // Drag tooltip — range drag shows dual labels on handles, others show single tooltip
       zDrag && zDragTime != null && zDragType === 'range' && lastRangePosRef.current && [
         React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.start)),
         React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.end)),
       ],
-      zDrag && zDragTime != null && zDragType !== 'range' && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : zDragType === 'end' ? '\uC885\uB8CC ' : '') + fmtMM(zDragTime)),
+      zDrag && zDragTime != null && (zDragType === 'start' || zDragType === 'end') && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : '\uC885\uB8CC ') + fmtMM(zDragTime)),
     ),
   );
 }
