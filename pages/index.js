@@ -3083,7 +3083,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
             }, "+ 이미지 추가"),
-            ))((oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); if (ovs[oi].applyToAll && onApplyOverlayToAll) onApplyOverlayToAll(oi, ovs[oi]); }),
+            ))((oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } }),
           ),
         ),
 
@@ -4805,7 +4805,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
   );
 
-  const updateOverlayMob = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); if (ovs[oi].applyToAll && onApplyOverlayToAll) onApplyOverlayToAll(oi, ovs[oi]); };
+  const updateOverlayMob = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
@@ -5169,7 +5169,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   );
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
-  const updateOverlayDesk = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); if (ovs[oi].applyToAll && onApplyOverlayToAll) onApplyOverlayToAll(oi, ovs[oi]); };
+  const updateOverlayDesk = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
