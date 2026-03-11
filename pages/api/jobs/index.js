@@ -79,8 +79,8 @@ async function handlePost(req, res) {
         {
           jobId: `${jobId}-${cardIdx}`,
           attempts: 2,
-          removeOnComplete: false,
-          removeOnFailed: false,
+          removeOnComplete: { age: 3600, count: 200 },
+          removeOnFail: { age: 86400, count: 50 },
         }
       );
 
