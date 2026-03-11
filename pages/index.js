@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0312';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -3083,7 +3083,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
             }, "+ 이미지 추가"),
-            ))((oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } }),
+            ))((oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } }),
           ),
         ),
 
@@ -4805,7 +4805,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
   );
 
-  const updateOverlayMob = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
+  const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
@@ -5169,7 +5169,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   );
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
-  const updateOverlayDesk = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
+  const updateOverlayDesk = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
@@ -5507,11 +5507,11 @@ export default function App() {
   const duplicateCard = (i) => setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; });
   const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]);
 
-  const applyOverlayToAll = (overlayIdx, overlay) => {
+  const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
       while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 100, opacity: 1 });
-      ovs[overlayIdx] = { ...overlay };
+      ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
   };
