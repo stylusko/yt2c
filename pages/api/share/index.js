@@ -1,11 +1,12 @@
 import crypto from 'crypto';
-import supabase from '../../../lib/supabase';
+import { getSupabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const supabase = getSupabase();
   if (!supabase) {
     return res.status(503).json({ error: 'Supabase not configured' });
   }
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid data' });
   }
 
-  const id = crypto.randomBytes(4).toString('hex');
+  const id = crypto.randomBytes(4).toString('base64url');
 
   const { error } = await supabase
     .from('shared_projects')

@@ -1,10 +1,11 @@
-import supabase from '../../../lib/supabase';
+import { getSupabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const supabase = getSupabase();
   if (!supabase) {
     return res.status(503).json({ error: 'Supabase not configured' });
   }
