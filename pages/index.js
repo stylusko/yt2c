@@ -4395,6 +4395,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     if (val === 'textbox') setActiveTab('text');
     else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
   };
+  // Dismiss overlay/textbox selection when clicking outside preview
+  const mobilePreviewRef = useRef(null);
+  useEffect(() => {
+    if (!selectedHandle) return;
+    const handler = (e) => {
+      if (mobilePreviewRef.current && !mobilePreviewRef.current.contains(e.target)) setSelectedHandle(null);
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [selectedHandle]);
 
   const totalSlides = cards.length + 1; // +1 for add card
   const card = cards[activeIndex];
@@ -4749,7 +4759,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Sticky preview — hidden if hidePreview
-    !hidePreview && React.createElement("div", { style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
+    !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
       React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
     ),
 
@@ -4789,6 +4799,16 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     if (val === 'textbox') setActiveTab('text');
     else if (val && val.startsWith('overlay-')) setActiveTab('overlay');
   };
+  // Dismiss overlay/textbox selection when clicking outside preview
+  const desktopPreviewRef = useRef(null);
+  useEffect(() => {
+    if (!selectedHandle) return;
+    const handler = (e) => {
+      if (desktopPreviewRef.current && !desktopPreviewRef.current.contains(e.target)) setSelectedHandle(null);
+    };
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [selectedHandle]);
 
   useEffect(() => {
     if (prevIdxRef.current !== activeIndex) {
@@ -5058,7 +5078,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, `${activeIndex + 1}/${cards.length}`),
       ),
       // Card preview area (reduced padding)
-      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
+      React.createElement("div", { ref: desktopPreviewRef, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
         React.createElement("div", {
           key: 'card-' + activeIndex,
           style: {
