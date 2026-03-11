@@ -1361,9 +1361,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
         style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
       }, '+'),
-      zoomLevel > 1 && React.createElement("button", {
+      React.createElement("button", {
         onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-        style: { fontSize: 10, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' },
+        style: { fontSize: 10, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', visibility: zoomLevel > 1 ? 'visible' : 'hidden' },
       }, '\uB9AC\uC14B'),
     ),
     // Controls row: play + start/end capture+input
@@ -1865,9 +1865,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
         style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
       }, '+'),
-      zoomLevel > 1 && React.createElement("button", {
+      React.createElement("button", {
         onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-        style: { fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' },
+        style: { fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', visibility: zoomLevel > 1 ? 'visible' : 'hidden' },
       }, '\uB9AC\uC14B'),
     ),
     // Controls row
