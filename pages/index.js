@@ -3094,7 +3094,9 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
       // Download buttons (when done)
       done && results.length > 0 && React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
         React.createElement("div", { style: { display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' } },
-          results.map((url, i) => {
+          results.map((r, i) => {
+            const url = r.url || r;
+            const label = r.cardIdx != null ? r.cardIdx + 1 : i + 1;
             const handleShare = async (e) => {
               if (mob && navigator.share) {
                 e.preventDefault();
@@ -3104,7 +3106,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
                   const urlExt = new URL(url, location.origin).searchParams.get('ext');
                   const ext = urlExt || (url.match(/\.(\w{3,4})(?:\?|$)/) || [])[1] || 'mp4';
                   const mime = ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : ext === 'png' ? 'image/png' : 'image/jpeg';
-                  const file = new File([blob], `card-${i + 1}.${ext}`, { type: mime });
+                  const file = new File([blob], `card-${label}.${ext}`, { type: mime });
                   await navigator.share({ files: [file] });
                 } catch (err) {
                   if (err.name !== 'AbortError') window.open(url, '_blank');
@@ -3117,7 +3119,7 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
               style: { padding: '8px 18px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, fontSize: 13, textDecoration: 'none', fontWeight: 500, transition: 'opacity 0.15s', cursor: 'pointer' },
               onMouseEnter: (e) => e.currentTarget.style.opacity = '0.85',
               onMouseLeave: (e) => e.currentTarget.style.opacity = '1',
-            }, "\uCE74\uB4DC " + (i + 1));
+            }, "\uCE74\uB4DC " + label);
           }),
         ),
         results.length > 1 && React.createElement("button", {
@@ -5199,7 +5201,7 @@ export default function App() {
           let completedCards = 0, failedCards = 0, totalProgress = 0;
           const downloadUrls = [];
           for (const c of (status.cards || [])) {
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push(c.downloadUrl); }
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else totalProgress += (c.progress || 0);
           }
@@ -5221,7 +5223,7 @@ export default function App() {
   const handleDownloadAll = async () => {
     if (results.length === 0) return;
     setDownloading(true);
-    try { await downloadAllAsZip(results, outputFormat); }
+    try { await downloadAllAsZip(results.map(r => r.url || r), outputFormat); }
     catch (e) { setAlertMsg('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
     finally { setDownloading(false); }
   };
