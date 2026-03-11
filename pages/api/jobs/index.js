@@ -49,6 +49,7 @@ async function handlePost(req, res) {
       const jobData = {
         jobId,
         cardIdx,
+        cardCount: cards.length,
         cardConfig: cardConfig || {},
         url: cardConfig?.url || url,
         overlayData: overlayData || '',

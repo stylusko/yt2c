@@ -122,10 +122,15 @@ worker.on('completed', async (job) => {
       : 0;
     await t.trackJob(jobId, 1, 'completed', duration);
 
-    // Check if all jobs in this group are done
-    const allJobs = await queue.getJobs(['completed', 'active', 'waiting', 'failed']);
-    const groupJobs = allJobs.filter(j => j.data?.jobId === jobId);
-    const allDone = groupJobs.every(j => j.finishedOn || j.failedReason);
+    // Check if all jobs in this group are done (fetch by specific job ID, not scanning all)
+    const cardCount = job.data.cardCount || 1;
+    const groupJobs = [];
+    for (let i = 0; i < cardCount; i++) {
+      const j = await queue.getJob(`${jobId}-${i}`);
+      if (j) groupJobs.push(j);
+    }
+    const allDone = groupJobs.length === cardCount &&
+      groupJobs.every(j => j.finishedOn || j.failedReason);
 
     if (allDone && groupJobs.length > 0) {
       const completedJobs = groupJobs.filter(j => j.finishedOn && !j.failedReason);
