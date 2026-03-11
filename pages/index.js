@@ -4888,6 +4888,8 @@ export default function App() {
   const [alertMsg, setAlertMsg] = useState(null);
   const [pendingConfirm, setPendingConfirm] = useState(null); // { message, confirmText, confirmColor, onConfirm }
   const [shareUrl, setShareUrl] = useState(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [importProject, setImportProject] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
@@ -4937,6 +4939,7 @@ export default function App() {
       const shareId = params.get('id');
       const d = params.get('d');
       if (shareId) {
+        setImportLoading(true);
         fetch(`/api/share/${shareId}`)
           .then(r => r.ok ? r.json() : Promise.reject())
           .then(({ data }) => {
@@ -4944,7 +4947,8 @@ export default function App() {
             if (decoded) setImportProject(decoded);
             else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
           })
-          .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'));
+          .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
+          .finally(() => setImportLoading(false));
       } else if (d) {
         try {
           const decoded = decodeProject(d);
@@ -5072,7 +5076,8 @@ export default function App() {
   };
 
   const shareProject = async () => {
-    if (!activeProject) return;
+    if (!activeProject || shareLoading) return;
+    setShareLoading(true);
     const encoded = encodeProject(activeProject);
     // Try Supabase short URL first
     try {
@@ -5085,12 +5090,14 @@ export default function App() {
         const { id } = await res.json();
         const url = `${window.location.origin}/share?id=${id}`;
         if (navigator.clipboard) navigator.clipboard.writeText(url);
+        setShareLoading(false);
         setShareUrl(url);
         return;
       }
     } catch (e) { /* fallback to d= method */ }
     // Fallback: embed data in URL directly
     const url = `${window.location.origin}/share?d=${encoded}`;
+    setShareLoading(false);
     if (url.length > 8000) {
       setAlertMsg('\uD504\uB85C\uC81D\uD2B8\uAC00 \uB108\uBB34 \uCEE4\uC11C \uB9C1\uD06C\uB85C \uACF5\uC720\uD560 \uC218 \uC5C6\uC5B4\uC694.\n\uC5C5\uB85C\uB4DC\uB41C \uC774\uBBF8\uC9C0\uB97C \uC904\uC5EC\uBCF4\uC138\uC694.');
       return;
@@ -5368,7 +5375,7 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
-              React.createElement("button", { onClick: shareProject, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2197"),
+              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
                 onClick: () => setShowCardSelect(true), disabled: generating,
@@ -5377,7 +5384,7 @@ export default function App() {
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-              React.createElement("button", { onClick: shareProject, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBCF4\uB0B4\uAE30"),
+              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uBCF4\uB0B4\uAE30"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
                 onClick: () => setShowCardSelect(true), disabled: generating,
@@ -5598,6 +5605,11 @@ export default function App() {
     ), // end editor Fragment
 
     shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
+    importLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, textAlign: 'center', boxShadow: T.shadowLg } },
+        React.createElement("p", { style: { color: T.text, fontSize: 14 } }, "\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8 \uBD88\uB7EC\uC624\uB294 \uC911..."),
+      )
+    ),
     importProject && React.createElement(ImportDialog, {
       project: importProject,
       onImport: handleImport,
