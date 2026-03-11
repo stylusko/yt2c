@@ -407,9 +407,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   if (layout === "none" || layout === "full_bg") {
     // 전체: solid bg covers entire card
     if (layout === "none") {
-      // 텍스트만: 완전 불투명 배경 (영상/이미지 없음)
-      ctx.fillStyle = useBg ? `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})` : '#1a1a2e';
-      ctx.fillRect(0, 0, w, h);
+      // 텍스트만: 배경 투명, 텍스트만 렌더링
     } else if (useBg) {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
@@ -2424,7 +2422,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
   const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
-  const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg, background: '#000' };
+  const wrapper = { width: previewW, height: previewH, borderRadius: T.radius, overflow: "hidden", flexShrink: 0, position: "relative", boxShadow: T.shadowLg, background: card.layout === 'none' ? 'repeating-conic-gradient(#808080 0% 25%, #a0a0a0 0% 50%) 0 0 / 16px 16px' : '#000' };
 
   // Canvas overlay replaces all HTML text + background rendering
   const canvasOverlay = overlayUrl && React.createElement("img", {
