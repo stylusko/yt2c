@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0312';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -405,8 +405,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   await drawOverlays(false);
 
   if (layout === "none" || layout === "full_bg") {
-    // 전체: solid bg covers entire card
-    if (useBg) {
+    // 전체: solid bg covers entire card (텍스트만은 배경색 투명)
+    if (layout !== "none" && useBg) {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
     }
@@ -5642,8 +5642,9 @@ export default function App() {
     const url = globalUrl || cards[0]?.url || "";
     const indices = selectedIndices || cards.map((_, i) => i);
 
-    // Check if all selected cards use image backgrounds (uploadedImage overrides fillSource)
-    const allImageBg = indices.every(i => cards[i].uploadedImage || (cards[i].fillSource || 'video') === 'image');
+    // Check if card uses image background (uploadedImage, fillSource=image, or no URL with globalBgImage)
+    const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
+    const allImageBg = indices.every(i => cardIsImageBg(cards[i]));
 
     // URL validation: only required if at least one card needs video
     if (!allImageBg) {
@@ -5654,7 +5655,7 @@ export default function App() {
     const errors = [];
     for (const i of indices) {
       const c = cards[i];
-      const isImageCard = !!c.uploadedImage || (c.fillSource || 'video') === 'image';
+      const isImageCard = cardIsImageBg(c);
 
       if (isImageCard) {
         // Image card: check uploaded image exists
@@ -5701,7 +5702,9 @@ export default function App() {
             ? card.uploadedImage
             : (card.fillSource || 'video') === 'image'
               ? (globalBgImage || null)
-              : null,
+              : (!url && !card.url && globalBgImage)
+                ? globalBgImage
+                : null,
         })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
