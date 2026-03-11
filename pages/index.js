@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -677,6 +677,9 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   const animFrameRef = useRef(null);
   const [, setForceRender] = useState(0);
   const lastRangePosRef = useRef(null);
+  const ghostRef = useRef(null);           // { start, end } - pre-drag handle positions (seconds)
+  const [deltaBadge, setDeltaBadge] = useState(null); // { delta, pct } - "+3s" display
+  const deltaBadgeTimer = useRef(null);
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
@@ -686,10 +689,17 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       animFrameRef.current = null;
       frozenRange.current = null;
     }
+    ghostRef.current = null;
+    setDeltaBadge(null);
+    if (deltaBadgeTimer.current) { clearTimeout(deltaBadgeTimer.current); deltaBadgeTimer.current = null; }
   };
 
-  const animateZoomTransition = (from, to, durationMs) => {
+  const animateZoomTransition = (from, to, durationMs, opts) => {
     cancelZoomAnimation();
+    if (deltaBadgeTimer.current) { clearTimeout(deltaBadgeTimer.current); deltaBadgeTimer.current = null; }
+    if (opts && opts.delta !== 0) {
+      setDeltaBadge({ delta: opts.delta, pct: opts.badgePct });
+    }
     const startTime = performance.now();
     const step = (now) => {
       const elapsed = now - startTime;
@@ -706,13 +716,18 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       } else {
         animFrameRef.current = null;
         frozenRange.current = null;
+        ghostRef.current = null;
         setForceRender(n => n + 1);
+        deltaBadgeTimer.current = setTimeout(() => setDeltaBadge(null), 1000);
       }
     };
     animFrameRef.current = requestAnimationFrame(step);
   };
 
-  useEffect(() => () => cancelZoomAnimation(), []);
+  useEffect(() => () => {
+    cancelZoomAnimation();
+    if (deltaBadgeTimer.current) clearTimeout(deltaBadgeTimer.current);
+  }, []);
 
   // Zoom range: freeze during start-marker drag to prevent jumping
   const liveZStart = Math.max(0, startSec - 5);
@@ -803,6 +818,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       const startRangeDrag = () => {
         isDragging = true;
         cancelZoomAnimation();
+        ghostRef.current = { start: snapStart, end: snapEnd };
         frozenRange.current = { zStart, zEnd };
         lastRangePosRef.current = null;
         setRangeDragActive(true);
@@ -861,10 +877,12 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
           }
           if (isDragging && lastRangePosRef.current) {
             const finalStart = lastRangePosRef.current.start;
+            const delta = Math.round(finalStart - snapStart);
             const fromRange = { zStart: frozenRange.current.zStart, zEnd: frozenRange.current.zEnd };
             const targetZStart = Math.max(0, finalStart - 5);
             const targetZEnd = Math.min(duration, targetZStart + 40);
-            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300);
+            const midPct = toZPct((finalStart + lastRangePosRef.current.end) / 2);
+            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300, { delta, badgePct: midPct });
           } else {
             frozenRange.current = null;
           }
@@ -894,10 +912,12 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
           }
           if (isDragging && lastRangePosRef.current) {
             const finalStart = lastRangePosRef.current.start;
+            const delta = Math.round(finalStart - snapStart);
             const fromRange = { zStart: frozenRange.current.zStart, zEnd: frozenRange.current.zEnd };
             const targetZStart = Math.max(0, finalStart - 5);
             const targetZEnd = Math.min(duration, targetZStart + 40);
-            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300);
+            const midPct = toZPct((finalStart + lastRangePosRef.current.end) / 2);
+            animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300, { delta, badgePct: midPct });
           } else {
             frozenRange.current = null;
           }
@@ -941,6 +961,18 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
       // Range highlight (selected) - with grab cursor and visual feedback
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 10 : 12, left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', height: rangeDragActive ? 8 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.5, cursor: rangeDragActive ? 'grabbing' : 'grab', pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 8px ' + accentC : 'none' } }),
+      // Ghost markers (visible during zoom transition after range drag)
+      ghostRef.current && (() => {
+        const gs = Math.max(0, Math.min(100, toZPct(ghostRef.current.start)));
+        const ge = Math.max(0, Math.min(100, toZPct(ghostRef.current.end)));
+        return [
+          React.createElement("div", { key: 'ghost-range', style: { position: 'absolute', top: 12, left: gs + '%', width: Math.max(0, ge - gs) + '%', height: 4, background: accentC, borderRadius: 2, opacity: 0.25, pointerEvents: 'none' } }),
+          React.createElement("div", { key: 'ghost-s', style: { position: 'absolute', top: 9, left: 'calc(' + gs + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, opacity: 0.3, pointerEvents: 'none' } }),
+          React.createElement("div", { key: 'ghost-e', style: { position: 'absolute', top: 9, left: 'calc(' + ge + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, opacity: 0.3, pointerEvents: 'none' } }),
+        ];
+      })(),
+      // Delta badge — "+3s" or "-5s" after range drag
+      deltaBadge && React.createElement("div", { style: { position: 'absolute', top: -18, left: deltaBadge.pct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10, transition: 'opacity 0.3s' } }, (deltaBadge.delta > 0 ? '+' : '') + deltaBadge.delta + 's'),
       // First-time range drag tooltip
       showRangeTip && ePct != null && React.createElement("div", { style: { position: 'absolute', bottom: '100%', left: Math.max(0, sPct) + '%', width: Math.max(0, Math.min(100, ePct) - Math.max(0, sPct)) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10, marginBottom: 4 } },
         React.createElement("div", { style: { background: 'rgba(99,102,241,0.95)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '4px 8px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' } },
