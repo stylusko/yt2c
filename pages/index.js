@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -406,7 +406,11 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
 
   if (layout === "none" || layout === "full_bg") {
     // 전체: solid bg covers entire card
-    if (useBg) {
+    if (layout === "none") {
+      // 텍스트만: 완전 불투명 배경 (영상/이미지 없음)
+      ctx.fillStyle = useBg ? `rgb(${bgColor[0]},${bgColor[1]},${bgColor[2]})` : '#1a1a2e';
+      ctx.fillRect(0, 0, w, h);
+    } else if (useBg) {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
     }
@@ -2725,8 +2729,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
-    React.createElement(BgImage),
-    videoPreviewOn && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
+    card.layout !== "none" && React.createElement(BgImage),
+    card.layout !== "none" && videoPreviewOn && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
