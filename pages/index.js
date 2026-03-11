@@ -2275,10 +2275,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbMaxOffY = Math.max(thumbScaledH - previewH, 0);
   const thumbOffX = thumbMaxOffX * (card.videoX ?? 50) / 100;
   const thumbOffY = thumbMaxOffY * (card.videoY ?? 50) / 100;
+  // Uploaded image: apply position/zoom/brightness via CSS transform
+  const imgPosX = 50 - (card.videoX ?? 50); // invert: videoX=0 means show left edge → translate right
+  const imgPosY = 50 - (card.videoY ?? 50);
+  const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
-      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter } })
+      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
