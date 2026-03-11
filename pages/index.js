@@ -5,14 +5,14 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_DATE = '2026.0312';
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
   '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
-  '\uC0DD\uC131 \uC2E4\uD328 \uC2DC \uC6D0\uC778 \uC548\uB0B4 + \uAD00\uB9AC\uC790 \uC790\uB3D9 \uB9AC\uD3EC\uD2B8',
   '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
   '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
@@ -405,8 +405,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   await drawOverlays(false);
 
   if (layout === "none" || layout === "full_bg") {
-    // 전체: solid bg covers entire card
-    if (useBg) {
+    // 전체: solid bg covers entire card (텍스트만은 배경색 투명)
+    if (layout !== "none" && useBg) {
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
     }
@@ -2803,7 +2803,7 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -3042,12 +3042,19 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 이미지 얹기
           React.createElement(Section, { title: "이미지 얹기" },
+            ((updateOverlay1) => React.createElement(React.Fragment, null,
             React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto', marginBottom: 4 } },
               (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 12, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
                 React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
                     React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
-                    React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+                    React.createElement("div", { onClick: () => { updateOverlay1(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+                      React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+                        React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+                      ),
+                      React.createElement("span", { style: { fontSize: 10, color: ov.applyToAll ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "전체 카드 적용"),
+                    ),
+                    React.createElement("div", { onClick: () => updateOverlay1(oi, { aboveLayout: !ov.aboveLayout }), style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
                       React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                         React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
                       ),
@@ -3057,16 +3064,16 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
                     React.createElement("button", { disabled: oi === 0, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi-1]; ovs[oi-1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === 0 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === 0 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === 0 ? 0.4 : 1 } }, "\u25B2"),
                     React.createElement("button", { disabled: oi === (card.overlays||[]).length - 1, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi+1]; ovs[oi+1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === (card.overlays||[]).length - 1 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === (card.overlays||[]).length - 1 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === (card.overlays||[]).length - 1 ? 0.4 : 1 } }, "\u25BC"),
-                    React.createElement("button", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
+                    React.createElement("button", { onClick: () => { if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
                   ),
                 ),
-                React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+                React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlay1(oi, { image: v }), maxMb: 5 }),
                 ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-                  React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: 50, y: 50, scale: 100, opacity: 1}; update("overlays", ovs); } }),
-                  React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
-                  React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
-                  React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
-                  React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+                  React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+                  React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { x: v }) }),
+                  React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { y: v }) }),
+                  React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlay1(oi, { scale: v }), suffix: '%' }),
+                  React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => updateOverlay1(oi, { opacity: v }) }),
                 ),
               )),
             ),
@@ -3076,6 +3083,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
             }, "+ 이미지 추가"),
+            ))((oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } }),
           ),
         ),
 
@@ -3592,11 +3600,14 @@ function decodeProject(encoded) {
 /* ── Download All as ZIP ── */
 async function downloadAllAsZip(urls, outputFormat) {
   const zip = new JSZip();
-  const ext = outputFormat === 'video' ? 'mp4' : 'jpg';
+  const defaultExt = outputFormat === 'video' ? 'mp4' : 'jpg';
   for (let i = 0; i < urls.length; i++) {
     const res = await fetch(urls[i]);
     if (!res.ok) continue;
     const blob = await res.blob();
+    // Detect per-card extension from URL's ext parameter
+    const urlExt = new URL(urls[i], window.location.origin).searchParams.get('ext');
+    const ext = urlExt || defaultExt;
     zip.file(`card_${i + 1}.${ext}`, blob);
   }
   const content = await zip.generateAsync({ type: 'blob' });
@@ -4500,7 +4511,7 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -4794,13 +4805,20 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
   );
 
+  const updateOverlayMob = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
             React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
-            React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+            React.createElement("div", { onClick: () => { updateOverlayMob(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+              React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+                React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+              ),
+              React.createElement("span", { style: { fontSize: 10, color: ov.applyToAll ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "전체 카드 적용"),
+            ),
+            React.createElement("div", { onClick: () => updateOverlayMob(oi, { aboveLayout: !ov.aboveLayout }), style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
               ),
@@ -4810,16 +4828,16 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
             React.createElement("button", { disabled: oi === 0, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi-1]; ovs[oi-1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === 0 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === 0 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === 0 ? 0.4 : 1 } }, "\u25B2"),
             React.createElement("button", { disabled: oi === (card.overlays||[]).length - 1, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi+1]; ovs[oi+1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === (card.overlays||[]).length - 1 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === (card.overlays||[]).length - 1 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === (card.overlays||[]).length - 1 ? 0.4 : 1 } }, "\u25BC"),
-            React.createElement("button", { onClick: () => { setSelectedHandle(null); const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
+            React.createElement("button", { onClick: () => { setSelectedHandle(null); if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
           ),
         ),
-        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayMob(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-          React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: 50, y: 50, scale: 100, opacity: 1}; update("overlays", ovs); } }),
-          React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
-          React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
-          React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
-          React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+          React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+          React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { x: v }) }),
+          React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { y: v }) }),
+          React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayMob(oi, { scale: v }), suffix: '%' }),
+          React.createElement(SliderRow, { label: "투명도", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => updateOverlayMob(oi, { opacity: v }) }),
         ),
       )),
     ),
@@ -4910,7 +4928,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange, onAspectRatioChange }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -5151,13 +5169,20 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   );
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
+  const updateOverlayDesk = (oi, props) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; if (ovs[oi].applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(oi, ovs[oi]); } else { update("overlays", ovs); } };
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
             React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
-            React.createElement("div", { onClick: () => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], aboveLayout: !ov.aboveLayout}; update("overlays", ovs); }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+            React.createElement("div", { onClick: () => { updateOverlayDesk(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
+              React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
+                React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
+              ),
+              React.createElement("span", { style: { fontSize: 10, color: ov.applyToAll ? '#fff' : 'rgba(255,255,255,0.4)', userSelect: 'none' } }, "\uc804\uccb4 \uce74\ub4dc \uc801\uc6a9"),
+            ),
+            React.createElement("div", { onClick: () => updateOverlayDesk(oi, { aboveLayout: !ov.aboveLayout }), style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.aboveLayout ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.aboveLayout ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
               ),
@@ -5167,15 +5192,15 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
             React.createElement("button", { disabled: oi === 0, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi-1]; ovs[oi-1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === 0 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === 0 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === 0 ? 0.4 : 1 } }, "\u25B2"),
             React.createElement("button", { disabled: oi === (card.overlays||[]).length - 1, onClick: () => { const ovs = [...(card.overlays||[])]; const t = ovs[oi]; ovs[oi] = ovs[oi+1]; ovs[oi+1] = t; update("overlays", ovs); }, style: { background: 'rgba(255,255,255,0.06)', border: 'none', color: oi === (card.overlays||[]).length - 1 ? T.textMuted : T.textSecondary, fontSize: 11, cursor: oi === (card.overlays||[]).length - 1 ? 'default' : 'pointer', padding: '2px 6px', borderRadius: T.radiusPill, opacity: oi === (card.overlays||[]).length - 1 ? 0.4 : 1 } }, "\u25BC"),
-            React.createElement("button", { onClick: () => { setSelectedHandle(null); const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
+            React.createElement("button", { onClick: () => { setSelectedHandle(null); if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
           ),
         ),
-        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], image: v}; update("overlays", ovs); }, maxMb: 5 }),
+        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayDesk(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-          React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], x: v}; update("overlays", ovs); } }),
-          React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], y: v}; update("overlays", ovs); } }),
-          React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], scale: v}; update("overlays", ovs); }, suffix: '%' }),
-          React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], opacity: v}; update("overlays", ovs); } }),
+          React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { x: v }) }),
+          React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { y: v }) }),
+          React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayDesk(oi, { scale: v }), suffix: '%' }),
+          React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: ov.opacity ?? 1, min: 0, max: 1, step: 0.01, onChange: (v) => updateOverlayDesk(oi, { opacity: v }) }),
         ),
       )),
     ),
@@ -5482,6 +5507,23 @@ export default function App() {
   const duplicateCard = (i) => setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; });
   const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]);
 
+  const applyOverlayToAll = (overlayIdx, overlay) => {
+    setCards(prev => prev.map(card => {
+      const ovs = [...(card.overlays || [])];
+      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 100, opacity: 1 });
+      ovs[overlayIdx] = { ...overlay };
+      return { ...card, overlays: ovs };
+    }));
+  };
+
+  const removeOverlayFromAll = (overlayIdx) => {
+    setCards(prev => prev.map(card => {
+      const ovs = [...(card.overlays || [])];
+      if (ovs.length > overlayIdx) ovs.splice(overlayIdx, 1);
+      return { ...card, overlays: ovs };
+    }));
+  };
+
   // Project tab actions
   const addProject = () => { setShowNewProject(true); };
   const confirmNewProject = (name) => {
@@ -5603,8 +5645,9 @@ export default function App() {
     const url = globalUrl || cards[0]?.url || "";
     const indices = selectedIndices || cards.map((_, i) => i);
 
-    // Check if all selected cards use image backgrounds (uploadedImage overrides fillSource)
-    const allImageBg = indices.every(i => cards[i].uploadedImage || (cards[i].fillSource || 'video') === 'image');
+    // Check if card uses image background (uploadedImage, fillSource=image, or no URL with globalBgImage)
+    const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
+    const allImageBg = indices.every(i => cardIsImageBg(cards[i]));
 
     // URL validation: only required if at least one card needs video
     if (!allImageBg) {
@@ -5615,7 +5658,7 @@ export default function App() {
     const errors = [];
     for (const i of indices) {
       const c = cards[i];
-      const isImageCard = !!c.uploadedImage || (c.fillSource || 'video') === 'image';
+      const isImageCard = cardIsImageBg(c);
 
       if (isImageCard) {
         // Image card: check uploaded image exists
@@ -5662,7 +5705,9 @@ export default function App() {
             ? card.uploadedImage
             : (card.fillSource || 'video') === 'image'
               ? (globalBgImage || null)
-              : null,
+              : (!url && !card.url && globalBgImage)
+                ? globalBgImage
+                : null,
         })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
@@ -6011,6 +6056,8 @@ export default function App() {
           onClipExpandChange: (open) => setMobilePreviewHidden(h => open ? 'auto' : (h === 'auto' ? false : h)),
           onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+          onApplyOverlayToAll: applyOverlayToAll,
+          onRemoveOverlayFromAll: removeOverlayFromAll,
         }),
       ) : React.createElement(DesktopCardPanel, {
         cards,
@@ -6026,6 +6073,8 @@ export default function App() {
         previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
         previewVolume, onPreviewVolumeChange: setPreviewVolume,
         onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+        onApplyOverlayToAll: applyOverlayToAll,
+        onRemoveOverlayFromAll: removeOverlayFromAll,
       }),
     ),
 
