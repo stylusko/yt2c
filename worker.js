@@ -50,7 +50,7 @@ function detectCookieExpirySuspicion(errorMessage) {
   const patterns = [
     { re: /sign in to confirm your age|age-restricted|age restriction/, reason: '연령 제한/로그인 필요 문구 감지' },
     { re: /private video|members-only|join this channel|this video is available to this channel members/, reason: '로그인/권한 필요 영상 문구 감지' },
-    { re: /cookies are no longer valid|cookie|session expired|authorization required/, reason: '쿠키/세션 만료 관련 문구 감지' },
+    { re: /cookies are no longer valid|cookie.*(?:expired|invalid|rejected)|session expired|authorization required/, reason: '쿠키/세션 만료 관련 문구 감지' },
     { re: /http error 403|forbidden/, reason: '403/Forbidden 반복' },
   ];
 

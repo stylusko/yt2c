@@ -28,6 +28,9 @@ async function handlePost(req, res) {
     if (!url || typeof url !== 'string') {
       return res.status(400).json({ error: 'URL is required' });
     }
+    if (!/^https?:\/\/.+/.test(url)) {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
 
     if (!Array.isArray(cards) || cards.length === 0) {
       return res.status(400).json({ error: 'Cards array is required' });
