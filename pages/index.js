@@ -2535,11 +2535,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       style: {
         position: 'absolute', zIndex: 7, top: '50%', left: '50%', width: previewW, height: 'auto',
         transform: `translate(-50%, -50%) translate(${ovX}px, ${ovY}px) scale(${ovScale})`,
-        pointerEvents: 'none', boxSizing: 'border-box',
-      }
+        pointerEvents: 'auto', boxSizing: 'border-box', cursor: 'move',
+      },
+      onMouseDown: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+      onTouchStart: (e) => startUnifiedDrag('overlay-' + oi, 'move', e, { origX: ov.x ?? 50, origY: ov.y ?? 50 }),
+      onDoubleClick: (e) => { e.stopPropagation(); const ovs = [...(card.overlays || [])]; ovs[oi] = { ...ovs[oi], x: 50, y: 50 }; onCardUpdate({ overlays: ovs }); },
     },
       // Invisible reference image for sizing
-      React.createElement("img", { src: ov.image, alt: "", style: { width: '100%', height: 'auto', visibility: 'hidden', display: 'block' } }),
+      React.createElement("img", { src: ov.image, alt: "", draggable: false, style: { width: '100%', height: 'auto', visibility: 'hidden', display: 'block' } }),
       // Dashed border overlay
       React.createElement("div", { style: { position: 'absolute', inset: 0, border: '1.5px dashed rgba(124,58,237,0.6)', borderRadius: 4, pointerEvents: 'none', boxSizing: 'border-box' } }),
       // Move handle (top-left)
