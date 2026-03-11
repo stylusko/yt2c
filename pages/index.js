@@ -511,7 +511,18 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
     ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
   }
-  return canvas.toDataURL("image/png");
+  // Use lossless WebP for smaller payload with alpha, fallback to PNG
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      } else {
+        resolve(canvas.toDataURL("image/png"));
+      }
+    }, 'image/webp', 1.0);
+  });
 }
 
 /* ── Pill Button ── */
