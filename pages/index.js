@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0311';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2514,8 +2514,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     const ov = overlays[oi];
     if (!ov || !ov.image) return null;
     const ovScale = (ov.scale || 100) / 100;
-    const ovX = ((ov.x ?? 50) - 50) * previewW / 50;
-    const ovY = ((ov.y ?? 50) - 50) * previewH / 50;
+    const ovX = ((ov.x ?? 50) - 50) * previewW / 100;
+    const ovY = ((ov.y ?? 50) - 50) * previewH / 100;
     const counterScale = 1 / ovScale;
     return React.createElement("div", {
       style: {
