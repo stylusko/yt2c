@@ -28,8 +28,11 @@ const workerConcurrency = Math.max(1, parseInt(process.env.WORKER_CONCURRENCY ||
 function saveOverlay(name, base64Data) {
   const dir = path.join(STORAGE_DIR, 'overlays');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const filePath = path.join(dir, `${name}.png`);
-  const data = base64Data.replace(/^data:image\/png;base64,/, '');
+  // Detect format from data URI prefix
+  const isWebP = base64Data.startsWith('data:image/webp');
+  const ext = isWebP ? 'webp' : 'png';
+  const filePath = path.join(dir, `${name}.${ext}`);
+  const data = base64Data.replace(/^data:image\/[a-z+]+;base64,/, '');
   fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
   return filePath;
 }
@@ -174,8 +177,9 @@ worker.on('failed', async (job, err) => {
     // Track stats
     await t.trackJob(jobId, 0, 'failed');
 
-    // Notify failure
-    await t.notifyJobFailed(jobId, cardIdx, err.message);
+    // Notify failure (include project URL for context)
+    const projectUrl = job.data.projectShareUrl || '';
+    await t.notifyJobFailed(jobId, cardIdx, err.message, { projectUrl });
 
     // Cookie/session expiry suspicion alert
     const suspicionReason = detectCookieExpirySuspicion(err.message);
