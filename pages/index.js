@@ -664,7 +664,7 @@ function CheckboxRow({ label, checked, onChange }) {
 
 
 /* ── ZoomedSeekbar: shows region around start ── */
-function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange, onClipChange, onWarn, clipLen }) {
+function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onSeek, onStartChange, onEndChange, onClipChange, onWarn, clipLen, onRangeDragEnd }) {
   const zoomRef = useRef(null);
   const [zDrag, setZDrag] = useState(false);
   const [zDragTime, setZDragTime] = useState(null);
@@ -883,6 +883,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
             const targetZEnd = Math.min(duration, targetZStart + 40);
             const midPct = toZPct((finalStart + lastRangePosRef.current.end) / 2);
             animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300, { delta, badgePct: midPct });
+            if (onRangeDragEnd) onRangeDragEnd(finalStart);
           } else {
             frozenRange.current = null;
           }
@@ -918,6 +919,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
             const targetZEnd = Math.min(duration, targetZStart + 40);
             const midPct = toZPct((finalStart + lastRangePosRef.current.end) / 2);
             animateZoomTransition(fromRange, { zStart: targetZStart, zEnd: targetZEnd }, 300, { delta, badgePct: midPct });
+            if (onRangeDragEnd) onRangeDragEnd(finalStart);
           } else {
             frozenRange.current = null;
           }
@@ -1150,6 +1152,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     const ss = startSecRef.current, es = endSecRef.current;
     const inRange = ss != null && es != null && sec >= ss && sec <= es;
     manualSeekOutside.current = !inRange;
+  };
+
+  const handleRangeDragEnd = (startTime) => {
+    if (!playerRef.current) return;
+    playerRef.current.seekTo(startTime, true);
+    setCurrent(startTime);
+    manualSeekOutside.current = false;
+    playerRef.current.playVideo();
   };
 
   // Zoom helpers
@@ -1518,7 +1528,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
     // Warning toast (prominent for mobile)
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
@@ -1996,7 +2006,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       ),
     ),
     // Zoomed seekbar for precision
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen }),
+    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
     // Warning toast
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
