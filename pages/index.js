@@ -2013,15 +2013,24 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
   const vsc = (videoScale || 110) / 100;
 
+  // Crop-offset positioning (matches backend FFmpeg crop logic)
+  const totalScale = coverScale * vsc;
+  const scaledW = iW * totalScale;
+  const scaledH = iH * totalScale;
+  const maxOffX = Math.max(scaledW - width, 0);
+  const maxOffY = Math.max(scaledH - height, 0);
+  const offX = maxOffX * (videoX ?? 50) / 100;
+  const offY = maxOffY * (videoY ?? 50) / 100;
+
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
-    // Iframe: centered & scaled to cover, respecting user's position/scale
+    // Iframe: scaled to cover, positioned via crop-offset
     React.createElement("div", {
       style: {
-        position: 'absolute', top: '50%', left: '50%', width: iW, height: iH,
-        transform: 'translate(-50%, -50%) scale(' + (coverScale * vsc) + ')',
-        transformOrigin: (videoX ?? 50) + '% ' + (videoY ?? 50) + '%',
+        position: 'absolute', top: 0, left: 0, width: iW, height: iH,
+        transform: 'scale(' + totalScale + ') translate(' + (-offX / totalScale) + 'px, ' + (-offY / totalScale) + 'px)',
+        transformOrigin: '0 0',
       },
     },
       React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
@@ -2130,8 +2139,22 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   ) : null;
 
   const brightFilter = (card.videoBrightness) ? `brightness(${1 + (card.videoBrightness || 0) / 100})` : undefined;
+  // BgImage: crop-offset positioning for thumbnails (matches backend FFmpeg crop logic)
+  // YouTube thumbnails are 16:9 (1920x1080)
+  const thumbW = 1920, thumbH = 1080;
+  const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
+  const thumbTotalScale = thumbCoverScale * vScale;
+  const thumbScaledW = thumbW * thumbTotalScale;
+  const thumbScaledH = thumbH * thumbTotalScale;
+  const thumbMaxOffX = Math.max(thumbScaledW - previewW, 0);
+  const thumbMaxOffY = Math.max(thumbScaledH - previewH, 0);
+  const thumbOffX = thumbMaxOffX * (card.videoX ?? 50) / 100;
+  const thumbOffY = thumbMaxOffY * (card.videoY ?? 50) / 100;
   const BgImage = () => baseImage
-    ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, transform: isBaseThumb ? `scale(${vScale})` : 'none', transformOrigin: isBaseThumb ? `${card.videoX}% ${card.videoY}%` : 'center', filter: brightFilter } })
+    ? (isBaseThumb
+      ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
+      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter } })
+    )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
