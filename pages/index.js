@@ -1297,18 +1297,30 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed
-      const startPanCenter = zoomCenter;
-      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
+      // Panning mode when zoomed — but delegate to playhead/marker if near
       const rect = seekRef.current.getBoundingClientRect();
+      const cx = isTouch ? e.touches[0].clientX : e.clientX;
+      const playheadX = rect.left + (vPct / 100) * rect.width;
+      const startMarkerX = vStartPct != null ? rect.left + (vStartPct / 100) * rect.width : null;
+      const endMarkerX = vEndPct != null ? rect.left + (vEndPct / 100) * rect.width : null;
+      if (Math.abs(cx - playheadX) <= 10) { startPlayheadDrag(e); return; }
+      if (startMarkerX != null && Math.abs(cx - startMarkerX) <= 5) { startSeekMarkerDrag('start', e); return; }
+      if (endMarkerX != null && Math.abs(cx - endMarkerX) <= 5) { startSeekMarkerDrag('end', e); return; }
+      const startPanCenter = zoomCenter;
+      const startPanX = cx;
+      let panned = false;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
-        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        const deltaPx = cx - startPanX;
-        const deltaRatio = -deltaPx / rect.width / zoomLevel;
-        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (!panned && Math.abs(mcx - startPanX) > 5) panned = true;
+        if (panned) {
+          const deltaPx = mcx - startPanX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
       };
       const onUp = () => {
+        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
@@ -1888,18 +1900,29 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed
+      // Panning mode when zoomed — but delegate to playhead/marker if near
+      const rect = seekRef.current.getBoundingClientRect();
+      const playheadX = rect.left + (mvPct / 100) * rect.width;
+      const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+      const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+      if (Math.abs(startClientX - playheadX) <= 14) { startPlayheadDrag(e); return; }
+      if (startMarkerX != null && Math.abs(startClientX - startMarkerX) <= 12) { startSeekMarkerDrag('start', e); return; }
+      if (endMarkerX != null && Math.abs(startClientX - endMarkerX) <= 12) { startSeekMarkerDrag('end', e); return; }
       const startPanCenter = zoomCenter;
       const startPanX = startClientX;
-      const rect = seekRef.current.getBoundingClientRect();
+      let panned = false;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const deltaPx = cx - startPanX;
-        const deltaRatio = -deltaPx / rect.width / zoomLevel;
-        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        if (!panned && Math.abs(cx - startPanX) > 10) panned = true;
+        if (panned) {
+          const deltaPx = cx - startPanX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
       };
       const onUp = () => {
+        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
