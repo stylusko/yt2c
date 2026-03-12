@@ -2093,9 +2093,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         React.createElement("button", { onClick: handleClose, style: { width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.08)', color: T.textSecondary, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, '\u2715'),
       ),
       // Scrollable content
-      React.createElement("div", { style: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } },
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px' } },
         // Mini player
-        React.createElement("div", { style: { position: 'relative', width: '100%', aspectRatio: '16/9', background: '#000' } },
+        React.createElement("div", { style: { position: 'relative', margin: '0 -16px', aspectRatio: '16/9', background: '#000' } },
           React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
           // Play overlay
           React.createElement("div", { onClick: togglePlay, style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
@@ -2113,7 +2113,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
-          style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, marginLeft: 12, marginRight: 12, overflow: 'visible' },
+          style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
         },
           // Track bg
           React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -2141,7 +2141,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Unified hit area when markers are close
           markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
           // Playhead hit area + visual element
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
             React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
           (playing || mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
@@ -2151,7 +2151,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         // Minimap (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
           onMouseDown: handleMobileMinimapDown, onTouchStart: handleMobileMinimapDown,
-          style: { position: 'relative', height: 16, margin: '2px 12px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 4, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
+          style: { position: 'relative', height: 16, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 4, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
         },
           // Visible window indicator
           React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 4, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
@@ -2161,7 +2161,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 12, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
         ),
         // Zoom control bar (always visible)
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 16px', background: T.surface } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 0', background: T.surface } },
           React.createElement("button", {
             onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
             style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
@@ -2177,7 +2177,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           }, '\uB9AC\uC14B'),
         ),
         // Controls row
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 16px', background: T.surface, borderTop: '1px solid ' + T.border } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 0', background: T.surface, borderTop: '1px solid ' + T.border } },
           // Play/Pause
           React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
           // Mute
