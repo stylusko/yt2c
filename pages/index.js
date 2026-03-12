@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0312';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5570,6 +5570,16 @@ export default function App() {
   useEffect(() => {
     if (projects.length > 0 && activeProjectId) saveProjects(projects, activeProjectId);
   }, [projects, activeProjectId]);
+
+  // Report card count per session
+  useEffect(() => {
+    const totalCards = projects.reduce((sum, p) => sum + (p.cards?.length || 0), 0);
+    if (totalCards === 0) return;
+    let sid = null;
+    try { sid = localStorage.getItem('yt2c_sid'); if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('yt2c_sid', sid); } } catch {}
+    if (!sid) return;
+    fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'cards', sessionId: sid, cardCount: totalCards }) }).catch(() => {});
+  }, [projects]);
 
   const activeProject = projects.find(p => p.id === activeProjectId) || projects[0];
   const globalUrl = activeProject?.globalUrl || '';
