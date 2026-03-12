@@ -2510,43 +2510,17 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const handleCardTextDblClick = (e) => {
     if (!onTextClick) return;
     const layout = card.layout || 'photo_top';
-    if (layout !== 'text_box') return; // non-text_box: single click only
+    if (layout !== 'text_box') return;
 
     const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
     if (fields.length === 0) return;
     if (fields.length === 1) { onTextClick(fields[0]); return; }
 
+    // Equal zone split within the clicked element (textbox area)
     const rect = e.currentTarget.getBoundingClientRect();
-    const relY = (e.clientY - rect.top) / rect.height;
-    const PAD = 40 / 1080;
-    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
-    const gap = (f) => (f === 'body' ? 15 : 10) / 1080;
-
-    const bY = (card.textBoxY || 70) / 100;
-    const bPad = (card.textBoxPadding || 20) / 1080;
-    let y;
-    if ((card.textBoxHeight || 0) > 0) {
-      y = bY - card.textBoxHeight / 100 / 2 + bPad;
-    } else {
-      const totalH = fields.reduce((s, f, i) => s + fh(f) + (i > 0 ? gap(f) : 0), 0);
-      y = bY - totalH / 2;
-    }
-
-    const centers = [];
-    for (let i = 0; i < fields.length; i++) {
-      if (i > 0) y += gap(fields[i]);
-      const h = fh(fields[i]);
-      centers.push(y + h / 2);
-      y += h;
-    }
-
-    let bestIdx = 0, bestDist = Infinity;
-    for (let i = 0; i < centers.length; i++) {
-      const d = Math.abs(relY - centers[i]);
-      if (d < bestDist) { bestDist = d; bestIdx = i; }
-    }
-    if (bestDist > 0.15) return;
-    onTextClick(fields[bestIdx]);
+    const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    const zoneIdx = Math.min(fields.length - 1, Math.floor(relY * fields.length));
+    onTextClick(fields[zoneIdx]);
   };
 
   const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
