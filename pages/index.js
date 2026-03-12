@@ -962,8 +962,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     el.addEventListener('lostpointercapture', onUp);
   };
 
-  const markerHit = { position: 'absolute', top: -6, width: 36, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
-  const zMarkersClose = sPct != null && ePct != null && zoomRef.current && Math.abs(ePct - sPct) / 100 * zoomRef.current.offsetWidth < 36;
+  const markerHit = { position: 'absolute', top: -6, width: 16, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
+  const zMarkersClose = sPct != null && ePct != null && zoomRef.current && Math.abs(ePct - sPct) / 100 * zoomRef.current.offsetWidth < 16;
 
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
@@ -1002,13 +1002,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       // Start marker (visible line + handle + wider hit area)
       React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + sPct + '% - 1.5px)', width: 3, height: 20, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
       React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + sPct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      React.createElement("div", { onPointerDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 18px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
+      React.createElement("div", { onPointerDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 8px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
       // End marker (visible line + handle + wider hit area)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + ePct + '% - 1.5px)', width: 3, height: 20, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + ePct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: overLimit ? dangerC : accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
+      ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 8px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
       // Unified hit area when markers are close
-      zMarkersClose && ePct != null && React.createElement("div", { onPointerDown: (e) => { const { time } = calcZPos(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startMarkerDrag(type, e); }, style: { position: 'absolute', top: -6, left: 'calc(' + sPct + '% - 18px)', width: 'calc(' + (ePct - sPct) + '% + 36px)', height: 40, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
+      zMarkersClose && ePct != null && React.createElement("div", { onPointerDown: (e) => { const { time } = calcZPos(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startMarkerDrag(type, e); }, style: { position: 'absolute', top: -6, left: 'calc(' + sPct + '% - 8px)', width: 'calc(' + (ePct - sPct) + '% + 16px)', height: 40, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
       // Playhead hit area + visual element
       React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + curPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 6, width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
@@ -1463,7 +1463,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const vEndPct = (endSec != null && duration > 0) ? toVisualPct(endSec) : null;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
-  const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 30;
+  const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 10;
 
   const handleMinimapDown = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1510,15 +1510,15 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
       ),
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vStartPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // End marker (visible line + label + hit area)
       vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vEndPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
       ),
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vEndPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Unified hit area when markers are close
-      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 12px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 24px)', height: 28, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
+      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 5px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 10px)', height: 28, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
       // Playhead hit area + visual element
       vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 5, width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
