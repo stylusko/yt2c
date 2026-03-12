@@ -761,14 +761,16 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     const snapStartSec = startSec;
     const { time, x } = calcZPos(e);
     setZDrag(true); setZDragTime(time); setZDragX(x); setZDragType(type);
+    let lastStartVal = snapStartSec;
     const onMove = (ev) => {
       const r = calcZPos(ev);
       const t = Math.max(0, Math.min(duration, r.time));
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setZDragTime(snapEndSec - 30); if (onWarn) onWarn(); return; }
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setZDragTime(snapEndSec - 30); lastStartVal = snapEndSec - 30; if (onWarn) onWarn(); return; }
         onStartChange(fmtMM(t));
+        lastStartVal = t;
       } else {
         if (t <= snapStartSec) return;
         if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
@@ -778,6 +780,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     const onUp = () => {
       frozenRange.current = null;
       setZDrag(false); setZDragTime(null); setZDragType(null);
+      if (onRangeDragEnd) onRangeDragEnd(lastStartVal);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('lostpointercapture', onUp);
