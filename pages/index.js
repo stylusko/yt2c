@@ -2516,11 +2516,31 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     if (fields.length === 0) return;
     if (fields.length === 1) { onTextClick(fields[0]); return; }
 
-    // Equal zone split within the clicked element (textbox area)
+    // Each field's height proportional to fontSize * lineHeight, with gaps
+    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4);
+    const gapH = (f) => (f === 'body' ? 15 : 10);
+
+    // Compute center Y of each field within stacked content
+    const centers = [];
+    let y = 0;
+    for (let i = 0; i < fields.length; i++) {
+      if (i > 0) y += gapH(fields[i]);
+      const h = fh(fields[i]);
+      centers.push(y + h / 2);
+      y += h;
+    }
+    const totalH = y;
+
+    // Map click position to content space
     const rect = e.currentTarget.getBoundingClientRect();
-    const relY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    const zoneIdx = Math.min(fields.length - 1, Math.floor(relY * fields.length));
-    onTextClick(fields[zoneIdx]);
+    const clickY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * totalH;
+
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const d = Math.abs(clickY - centers[i]);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    onTextClick(fields[bestIdx]);
   };
 
   const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
