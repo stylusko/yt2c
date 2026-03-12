@@ -2516,28 +2516,28 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     if (fields.length === 0) return;
     if (fields.length === 1) { onTextClick(fields[0]); return; }
 
-    // Each field's height proportional to fontSize * lineHeight, with gaps
-    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4);
-    const gapH = (f) => (f === 'body' ? 15 : 10);
+    // Compute pixel positions within textbox using actual scale
+    const s = previewW / 1080;
+    const padPx = (card.textBoxPadding || 20) * s;
+    const fhPx = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) * s;
+    const gapPx = (f) => (f === 'body' ? 15 : 10) * s;
 
-    // Compute center Y of each field within stacked content
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickPx = e.clientY - rect.top;
+
+    // Center Y of each field in pixels from textbox top
     const centers = [];
-    let y = 0;
+    let y = padPx;
     for (let i = 0; i < fields.length; i++) {
-      if (i > 0) y += gapH(fields[i]);
-      const h = fh(fields[i]);
+      if (i > 0) y += gapPx(fields[i]);
+      const h = fhPx(fields[i]);
       centers.push(y + h / 2);
       y += h;
     }
-    const totalH = y;
-
-    // Map click position to content space
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height)) * totalH;
 
     let bestIdx = 0, bestDist = Infinity;
     for (let i = 0; i < centers.length; i++) {
-      const d = Math.abs(clickY - centers[i]);
+      const d = Math.abs(clickPx - centers[i]);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
     onTextClick(fields[bestIdx]);
