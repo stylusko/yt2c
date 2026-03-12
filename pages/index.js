@@ -6,7 +6,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0312';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -962,7 +962,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     el.addEventListener('lostpointercapture', onUp);
   };
 
-  const markerHit = { position: 'absolute', top: -6, width: 36, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
+  const markerHit = { position: 'absolute', top: -6, width: 16, height: 40, cursor: 'ew-resize', zIndex: 3, touchAction: 'none' };
+  const zMarkersClose = sPct != null && ePct != null && zoomRef.current && Math.abs(ePct - sPct) / 100 * zoomRef.current.offsetWidth < 16;
 
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
@@ -1001,11 +1002,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       // Start marker (visible line + handle + wider hit area)
       React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + sPct + '% - 1.5px)', width: 3, height: 20, background: accentC, borderRadius: 1, pointerEvents: 'none' } }),
       React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + sPct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      React.createElement("div", { onPointerDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 18px)' } }),
+      React.createElement("div", { onPointerDown: (e) => startMarkerDrag('start', e), style: { ...markerHit, left: 'calc(' + sPct + '% - 8px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
       // End marker (visible line + handle + wider hit area)
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 4, left: 'calc(' + ePct + '% - 1.5px)', width: 3, height: 20, background: overLimit ? dangerC : accentC, borderRadius: 1, pointerEvents: 'none' } }),
       ePct != null && React.createElement("div", { style: { position: 'absolute', top: 9, left: 'calc(' + ePct + '% - 5px)', width: 10, height: 10, borderRadius: '50%', background: overLimit ? dangerC : accentC, border: '2px solid #fff', boxShadow: '0 1px 3px rgba(0,0,0,0.3)', pointerEvents: 'none', zIndex: 4 } }),
-      ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 18px)' } }),
+      ePct != null && React.createElement("div", { onPointerDown: (e) => startMarkerDrag('end', e), style: { ...markerHit, left: 'calc(' + ePct + '% - 8px)', pointerEvents: zMarkersClose ? 'none' : 'auto' } }),
+      // Unified hit area when markers are close
+      zMarkersClose && ePct != null && React.createElement("div", { onPointerDown: (e) => { const { time } = calcZPos(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startMarkerDrag(type, e); }, style: { position: 'absolute', top: -6, left: 'calc(' + sPct + '% - 8px)', width: 'calc(' + (ePct - sPct) + '% + 16px)', height: 40, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
       // Playhead hit area + visual element
       React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + curPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 6, width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
@@ -1294,18 +1297,30 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed
-      const startPanCenter = zoomCenter;
-      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
+      // Panning mode when zoomed — but delegate to playhead/marker if near
       const rect = seekRef.current.getBoundingClientRect();
+      const cx = isTouch ? e.touches[0].clientX : e.clientX;
+      const playheadX = rect.left + (vPct / 100) * rect.width;
+      const startMarkerX = vStartPct != null ? rect.left + (vStartPct / 100) * rect.width : null;
+      const endMarkerX = vEndPct != null ? rect.left + (vEndPct / 100) * rect.width : null;
+      if (Math.abs(cx - playheadX) <= 10) { startPlayheadDrag(e); return; }
+      if (startMarkerX != null && Math.abs(cx - startMarkerX) <= 5) { startSeekMarkerDrag('start', e); return; }
+      if (endMarkerX != null && Math.abs(cx - endMarkerX) <= 5) { startSeekMarkerDrag('end', e); return; }
+      const startPanCenter = zoomCenter;
+      const startPanX = cx;
+      let panned = false;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
-        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        const deltaPx = cx - startPanX;
-        const deltaRatio = -deltaPx / rect.width / zoomLevel;
-        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (!panned && Math.abs(mcx - startPanX) > 5) panned = true;
+        if (panned) {
+          const deltaPx = mcx - startPanX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
       };
       const onUp = () => {
+        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
@@ -1460,7 +1475,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const vEndPct = (endSec != null && duration > 0) ? toVisualPct(endSec) : null;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
-  const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 30;
+  const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 10;
 
   const handleMinimapDown = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -1507,13 +1522,15 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
       ),
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vStartPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // End marker (visible line + label + hit area)
       vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vEndPct + '% - 1px)', pointerEvents: 'none' } },
         React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
         React.createElement("div", { style: { position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
       ),
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 28, left: 'calc(' + vEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vEndPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // Unified hit area when markers are close
+      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 5px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 10px)', height: 28, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
       // Playhead hit area + visual element
       vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 5, width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
@@ -1883,18 +1900,29 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed
+      // Panning mode when zoomed — but delegate to playhead/marker if near
+      const rect = seekRef.current.getBoundingClientRect();
+      const playheadX = rect.left + (mvPct / 100) * rect.width;
+      const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+      const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+      if (Math.abs(startClientX - playheadX) <= 14) { startPlayheadDrag(e); return; }
+      if (startMarkerX != null && Math.abs(startClientX - startMarkerX) <= 12) { startSeekMarkerDrag('start', e); return; }
+      if (endMarkerX != null && Math.abs(startClientX - endMarkerX) <= 12) { startSeekMarkerDrag('end', e); return; }
       const startPanCenter = zoomCenter;
       const startPanX = startClientX;
-      const rect = seekRef.current.getBoundingClientRect();
+      let panned = false;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const deltaPx = cx - startPanX;
-        const deltaRatio = -deltaPx / rect.width / zoomLevel;
-        setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        if (!panned && Math.abs(cx - startPanX) > 10) panned = true;
+        if (panned) {
+          const deltaPx = cx - startPanX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
       };
       const onUp = () => {
+        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
@@ -2086,6 +2114,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         React.createElement("div", { style: { position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
       ),
       mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // Unified hit area when markers are close
+      markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
       // Playhead hit area + visual element
       mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
         React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
@@ -2429,68 +2459,94 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   });
 
   // Click target for text field switching + deselection (transparent, on top of canvas overlay)
+  const handleCardTextClick = (e) => {
+    if (!onTextClick) return;
+    const layout = card.layout || 'photo_top';
+    if (layout === 'text_box') return; // text_box: double-click only
+
+    const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+    if (fields.length === 0) return;
+    if (fields.length === 1) { onTextClick(fields[0]); return; }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+    const photoRatio = (card.photoRatio ?? 50) / 100;
+    const PAD = 40 / 1080;
+    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
+    const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
+
+    const centers = [];
+    if (layout === 'full_bg' || layout === 'none') {
+      let y = 1 - PAD;
+      for (let i = fields.length - 1; i >= 0; i--) {
+        const h = fh(fields[i]);
+        y -= h;
+        centers.unshift(y + h / 2);
+        if (i > 0) y -= gap(fields[i]);
+      }
+    } else {
+      let y;
+      if (layout === 'photo_top') y = photoRatio + PAD;
+      else if (layout === 'photo_bottom') y = PAD;
+      else y = PAD;
+
+      for (let i = 0; i < fields.length; i++) {
+        if (i > 0) y += gap(fields[i]);
+        const h = fh(fields[i]);
+        centers.push(y + h / 2);
+        y += h;
+      }
+    }
+
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const d = Math.abs(relY - centers[i]);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestDist > 0.15) return;
+    onTextClick(fields[bestIdx]);
+  };
+
+  const handleCardTextDblClick = (e) => {
+    if (!onTextClick) return;
+    const layout = card.layout || 'photo_top';
+    if (layout !== 'text_box') return;
+
+    const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+    if (fields.length === 0) return;
+    if (fields.length === 1) { onTextClick(fields[0]); return; }
+
+    // Compute pixel positions within textbox using actual scale
+    const s = previewW / 1080;
+    const padPx = (card.textBoxPadding || 20) * s;
+    const fhPx = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) * s;
+    const gapPx = (f) => (f === 'body' ? 15 : 10) * s;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickPx = e.clientY - rect.top;
+
+    // Center Y of each field in pixels from textbox top
+    const centers = [];
+    let y = padPx;
+    for (let i = 0; i < fields.length; i++) {
+      if (i > 0) y += gapPx(fields[i]);
+      const h = fhPx(fields[i]);
+      centers.push(y + h / 2);
+      y += h;
+    }
+
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const d = Math.abs(clickPx - centers[i]);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    onTextClick(fields[bestIdx]);
+  };
+
   const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
     style: { position: "absolute", inset: 0, zIndex: 4, cursor: "pointer" },
-    onClick: (e) => {
-      if (onSelectHandle) onSelectHandle(null);
-      if (!onTextClick) return;
-
-      const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
-      if (fields.length === 0) return;
-      if (fields.length === 1) { onTextClick(fields[0]); return; }
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const relY = (e.clientY - rect.top) / rect.height;
-      const layout = card.layout || 'photo_top';
-      const photoRatio = (card.photoRatio ?? 50) / 100;
-      const PAD = 40 / 1080;
-      // 각 필드의 1줄 높이 추정 (카드 높이 대비 비율)
-      const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
-      // 필드 간 gap (캔버스 렌더링 코드와 동일)
-      const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
-
-      // 각 필드의 Y 중심 추정 → 가장 가까운 필드 선택
-      const centers = [];
-      if (layout === 'full_bg' || layout === 'none') {
-        // 하단 정렬: body가 맨 아래, title이 맨 위
-        let y = 1 - PAD;
-        for (let i = fields.length - 1; i >= 0; i--) {
-          const h = fh(fields[i]);
-          y -= h;
-          centers.unshift(y + h / 2);
-          if (i > 0) y -= gap(fields[i]);
-        }
-      } else {
-        // 상단 정렬
-        let y;
-        if (layout === 'photo_top') y = photoRatio + PAD;
-        else if (layout === 'photo_bottom') y = PAD;
-        else if (layout === 'text_box') {
-          const bY = (card.textBoxY || 70) / 100;
-          const bPad = (card.textBoxPadding || 20) / 1080;
-          if ((card.textBoxHeight || 0) > 0) {
-            y = bY - card.textBoxHeight / 100 / 2 + bPad;
-          } else {
-            const totalH = fields.reduce((s, f, i) => s + fh(f) + (i > 0 ? gap(f) : 0), 0);
-            y = bY - totalH / 2;
-          }
-        } else y = PAD;
-
-        for (let i = 0; i < fields.length; i++) {
-          if (i > 0) y += gap(fields[i]);
-          const h = fh(fields[i]);
-          centers.push(y + h / 2);
-          y += h;
-        }
-      }
-
-      let bestIdx = 0, bestDist = Infinity;
-      for (let i = 0; i < centers.length; i++) {
-        const d = Math.abs(relY - centers[i]);
-        if (d < bestDist) { bestDist = d; bestIdx = i; }
-      }
-      onTextClick(fields[bestIdx]);
-    }
+    onClick: (e) => { if (onSelectHandle) onSelectHandle(null); handleCardTextClick(e); },
+    onDoubleClick: handleCardTextDblClick,
   });
 
   // ── Unified drag system (textbox + overlay) ──
@@ -2607,6 +2663,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", {
       style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
       onClick: (e) => { e.stopPropagation(); onSelectHandle('textbox'); },
+      onDoubleClick: (e) => { e.stopPropagation(); handleCardTextDblClick(e); },
     });
   })();
 
@@ -3901,6 +3958,12 @@ function StylePresetThumb({ preset }) {
 /* ── Mode Selection Screen ── */
 function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
   const [hovered, setHovered] = useState(null);
+  const [siteStats, setSiteStats] = useState(null);
+  useEffect(() => {
+    fetch('/api/stats').then(r => r.json()).then(d => {
+      if (d.visitors > 0 || d.cards > 0) setSiteStats(d);
+    }).catch(() => {});
+  }, []);
   const cardBase = {
     flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
     background: T.surface, borderRadius: mob ? 12 : 16, padding: mob ? 16 : 32,
@@ -3917,7 +3980,8 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       @keyframes modeStepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes modeArrowPulse { 0%,100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 1; transform: translateX(3px); } }
     `),
-    React.createElement("div", { style: { textAlign: 'center', marginBottom: mob ? 16 : 32 } },
+    // Section 1: Logo + copy
+    React.createElement("div", { style: { textAlign: 'center' } },
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 8 : 12 } },
         React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 30 : 36, height: mob ? 30 : 36, borderRadius: 8 } }),
         React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: mob ? 22 : 26, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
@@ -3925,8 +3989,10 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       React.createElement("h1", { style: { fontSize: mob ? 17 : 26, fontWeight: 700, color: T.text, margin: 0, marginBottom: 4 } }, "\uC720\uBA54\uCE74, \uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
       React.createElement("p", { style: { fontSize: mob ? 12 : 15, color: T.textSecondary, margin: 0 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
     ),
-    // 3-step flow
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: mob ? 6 : 16, marginBottom: mob ? 16 : 36 } },
+    // Spacer
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    // Section 2: 3-step flow
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: mob ? 6 : 16 } },
       flowSteps.map((s, i) => React.createElement(React.Fragment, { key: i },
         React.createElement("div", {
           style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, animation: `modeStepIn 0.5s ease ${i * 0.3}s both` },
@@ -3939,6 +4005,17 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         }, "\u203A"),
       )),
     ),
+    // Stats (below workflow)
+    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', animation: 'modeStepIn 0.6s ease 0.9s both' } },
+      "\uC9C0\uAE08\uAE4C\uC9C0 ",
+      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.visitors.toLocaleString() + "\uBA85"),
+      "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
+      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.cards.toLocaleString() + "\uAC1C"),
+      "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+    ),
+    // Spacer
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    // Section 3: Cards
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
       React.createElement("div", {
@@ -3956,7 +4033,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         React.createElement("div", { style: { fontSize: mob ? 24 : 32 } }, "\u2728"),
         React.createElement("div", null,
           React.createElement("h2", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: mob ? 4 : 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
         ),
         React.createElement("div", { style: { marginTop: 'auto', paddingTop: mob ? 4 : 8 } },
           React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
@@ -3971,7 +4048,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         React.createElement("div", { style: { fontSize: mob ? 24 : 32 } }, "\uD83C\uDFA8"),
         React.createElement("div", null,
           React.createElement("h2", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: mob ? 4 : 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3, \uD14D\uC2A4\uD2B8, \uC774\uBBF8\uC9C0 \uB4F1 \uBAA8\uB4E0 \uC124\uC815\uC744 \uC9C1\uC811 \uC870\uC815\uD574\uC694."),
+          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3\uACFC \uD14D\uC2A4\uD2B8 \uB4F1", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
         ),
         React.createElement("div", { style: { marginTop: 'auto', paddingTop: mob ? 4 : 8 } },
           React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
