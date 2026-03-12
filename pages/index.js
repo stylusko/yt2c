@@ -2108,7 +2108,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Scrollable content
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px' } },
         // Mini player
-        React.createElement("div", { style: { position: 'relative', margin: '0 -16px', aspectRatio: '16/9', background: '#000' } },
+        React.createElement("div", { style: { position: 'relative', aspectRatio: '16/9', background: '#000', borderRadius: 10, overflow: 'hidden', marginTop: 12 } },
           React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
           // Play overlay
           React.createElement("div", { onClick: togglePlay, style: { position: 'absolute', inset: 0, zIndex: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' } },
@@ -2174,7 +2174,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 12, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
         ),
         // Zoom control bar (always visible)
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 0', background: T.surface } },
+        React.createElement("div", { style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 0', background: T.surface } },
           React.createElement("button", {
             onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
             style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
@@ -2184,9 +2184,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
             style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
           }, '+'),
-          React.createElement("button", {
+          zoomLevel > 1 && React.createElement("button", {
             onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-            style: { fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', visibility: zoomLevel > 1 ? 'visible' : 'hidden' },
+            style: { position: 'absolute', right: 0, fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' },
           }, '\uB9AC\uC14B'),
         ),
         // Controls row
