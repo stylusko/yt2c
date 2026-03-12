@@ -2006,6 +2006,16 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     e.stopPropagation();
     const isTouch = e.type === 'touchstart';
     const cx = isTouch ? e.touches[0].clientX : e.clientX;
+    // If closer to a marker than to the playhead, delegate to marker drag
+    if (seekRef.current && startSec != null && endSec != null) {
+      const rect = seekRef.current.getBoundingClientRect();
+      const playheadX = rect.left + (mvPct / 100) * rect.width;
+      const startX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+      const endX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+      const dPlay = Math.abs(cx - playheadX);
+      if (startX != null && Math.abs(cx - startX) < dPlay && Math.abs(cx - startX) <= 18) { startSeekMarkerDrag('start', e); return; }
+      if (endX != null && Math.abs(cx - endX) < dPlay && Math.abs(cx - endX) <= 18) { startSeekMarkerDrag('end', e); return; }
+    }
     const { time, x } = calcSeekTime(cx);
     manualSeekOutside.current = !(startSec != null && endSec != null && time >= startSec && time <= endSec);
     seekTo(time);
