@@ -2459,69 +2459,100 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   });
 
   // Click target for text field switching + deselection (transparent, on top of canvas overlay)
+  const handleCardTextClick = (e) => {
+    if (!onTextClick) return;
+    const layout = card.layout || 'photo_top';
+    if (layout === 'text_box') return; // text_box: double-click only
+
+    const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+    if (fields.length === 0) return;
+    if (fields.length === 1) { onTextClick(fields[0]); return; }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+    const photoRatio = (card.photoRatio ?? 50) / 100;
+    const PAD = 40 / 1080;
+    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
+    const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
+
+    const centers = [];
+    if (layout === 'full_bg' || layout === 'none') {
+      let y = 1 - PAD;
+      for (let i = fields.length - 1; i >= 0; i--) {
+        const h = fh(fields[i]);
+        y -= h;
+        centers.unshift(y + h / 2);
+        if (i > 0) y -= gap(fields[i]);
+      }
+    } else {
+      let y;
+      if (layout === 'photo_top') y = photoRatio + PAD;
+      else if (layout === 'photo_bottom') y = PAD;
+      else y = PAD;
+
+      for (let i = 0; i < fields.length; i++) {
+        if (i > 0) y += gap(fields[i]);
+        const h = fh(fields[i]);
+        centers.push(y + h / 2);
+        y += h;
+      }
+    }
+
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const d = Math.abs(relY - centers[i]);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestDist > 0.15) return;
+    onTextClick(fields[bestIdx]);
+  };
+
+  const handleCardTextDblClick = (e) => {
+    if (!onTextClick) return;
+    const layout = card.layout || 'photo_top';
+    if (layout !== 'text_box') return; // non-text_box: single click only
+
+    const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
+    if (fields.length === 0) return;
+    if (fields.length === 1) { onTextClick(fields[0]); return; }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+    const PAD = 40 / 1080;
+    const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
+    const gap = (f) => (f === 'body' ? 15 : 10) / 1080;
+
+    const bY = (card.textBoxY || 70) / 100;
+    const bPad = (card.textBoxPadding || 20) / 1080;
+    let y;
+    if ((card.textBoxHeight || 0) > 0) {
+      y = bY - card.textBoxHeight / 100 / 2 + bPad;
+    } else {
+      const totalH = fields.reduce((s, f, i) => s + fh(f) + (i > 0 ? gap(f) : 0), 0);
+      y = bY - totalH / 2;
+    }
+
+    const centers = [];
+    for (let i = 0; i < fields.length; i++) {
+      if (i > 0) y += gap(fields[i]);
+      const h = fh(fields[i]);
+      centers.push(y + h / 2);
+      y += h;
+    }
+
+    let bestIdx = 0, bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const d = Math.abs(relY - centers[i]);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestDist > 0.15) return;
+    onTextClick(fields[bestIdx]);
+  };
+
   const clickTarget = (onTextClick || onSelectHandle) && React.createElement("div", {
     style: { position: "absolute", inset: 0, zIndex: 4, cursor: "pointer" },
-    onClick: (e) => {
-      if (onSelectHandle) onSelectHandle(null);
-      if (!onTextClick) return;
-
-      const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
-      if (fields.length === 0) return;
-      if (fields.length === 1) { onTextClick(fields[0]); return; }
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      const relY = (e.clientY - rect.top) / rect.height;
-      const layout = card.layout || 'photo_top';
-      const photoRatio = (card.photoRatio ?? 50) / 100;
-      const PAD = 40 / 1080;
-      // 각 필드의 1줄 높이 추정 (카드 높이 대비 비율)
-      const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
-      // 필드 간 gap (캔버스 렌더링 코드와 동일)
-      const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
-
-      // 각 필드의 Y 중심 추정 → 가장 가까운 필드 선택
-      const centers = [];
-      if (layout === 'full_bg' || layout === 'none') {
-        // 하단 정렬: body가 맨 아래, title이 맨 위
-        let y = 1 - PAD;
-        for (let i = fields.length - 1; i >= 0; i--) {
-          const h = fh(fields[i]);
-          y -= h;
-          centers.unshift(y + h / 2);
-          if (i > 0) y -= gap(fields[i]);
-        }
-      } else {
-        // 상단 정렬
-        let y;
-        if (layout === 'photo_top') y = photoRatio + PAD;
-        else if (layout === 'photo_bottom') y = PAD;
-        else if (layout === 'text_box') {
-          const bY = (card.textBoxY || 70) / 100;
-          const bPad = (card.textBoxPadding || 20) / 1080;
-          if ((card.textBoxHeight || 0) > 0) {
-            y = bY - card.textBoxHeight / 100 / 2 + bPad;
-          } else {
-            const totalH = fields.reduce((s, f, i) => s + fh(f) + (i > 0 ? gap(f) : 0), 0);
-            y = bY - totalH / 2;
-          }
-        } else y = PAD;
-
-        for (let i = 0; i < fields.length; i++) {
-          if (i > 0) y += gap(fields[i]);
-          const h = fh(fields[i]);
-          centers.push(y + h / 2);
-          y += h;
-        }
-      }
-
-      let bestIdx = 0, bestDist = Infinity;
-      for (let i = 0; i < centers.length; i++) {
-        const d = Math.abs(relY - centers[i]);
-        if (d < bestDist) { bestDist = d; bestIdx = i; }
-      }
-      if (bestDist > 0.15) return;
-      onTextClick(fields[bestIdx]);
-    }
+    onClick: (e) => { if (onSelectHandle) onSelectHandle(null); handleCardTextClick(e); },
+    onDoubleClick: handleCardTextDblClick,
   });
 
   // ── Unified drag system (textbox + overlay) ──
