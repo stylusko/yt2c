@@ -28,9 +28,12 @@ export default async function handler(req, res) {
     const redis = getRedis();
     const ip = getClientIP(req);
     const dateStr = getKSTDateStr();
-    const { type, duration } = req.body || {};
+    const { type, duration, sessionId, cardCount } = req.body || {};
 
-    if (type === 'visit') {
+    if (type === 'cards' && sessionId && typeof cardCount === 'number') {
+      // Store per-session card count
+      await redis.hset('yt2c:cardcounts', sessionId, Math.max(0, cardCount));
+    } else if (type === 'visit') {
       // Add IP to daily visitor set
       const key = `yt2c:visitors:daily:${dateStr}`;
       await redis.sadd(key, ip);
