@@ -3958,6 +3958,12 @@ function StylePresetThumb({ preset }) {
 /* ── Mode Selection Screen ── */
 function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
   const [hovered, setHovered] = useState(null);
+  const [siteStats, setSiteStats] = useState(null);
+  useEffect(() => {
+    fetch('/api/stats').then(r => r.json()).then(d => {
+      if (d.visitors > 0 || d.cards > 0) setSiteStats(d);
+    }).catch(() => {});
+  }, []);
   const cardBase = {
     flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
     background: T.surface, borderRadius: mob ? 12 : 16, padding: mob ? 16 : 32,
@@ -4001,6 +4007,14 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
     ),
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    // Stats
+    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginBottom: mob ? 12 : 20, textAlign: 'center', animation: 'modeStepIn 0.6s ease 0.9s both' } },
+      "\uC9C0\uAE08\uAE4C\uC9C0 ",
+      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.visitors.toLocaleString() + "\uBA85"),
+      "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
+      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.cards.toLocaleString() + "\uAC1C"),
+      "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+    ),
     // Section 3: Cards
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
