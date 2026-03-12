@@ -16,7 +16,8 @@ export default async function handler(req, res) {
       getRedis().hvals('yt2c:cardcounts'),
     ]);
     const sessionCards = cardVals.reduce((sum, v) => sum + parseInt(v || '0', 10), 0);
-    const totalCards = stats.totalCards + sessionCards;
+    const BASE_CARDS = 100;
+    const totalCards = BASE_CARDS + stats.totalCards + sessionCards;
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
     res.json({ visitors: stats.totalVisitors, cards: totalCards });
   } catch (e) {
