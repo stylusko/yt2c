@@ -2519,6 +2519,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
         const d = Math.abs(relY - centers[i]);
         if (d < bestDist) { bestDist = d; bestIdx = i; }
       }
+      if (bestDist > 0.15) return;
       onTextClick(fields[bestIdx]);
     }
   });
