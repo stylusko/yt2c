@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import ReactDOM from 'react-dom';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import JSZip from 'jszip';
@@ -2081,7 +2082,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
   );
 
-  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 100, background: closing ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.7)', backdropFilter: closing ? 'none' : 'blur(4px)', WebkitBackdropFilter: closing ? 'none' : 'blur(4px)', animation: closing ? 'mcsOverlayOut 0.25s ease forwards' : 'mcsOverlayIn 0.25s ease forwards' } },
+  return ReactDOM.createPortal(React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9990, background: closing ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.7)', backdropFilter: closing ? 'none' : 'blur(4px)', WebkitBackdropFilter: closing ? 'none' : 'blur(4px)', animation: closing ? 'mcsOverlayOut 0.25s ease forwards' : 'mcsOverlayIn 0.25s ease forwards' } },
     // Keyframes
     React.createElement("style", null, '@keyframes mcsSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}@keyframes mcsSlideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}@keyframes mcsOverlayIn{from{opacity:0}to{opacity:1}}@keyframes mcsOverlayOut{from{opacity:1}to{opacity:0}}'),
     // Modal panel
@@ -2206,7 +2207,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         React.createElement("button", { onClick: handleClose, style: { width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', background: accentC, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' } }, '\uC801\uC6A9'),
       ),
     ),
-  );
+  ), document.body);
 }
 
 function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp, volume: volumeProp = 80 }) {
