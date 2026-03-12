@@ -4005,16 +4005,16 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         }, "\u203A"),
       )),
     ),
-    // Spacer
-    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
-    // Stats
-    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginBottom: mob ? 12 : 20, textAlign: 'center', animation: 'modeStepIn 0.6s ease 0.9s both' } },
+    // Stats (below workflow)
+    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', animation: 'modeStepIn 0.6s ease 0.9s both' } },
       "\uC9C0\uAE08\uAE4C\uC9C0 ",
       React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.visitors.toLocaleString() + "\uBA85"),
       "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
       React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, siteStats.cards.toLocaleString() + "\uAC1C"),
       "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
     ),
+    // Spacer
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
     // Section 3: Cards
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
