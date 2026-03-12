@@ -4023,7 +4023,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
     { icon: "\u2728", label: "\uC2A4\uD0C0\uC77C \uC120\uD0DD" },
     { icon: "\uD83D\uDCF1", label: "\uCE74\uB4DC\uB274\uC2A4 \uC644\uC131" },
   ];
-  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? '24px 20px' : 40, overflowY: 'auto' } },
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? '44px 20px 24px' : 40, overflowY: 'auto' } },
     React.createElement("style", null, `
       @keyframes modeStepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes modeArrowPulse { 0%,100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 1; transform: translateX(3px); } }
