@@ -2669,6 +2669,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", {
       style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
       onClick: (e) => { e.stopPropagation(); onSelectHandle('textbox'); },
+      onDoubleClick: (e) => { e.stopPropagation(); handleCardTextDblClick(e); },
     });
   })();
 
