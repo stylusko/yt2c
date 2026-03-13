@@ -1682,14 +1682,16 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     return () => { document.body.style.overflow = orig; };
   }, [collapsed]);
 
-  // Native touchstart on minimap (must be non-passive to preventDefault)
+  // Stable ref for minimap handler (avoids re-registering on every render)
+  const minimapHandlerRef = useRef(null);
+  minimapHandlerRef.current = handleMobileMinimapDown;
   useEffect(() => {
     const el = minimapRef.current;
     if (!el) return;
-    const handler = (e) => handleMobileMinimapDown(e);
+    const handler = (e) => minimapHandlerRef.current(e);
     el.addEventListener('touchstart', handler, { passive: false });
     return () => el.removeEventListener('touchstart', handler);
-  });
+  }, [collapsed, zoomLevel]);
 
   // Load YT API
   useEffect(() => {
@@ -2085,12 +2087,25 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   const handleMobileMinimapDown = (e) => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
+    const el = minimapRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const isTouch = e.type === 'touchstart';
-    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
-    setPos(isTouch ? e.touches[0].clientX : e.clientX);
-    const onMove = (ev) => { if (ev.cancelable) ev.preventDefault(); const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX; setPos(cx); };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
+    let rafId = 0;
+    let lastCx = isTouch ? e.touches[0].clientX : e.clientX;
+    const commit = () => { const r = Math.max(0, Math.min(1, (lastCx - rect.left) / rect.width)); setZoomCenter(r); rafId = 0; };
+    commit();
+    const onMove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
+      lastCx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
+      if (!rafId) rafId = requestAnimationFrame(commit);
+    };
+    const onUp = () => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      commit();
+      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+    };
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
   };
