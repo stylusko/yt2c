@@ -972,7 +972,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
       React.createElement("span", null, fmtMM(zStart)),
-      React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9', clipLen ? React.createElement("span", { style: { color: overLimit ? dangerC : T.textMuted, fontWeight: overLimit ? 700 : 400 } }, ' \u00B7 ' + Math.round(clipLen) + '\uCD08') : null),
+      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
       React.createElement("span", null, fmtMM(zEnd)),
     ),
     React.createElement("div", {
@@ -2224,6 +2224,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
             React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
+          // Clip duration badge
+          clipLen > 0 && React.createElement("span", { style: { padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC, whiteSpace: 'nowrap', flexShrink: 0 } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428'),
         ),
         // Zoomed seekbar for precision
         startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
