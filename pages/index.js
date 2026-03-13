@@ -1654,6 +1654,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     setClosing(true);
     setTimeout(() => { setClosing(false); setCollapsedAndNotify(true); }, 250);
   };
+  const minimapRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
@@ -1680,6 +1681,15 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = orig; };
   }, [collapsed]);
+
+  // Native touchstart on minimap (must be non-passive to preventDefault)
+  useEffect(() => {
+    const el = minimapRef.current;
+    if (!el) return;
+    const handler = (e) => handleMobileMinimapDown(e);
+    el.addEventListener('touchstart', handler, { passive: false });
+    return () => el.removeEventListener('touchstart', handler);
+  });
 
   // Load YT API
   useEffect(() => {
@@ -2164,7 +2174,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         ),
         // Minimap (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
-          onMouseDown: handleMobileMinimapDown, onTouchStart: handleMobileMinimapDown,
+          ref: minimapRef,
+          onMouseDown: handleMobileMinimapDown,
           style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
         },
           // Visible window indicator
