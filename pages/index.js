@@ -4067,7 +4067,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       React.createElement("p", { style: { fontSize: mob ? 12 : 15, color: T.textSecondary, margin: 0 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
     ),
     // Spacer
-    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
     // Section 2: 3-step flow
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: mob ? 6 : 16 } },
       flowSteps.map((s, i) => React.createElement(React.Fragment, { key: i },
@@ -4091,7 +4091,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
     ),
     // Spacer
-    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
     // Section 3: Cards
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
