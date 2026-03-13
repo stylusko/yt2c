@@ -2,6 +2,9 @@ import { getVideoQueue } from '../../../lib/queue.js';
 import { ensureStorageDir } from '../../../lib/storage.js';
 import { v4 as uuidv4 } from 'uuid';
 
+const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
+const SHORTS_RE = /\/shorts\//i;
+
 // Increase body size limit for overlay PNGs
 export const config = {
   api: {
@@ -38,6 +41,12 @@ async function handlePost(req, res) {
       }
       if (!/^https?:\/\/.+/.test(url)) {
         return res.status(400).json({ error: 'Invalid URL format' });
+      }
+      if (!YOUTUBE_HOST_RE.test(url)) {
+        return res.status(400).json({ error: '유튜브 링크만 지원합니다.' });
+      }
+      if (SHORTS_RE.test(url)) {
+        return res.status(400).json({ error: '쇼츠(Shorts) 링크는 지원하지 않습니다.' });
       }
     }
 

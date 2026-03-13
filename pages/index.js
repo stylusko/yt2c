@@ -20,6 +20,23 @@ const RECENT_FEATURES = [
   'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
 ];
 
+/* ── YouTube URL helpers ── */
+const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
+const SHORTS_RE = /\/shorts\//i;
+function validateYouTubeUrl(url) {
+  if (!url) return { ok: false, code: 'empty' };
+  if (!/^https?:\/\/.+/.test(url)) return { ok: false, code: 'format' };
+  if (!YOUTUBE_HOST_RE.test(url)) return { ok: false, code: 'not_youtube' };
+  if (SHORTS_RE.test(url)) return { ok: false, code: 'shorts' };
+  return { ok: true };
+}
+const YT_VALIDATION_MSGS = {
+  empty: '영상 URL을 입력하세요.',
+  format: '올바른 URL 형식이 아닙니다.\nhttp:// 또는 https://로 시작하는 영상 주소를 입력해주세요.',
+  not_youtube: '유튜브 링크만 지원합니다.\nyoutube.com 또는 youtu.be 주소를 입력해주세요.',
+  shorts: '쇼츠(Shorts) 링크는 지원하지 않습니다.\n일반 영상 링크를 입력해주세요.\n(예: https://youtube.com/watch?v=...)',
+};
+
 const LAYOUT_OPTIONS = [
   { id: "photo_top", label: "\uD14D\uC2A4\uD2B8\n\uD558\uB2E8" },
   { id: "photo_bottom", label: "\uD14D\uC2A4\uD2B8\n\uC0C1\uB2E8" },
@@ -5816,8 +5833,8 @@ export default function App() {
 
     // URL validation: only required if at least one card needs video
     if (!allImageBg) {
-      if (!url) { setAlertMsg("\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uC138\uC694."); return; }
-      if (!/^https?:\/\/.+/.test(url)) { setAlertMsg("\uC62C\uBC14\uB978 URL \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.\nhttp:// \uB610\uB294 https://\uB85C \uC2DC\uC791\uD558\uB294 \uC601\uC0C1 \uC8FC\uC18C\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."); return; }
+      const urlCheck = validateYouTubeUrl(url);
+      if (!urlCheck.ok) { setAlertMsg(YT_VALIDATION_MSGS[urlCheck.code]); return; }
     }
 
     const errors = [];
@@ -5836,7 +5853,7 @@ export default function App() {
       } else {
         // Video card: existing validation
         const cardUrl = c.url || url;
-        if (c.url && !/^https?:\/\/.+/.test(c.url)) { errors.push(`\uCE74\uB4DC ${i + 1}: URL \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694.`); continue; }
+        if (c.url) { const ck = validateYouTubeUrl(c.url); if (!ck.ok) { errors.push(`카드 ${i + 1}: ${YT_VALIDATION_MSGS[ck.code]}`); continue; } }
         if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
         const ss = parseTime(c.start), es = parseTime(c.end);
         if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
