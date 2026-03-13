@@ -5580,7 +5580,7 @@ export default function App() {
     } else if (path === '/easy') {
       setEditorMode('wizard');
       setWizardStep(1);
-    } else if (path === '/free') {
+    } else if (path === '/edit') {
       setEditorMode('editor');
     } else {
       setEditorMode(null);
@@ -5591,7 +5591,7 @@ export default function App() {
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
-    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/free' : '/';
+    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/edit' : '/';
     if (window.location.pathname !== targetPath) {
       router.push(targetPath, undefined, { shallow: true });
     }
@@ -5603,7 +5603,7 @@ export default function App() {
       if (wizardLoading) return;
       const p = url.split('?')[0];
       if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
-      else if (p === '/free' && editorMode !== 'editor') { setEditorMode('editor'); }
+      else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
       else if (p === '/' && editorMode !== null) { setEditorMode(null); }
     };
     router.events.on('routeChangeComplete', onRouteChange);
@@ -5760,7 +5760,7 @@ export default function App() {
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
-    router.push('/free', undefined, { shallow: true });
+    router.push('/edit', undefined, { shallow: true });
   };
 
   const effectiveCard = (card) => ({
