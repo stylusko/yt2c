@@ -1682,13 +1682,11 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     return () => { document.body.style.overflow = orig; };
   }, [collapsed]);
 
-  // Stable ref for minimap handler (avoids re-registering on every render)
   const minimapHandlerRef = useRef(null);
-  minimapHandlerRef.current = handleMobileMinimapDown;
   useEffect(() => {
     const el = minimapRef.current;
     if (!el) return;
-    const handler = (e) => minimapHandlerRef.current(e);
+    const handler = (e) => { if (minimapHandlerRef.current) minimapHandlerRef.current(e); };
     el.addEventListener('touchstart', handler, { passive: false });
     return () => el.removeEventListener('touchstart', handler);
   }, [collapsed, zoomLevel]);
@@ -2109,6 +2107,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
     window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
   };
+  minimapHandlerRef.current = handleMobileMinimapDown;
 
   const mMmStartPct = duration > 0 ? (mActualVisibleStart / duration * 100) : 0;
   const mMmWidthPct = duration > 0 ? (mVisibleDuration / duration * 100) : 100;
