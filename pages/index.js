@@ -4056,6 +4056,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
     React.createElement("style", null, `
       @keyframes modeStepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes modeArrowPulse { 0%,100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 1; transform: translateX(3px); } }
+      @keyframes flowGlow { 0%,20%,100% { border-color: rgba(99,102,241,0.25); box-shadow: 0 0 0 0 transparent; } 10% { border-color: rgba(99,102,241,0.8); box-shadow: 0 0 12px 2px rgba(99,102,241,0.3); } }
     `),
     // Section 1: Logo + copy
     React.createElement("div", { style: { textAlign: 'center' } },
@@ -4074,7 +4075,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         React.createElement("div", {
           style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, animation: `modeStepIn 0.5s ease ${i * 0.3}s both` },
         },
-          React.createElement("div", { style: { width: mob ? 36 : 52, height: mob ? 36 : 52, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: `1.5px solid rgba(99,102,241,0.25)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: mob ? 16 : 24 } }, s.icon),
+          React.createElement("div", { style: { width: mob ? 36 : 52, height: mob ? 36 : 52, borderRadius: '50%', background: 'rgba(99,102,241,0.12)', border: '1.5px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: mob ? 16 : 24, animation: `flowGlow 4.5s ease ${1.5 + i * 1.5}s infinite` } }, s.icon),
           React.createElement("span", { style: { fontSize: mob ? 10 : 12, color: T.textSecondary, fontWeight: 500, whiteSpace: 'nowrap' } }, s.label),
         ),
         i < 2 && React.createElement("span", {
