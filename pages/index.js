@@ -1682,15 +1682,6 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     return () => { document.body.style.overflow = orig; };
   }, [collapsed]);
 
-  const minimapHandlerRef = useRef(null);
-  useEffect(() => {
-    const el = minimapRef.current;
-    if (!el) return;
-    const handler = (e) => { if (minimapHandlerRef.current) minimapHandlerRef.current(e); };
-    el.addEventListener('touchstart', handler, { passive: false });
-    return () => el.removeEventListener('touchstart', handler);
-  }, [collapsed, zoomLevel]);
-
   // Load YT API
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
@@ -2084,30 +2075,30 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const markersClose = mvStartPct != null && mvEndPct != null && seekRef.current && (mvEndPct - mvStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
   const handleMobileMinimapDown = (e) => {
-    e.preventDefault();
     const el = minimapRef.current;
     if (!el) return;
+    if (e.pointerId != null) el.setPointerCapture(e.pointerId);
     const rect = el.getBoundingClientRect();
-    const isTouch = e.type === 'touchstart';
     let rafId = 0;
-    let lastCx = isTouch ? e.touches[0].clientX : e.clientX;
+    let lastCx = e.clientX;
     const commit = () => { const r = Math.max(0, Math.min(1, (lastCx - rect.left) / rect.width)); setZoomCenter(r); rafId = 0; };
     commit();
     const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      lastCx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
+      lastCx = ev.clientX;
       if (!rafId) rafId = requestAnimationFrame(commit);
     };
-    const onUp = () => {
+    const onUp = (ev) => {
       if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
       commit();
-      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(e) {} }
     };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
-  minimapHandlerRef.current = handleMobileMinimapDown;
 
   const mMmStartPct = duration > 0 ? (mActualVisibleStart / duration * 100) : 0;
   const mMmWidthPct = duration > 0 ? (mVisibleDuration / duration * 100) : 100;
@@ -2189,7 +2180,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         // Minimap (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
           ref: minimapRef,
-          onMouseDown: handleMobileMinimapDown,
+          onPointerDown: handleMobileMinimapDown,
           style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
         },
           // Visible window indicator
