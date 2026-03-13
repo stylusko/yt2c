@@ -972,7 +972,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
       React.createElement("span", null, fmtMM(zStart)),
-      React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9', clipLen ? React.createElement("span", { style: { color: overLimit ? dangerC : T.textMuted, fontWeight: overLimit ? 700 : 400 } }, ' \u00B7 ' + Math.round(clipLen) + '\uCD08') : null),
+      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
       React.createElement("span", null, fmtMM(zEnd)),
     ),
     React.createElement("div", {
@@ -1654,6 +1654,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     setClosing(true);
     setTimeout(() => { setClosing(false); setCollapsedAndNotify(true); }, 250);
   };
+  const minimapRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
@@ -2074,15 +2075,29 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const markersClose = mvStartPct != null && mvEndPct != null && seekRef.current && (mvEndPct - mvStartPct) / 100 * seekRef.current.offsetWidth < 30;
 
   const handleMobileMinimapDown = (e) => {
-    e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isTouch = e.type === 'touchstart';
-    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
-    setPos(isTouch ? e.touches[0].clientX : e.clientX);
-    const onMove = (ev) => { if (ev.cancelable) ev.preventDefault(); const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX; setPos(cx); };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+    const el = minimapRef.current;
+    if (!el) return;
+    if (e.pointerId != null) el.setPointerCapture(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    let rafId = 0;
+    let lastCx = e.clientX;
+    const commit = () => { const r = Math.max(0, Math.min(1, (lastCx - rect.left) / rect.width)); setZoomCenter(r); rafId = 0; };
+    commit();
+    const onMove = (ev) => {
+      lastCx = ev.clientX;
+      if (!rafId) rafId = requestAnimationFrame(commit);
+    };
+    const onUp = (ev) => {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      commit();
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(e) {} }
+    };
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const mMmStartPct = duration > 0 ? (mActualVisibleStart / duration * 100) : 0;
@@ -2164,7 +2179,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         ),
         // Minimap (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
-          onMouseDown: handleMobileMinimapDown, onTouchStart: handleMobileMinimapDown,
+          ref: minimapRef,
+          onPointerDown: handleMobileMinimapDown,
           style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
         },
           // Visible window indicator
@@ -2208,6 +2224,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
             React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
+          // Clip duration badge
+          clipLen > 0 && React.createElement("span", { style: { padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC, whiteSpace: 'nowrap', flexShrink: 0 } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428'),
         ),
         // Zoomed seekbar for precision
         startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
@@ -4034,7 +4052,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
     { icon: "\u2728", label: "\uC2A4\uD0C0\uC77C \uC120\uD0DD" },
     { icon: "\uD83D\uDCF1", label: "\uCE74\uB4DC\uB274\uC2A4 \uC644\uC131" },
   ];
-  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? '44px 20px 24px' : 40, overflowY: 'auto' } },
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? '64px 20px 24px' : 40, overflowY: 'auto' } },
     React.createElement("style", null, `
       @keyframes modeStepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes modeArrowPulse { 0%,100% { opacity: 0.4; transform: translateX(0); } 50% { opacity: 1; transform: translateX(3px); } }
@@ -4049,7 +4067,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       React.createElement("p", { style: { fontSize: mob ? 12 : 15, color: T.textSecondary, margin: 0 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
     ),
     // Spacer
-    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
     // Section 2: 3-step flow
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: mob ? 6 : 16 } },
       flowSteps.map((s, i) => React.createElement(React.Fragment, { key: i },
@@ -4073,7 +4091,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
       "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
     ),
     // Spacer
-    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 32, maxHeight: mob ? 56 : 120 } }),
+    React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
     // Section 3: Cards
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // Easy mode card
