@@ -1551,8 +1551,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           visW = Math.min(1, 1 / zoom); visH = Math.min(1, videoAspect / (targetAspect * zoom));
         }
         const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-        const cropLeft = clamp((1 - visW) * (0.5 - (videoX ?? 0) / 800), 0, 1 - visW);
-        const cropTop = clamp((1 - visH) * (0.5 - (videoY ?? 0) / 800), 0, 1 - visH);
+        const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
+        const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
         return React.createElement("div", {
           style: {
             position: 'absolute',
