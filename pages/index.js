@@ -7,12 +7,12 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0314';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
-  '\uCE74\uB4DC \uBBF8\uB9AC\uBCF4\uAE30 \uC815\uC9C0 \uD504\uB808\uC784 \uBAA8\uB4DC\uB85C \uAC04\uC18C\uD654',
+  '\uD074\uB9BD \uC801\uC6A9 \uBC84\uD2BC\uC73C\uB85C \uC815\uD655\uD55C \uD504\uB808\uC784 \uCEA1\uCC98 (\uC11C\uBC84 \uCE21)',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
   '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
@@ -146,6 +146,7 @@ const DEFAULT_CARD = () => ({
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
+  previewFrame: null,
 });
 
 /* ── Responsive Hook ── */
@@ -2323,125 +2324,6 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   ), document.body);
 }
 
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness }) {
-  const iframeRef = useRef(null);
-  const playerRef = useRef(null);
-  const timerRef = useRef(null);
-  const [ready, setReady] = useState(false);
-  const mountId = useRef(Date.now());
-
-  const startSec = parseTime(start) ?? 0;
-  const endSec = parseTime(end);
-  const hasRange = endSec != null && endSec > startSec;
-
-  // High-res iframe (YouTube serves better quality at larger sizes)
-  const iW = 1920;
-  const iH = 1080;
-  // Scale to cover the container
-  const coverScale = Math.max(width / iW, height / iH);
-
-  // Load YouTube IFrame API once
-  useEffect(() => {
-    if (window.YT && window.YT.Player) return;
-    if (document.getElementById('yt-iframe-api')) return;
-    const tag = document.createElement('script');
-    tag.id = 'yt-iframe-api';
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(tag);
-  }, []);
-
-  // Create player – static frame mode: seek to start and pause
-  useEffect(() => {
-    if (!videoId || !hasRange) return;
-    let cancelled = false;
-
-    const createPlayer = () => {
-      if (cancelled) return;
-      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
-      const containerId = 'yt-pv-' + mountId.current + '-' + videoId + '-' + startSec;
-      const el = iframeRef.current;
-      if (!el) return;
-      el.id = containerId;
-
-      playerRef.current = new window.YT.Player(containerId, {
-        width: iW, height: iH,
-        videoId: videoId,
-        playerVars: {
-          start: Math.floor(startSec),
-          autoplay: 1, mute: 1, controls: 0, loop: 0,
-          modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
-          playsinline: 1, disablekb: 1, iv_load_policy: 3,
-        },
-        events: {
-          onReady: (e) => {
-            if (cancelled) return;
-            e.target.mute();
-            e.target.playVideo();
-            setReady(true);
-            // Wait for video to render frames, then seek to exact position and freeze
-            setTimeout(() => {
-              if (cancelled || !playerRef.current) return;
-              playerRef.current.seekTo(startSec, true);
-              setTimeout(() => {
-                if (cancelled || !playerRef.current) return;
-                playerRef.current.pauseVideo();
-              }, 500);
-            }, 1000);
-          },
-        },
-      });
-    };
-
-    // Small delay to ensure iframeRef is attached to DOM
-    const initDelay = setTimeout(() => {
-      if (cancelled) return;
-      if (window.YT && window.YT.Player) {
-        createPlayer();
-      } else {
-        const poll = setInterval(() => {
-          if (cancelled) { clearInterval(poll); return; }
-          if (window.YT && window.YT.Player) { clearInterval(poll); createPlayer(); }
-        }, 200);
-        timerRef._poll = poll;
-      }
-    }, 50);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(initDelay);
-      if (timerRef._poll) clearInterval(timerRef._poll);
-      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
-    };
-  }, [videoId, startSec, endSec, hasRange]);
-
-  if (!videoId || !hasRange) return null;
-
-  const vsc = (videoScale ?? 100) / 100;
-
-  // Crop-offset positioning (matches backend FFmpeg crop logic)
-  const totalScale = coverScale * vsc;
-  const scaledW = iW * totalScale;
-  const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
-  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
-
-  return React.createElement("div", {
-    style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
-  },
-    // Iframe: scaled to cover, positioned via crop-offset
-    React.createElement("div", {
-      style: {
-        position: 'absolute', top: 0, left: 0, width: iW, height: iH,
-        transform: 'scale(' + totalScale + ') translate(' + (-offX / totalScale) + 'px, ' + (-offY / totalScale) + 'px)',
-        transformOrigin: '0 0',
-      },
-    },
-      React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
-    ),
-    // Transparent overlay to block all YouTube UI interactions
-    React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
-  );
-}
 
 /* ── CardPreview ── */
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle }) {
@@ -2513,12 +2395,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
+  const frameUrl = card.previewFrame ? `/api/frame?id=${card.previewFrame}` : null;
   const baseImage = card.uploadedImage
     ? card.uploadedImage
     : fillSource === 'image'
       ? (globalBgImage || thumbSrc)
-      : (thumbSrc || globalBgImage);
-  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
+      : (frameUrl || thumbSrc || globalBgImage);
+  const isBaseThumb = !frameUrl && baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
+  const isFrameImg = !!frameUrl && baseImage === frameUrl;
   const overlays = card.overlays || [];
 
   const snapPx = Math.round(8 * sc);
@@ -2558,8 +2442,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const imgPosY = 100 - (card.videoY ?? 100);
   const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
-    ? (isBaseThumb
-      ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
+    ? ((isBaseThumb || isFrameImg)
+      ? React.createElement("img", { src: baseImage, alt: "", onError: isBaseThumb ? handleThumbError : undefined, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
       : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
@@ -2887,7 +2771,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        showVideo && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness }),
       ),
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
@@ -2904,7 +2787,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    showVideo && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness }),
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -4720,6 +4602,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [clipWarn, setClipWarn] = useState(false);
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
+  const [capturingFrame, setCapturingFrame] = useState(false);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -4806,6 +4689,22 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
             // MobileClipSelector: visual clip picker
             React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
+            React.createElement("button", {
+              disabled: capturingFrame || !(card.url || globalUrl),
+              onClick: async () => {
+                const videoUrl = card.url || globalUrl;
+                if (!videoUrl) return;
+                setCapturingFrame(true);
+                try {
+                  const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
+                  const data = await resp.json();
+                  if (resp.ok && data.frame) update("previewFrame", data.frame);
+                  else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
+                } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
+                setCapturingFrame(false);
+              },
+              style: { marginTop: 4, marginBottom: 4, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' },
+            }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5137,6 +5036,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [animDir, setAnimDir] = useState(null);
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
+  const [capturingFrame, setCapturingFrame] = useState(false);
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -5212,6 +5112,22 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         : React.createElement(React.Fragment, null,
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
             React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+            React.createElement("button", {
+              disabled: capturingFrame || !(card.url || globalUrl),
+              onClick: async () => {
+                const videoUrl = card.url || globalUrl;
+                if (!videoUrl) return;
+                setCapturingFrame(true);
+                try {
+                  const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
+                  const data = await resp.json();
+                  if (resp.ok && data.frame) update("previewFrame", data.frame);
+                  else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
+                } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
+                setCapturingFrame(false);
+              },
+              style: { marginTop: 8, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+            }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
