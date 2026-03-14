@@ -1553,21 +1553,25 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
         const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
         const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
+        const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
+        const guideTop = videoOffsetY + cropTop * videoDisplayH;
+        const guideW = visW * videoDisplayW;
+        const guideH = visH * videoDisplayH;
+        const accentGuide = '#8b5cf6';
         return React.createElement("div", {
           style: {
-            position: 'absolute',
-            left: videoOffsetX + cropLeft * videoDisplayW,
-            top: videoOffsetY + cropTop * videoDisplayH,
-            width: visW * videoDisplayW,
-            height: visH * videoDisplayH,
+            position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH,
             boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)',
-            border: '2px solid rgba(255,255,255,0.7)',
+            border: '2px solid ' + accentGuide,
             borderRadius: 2,
             zIndex: 1,
             pointerEvents: 'none',
-            transition: 'all 0.15s ease',
           }
-        });
+        },
+          React.createElement("div", {
+            style: { position: 'absolute', top: -18, left: 0, background: accentGuide, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', lineHeight: '14px' }
+          }, '\uD604\uC7AC \uBE44\uC728 ' + aspectRatio)
+        );
       })(),
       // Play/pause overlay
       React.createElement("div", {
