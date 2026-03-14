@@ -2007,10 +2007,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   };
 
   const startPlayheadDrag = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    const isTouch = e.type === 'touchstart';
-    const cx = isTouch ? e.touches[0].clientX : e.clientX;
+    const cx = e.clientX;
     // If closer to a marker than to the playhead, delegate to marker drag
     if (seekRef.current && startSec != null && endSec != null) {
       const rect = seekRef.current.getBoundingClientRect();
@@ -2021,25 +2019,28 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       if (startX != null && Math.abs(cx - startX) < dPlay && Math.abs(cx - startX) <= 18) { startSeekMarkerDrag('start', e); return; }
       if (endX != null && Math.abs(cx - endX) < dPlay && Math.abs(cx - endX) <= 18) { startSeekMarkerDrag('end', e); return; }
     }
+    const el = e.currentTarget;
+    if (e.pointerId != null) el.setPointerCapture(e.pointerId);
     const { time, x } = calcSeekTime(cx);
     manualSeekOutside.current = !(startSec != null && endSec != null && time >= startSec && time <= endSec);
     seekTo(time);
     mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
     const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(mcx);
+      const r = calcSeekTime(ev.clientX);
       const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
       manualSeekOutside.current = !inR;
       seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
     };
-    const onUp = () => {
+    const onUp = (ev) => {
       mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
-      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(e) {} }
     };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const markStart = () => {
@@ -2174,7 +2175,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Unified hit area when markers are close
           markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
           // Playhead hit area + visual element
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
             React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
           (playing || mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
