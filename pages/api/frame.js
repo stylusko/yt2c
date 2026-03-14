@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid';
-import { ensureStorageDir, getFramePath, deleteFrame } from '../../lib/storage.js';
+import { ensureStorageDir, getFramePath, deleteFrame, getTempPath, cleanup } from '../../lib/storage.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -41,6 +41,14 @@ function ensureOAuthCache() {
 }
 
 const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
+
+function secondsToTime(seconds) {
+  const s = Math.floor(seconds);
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.floor((s % 3600) / 60);
+  const secs = s % 60;
+  return [hours, minutes, secs].map(v => String(v).padStart(2, '0')).join(':');
+}
 
 function buildYtDlpAuthArgs() {
   const args = [];
@@ -91,6 +99,7 @@ async function handlePost(req, res) {
   }
 
   const ts = Number(timestamp);
+  const jobId = uuidv4();
 
   // Delete old frame if provided
   if (oldFrame && /^[a-f0-9-]+\.png$/.test(oldFrame)) {
@@ -100,42 +109,53 @@ async function handlePost(req, res) {
   ensureStorageDir();
 
   try {
-    // 1. Get direct stream URL via yt-dlp
+    // 1. Download a 1-second segment via yt-dlp (handles all auth internally)
+    const startTime = secondsToTime(ts);
+    const endTime = secondsToTime(ts + 1);
+    const tempVideoPath = getTempPath(jobId, 'segment.mp4');
+
     const ytArgs = [
-      '-f', 'bestvideo[height<=720]',
-      '--get-url',
-      '--no-playlist',
+      '--download-sections', `*${startTime}-${endTime}`,
+      '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+      '--force-keyframes-at-cuts',
+      '--merge-output-format', 'mp4',
       '--js-runtimes', 'node',
+      '-o', tempVideoPath,
+      '--no-playlist',
       ...buildYtDlpAuthArgs(),
       url,
     ];
 
-    const { stdout: streamUrl } = await execFileAsync('yt-dlp', ytArgs, { timeout: 30000 });
-    const trimmedUrl = streamUrl.trim();
-    if (!trimmedUrl) {
-      return res.status(500).json({ error: 'Failed to get stream URL' });
+    await execFileAsync('yt-dlp', ytArgs, { timeout: 60000 });
+
+    if (!fs.existsSync(tempVideoPath)) {
+      cleanup(jobId);
+      return res.status(500).json({ error: 'Video segment download failed' });
     }
 
-    // 2. Extract single frame with ffmpeg
+    // 2. Extract first frame from downloaded segment
     const frameId = uuidv4() + '.png';
     const outputPath = getFramePath(frameId);
 
     await execFileAsync('ffmpeg', [
-      '-ss', String(ts),
-      '-i', trimmedUrl,
+      '-i', tempVideoPath,
       '-frames:v', '1',
       '-vf', 'scale=-1:720',
       '-y',
       outputPath,
-    ], { timeout: 30000 });
+    ], { timeout: 15000 });
+
+    // 3. Cleanup temp files
+    cleanup(jobId);
 
     if (!fs.existsSync(outputPath)) {
-      return res.status(500).json({ error: 'Frame capture failed' });
+      return res.status(500).json({ error: 'Frame extraction failed' });
     }
 
     return res.status(200).json({ frame: frameId });
   } catch (err) {
-    console.error('[frame] Capture error:', err.message);
+    cleanup(jobId);
+    console.error('[frame] Capture error:', err.message, err.stderr?.slice(0, 500));
     const stderr = err.stderr || '';
     if (stderr.includes('403') || stderr.includes('Forbidden')) {
       return res.status(502).json({ error: 'YouTube access denied (403). Try again later.' });
