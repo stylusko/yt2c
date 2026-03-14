@@ -2368,12 +2368,15 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         videoId: videoId,
         playerVars: {
           start: Math.floor(startSec),
-          autoplay: 0, mute: 1, controls: 0, loop: 0,
+          autoplay: 1, mute: 1, controls: 0, loop: 0,
           modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { if (!cancelled) { e.target.mute(); e.target.seekTo(startSec, true); e.target.pauseVideo(); setReady(true); } },
+          onReady: (e) => { if (!cancelled) { e.target.mute(); e.target.seekTo(startSec, true); } },
+          onStateChange: (e) => {
+            if (e.data === window.YT.PlayerState.PLAYING) { e.target.pauseVideo(); setReady(true); }
+          },
         },
       });
     };
