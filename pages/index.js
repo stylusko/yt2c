@@ -3341,7 +3341,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW })
+            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx })
           )
         )
       )
@@ -3423,7 +3423,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false }),
               // Checkbox overlay
               React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
@@ -5459,7 +5459,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 transition: 'all 0.15s',
               },
             },
-              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38 })
+              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
             ))
           ),
           React.createElement("button", {
