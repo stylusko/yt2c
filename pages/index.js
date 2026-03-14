@@ -2364,8 +2364,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const totalScale = coverScale * vsc;
   const scaledW = iW * totalScale;
   const scaledH = iH * totalScale;
-  const offX = scaledW * ((videoX ?? 0) + 400) / 800 - width / 2;
-  const offY = scaledH * ((videoY ?? 0) + 400) / 800 - height / 2;
+  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
+  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
@@ -2493,8 +2493,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbTotalScale = thumbCoverScale * vScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
-  const thumbOffX = thumbScaledW * ((card.videoX ?? 0) + 400) / 800 - previewW / 2;
-  const thumbOffY = thumbScaledH * ((card.videoY ?? 0) + 400) / 800 - previewH / 2;
+  const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
+  const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
   // Uploaded image: apply position/zoom/brightness via CSS transform
   const imgPosX = 100 - (card.videoX ?? 100); // invert: videoX=0 means show left edge → translate right
   const imgPosY = 100 - (card.videoY ?? 100);
