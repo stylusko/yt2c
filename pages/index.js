@@ -1895,11 +1895,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
           if (Math.abs(cx - startClientX) > 10) {
             clearTimeout(longPressTimer);
-            // Fall back to seek
+            // Fall back to seek with drag tooltip
             manualSeekOutside.current = false;
             seekTo(time);
-            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const { time: st } = calcSeekTime(scx); seekTo(st); };
-            const seekUp = () => { window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
+            setMDragging(true); setMDragTime(time); setMDragX(x);
+            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const r = calcSeekTime(scx); seekTo(r.time); setMDragTime(r.time); setMDragX(r.x); };
+            const seekUp = () => { setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
             window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
             window.addEventListener('touchmove', seekMove, { passive: false }); window.addEventListener('touchend', seekUp);
             window.addEventListener('mousemove', seekMove); window.addEventListener('mouseup', seekUp);
@@ -1948,17 +1949,19 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
-      // Outside range: normal seek
+      // Outside range: normal seek with drag tooltip
       manualSeekOutside.current = true;
       seekTo(time);
+      setMDragging(true); setMDragTime(time); setMDragX(x);
       const onMove = (ev) => {
         const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const { time: t } = calcSeekTime(cx);
-        const inR = startSec != null && endSec != null && t >= startSec && t <= endSec;
+        const r = calcSeekTime(cx);
+        const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
         manualSeekOutside.current = !inR;
-        seekTo(t);
+        seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
       };
       const onUp = () => {
+        setMDragging(false); setMDragTime(null);
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
