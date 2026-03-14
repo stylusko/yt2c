@@ -2354,7 +2354,6 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   useEffect(() => {
     if (!videoId || !hasRange) return;
     let cancelled = false;
-    let frozen = false;
 
     const createPlayer = () => {
       if (cancelled) return;
@@ -2375,14 +2374,19 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         },
         events: {
           onReady: (e) => {
-            if (!cancelled) { e.target.mute(); e.target.playVideo(); setReady(true); }
-          },
-          onStateChange: (e) => {
-            if (e.data === window.YT.PlayerState.PLAYING && !frozen && !cancelled) {
-              frozen = true;
-              e.target.seekTo(startSec, true);
-              setTimeout(() => { if (!cancelled) { e.target.pauseVideo(); } }, 500);
-            }
+            if (cancelled) return;
+            e.target.mute();
+            e.target.playVideo();
+            setReady(true);
+            // Wait for video to render frames, then seek to exact position and freeze
+            setTimeout(() => {
+              if (cancelled || !playerRef.current) return;
+              playerRef.current.seekTo(startSec, true);
+              setTimeout(() => {
+                if (cancelled || !playerRef.current) return;
+                playerRef.current.pauseVideo();
+              }, 500);
+            }, 1000);
           },
         },
       });
