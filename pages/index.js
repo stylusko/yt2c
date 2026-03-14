@@ -1046,15 +1046,17 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
+  const playerWrapRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [ready, setReady] = useState(false);
   const rafRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const [dragging, setDragging] = useState(false);
   const [dragTime, setDragTime] = useState(null);
@@ -1070,6 +1072,15 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
+
+  // Track container width for crop guide
+  useEffect(() => {
+    const el = playerWrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -1512,8 +1523,56 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
-    React.createElement("div", { style: { position: 'relative', width: '100%', height: 200, background: '#000' } },
+    React.createElement("div", { ref: playerWrapRef, style: { position: 'relative', width: '100%', height: 200, background: '#000', overflow: 'hidden' } },
       React.createElement("div", { ref: containerRef, style: { width: '100%', height: '100%' } }),
+      // Crop guide overlay
+      (() => {
+        if (!aspectRatio || !containerWidth) return null;
+        const pH = 200;
+        const videoAspect = 16 / 9;
+        const containerAspect = containerWidth / pH;
+        let videoDisplayW, videoDisplayH, videoOffsetX = 0, videoOffsetY = 0;
+        if (containerAspect > videoAspect) {
+          videoDisplayW = pH * videoAspect; videoDisplayH = pH;
+          videoOffsetX = (containerWidth - videoDisplayW) / 2;
+        } else {
+          videoDisplayW = containerWidth; videoDisplayH = containerWidth / videoAspect;
+          videoOffsetY = (pH - videoDisplayH) / 2;
+        }
+        const zoom = Math.max(videoScale ?? 100, 1) / 100;
+        const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+        const pr = photoRatio ?? 0.55;
+        const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
+          ? outAspect / pr : outAspect;
+        let visW, visH;
+        if (videoAspect >= targetAspect) {
+          visH = Math.min(1, 1 / zoom); visW = Math.min(1, targetAspect / (videoAspect * zoom));
+        } else {
+          visW = Math.min(1, 1 / zoom); visH = Math.min(1, videoAspect / (targetAspect * zoom));
+        }
+        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+        const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
+        const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
+        const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
+        const guideTop = videoOffsetY + cropTop * videoDisplayH;
+        const guideW = visW * videoDisplayW;
+        const guideH = visH * videoDisplayH;
+        const accentGuide = '#8b5cf6';
+        return React.createElement("div", {
+          style: {
+            position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH,
+            boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)',
+            border: '2px solid ' + accentGuide,
+            borderRadius: 2,
+            zIndex: 1,
+            pointerEvents: 'none',
+          }
+        },
+          React.createElement("div", {
+            style: { position: 'absolute', top: 4, left: 4, background: accentGuide, color: '#fff', fontSize: 9, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', lineHeight: '14px' }
+          }, '\uD604\uC7AC \uBE44\uC728 ' + aspectRatio)
+        );
+      })(),
       // Play/pause overlay
       React.createElement("div", {
         onClick: togglePlay,
@@ -5190,7 +5249,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           )
         : React.createElement(React.Fragment, null,
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-            React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); } }),
+            React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); }, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
@@ -5416,7 +5475,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn, previewMuted, previewVolume, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn: activeTab !== 'fill' && videoPreviewOn, previewMuted, previewVolume, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
         ),
         videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
