@@ -1646,6 +1646,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const [mDragging, setMDragging] = useState(false);
+  const mDraggingRef = useRef(false);
   const [mDragTime, setMDragTime] = useState(null);
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
@@ -1738,7 +1739,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const tick = () => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
-        setCurrent(t);
+        if (!mDraggingRef.current) setCurrent(t);
         const ss = startSecRef.current, es = endSecRef.current;
         if (!manualSeekOutside.current && ss != null && es != null && es > ss && t >= es - 0.15) {
           playerRef.current.seekTo(ss, true);
@@ -1898,9 +1899,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             // Fall back to seek with drag tooltip
             manualSeekOutside.current = false;
             seekTo(time);
-            setMDragging(true); setMDragTime(time); setMDragX(x);
+            mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
             const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const r = calcSeekTime(scx); seekTo(r.time); setMDragTime(r.time); setMDragX(r.x); };
-            const seekUp = () => { setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
+            const seekUp = () => { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
             window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
             window.addEventListener('touchmove', seekMove, { passive: false }); window.addEventListener('touchend', seekUp);
             window.addEventListener('mousemove', seekMove); window.addEventListener('mouseup', seekUp);
@@ -1952,7 +1953,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       // Outside range: normal seek with drag tooltip
       manualSeekOutside.current = true;
       seekTo(time);
-      setMDragging(true); setMDragTime(time); setMDragX(x);
+      mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
       const onMove = (ev) => {
         const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
         const r = calcSeekTime(cx);
@@ -1961,7 +1962,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
       };
       const onUp = () => {
-        setMDragging(false); setMDragTime(null);
+        mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
@@ -2023,7 +2024,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const { time, x } = calcSeekTime(cx);
     manualSeekOutside.current = !(startSec != null && endSec != null && time >= startSec && time <= endSec);
     seekTo(time);
-    setMDragging(true); setMDragTime(time); setMDragX(x);
+    mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
     const onMove = (ev) => {
       if (ev.cancelable) ev.preventDefault();
       const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
@@ -2033,7 +2034,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
     };
     const onUp = () => {
-      setMDragging(false); setMDragTime(null);
+      mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
       window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
       window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
     };
