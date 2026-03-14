@@ -7,7 +7,7 @@ import { ensureStorageDir, getFramePath, deleteFrame, getTempPath, cleanup } fro
 
 const execFileAsync = promisify(execFile);
 
-// --- YouTube Auth (reused from lib/worker.js) ---
+// --- YouTube Auth (identical to lib/worker.js) ---
 const COOKIE_PATH = '/tmp/yt-cookies.txt';
 let cookieReady = false;
 function ensureCookieFile() {
@@ -41,27 +41,6 @@ function ensureOAuthCache() {
 }
 
 const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
-
-// --- Stream URL cache (YouTube URLs valid ~6h, cache for 1h) ---
-const streamCache = new Map();
-const CACHE_TTL = 3600000;
-
-function getCachedStream(videoUrl) {
-  const entry = streamCache.get(videoUrl);
-  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry;
-  streamCache.delete(videoUrl);
-  return null;
-}
-
-function setCachedStream(videoUrl, streamUrl, headers) {
-  streamCache.set(videoUrl, { streamUrl, headers, ts: Date.now() });
-  // Evict old entries
-  if (streamCache.size > 50) {
-    for (const [k, v] of streamCache) {
-      if (Date.now() - v.ts > CACHE_TTL) streamCache.delete(k);
-    }
-  }
-}
 
 function secondsToTime(seconds) {
   const s = Math.floor(seconds);
@@ -110,70 +89,20 @@ async function handleGet(req, res) {
 }
 
 /**
- * Fast path: yt-dlp -j → extract stream URL + headers → ffmpeg direct network seek
- * No file download needed — ffmpeg grabs 1 frame directly from the stream.
+ * Download 1-second segment via yt-dlp (same params as worker.js) + extract frame.
+ * Retries on 403 with delay, matching worker.js retry pattern.
  */
-async function captureFrameFast(url, ts, outputPath) {
-  let streamUrl, headers;
-
-  // Check cache first
-  const cached = getCachedStream(url);
-  if (cached) {
-    console.log('[frame:fast] cache hit');
-    streamUrl = cached.streamUrl;
-    headers = cached.headers;
-  } else {
-    // Resolve via yt-dlp
-    const ytArgs = [
-      '-f', 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720][ext=webm]/bestvideo[height<=720]',
-      '-j',
-      '--no-playlist',
-      '--no-warnings',
-      '--js-runtimes', 'node',
-      ...buildYtDlpAuthArgs(),
-      url,
-    ];
-
-    console.log('[frame:fast] yt-dlp -j start');
-    const { stdout } = await execFileAsync('yt-dlp', ytArgs, { timeout: 30000, maxBuffer: 10 * 1024 * 1024 });
-    const info = JSON.parse(stdout);
-    console.log('[frame:fast] yt-dlp -j done');
-
-    const fmt = info.requested_formats?.[0] || info;
-    streamUrl = fmt.url;
-    headers = fmt.http_headers || {};
-    if (!streamUrl) throw new Error('No stream URL in yt-dlp output');
-
-    setCachedStream(url, streamUrl, headers);
-  }
-
-  // 2. Build ffmpeg args with headers from yt-dlp
-  const ffArgs = ['-ss', String(ts)];
-  if (headers['User-Agent']) ffArgs.push('-user_agent', headers['User-Agent']);
-  if (headers['Referer']) ffArgs.push('-referer', headers['Referer']);
-  const extra = Object.entries(headers)
-    .filter(([k]) => !['User-Agent', 'Referer', 'Accept', 'Accept-Language', 'Sec-Fetch-Mode'].includes(k));
-  if (extra.length > 0) {
-    ffArgs.push('-headers', extra.map(([k, v]) => `${k}: ${v}`).join('\r\n') + '\r\n');
-  }
-  ffArgs.push('-i', streamUrl, '-frames:v', '1', '-vf', 'scale=-1:720', '-y', outputPath);
-
-  console.log('[frame:fast] ffmpeg start');
-  await execFileAsync('ffmpeg', ffArgs, { timeout: 15000 });
-  console.log('[frame:fast] ffmpeg done');
-}
-
-/**
- * Slow fallback: yt-dlp downloads 1-second segment → ffmpeg extracts frame from local file.
- */
-async function captureFrameSlow(url, ts, outputPath, jobId) {
+async function downloadAndExtract(url, ts, outputPath, jobId) {
   const startTime = secondsToTime(ts);
   const endTime = secondsToTime(ts + 1);
-  const tempVideoPath = getTempPath(jobId, 'segment.%(ext)s');
+  const tempVideoPath = getTempPath(jobId, 'segment.mp4');
 
+  // Identical to worker.js downloadYouTubeSegment params
   const ytArgs = [
     '--download-sections', `*${startTime}-${endTime}`,
-    '-f', 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720]',
+    '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+    '--force-keyframes-at-cuts',
+    '--merge-output-format', 'mp4',
     '--js-runtimes', 'node',
     '-o', tempVideoPath,
     '--no-playlist',
@@ -181,19 +110,48 @@ async function captureFrameSlow(url, ts, outputPath, jobId) {
     url,
   ];
 
-  console.log('[frame:slow] yt-dlp download start');
-  await execFileAsync('yt-dlp', ytArgs, { timeout: 60000, maxBuffer: 50 * 1024 * 1024 });
-  console.log('[frame:slow] yt-dlp download done');
+  // Retry on 403 with delay (shorter than worker.js since this is interactive)
+  const retryDelays = [5000, 15000]; // 5s, 15s
+  let lastErr;
 
-  const tempDir = path.dirname(tempVideoPath);
-  const files = fs.readdirSync(tempDir).filter(f => f.startsWith('segment'));
-  const actualFile = files.length > 0 ? path.join(tempDir, files[0]) : tempVideoPath;
+  for (let attempt = 1; attempt <= retryDelays.length + 1; attempt++) {
+    try {
+      console.log(`[frame] yt-dlp attempt ${attempt}: ${startTime}-${endTime}`);
+      await execFileAsync('yt-dlp', ytArgs, { timeout: 90000, maxBuffer: 50 * 1024 * 1024 });
 
-  if (!fs.existsSync(actualFile)) throw new Error('Video segment download failed');
+      // Find downloaded file
+      const tempDir = path.dirname(tempVideoPath);
+      const files = fs.readdirSync(tempDir).filter(f => f.startsWith('segment'));
+      const actualFile = files.length > 0 ? path.join(tempDir, files[0]) : tempVideoPath;
 
-  await execFileAsync('ffmpeg', [
-    '-i', actualFile, '-frames:v', '1', '-vf', 'scale=-1:720', '-y', outputPath,
-  ], { timeout: 15000 });
+      if (!fs.existsSync(actualFile)) throw new Error('No output file after yt-dlp');
+
+      // Extract first frame
+      console.log('[frame] ffmpeg extracting frame from:', actualFile);
+      await execFileAsync('ffmpeg', [
+        '-i', actualFile, '-frames:v', '1', '-vf', 'scale=-1:720', '-y', outputPath,
+      ], { timeout: 15000 });
+
+      return; // success
+    } catch (err) {
+      lastErr = err;
+      // Clean partial download before retry
+      try { const td = path.dirname(tempVideoPath); if (fs.existsSync(td)) fs.rmSync(td, { recursive: true, force: true }); } catch (_) {}
+      // Recreate temp dir for next attempt
+      getTempPath(jobId, '_');
+
+      const stderr = err.stderr || '';
+      const is403 = stderr.includes('403') || stderr.includes('Forbidden');
+      if (is403 && attempt <= retryDelays.length) {
+        const delay = retryDelays[attempt - 1];
+        console.warn(`[frame] 403 on attempt ${attempt}, retrying in ${delay / 1000}s...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
 }
 
 async function handlePost(req, res) {
@@ -219,30 +177,15 @@ async function handlePost(req, res) {
   const outputPath = getFramePath(frameId);
 
   try {
-    // Fast path: direct network seek (no file download)
-    await captureFrameFast(url, ts, outputPath);
-  } catch (fastErr) {
-    console.warn('[frame] fast path failed:', fastErr.message);
-    // Invalidate cache and retry with fresh URL
-    streamCache.delete(url);
-    try {
-      await captureFrameFast(url, ts, outputPath);
-    } catch (retryErr) {
-      console.warn('[frame] fast retry failed, trying slow fallback:', retryErr.message);
-      try {
-        await captureFrameSlow(url, ts, outputPath, jobId);
-      } catch (slowErr) {
-        cleanup(jobId);
-        const allStderr = [fastErr.stderr, retryErr.stderr, slowErr.stderr].filter(Boolean).join('\n');
-        console.error('[frame] all paths failed. fast:', fastErr.message, '| retry:', retryErr.message, '| slow:', slowErr.message, '| stderr:', allStderr.slice(0, 1000));
-        if (allStderr.includes('403') || allStderr.includes('Forbidden')) {
-          return res.status(502).json({ error: 'YouTube access denied (403). Try again later.' });
-        }
-        // Include stderr snippet for debugging
-        const detail = (slowErr.stderr || retryErr.stderr || fastErr.stderr || '').slice(0, 300);
-        return res.status(500).json({ error: 'Frame capture failed: ' + (detail || slowErr.message) });
-      }
+    await downloadAndExtract(url, ts, outputPath, jobId);
+  } catch (err) {
+    cleanup(jobId);
+    const stderr = err.stderr || '';
+    console.error('[frame] failed:', err.message, stderr.slice(0, 500));
+    if (stderr.includes('403') || stderr.includes('Forbidden')) {
+      return res.status(502).json({ error: 'YouTube access denied (403). Try again later.' });
     }
+    return res.status(500).json({ error: (stderr.slice(0, 200) || err.message) });
   }
 
   cleanup(jobId);
