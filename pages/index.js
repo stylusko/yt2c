@@ -2366,22 +2366,22 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
       playerRef.current = new window.YT.Player(containerId, {
         width: iW, height: iH,
+        videoId: videoId,
         playerVars: {
-          mute: 1, controls: 0, loop: 0,
+          start: Math.floor(startSec),
+          autoplay: 1, mute: 1, controls: 0, loop: 0,
           modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
           onReady: (e) => {
-            if (!cancelled) {
-              e.target.mute();
-              e.target.loadVideoById({ videoId: videoId, startSeconds: startSec });
-            }
+            if (!cancelled) { e.target.mute(); e.target.playVideo(); setReady(true); }
           },
           onStateChange: (e) => {
             if (e.data === window.YT.PlayerState.PLAYING && !frozen && !cancelled) {
               frozen = true;
-              setTimeout(() => { if (!cancelled) { e.target.pauseVideo(); setReady(true); } }, 500);
+              e.target.seekTo(startSec, true);
+              setTimeout(() => { if (!cancelled) { e.target.pauseVideo(); } }, 500);
             }
           },
         },
