@@ -233,12 +233,14 @@ async function handlePost(req, res) {
         await captureFrameSlow(url, ts, outputPath, jobId);
       } catch (slowErr) {
         cleanup(jobId);
-        console.error('[frame] all paths failed:', slowErr.message, slowErr.stderr?.slice(0, 500));
-        const stderr = slowErr.stderr || fastErr.stderr || '';
-        if (stderr.includes('403') || stderr.includes('Forbidden')) {
+        const allStderr = [fastErr.stderr, retryErr.stderr, slowErr.stderr].filter(Boolean).join('\n');
+        console.error('[frame] all paths failed. fast:', fastErr.message, '| retry:', retryErr.message, '| slow:', slowErr.message, '| stderr:', allStderr.slice(0, 1000));
+        if (allStderr.includes('403') || allStderr.includes('Forbidden')) {
           return res.status(502).json({ error: 'YouTube access denied (403). Try again later.' });
         }
-        return res.status(500).json({ error: 'Frame capture failed: ' + slowErr.message });
+        // Include stderr snippet for debugging
+        const detail = (slowErr.stderr || retryErr.stderr || fastErr.stderr || '').slice(0, 300);
+        return res.status(500).json({ error: 'Frame capture failed: ' + (detail || slowErr.message) });
       }
     }
   }
