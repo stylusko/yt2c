@@ -1569,7 +1569,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           }
         },
           React.createElement("div", {
-            style: { position: 'absolute', top: -18, left: 0, background: accentGuide, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', lineHeight: '14px' }
+            style: { position: 'absolute', top: 4, left: 4, background: accentGuide, color: '#fff', fontSize: 9, fontWeight: 600, padding: '2px 6px', borderRadius: 3, whiteSpace: 'nowrap', lineHeight: '14px' }
           }, '\uD604\uC7AC \uBE44\uC728 ' + aspectRatio)
         );
       })(),
