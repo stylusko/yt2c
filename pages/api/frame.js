@@ -116,9 +116,9 @@ async function handlePost(req, res) {
 
     const ytArgs = [
       '--download-sections', `*${startTime}-${endTime}`,
-      '-f', 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+      '-f', 'bestvideo[height<=720]',
       '--force-keyframes-at-cuts',
-      '--merge-output-format', 'mp4',
+      '--remux-video', 'mp4',
       '--js-runtimes', 'node',
       '-o', tempVideoPath,
       '--no-playlist',
@@ -126,9 +126,17 @@ async function handlePost(req, res) {
       url,
     ];
 
-    await execFileAsync('yt-dlp', ytArgs, { timeout: 60000 });
+    console.log('[frame] yt-dlp start:', url, startTime, '-', endTime);
+    await execFileAsync('yt-dlp', ytArgs, { timeout: 60000, maxBuffer: 50 * 1024 * 1024 });
+    console.log('[frame] yt-dlp done');
 
-    if (!fs.existsSync(tempVideoPath)) {
+    // Find actual downloaded file (yt-dlp may change extension)
+    const tempDir = path.dirname(tempVideoPath);
+    const files = fs.readdirSync(tempDir).filter(f => f.startsWith('segment'));
+    const actualFile = files.length > 0 ? path.join(tempDir, files[0]) : tempVideoPath;
+    console.log('[frame] downloaded file:', actualFile, 'exists:', fs.existsSync(actualFile));
+
+    if (!fs.existsSync(actualFile)) {
       cleanup(jobId);
       return res.status(500).json({ error: 'Video segment download failed' });
     }
@@ -138,7 +146,7 @@ async function handlePost(req, res) {
     const outputPath = getFramePath(frameId);
 
     await execFileAsync('ffmpeg', [
-      '-i', tempVideoPath,
+      '-i', actualFile,
       '-frames:v', '1',
       '-vf', 'scale=-1:720',
       '-y',
