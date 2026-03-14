@@ -125,7 +125,7 @@ const DEFAULT_CARD = () => ({
   titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
-  captureTime: "", videoX: 200, videoY: 200, videoScale: 100, videoBrightness: 0,
+  captureTime: "", videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
@@ -2364,8 +2364,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const totalScale = coverScale * vsc;
   const scaledW = iW * totalScale;
   const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 200) / 400 - width / 2;
-  const offY = scaledH * (videoY ?? 200) / 400 - height / 2;
+  const offX = scaledW * ((videoX ?? 0) + 200) / 400 - width / 2;
+  const offY = scaledH * ((videoY ?? 0) + 200) / 400 - height / 2;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
@@ -2493,8 +2493,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbTotalScale = thumbCoverScale * vScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
-  const thumbOffX = thumbScaledW * (card.videoX ?? 200) / 400 - previewW / 2;
-  const thumbOffY = thumbScaledH * (card.videoY ?? 200) / 400 - previewH / 2;
+  const thumbOffX = thumbScaledW * ((card.videoX ?? 0) + 200) / 400 - previewW / 2;
+  const thumbOffY = thumbScaledH * ((card.videoY ?? 0) + 200) / 400 - previewH / 2;
   // Uploaded image: apply position/zoom/brightness via CSS transform
   const imgPosX = 100 - (card.videoX ?? 100); // invert: videoX=0 means show left edge → translate right
   const imgPosY = 100 - (card.videoY ?? 100);
@@ -3016,9 +3016,9 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
             React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 200, videoY: 200, videoScale: 100, videoBrightness: 0 }) }),
-              React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
-              React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
+              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+              React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+              React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
               React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
               React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
@@ -4796,9 +4796,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
-    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 200, videoY: 200, videoScale: 100, videoBrightness: 0 }) }),
-    React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
-    React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
+    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
@@ -5178,8 +5178,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -200, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
       React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
       React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
