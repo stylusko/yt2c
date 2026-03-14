@@ -142,7 +142,7 @@ const DEFAULT_CARD = () => ({
   titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
-  captureTime: "", videoX: 100, videoY: 100, videoScale: 100, videoBrightness: 0,
+  captureTime: "", videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
@@ -625,7 +625,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => onChange(parseFloat(e.target.value)), style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.03, step * 3); onChange(Math.abs(v - defVal) <= snap ? defVal : v); }, style: { flex: 1, accentColor: T.accent } }),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
@@ -1663,6 +1663,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const [mDragging, setMDragging] = useState(false);
+  const mDraggingRef = useRef(false);
   const [mDragTime, setMDragTime] = useState(null);
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
@@ -1755,7 +1756,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const tick = () => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const t = playerRef.current.getCurrentTime();
-        setCurrent(t);
+        if (!mDraggingRef.current) setCurrent(t);
         const ss = startSecRef.current, es = endSecRef.current;
         if (!manualSeekOutside.current && ss != null && es != null && es > ss && t >= es - 0.15) {
           playerRef.current.seekTo(ss, true);
@@ -1912,11 +1913,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
           if (Math.abs(cx - startClientX) > 10) {
             clearTimeout(longPressTimer);
-            // Fall back to seek
+            // Fall back to seek with drag tooltip
             manualSeekOutside.current = false;
             seekTo(time);
-            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const { time: st } = calcSeekTime(scx); seekTo(st); };
-            const seekUp = () => { window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
+            mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
+            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const r = calcSeekTime(scx); seekTo(r.time); setMDragTime(r.time); setMDragX(r.x); };
+            const seekUp = () => { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
             window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
             window.addEventListener('touchmove', seekMove, { passive: false }); window.addEventListener('touchend', seekUp);
             window.addEventListener('mousemove', seekMove); window.addEventListener('mouseup', seekUp);
@@ -1965,17 +1967,19 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
-      // Outside range: normal seek
+      // Outside range: normal seek with drag tooltip
       manualSeekOutside.current = true;
       seekTo(time);
+      mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
       const onMove = (ev) => {
         const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const { time: t } = calcSeekTime(cx);
-        const inR = startSec != null && endSec != null && t >= startSec && t <= endSec;
+        const r = calcSeekTime(cx);
+        const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
         manualSeekOutside.current = !inR;
-        seekTo(t);
+        seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
       };
       const onUp = () => {
+        mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
       };
@@ -2020,10 +2024,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   };
 
   const startPlayheadDrag = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    const isTouch = e.type === 'touchstart';
-    const cx = isTouch ? e.touches[0].clientX : e.clientX;
+    const cx = e.clientX;
     // If closer to a marker than to the playhead, delegate to marker drag
     if (seekRef.current && startSec != null && endSec != null) {
       const rect = seekRef.current.getBoundingClientRect();
@@ -2034,25 +2036,28 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       if (startX != null && Math.abs(cx - startX) < dPlay && Math.abs(cx - startX) <= 18) { startSeekMarkerDrag('start', e); return; }
       if (endX != null && Math.abs(cx - endX) < dPlay && Math.abs(cx - endX) <= 18) { startSeekMarkerDrag('end', e); return; }
     }
+    const el = e.currentTarget;
+    if (e.pointerId != null) el.setPointerCapture(e.pointerId);
     const { time, x } = calcSeekTime(cx);
     manualSeekOutside.current = !(startSec != null && endSec != null && time >= startSec && time <= endSec);
     seekTo(time);
-    setMDragging(true); setMDragTime(time); setMDragX(x);
+    mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
     const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(mcx);
+      const r = calcSeekTime(ev.clientX);
       const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
       manualSeekOutside.current = !inR;
       seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
     };
-    const onUp = () => {
-      setMDragging(false); setMDragTime(null);
-      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+    const onUp = (ev) => {
+      mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(e) {} }
     };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const markStart = () => {
@@ -2187,10 +2192,10 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Unified hit area when markers are close
           markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
           // Playhead hit area + visual element
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
             React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          (playing || mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+          (playing && !mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
           // Playhead drag tooltip
           mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(mDragTime)),
         ),
@@ -2376,8 +2381,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const totalScale = coverScale * vsc;
   const scaledW = iW * totalScale;
   const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 100) / 200 - width / 2;
-  const offY = scaledH * (videoY ?? 100) / 200 - height / 2;
+  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
+  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
@@ -2505,8 +2510,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbTotalScale = thumbCoverScale * vScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
-  const thumbOffX = thumbScaledW * (card.videoX ?? 100) / 200 - previewW / 2;
-  const thumbOffY = thumbScaledH * (card.videoY ?? 100) / 200 - previewH / 2;
+  const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
+  const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
   // Uploaded image: apply position/zoom/brightness via CSS transform
   const imgPosX = 100 - (card.videoX ?? 100); // invert: videoX=0 means show left edge → translate right
   const imgPosY = 100 - (card.videoY ?? 100);
@@ -3028,10 +3033,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
             React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 100, videoY: 100, videoScale: 100, videoBrightness: 0 }) }),
-              React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 100 }),
-              React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 100 }),
-              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+              React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+              React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+              React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
+              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
               React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
           ),
@@ -4808,10 +4813,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
-    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 100, videoY: 100, videoScale: 100, videoBrightness: 0 }) }),
-    React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 100 }),
-    React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 100 }),
-    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
 
@@ -5190,9 +5195,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 200, step: 1, onChange: (v) => update("videoX", v), defaultValue: 100 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 200, step: 1, onChange: (v) => update("videoY", v), defaultValue: 100 }),
-      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
       React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
   );
