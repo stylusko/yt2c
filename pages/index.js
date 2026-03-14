@@ -3019,7 +3019,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 200, videoY: 200, videoScale: 100, videoBrightness: 0 }) }),
               React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
-              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
               React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
           ),
@@ -4799,7 +4799,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 200, videoY: 200, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
-    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
 
@@ -5180,7 +5180,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX, min: 0, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 200 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY, min: 0, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 200 }),
-      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 200, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
       React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
   );
