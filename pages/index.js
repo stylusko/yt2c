@@ -5616,7 +5616,13 @@ export default function App() {
     setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
   }, [activeProjectId]);
 
-  const setGlobalUrl = (v) => updateProject({ globalUrl: v });
+  const setGlobalUrl = (v) => {
+    const prev = activeProject?.globalUrl || '';
+    updateProject({ globalUrl: v });
+    if (v !== prev) {
+      setCards(cs => cs.map(c => ({ ...c, start: '', end: '', previewFrame: null, appliedStart: null, appliedEnd: null })));
+    }
+  };
   const setOutputFormat = (v) => updateProject({ outputFormat: v });
   const setOutputSize = (v) => updateProject({ outputSize: v });
   const setAspectRatio = (v) => updateProject({ aspectRatio: v });
