@@ -7,17 +7,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0314';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD074\uB9BD \uC801\uC6A9 \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
   '\uD074\uB9BD \uC801\uC6A9 \uBC84\uD2BC\uC73C\uB85C \uC815\uD655\uD55C \uD504\uB808\uC784 \uCEA1\uCC98 (\uC11C\uBC84 \uCE21)',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
   '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
   '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
-  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -146,7 +146,7 @@ const DEFAULT_CARD = () => ({
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
-  previewFrame: null,
+  previewFrame: null, appliedStart: null, appliedEnd: null,
 });
 
 /* ── Responsive Hook ── */
@@ -4689,24 +4689,37 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           )
         : React.createElement(React.Fragment, null,
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-            // MobileClipSelector: visual clip picker
-            React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
-            React.createElement("button", {
-              disabled: capturingFrame || !(card.url || globalUrl),
-              onClick: async () => {
-                const videoUrl = card.url || globalUrl;
-                if (!videoUrl) return;
-                setCapturingFrame(true);
-                try {
-                  const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
-                  const data = await resp.json();
-                  if (resp.ok && data.frame) update("previewFrame", data.frame);
-                  else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
-                } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
-                setCapturingFrame(false);
-              },
-              style: { marginTop: 4, marginBottom: 4, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' },
-            }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
+            card.appliedStart && card.previewFrame
+              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                  React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                  ),
+                  React.createElement("button", {
+                    disabled: capturingFrame,
+                    onClick: () => updateMulti({ previewFrame: null, appliedStart: null, appliedEnd: null }),
+                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                  }, '\uB2E4\uC2DC \uC120\uD0DD'),
+                )
+              : React.createElement(React.Fragment, null,
+                  // MobileClipSelector: visual clip picker
+                  React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
+                  React.createElement("button", {
+                    disabled: capturingFrame || !(card.url || globalUrl),
+                    onClick: async () => {
+                      const videoUrl = card.url || globalUrl;
+                      if (!videoUrl) return;
+                      setCapturingFrame(true);
+                      try {
+                        const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
+                        const data = await resp.json();
+                        if (resp.ok && data.frame) updateMulti({ previewFrame: data.frame, appliedStart: card.start, appliedEnd: card.end });
+                        else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
+                      } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
+                      setCapturingFrame(false);
+                    },
+                    style: { marginTop: 4, marginBottom: 4, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' },
+                  }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
+                ),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5113,23 +5126,36 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           )
         : React.createElement(React.Fragment, null,
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-            React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
-            React.createElement("button", {
-              disabled: capturingFrame || !(card.url || globalUrl),
-              onClick: async () => {
-                const videoUrl = card.url || globalUrl;
-                if (!videoUrl) return;
-                setCapturingFrame(true);
-                try {
-                  const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
-                  const data = await resp.json();
-                  if (resp.ok && data.frame) update("previewFrame", data.frame);
-                  else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
-                } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
-                setCapturingFrame(false);
-              },
-              style: { marginTop: 8, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-            }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
+            card.appliedStart && card.previewFrame
+              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                  React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                  ),
+                  React.createElement("button", {
+                    disabled: capturingFrame,
+                    onClick: () => updateMulti({ previewFrame: null, appliedStart: null, appliedEnd: null }),
+                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                  }, '\uB2E4\uC2DC \uC120\uD0DD'),
+                )
+              : React.createElement(React.Fragment, null,
+                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+                  React.createElement("button", {
+                    disabled: capturingFrame || !(card.url || globalUrl),
+                    onClick: async () => {
+                      const videoUrl = card.url || globalUrl;
+                      if (!videoUrl) return;
+                      setCapturingFrame(true);
+                      try {
+                        const resp = await fetch('/api/frame', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: videoUrl, timestamp: parseTime(card.start) ?? 0, oldFrame: card.previewFrame || undefined }) });
+                        const data = await resp.json();
+                        if (resp.ok && data.frame) updateMulti({ previewFrame: data.frame, appliedStart: card.start, appliedEnd: card.end });
+                        else alert(data.error || '\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328');
+                      } catch (e) { alert('\uD504\uB808\uC784 \uCEA1\uCC98 \uC2E4\uD328: ' + e.message); }
+                      setCapturingFrame(false);
+                    },
+                    style: { marginTop: 8, padding: '8px 16px', background: capturingFrame ? T.surfaceHover : T.accent, color: capturingFrame ? T.textMuted : '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: capturingFrame ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+                  }, capturingFrame ? '\u23F3 \uCEA1\uCC98 \uC911...' : '\uD83C\uDFA8 \uD074\uB9BD \uC801\uC6A9'),
+                ),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
@@ -5711,7 +5737,7 @@ export default function App() {
   const buildConfig = (card) => {
     const c = effectiveCard(card);
     return {
-      start: c.start, end: c.end, layout: c.layout, photo_ratio: c.photoRatio,
+      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
       video_fill: c.videoFill || 'full',
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
