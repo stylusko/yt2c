@@ -6,8 +6,8 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0312';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_DATE = '2026.0314';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';

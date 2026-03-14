@@ -1,14 +1,15 @@
 FROM node:20-slim
 
-# Install ffmpeg and yt-dlp
+# Install ffmpeg, python3, pip, yt-dlp (pip), bgutil plugin
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
-    python3 \
-    curl \
-    ca-certificates \
-    && curl -L https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp \
+    ffmpeg python3 python3-pip curl ca-certificates git \
+    && pip3 install --break-system-packages yt-dlp bgutil-ytdlp-pot-provider \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# bgutil POT HTTP server (Node.js)
+RUN git clone --depth 1 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git /opt/bgutil \
+    && cd /opt/bgutil/server && npm ci && npx tsc \
+    && rm -rf /opt/bgutil/.git
 
 WORKDIR /app
 
@@ -30,5 +31,5 @@ RUN mkdir -p /tmp/yt2c-storage/overlays /tmp/yt2c-storage/outputs /tmp/yt2c-stor
 
 EXPOSE 3000
 
-# Start both Next.js server and worker
-CMD ["sh", "-c", "node worker.js & npm start"]
+# Start POT server, worker, and Next.js
+CMD ["sh", "-c", "node /opt/bgutil/server/build/main.js --port 4416 & node worker.js & npm start"]
