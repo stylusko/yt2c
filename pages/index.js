@@ -2354,6 +2354,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   useEffect(() => {
     if (!videoId || !hasRange) return;
     let cancelled = false;
+    let frozen = false;
 
     const createPlayer = () => {
       if (cancelled) return;
@@ -2373,9 +2374,13 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { if (!cancelled) { e.target.mute(); e.target.seekTo(startSec, true); } },
+          onReady: (e) => { if (!cancelled) { e.target.mute(); } },
           onStateChange: (e) => {
-            if (e.data === window.YT.PlayerState.PLAYING) { e.target.pauseVideo(); setReady(true); }
+            if (e.data === window.YT.PlayerState.PLAYING && !frozen && !cancelled) {
+              frozen = true;
+              e.target.seekTo(startSec, true);
+              setTimeout(() => { if (!cancelled) { e.target.pauseVideo(); setReady(true); } }, 500);
+            }
           },
         },
       });
