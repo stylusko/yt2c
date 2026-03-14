@@ -125,7 +125,7 @@ async function captureFrameFast(url, ts, outputPath) {
   } else {
     // Resolve via yt-dlp
     const ytArgs = [
-      '-f', 'bestvideo[height<=720]/bestvideo',
+      '-f', 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720][ext=webm]/bestvideo[height<=720]',
       '-j',
       '--no-playlist',
       '--no-warnings',
@@ -169,12 +169,11 @@ async function captureFrameFast(url, ts, outputPath) {
 async function captureFrameSlow(url, ts, outputPath, jobId) {
   const startTime = secondsToTime(ts);
   const endTime = secondsToTime(ts + 1);
-  const tempVideoPath = getTempPath(jobId, 'segment.mp4');
+  const tempVideoPath = getTempPath(jobId, 'segment.%(ext)s');
 
   const ytArgs = [
     '--download-sections', `*${startTime}-${endTime}`,
-    '-f', 'bestvideo[height<=720]',
-    '--remux-video', 'mp4',
+    '-f', 'bestvideo[height<=720][ext=mp4]/bestvideo[height<=720]',
     '--js-runtimes', 'node',
     '-o', tempVideoPath,
     '--no-playlist',
