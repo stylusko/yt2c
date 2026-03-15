@@ -7,17 +7,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0315';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
   '\uAD6C\uAC04 \uC120\uD0DD \u2192 iframe \uC815\uC9C0 \uD504\uB808\uC784 \uD504\uB9AC\uBDF0 (\uC11C\uBC84 \uCEA1\uCC98 \uC81C\uAC70)',
   '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
   '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
-  '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -3423,13 +3423,19 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
 }
 
 function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate }) {
-  const [selected, setSelected] = useState(() => cards.map(() => true));
-  const allSelected = selected.every(Boolean);
+  const url = globalUrl || cards[0]?.url || '';
+  const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
+  const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
+  const [selected, setSelected] = useState(() => cards.map((c) => !cardDisabled(c)));
+  const allSelected = selected.every((s, i) => s || cardDisabled(cards[i]));
   const noneSelected = selected.every(s => !s);
   const selectedCount = selected.filter(Boolean).length;
 
-  const toggleAll = () => setSelected(cards.map(() => !allSelected));
-  const toggle = (i) => setSelected(s => s.map((v, j) => j === i ? !v : v));
+  const toggleAll = () => {
+    const next = !allSelected;
+    setSelected(cards.map((c, i) => cardDisabled(c) ? false : next));
+  };
+  const toggle = (i) => { if (cardDisabled(cards[i])) return; setSelected(s => s.map((v, j) => j === i ? !v : v)); };
   const pvW = 150;
 
   return React.createElement("div", {
@@ -3459,14 +3465,19 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 } },
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+            const disabled = cardDisabled(card);
             return React.createElement("div", {
               key: i,
               onClick: () => toggle(i),
-              style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
+              style: { cursor: disabled ? 'not-allowed' : 'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: disabled ? 0.4 : (selected[i] ? 1 : 0.45), transition:'all 0.2s', position:'relative' }
             },
               React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false }),
+              // Disabled overlay + badge for unselected segment
+              disabled && React.createElement("div", { style: { position:'absolute', inset:0, background:'rgba(220,38,38,0.18)', display:'flex', alignItems:'center', justifyContent:'center' } },
+                React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
+              ),
               // Checkbox overlay
-              React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
+              !disabled && React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
               // Card number
@@ -5950,6 +5961,7 @@ export default function App() {
         // Video card: existing validation
         const cardUrl = c.url || url;
         if (c.url) { const ck = validateYouTubeUrl(c.url); if (!ck.ok) { errors.push(`카드 ${i + 1}: ${YT_VALIDATION_MSGS[ck.code]}`); continue; } }
+        if (!c.appliedStart || !c.appliedEnd) { errors.push(`카드 ${i + 1}: 구간 선택을 해주세요.`); continue; }
         if (!c.start || !c.end) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uC791/\uC885\uB8CC \uC2DC\uAC04\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694.`); continue; }
         const ss = parseTime(c.start), es = parseTime(c.end);
         if (ss == null || es == null) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC2DC\uAC04 \uD615\uC2DD\uC774 \uC798\uBABB\uB418\uC5C8\uC5B4\uC694. (\uC608: 0:30)`); continue; }
