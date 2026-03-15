@@ -626,7 +626,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.015, step * 2); onChange(Math.abs(v - defVal) <= snap ? defVal : v); }, style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.007, step); onChange(Math.abs(v - defVal) <= snap ? defVal : v); }, style: { flex: 1, accentColor: T.accent } }),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
