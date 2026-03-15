@@ -6,18 +6,18 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0314';
+const BUILD_DATE = '2026.0315';
 const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uAD6C\uAC04 \uC120\uD0DD \u2192 iframe \uC815\uC9C0 \uD504\uB808\uC784 \uD504\uB9AC\uBDF0 (\uC11C\uBC84 \uCEA1\uCC98 \uC81C\uAC70)',
+  '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
   '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
   '\uD504\uB85C\uC81D\uD2B8 \uACF5\uC720 URL \uB2E8\uCD95 (Supabase)',
-  '\uBBF8\uB9AC\uBCF4\uAE30\uC5D0\uC11C \uBC14\uB85C \uC0DD\uC131\uD558\uAE30',
-  'Google Fonts 10\uC885 \uC9C0\uC6D0 + \uD3F0\uD2B8 \uBBF8\uB9AC\uBCF4\uAE30 \uB4DC\uB86D\uB2E4\uC6B4',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -146,6 +146,7 @@ const DEFAULT_CARD = () => ({
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
+  appliedStart: null, appliedEnd: null,
 });
 
 /* ── Responsive Hook ── */
@@ -2323,39 +2324,26 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   ), document.body);
 }
 
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted: mutedProp, volume: volumeProp = 80 }) {
+
+/* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, onReady }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const timerRef = useRef(null);
+  const loopRef = useRef(null);
   const [ready, setReady] = useState(false);
   const mountId = useRef(Date.now());
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
 
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
   const hasRange = endSec != null && endSec > startSec;
 
-  // Sync mute state with prop
-  useEffect(() => {
-    if (playerRef.current && playerRef.current.isMuted) {
-      if (mutedProp === false) { playerRef.current.unMute(); playerRef.current.setVolume(volumeProp || 80); }
-      else { playerRef.current.mute(); playerRef.current.setVolume(0); }
-    }
-  }, [mutedProp]);
-
-  // Sync volume with prop
-  useEffect(() => {
-    if (playerRef.current && playerRef.current.setVolume && !mutedProp) {
-      playerRef.current.setVolume(volumeProp || 80);
-    }
-  }, [volumeProp]);
-
-  // High-res iframe (YouTube serves better quality at larger sizes)
   const iW = 1920;
   const iH = 1080;
-  // Scale to cover the container
   const coverScale = Math.max(width / iW, height / iH);
 
-  // Load YouTube IFrame API once
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
     if (document.getElementById('yt-iframe-api')) return;
@@ -2365,7 +2353,13 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     document.head.appendChild(tag);
   }, []);
 
-  // Create player – use a small delay to ensure DOM is ready after mount
+  // Mute/unmute without recreating player
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!p || typeof p.mute !== 'function') return;
+    if (muted) p.mute(); else p.unMute();
+  }, [muted]);
+
   useEffect(() => {
     if (!videoId || !hasRange) return;
     let cancelled = false;
@@ -2373,6 +2367,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     const createPlayer = () => {
       if (cancelled) return;
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
       const containerId = 'yt-pv-' + mountId.current + '-' + videoId + '-' + startSec;
       const el = iframeRef.current;
       if (!el) return;
@@ -2380,26 +2375,47 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
       playerRef.current = new window.YT.Player(containerId, {
         width: iW, height: iH,
-        videoId: videoId,
         playerVars: {
-          start: Math.floor(startSec), end: endSec ? Math.ceil(endSec) : undefined,
-          autoplay: 1, mute: 1, controls: 0, loop: 0,
+          mute: 1, controls: 0, loop: 0,
           modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
         events: {
-          onReady: (e) => { if (!cancelled) { if (mutedProp === false) { e.target.unMute(); e.target.setVolume(volumeProp || 80); } else { e.target.mute(); e.target.setVolume(0); } e.target.playVideo(); setReady(true); } },
+          onReady: (e) => {
+            if (!cancelled) {
+              e.target.mute();
+              e.target.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+            }
+          },
           onStateChange: (e) => {
+            if (cancelled) return;
+            if (e.data === window.YT.PlayerState.PLAYING && !ready) {
+              setReady(true);
+              if (onReadyRef.current) onReadyRef.current();
+              // Start loop checker
+              if (!loopRef.current) {
+                loopRef.current = setInterval(() => {
+                  const p = playerRef.current;
+                  if (!p || typeof p.getCurrentTime !== 'function') return;
+                  const ct = p.getCurrentTime();
+                  if (ct >= endSec - 0.3 || ct < startSec - 0.5) {
+                    p.seekTo(startSec, true);
+                  }
+                }, 250);
+              }
+            }
+            // When video ends or pauses at endSec, restart
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
-              e.target.seekTo(Math.floor(startSec), true);
-              e.target.playVideo();
+              if (!cancelled) {
+                e.target.seekTo(startSec, true);
+                e.target.playVideo();
+              }
             }
           },
         },
       });
     };
 
-    // Small delay to ensure iframeRef is attached to DOM
     const initDelay = setTimeout(() => {
       if (cancelled) return;
       if (window.YT && window.YT.Player) {
@@ -2413,21 +2429,11 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       }
     }, 50);
 
-    timerRef.current = setInterval(() => {
-      if (playerRef.current && playerRef.current.getCurrentTime) {
-        const cur = playerRef.current.getCurrentTime();
-        if (endSec && cur >= endSec - 0.3) {
-          playerRef.current.seekTo(Math.floor(startSec), true);
-          playerRef.current.playVideo();
-        }
-      }
-    }, 300);
-
     return () => {
       cancelled = true;
       clearTimeout(initDelay);
       if (timerRef._poll) clearInterval(timerRef._poll);
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
   }, [videoId, startSec, endSec, hasRange]);
@@ -2435,8 +2441,6 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   if (!videoId || !hasRange) return null;
 
   const vsc = (videoScale ?? 100) / 100;
-
-  // Crop-offset positioning (matches backend FFmpeg crop logic)
   const totalScale = coverScale * vsc;
   const scaledW = iW * totalScale;
   const scaledH = iH * totalScale;
@@ -2446,7 +2450,6 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
-    // Iframe: scaled to cover, positioned via crop-offset
     React.createElement("div", {
       style: {
         position: 'absolute', top: 0, left: 0, width: iW, height: iH,
@@ -2456,13 +2459,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     },
       React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
     ),
-    // Transparent overlay to block all YouTube UI interactions
     React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
   );
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, videoPreviewOn, previewMuted, previewVolume, onTextClick, onCardUpdate, selectedHandle, onSelectHandle }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -2475,6 +2477,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
+  const [vpMuted, setVpMuted] = useState(true);
 
   // Canvas overlay state
   const [overlayUrl, setOverlayUrl] = useState(null);
@@ -2900,12 +2903,26 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const isTop = card.layout === "photo_top";
   const videoAreaH = previewH - textH;
 
+  // VideoPreview: show when appliedStart is set (iframe-based loop playback)
+  const hasVideoPreview = showVideo && card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video';
+  const videoPreview = hasVideoPreview
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, onReady: onVideoReady })
+    : null;
+
+  // Mute toggle button (bottom-right corner)
+  const muteToggle = hasVideoPreview
+    ? React.createElement("button", {
+        onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+      }, vpMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A')
+    : null;
+
   // Split mode: constrain video to video area
   if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none") {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
-        videoPreviewOn && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: videoAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
+        videoPreview,
       ),
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
@@ -2916,13 +2933,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       textBoxClickTarget,
       selectionHandles,
       uSnapGuides,
+      muteToggle,
     );
   }
 
   // All other layouts: full-size background + canvas overlay
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
-    videoPreviewOn && !card.uploadedImage && React.createElement(VideoPreview, { videoId: thumbnailId, start: card.start, end: card.end, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: previewMuted !== false, volume: previewVolume }),
+    videoPreview,
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -2932,6 +2950,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     textBoxClickTarget,
     selectionHandles,
     uSnapGuides,
+    muteToggle,
   );
 }
 
@@ -3084,7 +3103,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
                   )
                 : React.createElement(React.Fragment, null,
-                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
+                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: inputBase }),
                     React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
                   ),
             ),
@@ -3296,11 +3315,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating, previewMuted, onMuteToggle }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [videoPreviewOn, setVideoPreviewOn] = useState(true);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
   const previewW = isMob ? Math.min(window.innerWidth - 40, 480) : 480;
   const cardSlotW = previewW + 40;
@@ -3337,25 +3355,6 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
         React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.45)' } }, (currentIdx + 1) + " / " + cards.length),
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-        // Video preview toggle
-        React.createElement("div", {
-          onClick: () => setVideoPreviewOn(!videoPreviewOn),
-          style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', padding: '4px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.08)' }
-        },
-          React.createElement("div", {
-            style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 },
-          },
-            React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
-          ),
-          React.createElement("span", { style: { fontSize: 11, color: videoPreviewOn ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: 500, userSelect: 'none' } }, "\uC601\uC0C1 \uBBF8\uB9AC\uBCF4\uAE30"),
-        ),
-        // Mute toggle
-        videoPreviewOn && onMuteToggle && React.createElement("div", {
-          onClick: onMuteToggle,
-          style: { width: 32, height: 32, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' },
-        },
-          React.createElement("span", { style: { fontSize: 15, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
-        ),
         // Close
         React.createElement("button", {
           onClick: onClose,
@@ -3366,8 +3365,8 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
       ),
     ),
 
-    // Disclaimer (only when video preview is on)
-    videoPreviewOn && React.createElement("div", { style: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '0 16px 8px' } },
+    // Disclaimer
+    React.createElement("div", { style: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center', padding: '0 16px 8px' } },
       "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"
     ),
 
@@ -3383,7 +3382,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, videoPreviewOn: videoPreviewOn && i === currentIdx })
+            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx })
           )
         )
       )
@@ -3465,7 +3464,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor:'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: selected[i] ? 1 : 0.45, transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, videoPreviewOn: false }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false }),
               // Checkbox overlay
               React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
@@ -4758,6 +4757,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [clipWarn, setClipWarn] = useState(false);
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
+  const [videoLoading, setVideoLoading] = useState(false);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -4841,9 +4841,26 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: { ...inputBase, marginBottom: 8 } }),
-            // MobileClipSelector: visual clip picker
-            React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: { ...inputBase, marginBottom: 8 } }),
+            card.appliedStart
+              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                  React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                  ),
+                  React.createElement("button", {
+                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null }),
+                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                  }, '\uB2E4\uC2DC \uC120\uD0DD'),
+                )
+              : React.createElement(React.Fragment, null,
+                  // MobileClipSelector: visual clip picker
+                  React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
+                  React.createElement("button", {
+                    disabled: !(card.url || globalUrl),
+                    onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
+                    style: { marginTop: 4, marginBottom: 4, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' },
+                  }, '\uD83C\uDFA8 \uAD6C\uAC04 \uC120\uD0DD'),
+                ),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5141,7 +5158,15 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle }),
+      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false) }),
+    ),
+
+    // Video loading modal
+    videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
+        React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
+      ),
     ),
 
     // Tab pills
@@ -5164,7 +5189,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, videoPreviewOn, onVideoPreviewToggle, previewMuted, onPreviewMuteToggle, previewVolume, onPreviewVolumeChange, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -5175,6 +5200,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [animDir, setAnimDir] = useState(null);
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
+  const [videoLoading, setVideoLoading] = useState(false);
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -5248,8 +5274,25 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => update("url", e.target.value), style: inputBase }),
-            React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), clipMuted: !previewMuted ? true : undefined, onClipUnmute: () => { if (onPreviewMuteToggle && !previewMuted) onPreviewMuteToggle(); }, onClipConfirmed: () => { if (!videoPreviewOn) onVideoPreviewToggle(); }, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: inputBase }),
+            card.appliedStart
+              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                  React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                  ),
+                  React.createElement("button", {
+                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null }),
+                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                  }, '\uB2E4\uC2DC \uC120\uD0DD'),
+                )
+              : React.createElement(React.Fragment, null,
+                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+                  React.createElement("button", {
+                    disabled: !(card.url || globalUrl),
+                    onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
+                    style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+                  }, '\uD83C\uDFA8 \uAD6C\uAC04 \uC120\uD0DD'),
+                ),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
@@ -5453,6 +5496,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
     React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
+    // Video loading modal
+    videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
+        React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
+      ),
+    ),
     // ── LEFT: Preview (compact) ──
     React.createElement("div", { style: { width: 420, flexShrink: 0, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', background: T.bg } },
       // Top bar: nav + card name only
@@ -5475,9 +5525,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, videoPreviewOn: activeTab !== 'fill' && videoPreviewOn, previewMuted, previewVolume, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false) })
         ),
-        videoPreviewOn && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
+        React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
       // Bottom bar: carousel + actions + toggle
       React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, background: T.surface, flexShrink: 0 } },
@@ -5501,7 +5551,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 transition: 'all 0.15s',
               },
             },
-              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38 })
+              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
             ))
           ),
           React.createElement("button", {
@@ -5515,27 +5565,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement("button", { onClick: () => onDuplicate(activeIndex), style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\uBCF5\uC81C"),
           React.createElement("button", { onClick: onReorder, style: { ...btnSm, padding: '3px 8px', fontSize: 10 } }, "\u2630 \uC21C\uC11C"),
           cards.length > 1 && React.createElement("button", { onClick: () => { onRemove(activeIndex); if (activeIndex >= cards.length - 1) onActiveChange(Math.max(0, activeIndex - 1)); }, style: { ...btnSm, padding: '3px 8px', fontSize: 10, background: 'rgba(239,68,68,0.1)', color: T.danger } }, "\uC0AD\uC81C"),
-          // Video preview toggle (right-aligned)
-          React.createElement("div", { style: { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 } },
-            React.createElement("div", {
-              onClick: onVideoPreviewToggle,
-              style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
-            },
-              React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
-            ),
-            React.createElement("span", { onClick: onVideoPreviewToggle, style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
-            videoPreviewOn && React.createElement("div", {
-              onClick: onPreviewMuteToggle,
-              style: { width: 22, height: 22, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', marginLeft: 2 },
-            },
-              React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
-            ),
-            videoPreviewOn && !previewMuted && React.createElement("input", {
-              type: 'range', min: 0, max: 100, step: 5, value: previewVolume,
-              onChange: (e) => onPreviewVolumeChange(Number(e.target.value)),
-              style: { width: 80, height: 14, accentColor: T.accent, cursor: 'pointer', marginLeft: 2 },
-            }),
-          ),
         ),
       ),
     ),
@@ -5582,9 +5611,6 @@ export default function App() {
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
-  const [videoPreviewOn, setVideoPreviewOn] = useState(true);
-  const [previewMuted, setPreviewMuted] = useState(true);
-  const [previewVolume, setPreviewVolume] = useState(80);
   const [showPreview, setShowPreview] = useState(false);
   const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
@@ -5734,7 +5760,13 @@ export default function App() {
     setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
   }, [activeProjectId]);
 
-  const setGlobalUrl = (v) => updateProject({ globalUrl: v });
+  const setGlobalUrl = (v) => {
+    const prev = activeProject?.globalUrl || '';
+    updateProject({ globalUrl: v });
+    if (v !== prev) {
+      setCards(cs => cs.map(c => ({ ...c, start: '', end: '', appliedStart: null, appliedEnd: null })));
+    }
+  };
   const setOutputFormat = (v) => updateProject({ outputFormat: v });
   const setOutputSize = (v) => updateProject({ outputSize: v });
   const setAspectRatio = (v) => updateProject({ aspectRatio: v });
@@ -5855,7 +5887,7 @@ export default function App() {
   const buildConfig = (card) => {
     const c = effectiveCard(card);
     return {
-      start: c.start, end: c.end, layout: c.layout, photo_ratio: c.photoRatio,
+      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
       video_fill: c.videoFill || 'full',
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
@@ -6215,7 +6247,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), videoPreviewOn, previewMuted, previewVolume }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32) }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
@@ -6226,21 +6258,6 @@ export default function App() {
                 onClick: () => setMobilePreviewExpanded(v => !v),
                 style: { background: T.surface, border: '1px solid ' + T.border, borderRadius: 12, color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '4px 10px' },
               }, mobilePreviewExpanded ? "\uC791\uAC8C \uBCF4\uAE30" : "\uD06C\uAC8C \uBCF4\uAE30"),
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4 } },
-                React.createElement("div", {
-                  onClick: () => setVideoPreviewOn(v => !v),
-                  style: { width: 28, height: 14, borderRadius: 7, background: videoPreviewOn ? T.accent : T.border, position: 'relative', transition: 'background 0.2s', cursor: 'pointer', flexShrink: 0 },
-                },
-                  React.createElement("div", { style: { width: 10, height: 10, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: videoPreviewOn ? 16 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
-                ),
-                React.createElement("span", { onClick: () => setVideoPreviewOn(v => !v), style: { fontSize: 10, color: T.textMuted, cursor: 'pointer', userSelect: 'none' } }, "\uC7AC\uC0DD"),
-                videoPreviewOn && React.createElement("div", {
-                  onClick: () => setPreviewMuted(m => !m),
-                  style: { width: 22, height: 22, borderRadius: '50%', background: previewMuted ? 'rgba(255,255,255,0.06)' : 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s' },
-                },
-                  React.createElement("span", { style: { fontSize: 12, lineHeight: 1 } }, previewMuted ? "\uD83D\uDD07" : "\uD83D\uDD0A")
-                ),
-              ),
             ),
           )
       ),
@@ -6315,9 +6332,6 @@ export default function App() {
         onAdd: addCard,
         globalUrl, aspectRatio, outputFormat, globalBgImage,
         onReorder: () => setShowReorder(true),
-        videoPreviewOn, onVideoPreviewToggle: () => setVideoPreviewOn(v => !v),
-        previewMuted, onPreviewMuteToggle: () => { setPreviewMuted(m => !m); },
-        previewVolume, onPreviewVolumeChange: setPreviewVolume,
         onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
         onApplyOverlayToAll: applyOverlayToAll,
         onRemoveOverlayFromAll: removeOverlayFromAll,
@@ -6325,7 +6339,7 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating, previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, queueStatus, results, downloading,

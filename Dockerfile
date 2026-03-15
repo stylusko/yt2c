@@ -27,7 +27,7 @@ RUN npm run build
 RUN npm prune --production 2>/dev/null || true
 
 # Create storage directory
-RUN mkdir -p /tmp/yt2c-storage/overlays /tmp/yt2c-storage/outputs /tmp/yt2c-storage/temp
+RUN mkdir -p /tmp/yt2c-storage/overlays /tmp/yt2c-storage/outputs /tmp/yt2c-storage/temp /tmp/yt2c-storage/frames
 
 EXPOSE 3000
 
