@@ -2,3 +2,5 @@ node_modules/
 .next/
 .env.local
 *_cookies.txt
+cookies*.txt
+scripts/.cookies-sync-config
