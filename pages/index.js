@@ -5206,7 +5206,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -5218,6 +5218,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -5561,11 +5563,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             cards.map((c, i) => React.createElement("div", {
               key: c.id,
               onClick: () => goTo(i),
+              draggable: true,
+              onDragStart: (e) => { setDragIdx(i); e.dataTransfer.effectAllowed = 'move'; },
+              onDragOver: (e) => { e.preventDefault(); setDragOverIdx(i); },
+              onDrop: (e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i && onMoveCard) onMoveCard(dragIdx, i); setDragIdx(null); setDragOverIdx(null); },
+              onDragEnd: () => { setDragIdx(null); setDragOverIdx(null); },
               style: {
-                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: 'pointer',
+                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: 'grab',
                 boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
-                opacity: i === activeIndex ? 1 : 0.55,
+                opacity: dragIdx === i ? 0.4 : (i === activeIndex ? 1 : 0.55),
                 transition: 'all 0.15s',
+                borderLeft: dragOverIdx === i && dragIdx !== null && dragIdx > i ? '3px solid ' + T.accent : undefined,
+                borderRight: dragOverIdx === i && dragIdx !== null && dragIdx < i ? '3px solid ' + T.accent : undefined,
               },
             },
               React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
@@ -5801,6 +5810,7 @@ export default function App() {
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
   const duplicateCard = (i) => { setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
+  const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
@@ -6353,6 +6363,7 @@ export default function App() {
         onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
         onApplyOverlayToAll: applyOverlayToAll,
         onRemoveOverlayFromAll: removeOverlayFromAll,
+        onMoveCard: moveCard,
       }),
     ),
 
