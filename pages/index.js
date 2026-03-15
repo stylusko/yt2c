@@ -5218,8 +5218,42 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const [dragIdx, setDragIdx] = useState(null);
-  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [dragState, setDragState] = useState(null); // { idx, offsetX }
+  const wasDragging = useRef(false);
+  const CARD_STEP = 43; // 38px width + 5px gap
+  const handleCardPointerDown = (e, i) => {
+    if (e.button !== 0) return;
+    const startX = e.clientX;
+    let active = false;
+    let lastDx = 0;
+    const onMove = (e2) => {
+      const dx = e2.clientX - startX;
+      if (!active && Math.abs(dx) > 5) active = true;
+      if (active) { lastDx = dx; setDragState({ idx: i, offsetX: dx }); }
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      if (active) {
+        wasDragging.current = true;
+        const steps = Math.round(lastDx / CARD_STEP);
+        const newIdx = Math.max(0, Math.min(cards.length - 1, i + steps));
+        if (newIdx !== i && onMoveCard) onMoveCard(i, newIdx);
+        setDragState(null);
+        setTimeout(() => { wasDragging.current = false; }, 50);
+      }
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+  const getCardDragTransform = (i) => {
+    if (!dragState) return undefined;
+    if (i === dragState.idx) return `translateX(${dragState.offsetX}px) scale(1.12)`;
+    const targetIdx = Math.max(0, Math.min(cards.length - 1, dragState.idx + Math.round(dragState.offsetX / CARD_STEP)));
+    if (dragState.idx < targetIdx && i > dragState.idx && i <= targetIdx) return `translateX(-${CARD_STEP}px)`;
+    if (dragState.idx > targetIdx && i >= targetIdx && i < dragState.idx) return `translateX(${CARD_STEP}px)`;
+    return undefined;
+  };
   const handleSelectHandle = (val) => {
     setSelectedHandle(val);
     if (val === 'textbox') setActiveTab('text');
@@ -5562,19 +5596,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           },
             cards.map((c, i) => React.createElement("div", {
               key: c.id,
-              onClick: () => goTo(i),
-              draggable: true,
-              onDragStart: (e) => { setDragIdx(i); e.dataTransfer.effectAllowed = 'move'; },
-              onDragOver: (e) => { e.preventDefault(); setDragOverIdx(i); },
-              onDrop: (e) => { e.preventDefault(); if (dragIdx !== null && dragIdx !== i && onMoveCard) onMoveCard(dragIdx, i); setDragIdx(null); setDragOverIdx(null); },
-              onDragEnd: () => { setDragIdx(null); setDragOverIdx(null); },
+              onClick: () => { if (!wasDragging.current) goTo(i); },
+              onPointerDown: (e) => handleCardPointerDown(e, i),
               style: {
-                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: 'grab',
-                boxShadow: i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border,
-                opacity: dragIdx === i ? 0.4 : (i === activeIndex ? 1 : 0.55),
-                transition: 'all 0.15s',
-                borderLeft: dragOverIdx === i && dragIdx !== null && dragIdx > i ? '3px solid ' + T.accent : undefined,
-                borderRight: dragOverIdx === i && dragIdx !== null && dragIdx < i ? '3px solid ' + T.accent : undefined,
+                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
+                boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
+                opacity: i === activeIndex || (dragState && dragState.idx === i) ? 1 : 0.55,
+                transition: dragState && dragState.idx === i ? 'box-shadow 0.15s, opacity 0.15s' : 'all 0.2s ease',
+                transform: getCardDragTransform(i),
+                zIndex: dragState && dragState.idx === i ? 10 : 1,
+                position: 'relative',
+                userSelect: 'none',
+                touchAction: 'none',
               },
             },
               React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
