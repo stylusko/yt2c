@@ -1050,6 +1050,61 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   );
 }
 
+/* ── CropGuidePreview: lightweight crop guide (thumbnail + overlay) ── */
+function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+  const ref = useRef(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setW(el.clientWidth);
+    const ro = new ResizeObserver(([e]) => setW(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  if (!thumbnailId || !aspectRatio) return null;
+  const pH = 110;
+  const videoAspect = 16 / 9;
+  const cw = w || 1;
+  const containerAspect = cw / pH;
+  let videoDisplayW, videoDisplayH, videoOffsetX = 0, videoOffsetY = 0;
+  if (containerAspect > videoAspect) {
+    videoDisplayW = pH * videoAspect; videoDisplayH = pH;
+    videoOffsetX = (cw - videoDisplayW) / 2;
+  } else {
+    videoDisplayW = cw; videoDisplayH = cw / videoAspect;
+    videoOffsetY = (pH - videoDisplayH) / 2;
+  }
+  const zoom = Math.max(videoScale ?? 100, 1) / 100;
+  const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+  const pr = photoRatio ?? 0.55;
+  const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
+    ? outAspect / pr : outAspect;
+  let visW, visH;
+  if (videoAspect >= targetAspect) {
+    visH = Math.min(1, 1 / zoom); visW = Math.min(1, targetAspect / (videoAspect * zoom));
+  } else {
+    visW = Math.min(1, 1 / zoom); visH = Math.min(1, videoAspect / (targetAspect * zoom));
+  }
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
+  const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
+  const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
+  const guideTop = videoOffsetY + cropTop * videoDisplayH;
+  const guideW = visW * videoDisplayW;
+  const guideH = visH * videoDisplayH;
+  const accent = '#8b5cf6';
+  return React.createElement("div", { ref, style: { position: 'relative', width: '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden' } },
+    React.createElement("img", { src: `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover' }, draggable: false }),
+    w > 0 && React.createElement("div", {
+      style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
+    },
+      React.createElement("div", { style: { position: 'absolute', top: 2, left: 2, background: accent, color: '#fff', fontSize: 8, fontWeight: 600, padding: '1px 4px', borderRadius: 2, whiteSpace: 'nowrap', lineHeight: '12px' } }, '\uD604\uC7AC \uBE44\uC728 ' + aspectRatio)
+    ),
+  );
+}
+
 /* ── ClipSelector: visual start/end picker ── */
 function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
   const containerRef = useRef(null);
@@ -5353,6 +5408,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+    card.appliedStart && (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
