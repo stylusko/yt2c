@@ -5165,7 +5165,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
         React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
-        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911..."),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
       ),
     ),
 
@@ -5500,7 +5500,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
         React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
-        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911..."),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
       ),
     ),
     // ── LEFT: Preview (compact) ──
