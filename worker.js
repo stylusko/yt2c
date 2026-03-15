@@ -141,13 +141,18 @@ async function checkGroupComplete(jobId, cardCount) {
       const j = await queue.getJob(`${jobId}-${i}`);
       if (j) groupJobs.push(j);
     }
-    const allDone = groupJobs.length === cardCount &&
-      groupJobs.every(j => j.finishedOn || j.failedReason);
+    // 각 job의 최종 상태를 확인 (재시도 성공 케이스 대응)
+    const jobStates = await Promise.all(groupJobs.map(async (j) => ({
+      job: j,
+      state: await j.getState(),
+    })));
+    const allDone = jobStates.length === cardCount &&
+      jobStates.every(({ state }) => state === 'completed' || state === 'failed');
 
     if (!allDone) return;
 
-    const completedJobs = groupJobs.filter(j => j.finishedOn && !j.failedReason);
-    const failedJobs = groupJobs.filter(j => j.failedReason);
+    const completedJobs = jobStates.filter(({ state }) => state === 'completed').map(({ job }) => job);
+    const failedJobs = jobStates.filter(({ state }) => state === 'failed').map(({ job }) => job);
     const starts = groupJobs.map(j => j.processedOn).filter(Boolean);
     const ends = groupJobs.map(j => j.finishedOn).filter(Boolean);
     const totalDuration = starts.length && ends.length
