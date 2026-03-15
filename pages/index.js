@@ -3489,7 +3489,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         )
       ),
       // Footer: generate button
-      React.createElement("div", { style: { padding:'12px 20px', paddingBottom:'env(safe-area-inset-bottom, 12px)', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
+      React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
         React.createElement("button", {
           onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
           disabled: noneSelected,
