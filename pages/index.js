@@ -5223,28 +5223,32 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const CARD_STEP = 43; // 38px width + 5px gap
   const handleCardPointerDown = (e, i) => {
     if (e.button !== 0) return;
+    e.preventDefault(); // 브라우저 기본 이미지 드래그 방지
     const startX = e.clientX;
     let active = false;
     let lastDx = 0;
     const onMove = (e2) => {
+      e2.preventDefault();
       const dx = e2.clientX - startX;
       if (!active && Math.abs(dx) > 5) active = true;
       if (active) { lastDx = dx; setDragState({ idx: i, offsetX: dx }); }
     };
-    const onUp = () => {
+    const cleanup = () => {
       document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointerup', cleanup);
+      document.removeEventListener('pointercancel', cleanup);
       if (active) {
         wasDragging.current = true;
         const steps = Math.round(lastDx / CARD_STEP);
         const newIdx = Math.max(0, Math.min(cards.length - 1, i + steps));
         if (newIdx !== i && onMoveCard) onMoveCard(i, newIdx);
-        setDragState(null);
         setTimeout(() => { wasDragging.current = false; }, 50);
       }
+      setDragState(null);
     };
     document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointerup', cleanup);
+    document.addEventListener('pointercancel', cleanup);
   };
   const getCardDragTransform = (i) => {
     if (!dragState) return undefined;
@@ -5598,6 +5602,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               key: c.id,
               onClick: () => { if (!wasDragging.current) goTo(i); },
               onPointerDown: (e) => handleCardPointerDown(e, i),
+              onDragStart: (e) => e.preventDefault(),
               style: {
                 width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
                 boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
@@ -5610,7 +5615,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 touchAction: 'none',
               },
             },
-              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
+              React.createElement("div", { style: { pointerEvents: 'none', width: '100%', height: '100%' } },
+                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
+              )
             ))
           ),
           React.createElement("button", {
