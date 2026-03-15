@@ -5799,8 +5799,8 @@ export default function App() {
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; });
-  const addCard = () => setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]);
+  const duplicateCard = (i) => { setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const addCard = () => { setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
 
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
@@ -6230,7 +6230,7 @@ export default function App() {
           style: { width: i === activeCardIdx ? 24 : 12, height: 12, borderRadius: 6, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
         })),
         React.createElement("button", {
-          onClick: () => { addCard(); setActiveCardIdx(cards.length); },
+          onClick: addCard,
           style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.15)', border: `1px solid ${T.accent}`, color: T.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s' },
         }, "+ \uCD94\uAC00"),
         React.createElement("button", {
