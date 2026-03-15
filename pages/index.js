@@ -3460,6 +3460,8 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           }, "\u2715"),
         ),
       ),
+      // Disabled cards info banner
+      (() => { const disabledCount = cards.filter(c => cardDisabled(c)).length; return disabledCount > 0 ? React.createElement("div", { style: { margin:'0 16px', marginTop:12, padding:'8px 12px', background:'rgba(251,191,36,0.12)', borderRadius:6, fontSize:12, color:'#f59e0b', lineHeight:1.4 } }, `\u26A0 \uAD6C\uAC04 \uC120\uD0DD\uC774 \uC548 \uB41C \uCE74\uB4DC ${disabledCount}\uAC1C\uB294 \uC0DD\uC131\uD560 \uC218 \uC5C6\uC5B4\uC694`) : null; })(),
       // Card grid (scrollable wrapper → inner grid)
       React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
         React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 } },
