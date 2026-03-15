@@ -1762,7 +1762,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 }
 
 /* ── MobileClipSelector: compact clip picker for mobile ── */
-function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange }) {
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -2377,7 +2377,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       ),
       // Footer with apply button
       React.createElement("div", { style: { flexShrink: 0, padding: '12px 16px', borderTop: '1px solid ' + T.border, background: T.bg, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' } },
-        React.createElement("button", { onClick: handleClose, style: { width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', background: accentC, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' } }, '\uC801\uC6A9'),
+        React.createElement("button", { onClick: () => { handleClose(); if (onApply) onApply(); }, style: { width: '100%', padding: '12px 0', borderRadius: 10, border: 'none', background: accentC, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer' } }, '\uC801\uC6A9'),
       ),
     ),
   ), document.body);
@@ -3169,7 +3169,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
               React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
             ),
-            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+            card.appliedStart && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
               React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -4924,15 +4924,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                     style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(React.Fragment, null,
-                  // MobileClipSelector: visual clip picker
-                  React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); } }),
-                  React.createElement("button", {
-                    disabled: !(card.url || globalUrl),
-                    onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
-                    style: { marginTop: 4, marginBottom: 4, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' },
-                  }, '\uD83C\uDFA8 \uAD6C\uAC04 \uC120\uD0DD'),
-                ),
+              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
