@@ -104,8 +104,9 @@ const worker = new Worker('video-generation', async (job) => {
       try { await job.updateProgress(Math.floor(progress)); } catch(e) {}
     }, 1000);
 
+    let result;
     try {
-      await processCard({
+      result = await processCard({
         jobId,
         cardConfig,
         url,
@@ -123,7 +124,7 @@ const worker = new Worker('video-generation', async (job) => {
     await job.updateProgress(100);
     console.log(`[${jobId}] Card ${cardIdx} completed`);
 
-    return { cardIdx, status: 'completed' };
+    return { cardIdx, status: 'completed', authInfo: result?.authInfo || null };
   } catch (error) {
     console.error(`[${jobId}] Error processing card ${cardIdx}:`, error.message);
     throw error;
@@ -173,10 +174,22 @@ async function checkGroupComplete(jobId, cardCount) {
       .filter((c) => Number.isInteger(c.cardIdx))
       .sort((a, b) => a.cardIdx - b.cardIdx);
 
+    // 인증 수단 수집 (완료된 카드들의 returnvalue에서)
+    const authSummary = { cookies: false, poToken: false, proxy: false };
+    for (const j of completedJobs) {
+      const ai = j.returnvalue?.authInfo;
+      if (ai) {
+        if (ai.cookies) authSummary.cookies = true;
+        if (ai.poToken) authSummary.poToken = true;
+        if (ai.proxy) authSummary.proxy = true;
+      }
+    }
+
     await t.notifyGroupComplete(jobId, completedJobs.length, failedJobs.length, totalDuration, {
       projectUrl,
       completedCards,
       failedCards,
+      authSummary,
     });
   } catch (err) {
     console.error('[telegram] checkGroupComplete error:', err.message);
