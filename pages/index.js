@@ -615,9 +615,13 @@ function LayoutThumb({ type, label, active, onClick }) {
 }
 
 /* ── Slider Row ── */
-function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue }) {
+const zoomToSlider = (v) => v <= 100 ? v * 2 : 200 + (v - 100) * 2 / 3;
+const zoomFromSlider = (s) => Math.round(s <= 200 ? s / 2 : 100 + (s - 200) * 1.5);
+function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue, toSlider, fromSlider }) {
   const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
   const displayVal = suffix === '%' && typeof value === 'number' && value <= 1 && max <= 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
+  const sliderVal = toSlider ? toSlider(value) : value;
+  const sliderDef = toSlider ? toSlider(defVal) : defVal;
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -626,7 +630,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.007, step); onChange(Math.abs(v - defVal) <= snap ? defVal : v); }, style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.007, step); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { flex: 1, accentColor: T.accent } }),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
@@ -3114,7 +3118,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
               React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
               React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
-              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+              React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
               React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
             ),
           ),
@@ -4905,7 +4909,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
-    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
   );
 
@@ -5312,7 +5316,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
-      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100 }),
+      React.createElement(SliderRow, { label: "\ud655\ub300", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
       React.createElement(SliderRow, { label: "\ubc1d\uae30", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     ),
   );
