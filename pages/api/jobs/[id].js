@@ -8,6 +8,8 @@ function classifyError(err) {
   const e = (err || '').toLowerCase();
   if (e.includes('invalid time range') || e.includes('start') && e.includes('end'))
     return { msg: '시작/종료 시간을 확인해주세요.', type: 'user' };
+  if (e.includes('sign in') || e.includes('confirm you') || e.includes('bot') || e.includes('cookies') || e.includes('signature solving failed') || e.includes('remote component'))
+    return { msg: '일시적인 서버 오류예요. 관리자에게 자동 보고되었으니, 잠시 후 다시 시도해주세요.', type: 'server' };
   if (e.includes('yt-dlp') || e.includes('unable to download') || e.includes('video unavailable') || e.includes('urlopen'))
     return { msg: '영상을 불러올 수 없어요. URL이 유효한지 확인해주세요.', type: 'user' };
   if (e.includes('padded dimensions') || e.includes('filter') && e.includes('invalid argument'))
