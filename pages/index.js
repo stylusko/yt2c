@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1055,7 +1055,8 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const ref = useRef(null);
   const [w, setW] = useState(0);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const prevSrc = useRef(null);
+  const [thumbFailed, setThumbFailed] = useState(false);
+  const prevClip = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -1066,9 +1067,9 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   }, []);
   const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   if (!thumbnailId || !aspectRatio) return null;
-  const imgSrc = clipThumbnail || `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
-  if (prevSrc.current !== imgSrc) { prevSrc.current = imgSrc; setImgLoaded(false); }
-  const isLoading = clipThumbnail && !imgLoaded;
+  if (prevClip.current !== clipThumbnail) { prevClip.current = clipThumbnail; setImgLoaded(false); setThumbFailed(false); }
+  const imgSrc = (clipThumbnail && !thumbFailed) ? clipThumbnail : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
+  const isLoading = clipThumbnail && !thumbFailed && !imgLoaded;
   const pH = 110;
   const videoAspect = 16 / 9;
   const cw = w || 1;
@@ -1101,9 +1102,10 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const guideH = visH * videoDisplayH;
   const accent = '#8b5cf6';
   return React.createElement("div", { ref, style: { position: 'relative', width: '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden' } },
-    React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: (e) => { if (clipThumbnail) { e.target.src = `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`; } setImgLoaded(true); } }),
-    isLoading && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 } },
-      React.createElement("div", { style: { width: 20, height: 20, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+    React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: () => { if (clipThumbnail && !thumbFailed) setThumbFailed(true); setImgLoaded(true); } }),
+    isLoading && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 2 } },
+      React.createElement("div", { style: { width: 20, height: 20, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+      React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 500 } }, '\uC2DC\uC791 \uC9C0\uC810 \uC378\uB124\uC77C \uC0DD\uC131 \uC911')
     ),
     w > 0 && React.createElement("div", {
       style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
