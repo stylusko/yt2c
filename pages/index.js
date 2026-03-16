@@ -1067,8 +1067,9 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   useEffect(() => { setImgLoaded(false); setThumbFailed(false); }, [clipThumbnail]);
   const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   if (!thumbnailId || !aspectRatio) return null;
-  const imgSrc = (clipThumbnail && !thumbFailed) ? clipThumbnail : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
-  const isLoading = clipThumbnail && !thumbFailed && !imgLoaded;
+  const validThumb = clipThumbnail && clipThumbnail.startsWith('data:') ? clipThumbnail : null;
+  const imgSrc = (validThumb && !thumbFailed) ? validThumb : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
+  const isLoading = validThumb && !thumbFailed && !imgLoaded;
   const pH = 110;
   const videoAspect = 16 / 9;
   const cw = w || 1;
