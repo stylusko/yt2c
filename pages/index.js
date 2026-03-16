@@ -5397,15 +5397,15 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         : React.createElement(React.Fragment, null,
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
             card.appliedStart
-              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
-                  card.clipThumbnail && React.createElement("img", { src: card.clipThumbnail, style: { width: 80, height: 'auto', borderRadius: 4, flexShrink: 0, objectFit: 'cover' }, onError: (e) => { e.target.style.display = 'none'; } }),
-                  React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 } },
-                    React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500 } },
+              ? React.createElement(React.Fragment, null,
+                  card.clipThumbnail && React.createElement("img", { src: card.clipThumbnail, style: { width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: T.radiusSm, marginTop: 8 }, onError: (e) => { e.target.style.display = 'none'; } }),
+                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                    React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
                       (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
                     ),
                     React.createElement("button", {
                       onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
-                      style: { padding: '3px 8px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap', alignSelf: 'flex-start' },
+                      style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                     }, '\uB2E4\uC2DC \uC120\uD0DD'),
                   ),
                 )
