@@ -187,10 +187,11 @@ async function checkGroupComplete(jobId, cardCount) {
       .sort((a, b) => a.cardIdx - b.cardIdx);
 
     // 인증 수단 수집 (완료된 카드들의 returnvalue에서)
-    const authSummary = { cookies: false, poToken: false, proxy: false, directFailReason: null };
+    const authSummary = { cookies: false, poToken: false, proxy: false, directFailReason: null, imageBg: false };
     for (const j of completedJobs) {
       const ai = j.returnvalue?.authInfo;
       if (ai) {
+        if (ai.imageBg) authSummary.imageBg = true;
         if (ai.cookies) authSummary.cookies = true;
         if (ai.poToken) authSummary.poToken = true;
         if (ai.proxy) authSummary.proxy = true;
