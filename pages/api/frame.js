@@ -81,9 +81,14 @@ export default async function handler(req, res) {
   try {
     const streamUrl = await getStreamUrl(url, videoId);
 
+    // Hybrid seeking: input -ss로 키프레임 근처까지 빠르게 이동 후, output -ss로 정밀 탐색
+    const buffer = 2;
+    const inputSeek = Math.max(0, seconds - buffer);
+    const outputSeek = seconds - inputSeek;
     const ffmpegArgs = [
-      '-ss', String(seconds),
+      '-ss', String(inputSeek),
       '-i', streamUrl,
+      ...(outputSeek > 0 ? ['-ss', String(outputSeek)] : []),
       '-frames:v', '1',
       '-vf', 'scale=320:-1',
       '-q:v', '5',
