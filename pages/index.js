@@ -4927,7 +4927,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                     style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
+              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5396,7 +5396,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
                   React.createElement("button", {
                     disabled: !(card.url || globalUrl),
-                    onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
+                    onClick: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
                     style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
                   }, '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815'),
                 ),
