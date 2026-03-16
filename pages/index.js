@@ -7,17 +7,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
   '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
   '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
-  '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -1051,7 +1051,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── CropGuidePreview: lightweight crop guide (thumbnail + overlay) ── */
-function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, clipThumbnail }) {
   const ref = useRef(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -1096,7 +1096,7 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const guideH = visH * videoDisplayH;
   const accent = '#8b5cf6';
   return React.createElement("div", { ref, style: { position: 'relative', width: '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden' } },
-    React.createElement("img", { src: `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover' }, draggable: false }),
+    React.createElement("img", { src: clipThumbnail || `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover' }, draggable: false, onError: (e) => { if (clipThumbnail) e.target.src = `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`; } }),
     w > 0 && React.createElement("div", {
       style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
     },
@@ -5398,7 +5398,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
             card.appliedStart
               ? React.createElement(React.Fragment, null,
-                  card.clipThumbnail && React.createElement("img", { src: card.clipThumbnail, style: { width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: T.radiusSm, marginTop: 8 }, onError: (e) => { e.target.style.display = 'none'; } }),
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                     React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
                       (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
@@ -5431,7 +5430,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     card.appliedStart && React.createElement(React.Fragment, null,
-      (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+      (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail }),
       React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
         React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
         React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
