@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1056,7 +1056,6 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const [w, setW] = useState(0);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [thumbFailed, setThumbFailed] = useState(false);
-  const prevClip = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -1065,9 +1064,9 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  useEffect(() => { setImgLoaded(false); setThumbFailed(false); }, [clipThumbnail]);
   const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   if (!thumbnailId || !aspectRatio) return null;
-  if (prevClip.current !== clipThumbnail) { prevClip.current = clipThumbnail; setImgLoaded(false); setThumbFailed(false); }
   const imgSrc = (clipThumbnail && !thumbFailed) ? clipThumbnail : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
   const isLoading = clipThumbnail && !thumbFailed && !imgLoaded;
   const pH = 110;
@@ -1105,7 +1104,7 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: () => { if (clipThumbnail && !thumbFailed) setThumbFailed(true); setImgLoaded(true); } }),
     isLoading && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 2 } },
       React.createElement("div", { style: { width: 20, height: 20, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
-      React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 500 } }, '\uC2DC\uC791 \uC9C0\uC810 \uC378\uB124\uC77C \uC0DD\uC131 \uC911')
+      React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 500 } }, '\uC2DC\uC791 \uC9C0\uC810 \uC378\uB124\uC77C \uC0DD\uC131 \uC911')
     ),
     w > 0 && React.createElement("div", {
       style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
@@ -4934,10 +4933,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                   ),
                   React.createElement("button", {
                     onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
-                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                    style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
+              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); } }),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5414,7 +5413,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     ),
                     React.createElement("button", {
                       onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
-                      style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                      style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                     }, '\uB2E4\uC2DC \uC120\uD0DD'),
                   ),
                 )
@@ -5432,7 +5431,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     var valid = errors.length === 0;
                     return React.createElement("button", {
                       onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
-                      style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+                      style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
                     }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
                 ),
