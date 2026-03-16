@@ -5398,7 +5398,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     disabled: !(card.url || globalUrl),
                     onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
                     style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                  }, '\uD83C\uDFA8 \uAD6C\uAC04 \uC120\uD0DD'),
+                  }, '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815'),
                 ),
           ),
     ),
