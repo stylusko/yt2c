@@ -1088,13 +1088,13 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     ? outAspect / pr : outAspect;
   let visW, visH;
   if (videoAspect >= targetAspect) {
-    visH = Math.min(1, 1 / zoom); visW = Math.min(1, targetAspect / (videoAspect * zoom));
+    visH = 1 / zoom; visW = targetAspect / (videoAspect * zoom);
   } else {
-    visW = Math.min(1, 1 / zoom); visH = Math.min(1, videoAspect / (targetAspect * zoom));
+    visW = 1 / zoom; visH = videoAspect / (targetAspect * zoom);
   }
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
-  const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
+  const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, Math.min(0, 1 - visW), Math.max(0, 1 - visW));
+  const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, Math.min(0, 1 - visH), Math.max(0, 1 - visH));
   const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
   const guideTop = videoOffsetY + cropTop * videoDisplayH;
   const guideW = visW * videoDisplayW;
