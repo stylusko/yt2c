@@ -6,18 +6,18 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0315';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_DATE = '2026.0316';
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
+  '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
-  '\uAD6C\uAC04 \uC120\uD0DD \u2192 iframe \uC815\uC9C0 \uD504\uB808\uC784 \uD504\uB9AC\uBDF0 (\uC11C\uBC84 \uCEA1\uCC98 \uC81C\uAC70)',
   '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
   '\uC624\uBC84\uB808\uC774 \uC774\uBBF8\uC9C0 \uC804\uCCB4 \uCE74\uB4DC \uC801\uC6A9 \uD1A0\uAE00',
-  '\uC5C5\uB85C\uB4DC \uC774\uBBF8\uC9C0 \uBC30\uACBD\uC73C\uB85C \uCE74\uB4DC \uC0DD\uC131 \uC9C0\uC6D0',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -146,7 +146,7 @@ const DEFAULT_CARD = () => ({
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
-  appliedStart: null, appliedEnd: null,
+  appliedStart: null, appliedEnd: null, clipThumbnail: null,
 });
 
 /* ── Responsive Hook ── */
@@ -1051,9 +1051,11 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 }
 
 /* ── CropGuidePreview: lightweight crop guide (thumbnail + overlay) ── */
-function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, clipThumbnail }) {
   const ref = useRef(null);
   const [w, setW] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [thumbFailed, setThumbFailed] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -1062,8 +1064,11 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  useEffect(() => { setImgLoaded(false); setThumbFailed(false); }, [clipThumbnail]);
   const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   if (!thumbnailId || !aspectRatio) return null;
+  const imgSrc = (clipThumbnail && !thumbFailed) ? clipThumbnail : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
+  const isLoading = clipThumbnail && !thumbFailed && !imgLoaded;
   const pH = 110;
   const videoAspect = 16 / 9;
   const cw = w || 1;
@@ -1096,7 +1101,11 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const guideH = visH * videoDisplayH;
   const accent = '#8b5cf6';
   return React.createElement("div", { ref, style: { position: 'relative', width: '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden' } },
-    React.createElement("img", { src: `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover' }, draggable: false }),
+    React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: () => { if (clipThumbnail && !thumbFailed) setThumbFailed(true); setImgLoaded(true); } }),
+    isLoading && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, zIndex: 2 } },
+      React.createElement("div", { style: { width: 20, height: 20, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+      React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: 500 } }, '\uC2DC\uC791 \uC9C0\uC810 \uC378\uB124\uC77C \uC0DD\uC131 \uC911')
+    ),
     w > 0 && React.createElement("div", {
       style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
     },
@@ -3165,7 +3174,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
                   )
                 : React.createElement(React.Fragment, null,
-                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: inputBase }),
+                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
                     React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
                   ),
             ),
@@ -4916,18 +4925,18 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: { ...inputBase, marginBottom: 8 } }),
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, marginBottom: 8 } }),
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
                     (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
                   ),
                   React.createElement("button", {
-                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null }),
-                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
+                    style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
+              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); } }),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5268,6 +5277,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [clipError, setClipError] = useState(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5364,6 +5374,19 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     }, 50);
   };
 
+  // \u2500\u2500 Frame prefetch (start \ub9c8\ucee4 \ubcc0\uacbd \uc2dc \ud504\ub9ac\ud398\uce58) \u2500\u2500
+  const videoUrl = card ? (card.url || globalUrl) : '';
+  useEffect(() => {
+    if (!card || card.appliedStart || !videoUrl) return;
+    const s = parseTime(card.start);
+    if (s == null) return;
+    const timer = setTimeout(() => {
+      const img = new Image();
+      img.src = `/api/frame?url=${encodeURIComponent(videoUrl)}&t=${s}`;
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [card && card.start, videoUrl, card && card.appliedStart]);
+
   if (!card) return null;
 
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
@@ -5381,30 +5404,42 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null }), style: inputBase }),
+            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
             card.appliedStart
-              ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
-                  React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
-                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+              ? React.createElement(React.Fragment, null,
+                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
+                    React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
+                      (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                    ),
+                    React.createElement("button", {
+                      onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
+                      style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
+                    }, '\uB2E4\uC2DC \uC120\uD0DD'),
                   ),
-                  React.createElement("button", {
-                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null }),
-                    style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
-                  }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
               : React.createElement(React.Fragment, null,
                   React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
-                  React.createElement("button", {
-                    disabled: !(card.url || globalUrl),
-                    onClick: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
-                    style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                  }, '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815'),
+                  (() => {
+                    var s = parseTime(card.start), e = parseTime(card.end);
+                    var hasUrl = !!(card.url || globalUrl);
+                    var errors = [];
+                    if (!hasUrl) errors.push('\uC601\uC0C1 URL\uC774 \uC785\uB825\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4');
+                    if (s == null) errors.push('\uC2DC\uC791 \uC2DC\uC810\uC744 \uC124\uC815\uD574\uC8FC\uC138\uC694');
+                    if (e == null) errors.push('\uC885\uB8CC \uC2DC\uC810\uC744 \uC124\uC815\uD574\uC8FC\uC138\uC694');
+                    if (s != null && e != null && e <= s) errors.push('\uC885\uB8CC \uC2DC\uC810\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uAC19\uAC70\uB098 \uBE60\uB985\uB2C8\uB2E4');
+                    if (s != null && e != null && e > s && e - s > 30) errors.push('\uAD6C\uAC04\uC774 30\uCD08\uB97C \uCD08\uACFC\uD569\uB2C8\uB2E4');
+                    var valid = errors.length === 0;
+                    return React.createElement("button", {
+                      onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
+                      style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+                    }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
+                  })(),
                 ),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
     card.appliedStart && React.createElement(React.Fragment, null,
-      (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+      (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail }),
       React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 } },
         React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
         React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5611,6 +5646,19 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
         React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
         React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
+      ),
+    ),
+    // Clip error modal
+    clipError && React.createElement("div", { onClick: () => setClipError(null), style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' } },
+      React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { background: T.surface, borderRadius: T.radius, padding: '24px 28px', maxWidth: 320, width: '90%', boxShadow: T.shadowLg, display: 'flex', flexDirection: 'column', gap: 12 } },
+        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: T.text } }, "\uAD6C\uAC04 \uC124\uC815 \uBD88\uAC00"),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          clipError.map((msg, i) => React.createElement("div", { key: i, style: { fontSize: 13, color: '#ef4444', display: 'flex', alignItems: 'flex-start', gap: 6 } },
+            React.createElement("span", { style: { flexShrink: 0, marginTop: 1 } }, "\u2022"),
+            React.createElement("span", null, msg),
+          )),
+        ),
+        React.createElement("button", { onClick: () => setClipError(null), style: { alignSelf: 'flex-end', padding: '6px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
       ),
     ),
     // ── LEFT: Preview (compact) ──
@@ -5883,7 +5931,7 @@ export default function App() {
     const prev = activeProject?.globalUrl || '';
     updateProject({ globalUrl: v });
     if (v !== prev) {
-      setCards(cs => cs.map(c => ({ ...c, start: '', end: '', appliedStart: null, appliedEnd: null })));
+      setCards(cs => cs.map(c => ({ ...c, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null })));
     }
   };
   const setOutputFormat = (v) => updateProject({ outputFormat: v });

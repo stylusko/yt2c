@@ -14,6 +14,13 @@ const connection = {
   maxRetriesPerRequest: null,
 };
 
+// RDB 스냅샷 실패 시에도 쓰기 허용 (디스크 부족 에러 방지)
+const IORedis = require('ioredis');
+const _cfgRedis = new IORedis({ host: connection.host, port: connection.port, password: connection.password, maxRetriesPerRequest: 1, lazyConnect: true });
+_cfgRedis.connect().then(() => _cfgRedis.config('SET', 'stop-writes-on-bgsave-error', 'no'))
+  .then(() => { console.log('[redis] stop-writes-on-bgsave-error = no'); _cfgRedis.disconnect(); })
+  .catch(() => { try { _cfgRedis.disconnect(); } catch {} });
+
 // Dynamically import ESM telegram module
 let tg = null;
 async function getTelegram() {
