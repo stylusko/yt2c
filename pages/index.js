@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0315';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2245,11 +2245,14 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const mMmWidthPct = duration > 0 ? (mVisibleDuration / duration * 100) : 100;
 
   // Collapsed: just a toggle button
-  if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
-    React.createElement("button", {
-      onClick: () => setCollapsedAndNotify(false),
-      style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-    }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
+  if (collapsed) return React.createElement("div", {
+    onClick: () => setCollapsedAndNotify(false),
+    style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  },
+    React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
+    React.createElement("div", {
+      style: { padding: '8px 20px', borderRadius: 8, background: accentC, color: '#fff', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 },
+    }, '\uD83C\uDFAC \uAD6C\uAC04 \uC120\uD0DD\uD558\uAE30'),
   );
 
   return ReactDOM.createPortal(React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9990, background: closing ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.7)', backdropFilter: closing ? 'none' : 'blur(4px)', WebkitBackdropFilter: closing ? 'none' : 'blur(4px)', animation: closing ? 'mcsOverlayOut 0.25s ease forwards' : 'mcsOverlayIn 0.25s ease forwards' } },
