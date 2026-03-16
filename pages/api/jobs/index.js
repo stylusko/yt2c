@@ -58,6 +58,15 @@ async function handlePost(req, res) {
     const queue = getVideoQueue();
     const baseUrl = getBaseUrl(req);
 
+    // Validate: each card must have either a video URL or a background image
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const cardUrl = c.cardConfig?.url || url || '';
+      if (!c.backgroundData && !cardUrl) {
+        return res.status(400).json({ error: `카드 ${i + 1}: 배경 이미지가 업로드되지 않았습니다.` });
+      }
+    }
+
     // Create one job per card
     const jobIds = [];
     for (let cardIdx = 0; cardIdx < cards.length; cardIdx++) {
