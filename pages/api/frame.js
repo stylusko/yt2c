@@ -1,16 +1,19 @@
 import { execFile } from 'child_process';
 import fs from 'fs';
+import path from 'path';
 import { promisify } from 'util';
 import { ensureCookieFile } from '../../lib/worker.js';
 
 const execFileAsync = promisify(execFile);
+const unlinkAsync = promisify(fs.unlink);
 
 const COOKIE_PATH = '/tmp/yt-cookies.txt';
+const FRAME_DIR = '/tmp/yt2c-storage/frames';
 
 // Redis: optional cache, graceful fallback
 let _redis = null;
 async function getRedis() {
-  if (_redis === false) return null; // permanently failed
+  if (_redis === false) return null;
   if (_redis) return _redis;
   try {
     const Redis = (await import('ioredis')).default;
@@ -30,40 +33,12 @@ function extractVideoId(url) {
   return m ? m[1] : null;
 }
 
-async function getStreamUrl(url, videoId) {
-  const redis = await getRedis();
-  const cacheKey = `ytframe:${videoId}`;
-
-  if (redis) {
-    try {
-      const cached = await redis.get(cacheKey);
-      if (cached) return cached;
-    } catch {}
-  }
-
-  ensureCookieFile();
-
-  const args = [
-    '-g',
-    '-f', 'worst[height>=360]/worst',
-    '--js-runtimes', 'node',
-    '--remote-components', 'ejs:github',
-    '--no-playlist',
-  ];
-  if (fs.existsSync(COOKIE_PATH)) {
-    args.push('--cookies', COOKIE_PATH);
-  }
-  args.push(url);
-
-  const { stdout } = await execFileAsync('yt-dlp', args, { timeout: 30000 });
-  const streamUrl = stdout.trim().split('\n')[0];
-  if (!streamUrl) throw new Error('yt-dlp returned empty stream URL');
-
-  if (redis) {
-    try { await redis.set(cacheKey, streamUrl, 'EX', 4 * 3600); } catch {}
-  }
-
-  return streamUrl;
+function secondsToTime(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const ss = s.toFixed(2).padStart(5, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
 }
 
 export default async function handler(req, res) {
@@ -78,25 +53,51 @@ export default async function handler(req, res) {
   const seconds = parseFloat(t);
   if (isNaN(seconds) || seconds < 0) return res.status(400).json({ error: 'invalid time' });
 
-  // 1단계: yt-dlp로 스트림 URL 획득 + ffmpeg 프레임 추출 시도
-  let streamUrl;
-  try {
-    streamUrl = await getStreamUrl(url, videoId);
-    console.log('[frame] stream URL obtained, extracting frame at', seconds, 's');
-  } catch (err) {
-    const stderr = err.stderr || '';
-    console.error('[frame] yt-dlp failed:', err.message, stderr.slice(0, 500));
-    return res.status(500).json({ error: 'yt-dlp failed', detail: err.message, stderr: stderr.slice(0, 1000) });
+  // Redis 캐시 확인 (프레임 이미지 자체를 base64로 캐시)
+  const redis = await getRedis();
+  const cacheKey = `ytframe2:${videoId}:${seconds}`;
+  if (redis) {
+    try {
+      const cached = await redis.getBuffer(cacheKey);
+      if (cached) {
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.send(cached);
+      }
+    } catch {}
   }
 
+  const segId = `${videoId}-${seconds}-${Date.now()}`;
+  const segPath = path.join(FRAME_DIR, `${segId}.mp4`);
+
   try {
-    const buffer = 10;
-    const inputSeek = Math.max(0, seconds - buffer);
-    const outputSeek = seconds - inputSeek;
+    // 1단계: yt-dlp --download-sections으로 정확한 1초 세그먼트 다운로드
+    const startTime = secondsToTime(seconds);
+    const endTime = secondsToTime(seconds + 1);
+
+    ensureCookieFile();
+
+    const ytdlpArgs = [
+      '--download-sections', `*${startTime}-${endTime}`,
+      '-f', 'worst[height>=360]/worst',
+      '--force-keyframes-at-cuts',
+      '--merge-output-format', 'mp4',
+      '--js-runtimes', 'node',
+      '--remote-components', 'ejs:github',
+      '-o', segPath,
+      '--no-playlist',
+    ];
+    if (fs.existsSync(COOKIE_PATH)) {
+      ytdlpArgs.push('--cookies', COOKIE_PATH);
+    }
+    ytdlpArgs.push(url);
+
+    console.log('[frame] downloading segment at', startTime);
+    await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 60000 });
+
+    // 2단계: 다운로드된 세그먼트에서 첫 프레임 추출
     const ffmpegArgs = [
-      '-ss', String(inputSeek),
-      '-i', streamUrl,
-      ...(outputSeek > 0 ? ['-ss', String(outputSeek)] : []),
+      '-i', segPath,
       '-frames:v', '1',
       '-vf', 'scale=320:-1',
       '-q:v', '5',
@@ -105,23 +106,27 @@ export default async function handler(req, res) {
     ];
 
     const { stdout: frameBuffer } = await execFileAsync('ffmpeg', ffmpegArgs, {
-      timeout: 30000,
+      timeout: 15000,
       encoding: 'buffer',
       maxBuffer: 5 * 1024 * 1024,
     });
 
     if (!frameBuffer || frameBuffer.length === 0) throw new Error('empty frame buffer');
 
+    // Redis에 프레임 캐시 (1시간)
+    if (redis) {
+      try { await redis.set(cacheKey, frameBuffer, 'EX', 3600); } catch {}
+    }
+
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(frameBuffer);
   } catch (err) {
     const stderr = err.stderr || '';
-    console.error('[frame] ffmpeg failed:', err.message, stderr.slice(0, 500));
-    try {
-      const redis = await getRedis();
-      if (redis) await redis.del(`ytframe:${videoId}`);
-    } catch {}
-    res.status(500).json({ error: 'ffmpeg failed', detail: err.message, stderr: stderr.slice(0, 1000) });
+    console.error('[frame]', err.message, stderr.slice(0, 500));
+    res.status(500).json({ error: 'frame extraction failed', detail: err.message, stderr: stderr.slice(0, 1000) });
+  } finally {
+    // 임시 세그먼트 파일 정리
+    try { await unlinkAsync(segPath); } catch {}
   }
 }
