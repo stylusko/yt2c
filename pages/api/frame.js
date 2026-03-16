@@ -81,8 +81,8 @@ export default async function handler(req, res) {
   try {
     const streamUrl = await getStreamUrl(url, videoId);
 
-    // Hybrid seeking: input -ss로 키프레임 근처까지 빠르게 이동 후, output -ss로 정밀 탐색
-    const buffer = 2;
+    // Input seeking으로 10초 전까지 빠르게 점프 후, output seeking으로 나머지 프레임 단위 정밀 탐색
+    const buffer = 10;
     const inputSeek = Math.max(0, seconds - buffer);
     const outputSeek = seconds - inputSeek;
     const ffmpegArgs = [
@@ -97,7 +97,7 @@ export default async function handler(req, res) {
     ];
 
     const { stdout: frameBuffer } = await execFileAsync('ffmpeg', ffmpegArgs, {
-      timeout: 15000,
+      timeout: 30000,
       encoding: 'buffer',
       maxBuffer: 5 * 1024 * 1024,
     });
