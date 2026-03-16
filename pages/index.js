@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -1054,6 +1054,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
 function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, clipThumbnail }) {
   const ref = useRef(null);
   const [w, setW] = useState(0);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const prevSrc = useRef(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -1064,6 +1066,9 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   }, []);
   const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   if (!thumbnailId || !aspectRatio) return null;
+  const imgSrc = clipThumbnail || `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
+  if (prevSrc.current !== imgSrc) { prevSrc.current = imgSrc; setImgLoaded(false); }
+  const isLoading = clipThumbnail && !imgLoaded;
   const pH = 110;
   const videoAspect = 16 / 9;
   const cw = w || 1;
@@ -1096,7 +1101,10 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const guideH = visH * videoDisplayH;
   const accent = '#8b5cf6';
   return React.createElement("div", { ref, style: { position: 'relative', width: '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden' } },
-    React.createElement("img", { src: clipThumbnail || `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover' }, draggable: false, onError: (e) => { if (clipThumbnail) e.target.src = `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`; } }),
+    React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: (e) => { if (clipThumbnail) { e.target.src = `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`; } setImgLoaded(true); } }),
+    isLoading && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 } },
+      React.createElement("div", { style: { width: 20, height: 20, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+    ),
     w > 0 && React.createElement("div", {
       style: { position: 'absolute', left: guideLeft, top: guideTop, width: guideW, height: guideH, boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)', border: '2px solid ' + accent, borderRadius: 2, zIndex: 1, pointerEvents: 'none' }
     },
