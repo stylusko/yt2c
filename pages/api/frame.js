@@ -78,10 +78,20 @@ export default async function handler(req, res) {
   const seconds = parseFloat(t);
   if (isNaN(seconds) || seconds < 0) return res.status(400).json({ error: 'invalid time' });
 
+  // 1단계: yt-dlp로 스트림 URL 획득 + ffmpeg 프레임 추출 시도
+  let streamUrl;
   try {
-    const streamUrl = await getStreamUrl(url, videoId);
+    streamUrl = await getStreamUrl(url, videoId);
+    console.log('[frame] stream URL obtained, extracting frame at', seconds, 's');
+  } catch (err) {
+    const stderr = err.stderr || '';
+    console.error('[frame] yt-dlp failed:', err.message, stderr.slice(0, 500));
+    // yt-dlp 실패 시 YouTube 썸네일로 리다이렉트 (캡쳐 불가 fallback)
+    const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    return res.redirect(302, thumbUrl);
+  }
 
-    // Input seeking으로 10초 전까지 빠르게 점프 후, output seeking으로 나머지 프레임 단위 정밀 탐색
+  try {
     const buffer = 10;
     const inputSeek = Math.max(0, seconds - buffer);
     const outputSeek = seconds - inputSeek;
@@ -102,16 +112,20 @@ export default async function handler(req, res) {
       maxBuffer: 5 * 1024 * 1024,
     });
 
+    if (!frameBuffer || frameBuffer.length === 0) throw new Error('empty frame buffer');
+
     res.setHeader('Content-Type', 'image/jpeg');
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(frameBuffer);
   } catch (err) {
-    console.error('[frame]', err.message);
-    // 캐시된 스트림 URL이 만료되었을 수 있으므로 삭제
+    const stderr = err.stderr || '';
+    console.error('[frame] ffmpeg failed:', err.message, stderr.slice(0, 500));
+    // ffmpeg 실패 시에도 캐시 삭제 + YouTube 썸네일 fallback
     try {
       const redis = await getRedis();
       if (redis) await redis.del(`ytframe:${videoId}`);
     } catch {}
-    res.status(500).json({ error: 'frame extraction failed' });
+    const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    res.redirect(302, thumbUrl);
   }
 }
