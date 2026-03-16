@@ -5268,6 +5268,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [clipError, setClipError] = useState(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5394,11 +5395,21 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 )
               : React.createElement(React.Fragment, null,
                   React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
-                  React.createElement("button", {
-                    disabled: !(card.url || globalUrl),
-                    onClick: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
-                    style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                  }, '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815'),
+                  (() => {
+                    var s = parseTime(card.start), e = parseTime(card.end);
+                    var hasUrl = !!(card.url || globalUrl);
+                    var errors = [];
+                    if (!hasUrl) errors.push('\uC601\uC0C1 URL\uC774 \uC785\uB825\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4');
+                    if (s == null) errors.push('\uC2DC\uC791 \uC2DC\uC810\uC744 \uC124\uC815\uD574\uC8FC\uC138\uC694');
+                    if (e == null) errors.push('\uC885\uB8CC \uC2DC\uC810\uC744 \uC124\uC815\uD574\uC8FC\uC138\uC694');
+                    if (s != null && e != null && e <= s) errors.push('\uC885\uB8CC \uC2DC\uC810\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uAC19\uAC70\uB098 \uBE60\uB985\uB2C8\uB2E4');
+                    if (s != null && e != null && e > s && e - s > 30) errors.push('\uAD6C\uAC04\uC774 30\uCD08\uB97C \uCD08\uACFC\uD569\uB2C8\uB2E4');
+                    var valid = errors.length === 0;
+                    return React.createElement("button", {
+                      onClick: () => { if (!valid) { setClipError(errors); return; } setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
+                      style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
+                    }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
+                  })(),
                 ),
           ),
     ),
@@ -5611,6 +5622,19 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
         React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
         React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uBBF8\uB9AC\uBCF4\uAE30 \uC0DD\uC131 \uC911..."),
+      ),
+    ),
+    // Clip error modal
+    clipError && React.createElement("div", { onClick: () => setClipError(null), style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' } },
+      React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { background: T.surface, borderRadius: T.radius, padding: '24px 28px', maxWidth: 320, width: '90%', boxShadow: T.shadowLg, display: 'flex', flexDirection: 'column', gap: 12 } },
+        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: T.text } }, "\uAD6C\uAC04 \uC124\uC815 \uBD88\uAC00"),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6 } },
+          clipError.map((msg, i) => React.createElement("div", { key: i, style: { fontSize: 13, color: '#ef4444', display: 'flex', alignItems: 'flex-start', gap: 6 } },
+            React.createElement("span", { style: { flexShrink: 0, marginTop: 1 } }, "\u2022"),
+            React.createElement("span", null, msg),
+          )),
+        ),
+        React.createElement("button", { onClick: () => setClipError(null), style: { alignSelf: 'flex-end', padding: '6px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
       ),
     ),
     // ── LEFT: Preview (compact) ──
