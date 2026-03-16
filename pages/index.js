@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0315';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2245,11 +2245,14 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const mMmWidthPct = duration > 0 ? (mVisibleDuration / duration * 100) : 100;
 
   // Collapsed: just a toggle button
-  if (collapsed) return React.createElement("div", { style: { marginBottom: 8 } },
-    React.createElement("button", {
-      onClick: () => setCollapsedAndNotify(false),
-      style: { width: '100%', padding: '10px 14px', borderRadius: 8, border: '1.5px solid ' + accentC, background: 'rgba(99,102,241,0.08)', color: accentC, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-    }, '\uD83C\uDFAC \uAD6C\uAC04 \uD0D0\uC0C9\uAE30 \uC5F4\uAE30'),
+  if (collapsed) return React.createElement("div", {
+    onClick: () => setCollapsedAndNotify(false),
+    style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  },
+    React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
+    React.createElement("div", {
+      style: { padding: '8px 20px', borderRadius: 8, background: accentC, color: '#fff', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 },
+    }, '\uD83C\uDFAC \uAD6C\uAC04 \uC120\uD0DD\uD558\uAE30'),
   );
 
   return ReactDOM.createPortal(React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9990, background: closing ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.7)', backdropFilter: closing ? 'none' : 'blur(4px)', WebkitBackdropFilter: closing ? 'none' : 'blur(4px)', animation: closing ? 'mcsOverlayOut 0.25s ease forwards' : 'mcsOverlayIn 0.25s ease forwards' } },
@@ -4924,7 +4927,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                     style: { padding: '4px 10px', background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
+              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; updateMulti({ appliedStart: card.start, appliedEnd: card.end }); } }),
             // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
             !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
               React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
@@ -5393,9 +5396,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
                   React.createElement("button", {
                     disabled: !(card.url || globalUrl),
-                    onClick: () => { setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
+                    onClick: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end }); },
                     style: { marginTop: 8, padding: '8px 16px', background: T.accent, color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: !(card.url || globalUrl) ? 'not-allowed' : 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                  }, '\uD83C\uDFA8 \uAD6C\uAC04 \uC120\uD0DD'),
+                  }, '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815'),
                 ),
           ),
     ),
