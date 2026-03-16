@@ -4843,6 +4843,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipWarn, setClipWarn] = useState(false);
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  useEffect(() => { if (!videoLoading) return; const t = setTimeout(() => setVideoLoading(false), 8000); return () => clearTimeout(t); }, [videoLoading]);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -5282,6 +5283,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const prevIdxRef = useRef(activeIndex);
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
+  useEffect(() => { if (!videoLoading) return; const t = setTimeout(() => setVideoLoading(false), 8000); return () => clearTimeout(t); }, [videoLoading]);
   const [clipError, setClipError] = useState(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
