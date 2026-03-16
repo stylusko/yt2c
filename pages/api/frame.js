@@ -86,9 +86,7 @@ export default async function handler(req, res) {
   } catch (err) {
     const stderr = err.stderr || '';
     console.error('[frame] yt-dlp failed:', err.message, stderr.slice(0, 500));
-    // yt-dlp 실패 시 YouTube 썸네일로 리다이렉트 (캡쳐 불가 fallback)
-    const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-    return res.redirect(302, thumbUrl);
+    return res.status(500).json({ error: 'yt-dlp failed', detail: err.message, stderr: stderr.slice(0, 1000) });
   }
 
   try {
@@ -120,12 +118,10 @@ export default async function handler(req, res) {
   } catch (err) {
     const stderr = err.stderr || '';
     console.error('[frame] ffmpeg failed:', err.message, stderr.slice(0, 500));
-    // ffmpeg 실패 시에도 캐시 삭제 + YouTube 썸네일 fallback
     try {
       const redis = await getRedis();
       if (redis) await redis.del(`ytframe:${videoId}`);
     } catch {}
-    const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-    res.redirect(302, thumbUrl);
+    res.status(500).json({ error: 'ffmpeg failed', detail: err.message, stderr: stderr.slice(0, 1000) });
   }
 }
