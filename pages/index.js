@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5421,7 +5421,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     if (s != null && e != null && e > s && e - s > 30) errors.push('\uAD6C\uAC04\uC774 30\uCD08\uB97C \uCD08\uACFC\uD569\uB2C8\uB2E4');
                     var valid = errors.length === 0;
                     return React.createElement("button", {
-                      onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
+                      onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
                     }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
