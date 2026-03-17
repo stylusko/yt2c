@@ -2544,6 +2544,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoFill = card.videoFill || "full";
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
+  const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const [thumbSrc, setThumbSrc] = useState(null);
@@ -2648,7 +2649,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // YouTube thumbnails are 16:9 (1920x1080)
   const thumbW = 1920, thumbH = 1080;
   const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
-  const thumbTotalScale = thumbCoverScale * vScale;
+  const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
   const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
@@ -2670,7 +2671,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
-  const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
