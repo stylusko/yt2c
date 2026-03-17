@@ -3672,9 +3672,9 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
         // 지역제한 등 워커 상태 메시지
-        genStatusMsg && React.createElement("div", {
-          style: { textAlign: 'center', fontSize: 12, color: '#fbbf24', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 8, padding: '8px 12px', lineHeight: 1.5 }
-        }, genStatusMsg),
+        React.createElement("div", {
+          style: { textAlign: 'center', fontSize: 12, color: '#fbbf24', background: genStatusMsg ? 'rgba(251,191,36,0.08)' : 'transparent', border: genStatusMsg ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent', borderRadius: 8, padding: '8px 12px', lineHeight: 1.5, opacity: genStatusMsg ? 1 : 0, transition: 'opacity 0.3s ease, background 0.3s ease, border 0.3s ease' }
+        }, genStatusMsg || '\u00A0'),
         queueStatus && (() => {
           const traffic = getTrafficUi(queueStatus);
           return React.createElement("div", {
