@@ -3181,7 +3181,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
-              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImg(v); return; } update("uploadedImage", v); } }),
+              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImg(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
             ),
             card.appliedStart && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
@@ -3382,7 +3382,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
         )
       )
     ),
-    pendingImg && React.createElement(ConfirmModal, { message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.', onConfirm: () => { update("uploadedImage", pendingImg); setPendingImg(null); }, onCancel: () => setPendingImg(null) }),
+    pendingImg && React.createElement(ConfirmModal, { message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.', onConfirm: () => { updateMulti({ uploadedImage: pendingImg, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImg(null); }, onCancel: () => setPendingImg(null) }),
   );
 }
 
@@ -5004,7 +5004,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } update("uploadedImage", v); } })),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5300,7 +5300,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     pendingImageUpload && React.createElement(ConfirmModal, {
       message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
-      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
+      onConfirm: () => { updateMulti({ uploadedImage: pendingImageUpload, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImageUpload(null); },
       onCancel: () => setPendingImageUpload(null),
     }),
   );
@@ -5487,7 +5487,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } update("uploadedImage", v); } }),
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
@@ -5809,7 +5809,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     pendingImageUpload && React.createElement(ConfirmModal, {
       message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
-      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
+      onConfirm: () => { updateMulti({ uploadedImage: pendingImageUpload, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImageUpload(null); },
       onCancel: () => setPendingImageUpload(null),
     }),
   );
