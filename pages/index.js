@@ -2646,8 +2646,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
   const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
   // Uploaded image: apply position/zoom/brightness via CSS transform
-  const imgPosX = 100 - (card.videoX ?? 100); // invert: videoX=0 means show left edge → translate right
-  const imgPosY = 100 - (card.videoY ?? 100);
+  // videoX/Y range: -400~400, 0=center. Match backend computePixelPos formula direction.
+  const imgPosX = -(card.videoX ?? 0) / 4;
+  const imgPosY = -(card.videoY ?? 0) / 4;
   const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
@@ -3179,7 +3180,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
-              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } }),
             ),
             card.appliedStart && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
@@ -4985,7 +4986,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } })),
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5462,7 +5463,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } }),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
