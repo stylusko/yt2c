@@ -4881,6 +4881,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipWarn, setClipWarn] = useState(false);
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [pendingImageUpload, setPendingImageUpload] = useState(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -5297,6 +5298,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement("div", { style: { padding: '8px 0 20px' }, onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation() },
       tabContent[activeTab] ? tabContent[activeTab]() : null,
     ),
+    pendingImageUpload && React.createElement(ConfirmModal, {
+      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
+      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
+      onCancel: () => setPendingImageUpload(null),
+    }),
   );
 }
 
@@ -5801,6 +5807,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
       ),
     ),
+    pendingImageUpload && React.createElement(ConfirmModal, {
+      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
+      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
+      onCancel: () => setPendingImageUpload(null),
+    }),
   );
 }
 
@@ -6589,11 +6600,6 @@ export default function App() {
     alertMsg && React.createElement(AlertModal, {
       message: alertMsg,
       onClose: () => setAlertMsg(null),
-    }),
-    pendingImageUpload && React.createElement(ConfirmModal, {
-      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
-      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
-      onCancel: () => setPendingImageUpload(null),
     }),
     pendingConfirm && React.createElement(ConfirmDialog, {
       message: pendingConfirm.message,
