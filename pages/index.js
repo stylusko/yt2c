@@ -2549,6 +2549,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
   const [vpMuted, setVpMuted] = useState(true);
+  const [imgDims, setImgDims] = useState(null);
+
+  useEffect(() => {
+    if (!card.uploadedImage) { setImgDims(null); return; }
+    const img = new Image();
+    img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = card.uploadedImage;
+  }, [card.uploadedImage]);
 
   // Canvas overlay state
   const [overlayUrl, setOverlayUrl] = useState(null);
@@ -2645,15 +2653,30 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbScaledH = thumbH * thumbTotalScale;
   const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
   const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
-  // Uploaded image: apply position/zoom/brightness via CSS transform
-  // videoX/Y range: -400~400, 0=center. Match backend computePixelPos formula direction.
+  // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  const uploadImgStyle = (() => {
+    if (!card.uploadedImage || !imgDims) return null;
+    const imgAspect = imgDims.w / imgDims.h;
+    const containerAspect = previewW / previewH;
+    let containedW, containedH;
+    if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
+    else { containedH = previewH; containedW = previewH * imgAspect; }
+    const scaledW = containedW * vScale;
+    const scaledH = containedH * vScale;
+    const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
+    const posY = (previewH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
+    return { position: "absolute", left: posX, top: posY, width: scaledW, height: scaledH, zIndex: 0, filter: brightFilter };
+  })();
+  // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
   const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
-      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: card.uploadedImage ? "contain" : "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
+      : uploadImgStyle
+        ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
+        : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
