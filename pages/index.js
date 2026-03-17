@@ -7,17 +7,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 11; // same-day deploy count
+const BUILD_NUM = 12; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
   '\uB370\uC2A4\uD06C\uD1B1 \uD06C\uB86D \uBBF8\uB9AC\uBCF4\uAE30+\uC2AC\uB77C\uC774\uB354 \uAC00\uB85C \uBC30\uCE58',
   '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
   '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
   '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
-  '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -124,6 +124,8 @@ const STYLE_PRESETS = [
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
+
+const MAX_CARDS = 10;
 
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
@@ -2544,11 +2546,20 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoFill = card.videoFill || "full";
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
+  const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
   const [vpMuted, setVpMuted] = useState(true);
+  const [imgDims, setImgDims] = useState(null);
+
+  useEffect(() => {
+    if (!card.uploadedImage) { setImgDims(null); return; }
+    const img = new Image();
+    img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = card.uploadedImage;
+  }, [card.uploadedImage]);
 
   // Canvas overlay state
   const [overlayUrl, setOverlayUrl] = useState(null);
@@ -2640,19 +2651,35 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // YouTube thumbnails are 16:9 (1920x1080)
   const thumbW = 1920, thumbH = 1080;
   const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
-  const thumbTotalScale = thumbCoverScale * vScale;
+  const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
   const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
   const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
-  // Uploaded image: apply position/zoom/brightness via CSS transform
-  const imgPosX = 100 - (card.videoX ?? 100); // invert: videoX=0 means show left edge → translate right
-  const imgPosY = 100 - (card.videoY ?? 100);
-  const imgTransform = `scale(${vScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  const uploadImgStyle = (() => {
+    if (!card.uploadedImage || !imgDims) return null;
+    const imgAspect = imgDims.w / imgDims.h;
+    const containerAspect = previewW / previewH;
+    let containedW, containedH;
+    if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
+    else { containedH = previewH; containedW = previewH * imgAspect; }
+    const scaledW = containedW * vScale;
+    const scaledH = containedH * vScale;
+    const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
+    const posY = (previewH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
+    return { position: "absolute", left: posX, top: posY, width: scaledW, height: scaledH, zIndex: 0, filter: brightFilter };
+  })();
+  // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
+  const imgPosX = -(card.videoX ?? 0) / 4;
+  const imgPosY = -(card.videoY ?? 0) / 4;
+  const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
-      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
+      : uploadImgStyle
+        ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
+        : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
@@ -3096,6 +3123,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [showDetailBody, setShowDetailBody] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [pendingImg, setPendingImg] = useState(null);
   const nameRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
@@ -3179,7 +3207,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
-              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
+              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImg(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
             ),
             card.appliedStart && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
@@ -3379,7 +3407,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(360, window.innerWidth - 32) : 320 }),
         )
       )
-    )
+    ),
+    pendingImg && React.createElement(ConfirmModal, { message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.', onConfirm: () => { updateMulti({ uploadedImage: pendingImg, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImg(null); }, onCancel: () => setPendingImg(null) }),
   );
 }
 
@@ -3390,6 +3419,9 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [videoReady, setVideoReady] = useState({});
+  const prevIdx = useRef(currentIdx);
+  useEffect(() => { if (prevIdx.current !== currentIdx) { setVideoReady(prev => ({ ...prev, [currentIdx]: false })); prevIdx.current = currentIdx; } }, [currentIdx]);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
   const previewW = isMob ? Math.min(window.innerWidth - 40, 480) : 480;
   const cardSlotW = previewW + 40;
@@ -3447,16 +3479,30 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
       onScroll: handleScroll,
       style: { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: cardSlotW, maxWidth: '100vw' }
     },
-      cards.map((card, i) =>
-        React.createElement("div", {
+      cards.map((card, i) => {
+        const pvc = pvCard(card);
+        const videoUrl = pvc.url || globalUrl || '';
+        const isImageBg = !!pvc.uploadedImage || (pvc.fillSource || 'video') === 'image' || (!videoUrl && !!globalBgImage);
+        const hasVid = pvc.appliedStart && pvc.appliedEnd && /(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
+        const showSpinner = i === currentIdx && hasVid && !videoReady[i];
+        const showUnset = !isImageBg && !hasVid;
+        return React.createElement("div", {
           key: i,
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
-          React.createElement("div", { style: { borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx })
+          React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })) }),
+            showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
+              React.createElement("div", { className: 'preview-spinner' }),
+              React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
+            ),
+            showUnset && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 5, gap: 6 } },
+              React.createElement("span", { style: { fontSize: 22 } }, "\u23F1"),
+              React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 500 } }, "\uAD6C\uAC04 \uBBF8\uC124\uC815")
+            )
           )
-        )
-      )
+        );
+      })
     ),
 
     // Bottom: dots + nav arrows
@@ -3535,7 +3581,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       (() => { const disabledIdxs = cards.map((c, i) => cardDisabled(c) ? i : -1).filter(i => i >= 0); return disabledIdxs.length > 0 ? React.createElement("div", { style: { margin:'0 16px', marginTop:12, padding:'8px 12px', background:'rgba(251,191,36,0.12)', borderRadius:6, fontSize:12, color:'#f59e0b', lineHeight:1.6 } }, React.createElement("div", null, "\u26A0 \uAD6C\uAC04 \uC120\uD0DD\uC774 \uC548\uB41C \uCE74\uB4DC\uB294 \uC0DD\uC131\uD560 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4."), React.createElement("div", { style: { marginTop:2, opacity:0.85 } }, `(${disabledIdxs.map(i => `${i+1}\uBC88`).join(', ')})`)) : null; })(),
       // Card grid (scrollable wrapper → inner grid)
       React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
-        React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 } },
+        React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, auto)', gap:12, justifyContent:'center' } },
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
@@ -3926,6 +3972,21 @@ function AlertModal({ message, onClose }) {
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
       React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
       React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
+    )
+  );
+}
+
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onCancel(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+      React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
+      React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.08)', color: T.textSecondary, borderRadius: T.radiusPill, border: '1px solid ' + T.border, fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uACC4\uC18D"),
+      ),
     )
   );
 }
@@ -4846,6 +4907,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipWarn, setClipWarn] = useState(false);
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
+  const [pendingImageUpload, setPendingImageUpload] = useState(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -4968,7 +5030,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) })),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5262,6 +5324,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement("div", { style: { padding: '8px 0 20px' }, onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation() },
       tabContent[activeTab] ? tabContent[activeTab]() : null,
     ),
+    pendingImageUpload && React.createElement(ConfirmModal, {
+      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
+      onConfirm: () => { updateMulti({ uploadedImage: pendingImageUpload, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImageUpload(null); },
+      onCancel: () => setPendingImageUpload(null),
+    }),
   );
 }
 
@@ -5286,6 +5353,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [clipError, setClipError] = useState(null);
+  const [pendingImageUpload, setPendingImageUpload] = useState(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5445,8 +5513,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
-    card.appliedStart && React.createElement(React.Fragment, null,
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+    (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
         React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 } },
@@ -5765,6 +5833,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
       ),
     ),
+    pendingImageUpload && React.createElement(ConfirmModal, {
+      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
+      onConfirm: () => { updateMulti({ uploadedImage: pendingImageUpload, videoScale: 100, videoX: 0, videoY: 0 }); setPendingImageUpload(null); },
+      onCancel: () => setPendingImageUpload(null),
+    }),
   );
 }
 
@@ -5964,8 +6037,8 @@ export default function App() {
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => { setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
-  const addCard = () => { setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
+  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
   const applyOverlayToAll = (overlayIdx, props) => {
@@ -6147,7 +6220,7 @@ export default function App() {
       const overlays = [];
       for (let j = 0; j < targetCards.length; j++) {
         setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
+        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
@@ -6400,8 +6473,9 @@ export default function App() {
         })),
         React.createElement("button", {
           onClick: addCard,
-          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.15)', border: `1px solid ${T.accent}`, color: T.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s' },
-        }, "+ \uCD94\uAC00"),
+          disabled: cards.length >= MAX_CARDS,
+          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
+        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
           disabled: activeCardIdx >= cards.length - 1,
@@ -6601,7 +6675,7 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
   input[type=range] { height: 32px; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
