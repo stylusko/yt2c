@@ -3453,8 +3453,10 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
       cards.map((card, i) => {
         const pvc = pvCard(card);
         const videoUrl = pvc.url || globalUrl || '';
+        const isImageBg = !!pvc.uploadedImage || (pvc.fillSource || 'video') === 'image' || (!videoUrl && !!globalBgImage);
         const hasVid = pvc.appliedStart && pvc.appliedEnd && /(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
         const showSpinner = i === currentIdx && hasVid && !videoReady[i];
+        const showUnset = !isImageBg && !hasVid;
         return React.createElement("div", {
           key: i,
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
@@ -3464,6 +3466,10 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
+            ),
+            showUnset && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', zIndex: 5, gap: 6 } },
+              React.createElement("span", { style: { fontSize: 22 } }, "\u23F1"),
+              React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 500 } }, "\uAD6C\uAC04 \uBBF8\uC124\uC815")
             )
           )
         );
