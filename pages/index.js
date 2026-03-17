@@ -5463,7 +5463,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => update("uploadedImage", v) }),
-    card.appliedStart && React.createElement(React.Fragment, null,
+    (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
         React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, flex: 1, minWidth: 0 } },
