@@ -3620,7 +3620,7 @@ function getTrafficUi(queueStatus) {
   };
 }
 
-function GeneratingModal({ mob, generating, genProgress, queueStatus, results, downloading, onDownloadAll, onClose }) {
+function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
@@ -3671,6 +3671,10 @@ function GeneratingModal({ mob, generating, genProgress, queueStatus, results, d
           generating && React.createElement("div", { style: { width: 14, height: 14, border: '2px solid ' + T.accent, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', flexShrink: 0 } }),
           React.createElement("span", { style: { fontSize: 13, color: done ? T.success : generating ? T.accent : T.textSecondary, fontWeight: 500 } }, genProgress || "\uC900\uBE44 \uC911..."),
         ),
+        // 지역제한 등 워커 상태 메시지
+        React.createElement("div", {
+          style: { textAlign: 'center', fontSize: 12, color: '#fbbf24', background: genStatusMsg ? 'rgba(251,191,36,0.08)' : 'transparent', border: genStatusMsg ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent', borderRadius: 8, padding: '8px 12px', lineHeight: 1.5, opacity: genStatusMsg ? 1 : 0, transition: 'opacity 0.3s ease, background 0.3s ease, border 0.3s ease' }
+        }, genStatusMsg || '\u00A0'),
         queueStatus && (() => {
           const traffic = getTrafficUi(queueStatus);
           return React.createElement("div", {
@@ -5775,6 +5779,7 @@ export default function App() {
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
+  const [genStatusMsg, setGenStatusMsg] = useState("");
   const [results, setResults] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [confirmClose, setConfirmClose] = useState(null);
@@ -6137,7 +6142,7 @@ export default function App() {
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
     const targetCards = indices.map(i => cards[i]);
-    setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setShowGeneratingModal(true);
+    setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
       const overlays = [];
       for (let j = 0; j < targetCards.length; j++) {
@@ -6179,11 +6184,13 @@ export default function App() {
           const status = await statusRes.json();
           let completedCards = 0, failedCards = 0, totalProgress = 0;
           const downloadUrls = [];
+          let statusMsg = "";
           for (const c of (status.cards || [])) {
             if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
-            else totalProgress += (c.progress || 0);
+            else { totalProgress += (c.progress || 0); if (c.statusMessage) statusMsg = c.statusMessage; }
           }
+          setGenStatusMsg(statusMsg);
           setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
             clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
@@ -6193,6 +6200,7 @@ export default function App() {
               return `\uCE74\uB4DC ${c.cardIdx + 1}: ${um ? um.msg : (c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958')}`;
             });
             const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
+            setGenStatusMsg("");
             setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
             if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
@@ -6522,14 +6530,14 @@ export default function App() {
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
-      mob, generating, genProgress, queueStatus, results, downloading,
+      mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,
       onClose: () => {
         if (generating) {
           if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
           if (activeJobIdRef.current) { fetch(`/api/jobs/${activeJobIdRef.current}`, { method: 'DELETE' }).catch(() => {}); activeJobIdRef.current = null; }
         }
-        setGenerating(false); setShowGeneratingModal(false); setGenProgress("");
+        setGenerating(false); setShowGeneratingModal(false); setGenProgress(""); setGenStatusMsg("");
       }
     }),
     confirmClose && React.createElement(ConfirmDialog, {

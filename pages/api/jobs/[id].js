@@ -91,8 +91,13 @@ async function handleGet(req, res) {
         const result = {
           cardIdx,
           status: state || 'pending',
-          progress: typeof progress === 'number' ? progress : 0,
+          progress: typeof progress === 'number' ? progress : (progress && typeof progress.percent === 'number' ? progress.percent : 0),
         };
+
+        // 워커에서 보낸 상태 메시지 (지역제한 등)
+        if (progress && typeof progress === 'object' && progress.message) {
+          result.statusMessage = progress.message;
+        }
 
         if (state === 'completed') {
           result.downloadUrl = `/api/jobs/${id}?download=true&cardIdx=${cardIdx}&ext=${ext}`;

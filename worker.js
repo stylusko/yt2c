@@ -122,6 +122,9 @@ const worker = new Worker('video-generation', async (job) => {
         backgroundPath,
         outputFormat: outputFormat || 'mp4',
         outputSize: outputSize || 1080,
+        onStatusMessage: async (msg) => {
+          try { await job.updateProgress({ percent: Math.floor(progress), message: msg }); } catch(e) {}
+        },
       });
     } finally {
       clearInterval(progressInterval);
