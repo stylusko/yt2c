@@ -2653,7 +2653,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
-      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
+      : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: card.uploadedImage ? "contain" : "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
@@ -3097,6 +3097,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [showDetailBody, setShowDetailBody] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
+  const [pendingImg, setPendingImg] = useState(null);
   const nameRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
@@ -3180,7 +3181,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
-              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } }),
+              React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImg(v); return; } update("uploadedImage", v); } }),
             ),
             card.appliedStart && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
@@ -3380,7 +3381,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(CardPreview, { card: { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' }, globalUrl, aspectRatio, globalBgImage, previewWidth: mob ? Math.min(360, window.innerWidth - 32) : 320 }),
         )
       )
-    )
+    ),
+    pendingImg && React.createElement(ConfirmModal, { message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.', onConfirm: () => { update("uploadedImage", pendingImg); setPendingImg(null); }, onCancel: () => setPendingImg(null) }),
   );
 }
 
@@ -3944,6 +3946,21 @@ function AlertModal({ message, onClose }) {
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
       React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
       React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
+    )
+  );
+}
+
+function ConfirmModal({ message, onConfirm, onCancel }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onCancel(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+      React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
+      React.createElement("div", { style: { display: 'flex', gap: 10, justifyContent: 'center' } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.08)', color: T.textSecondary, borderRadius: T.radiusPill, border: '1px solid ' + T.border, fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+        React.createElement("button", { onClick: onConfirm, style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uACC4\uC18D"),
+      ),
     )
   );
 }
@@ -4986,7 +5003,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } })),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } update("uploadedImage", v); } })),
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5304,6 +5321,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [selectedHandle, setSelectedHandle] = useState(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [clipError, setClipError] = useState(null);
+  const [pendingImageUpload, setPendingImageUpload] = useState(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5463,7 +5481,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage && !confirm('\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0 \uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.\n\uACC4\uC18D\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?')) return; update("uploadedImage", v); } }),
+    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } update("uploadedImage", v); } }),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
@@ -6571,6 +6589,11 @@ export default function App() {
     alertMsg && React.createElement(AlertModal, {
       message: alertMsg,
       onClose: () => setAlertMsg(null),
+    }),
+    pendingImageUpload && React.createElement(ConfirmModal, {
+      message: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uBA74 \uC124\uC815\uB41C \uC601\uC0C1 \uAD6C\uAC04 \uB300\uC2E0\n\uC774\uBBF8\uC9C0\uAC00 \uBC30\uACBD\uC73C\uB85C \uC0AC\uC6A9\uB429\uB2C8\uB2E4.',
+      onConfirm: () => { update("uploadedImage", pendingImageUpload); setPendingImageUpload(null); },
+      onCancel: () => setPendingImageUpload(null),
     }),
     pendingConfirm && React.createElement(ConfirmDialog, {
       message: pendingConfirm.message,
