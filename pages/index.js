@@ -7,17 +7,17 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 11; // same-day deploy count
+const BUILD_NUM = 12; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
   '\uB370\uC2A4\uD06C\uD1B1 \uD06C\uB86D \uBBF8\uB9AC\uBCF4\uAE30+\uC2AC\uB77C\uC774\uB354 \uAC00\uB85C \uBC30\uCE58',
   '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
   '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
   '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
-  '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uD480\uC2A4\uD06C\uB9B0 \uBAA8\uB2EC\uB85C \uAC1C\uC120',
 ];
 
 /* ── YouTube URL helpers ── */
@@ -3390,6 +3390,9 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [videoReady, setVideoReady] = useState({});
+  const prevIdx = useRef(currentIdx);
+  useEffect(() => { if (prevIdx.current !== currentIdx) { setVideoReady(prev => ({ ...prev, [currentIdx]: false })); prevIdx.current = currentIdx; } }, [currentIdx]);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
   const previewW = isMob ? Math.min(window.innerWidth - 40, 480) : 480;
   const cardSlotW = previewW + 40;
@@ -3447,16 +3450,24 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
       onScroll: handleScroll,
       style: { display: 'flex', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: cardSlotW, maxWidth: '100vw' }
     },
-      cards.map((card, i) =>
-        React.createElement("div", {
+      cards.map((card, i) => {
+        const pvc = pvCard(card);
+        const videoUrl = pvc.url || globalUrl || '';
+        const hasVid = pvc.appliedStart && pvc.appliedEnd && /(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
+        const showSpinner = i === currentIdx && hasVid && !videoReady[i];
+        return React.createElement("div", {
           key: i,
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
-          React.createElement("div", { style: { borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx })
+          React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })) }),
+            showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
+              React.createElement("div", { className: 'preview-spinner' }),
+              React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
+            )
           )
-        )
-      )
+        );
+      })
     ),
 
     // Bottom: dots + nav arrows
@@ -6601,7 +6612,7 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } }
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
   input[type=range] { height: 32px; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
