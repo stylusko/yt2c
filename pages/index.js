@@ -6218,7 +6218,7 @@ export default function App() {
       const overlays = [];
       for (let j = 0; j < targetCards.length; j++) {
         setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio));
+        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
