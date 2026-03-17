@@ -30,6 +30,9 @@ async function handlePost(req, res) {
     if (!Array.isArray(cards) || cards.length === 0) {
       return res.status(400).json({ error: 'Cards array is required' });
     }
+    if (cards.length > 10) {
+      return res.status(400).json({ error: '카드는 최대 10개까지 생성 가능합니다.' });
+    }
 
     // Check if any card needs a YouTube video (no backgroundData)
     const hasVideoCard = cards.some(c => !c.backgroundData);

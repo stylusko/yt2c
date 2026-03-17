@@ -125,6 +125,8 @@ const STYLE_PRESETS = [
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
+const MAX_CARDS = 10;
+
 const DEFAULT_CARD = () => ({
   id: Date.now() + Math.random(),
   name: '',
@@ -6035,8 +6037,8 @@ export default function App() {
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
   const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => { setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
-  const addCard = () => { setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
+  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
   const applyOverlayToAll = (overlayIdx, props) => {
@@ -6471,8 +6473,9 @@ export default function App() {
         })),
         React.createElement("button", {
           onClick: addCard,
-          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.15)', border: `1px solid ${T.accent}`, color: T.accent, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s' },
-        }, "+ \uCD94\uAC00"),
+          disabled: cards.length >= MAX_CARDS,
+          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
+        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
           disabled: activeCardIdx >= cards.length - 1,
