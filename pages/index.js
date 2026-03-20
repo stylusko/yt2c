@@ -5950,28 +5950,28 @@ export default function App() {
     }
   }, []);
 
-  // Sync editorMode → URL (shallow)
+  // Sync editorMode → URL (shallow) — use pushState to avoid Next.js full navigation delay
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
     const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/edit' : '/';
     if (window.location.pathname !== targetPath) {
-      router.push(targetPath, undefined, { shallow: true });
+      window.history.pushState({ ...window.history.state, as: targetPath, url: targetPath }, '', targetPath);
     }
   }, [editorMode, wizardLoading, importProject]);
 
-  // Handle browser back/forward
+  // Handle browser back/forward (popstate for pushState-based navigation)
   useEffect(() => {
-    const onRouteChange = (url) => {
+    const onPopState = () => {
       if (wizardLoading) return;
-      const p = url.split('?')[0];
+      const p = window.location.pathname;
       if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
       else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
       else if (p === '/' && editorMode !== null) { setEditorMode(null); }
     };
-    router.events.on('routeChangeComplete', onRouteChange);
-    return () => router.events.off('routeChangeComplete', onRouteChange);
-  }, [editorMode, wizardLoading, router]);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [editorMode, wizardLoading]);
 
   // Visitor tracking
   useEffect(() => {
@@ -6130,7 +6130,7 @@ export default function App() {
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
-    router.push('/edit', undefined, { shallow: true });
+    window.history.pushState({ ...window.history.state, as: '/edit', url: '/edit' }, '', '/edit');
   };
 
   const effectiveCard = (card) => ({
@@ -6663,7 +6663,7 @@ export default function App() {
     importProject && React.createElement(ImportDialog, {
       project: importProject,
       onImport: handleImport,
-      onCancel: () => { setImportProject(null); router.push('/', undefined, { shallow: true }); },
+      onCancel: () => { setImportProject(null); window.history.pushState({ ...window.history.state, as: '/', url: '/' }, '', '/'); },
     }),
 
     // Floating footer
