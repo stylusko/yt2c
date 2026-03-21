@@ -1217,10 +1217,22 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           onReady: (e) => {
             if (cancelled) return;
             setReady(true);
-            setDuration(e.target.getDuration() || 0);
-            // If start is set, seek there
+            var dur = e.target.getDuration() || 0;
+            setDuration(dur);
+            // If start is set, seek there; otherwise auto-set 0-15s clip with zoom
             const ss = parseTime(start);
-            if (ss != null) e.target.seekTo(ss, true);
+            if (ss != null) {
+              e.target.seekTo(ss, true);
+            } else if (dur > 0) {
+              var autoEnd = Math.min(15, dur);
+              onStartChange(fmtMM(0));
+              onEndChange(fmtMM(autoEnd));
+              if (dur > 20) {
+                var z = Math.min(dur / 20, 5);
+                setZoomLevel(z);
+                setZoomCenter(1 / (2 * z));
+              }
+            }
           },
           onStateChange: (e) => {
             setPlaying(e.data === window.YT.PlayerState.PLAYING);
@@ -1601,18 +1613,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const dangerC = '#ef4444';
   const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 10;
 
-  const handleMinimapDown = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
-    setPos(e.clientX);
-    const onMove = (ev) => { setPos(ev.clientX); };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  };
-
-  const mmStartPct = duration > 0 ? (actualVisibleStart / duration * 100) : 0;
-  const mmWidthPct = duration > 0 ? (visibleDuration / duration * 100) : 100;
-
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
     React.createElement("div", { ref: playerWrapRef, style: { position: 'relative', width: '100%', height: 200, background: '#000', overflow: 'hidden' } },
@@ -1767,18 +1767,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
-    ),
-    // Minimap (visible when zoomed)
-    zoomLevel > 1 && duration > 0 && React.createElement("div", {
-      onMouseDown: handleMinimapDown,
-      style: { position: 'relative', height: 14, margin: '2px 8px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 3, cursor: 'pointer', overflow: 'hidden' },
-    },
-      // Visible window indicator
-      React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mmStartPct + '%', width: Math.max(mmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 3, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-      // Selected range
-      startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 4, height: 6, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-      // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 10, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
     ),
     // Controls row: play + start/end capture+input
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
