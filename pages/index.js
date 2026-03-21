@@ -25,12 +25,19 @@ const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
 const TUTORIAL_STEPS_MOBILE = [
   { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uC785\uB2C8\uB2E4. \uC0C1\uB2E8 \u2699 \uC124\uC815\uC5D0\uC11C \uACF5\uD1B5 URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB418\uACE0, \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="card-nav"]', title: '\uCE74\uB4DC \uD0D0\uC0C9', desc: '\uD654\uC0B4\uD45C\uC640 \uC810\uC73C\uB85C \uCE74\uB4DC\uB97C \uC804\uD658\uD558\uACE0, + \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uC138\uC694.' },
-  { target: '[data-tour="edit-area"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uD074\uB9BD \uD3B8\uC9D1\xB7\uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774 \uD0ED\uC73C\uB85C \uCE74\uB4DC\uB97C \uAFB8\uBA70\uBCF4\uC138\uC694.' },
+  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-overlay"]', title: '\uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 const TUTORIAL_STEPS_DESKTOP = [
   { target: '[data-tour="global-settings"]', title: '\uAE30\uBCF8 \uC124\uC815', desc: '\uACF5\uD1B5 YouTube URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB429\uB2C8\uB2E4. \uCE74\uB4DC\uBCC4\uB85C \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F0\uB824\uBA74 \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uC138\uC694.' },
-  { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774\uB97C \uD3B8\uC9D1\uD558\uC138\uC694.' },
+  { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uD3B8\uC9D1\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-overlay"]', title: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 
@@ -4888,9 +4895,10 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
 }
 
 /* ── Mobile Tab Pill ── */
-function TabPill({ label, active, onClick }) {
+function TabPill({ label, active, onClick, dataTour }) {
   return React.createElement("button", {
     onClick,
+    'data-tour': dataTour || undefined,
     style: {
       padding: '8px 16px', borderRadius: T.radiusPill, fontSize: 13, fontWeight: active ? 600 : 400,
       border: active ? `1.5px solid ${T.accent}` : `1px solid ${T.border}`,
@@ -4903,10 +4911,10 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'fill', label: '클립 편집' },
-  { id: 'layout', label: '레이아웃' },
-  { id: 'text', label: '텍스트' },
-  { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
+  { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'layout', label: '레이아웃', tour: 'tab-layout' },
+  { id: 'text', label: '텍스트', tour: 'tab-text' },
+  { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
 function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
@@ -5331,7 +5339,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Tab pills
     React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
-      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
+      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
     ),
 
     // Tab content
@@ -5348,10 +5356,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
 /* ── Desktop Card Panel (left preview + right tabs) ── */
 const DESKTOP_TABS = [
-  { id: 'fill', label: '클립 편집' },
-  { id: 'layout', label: '\ub808\uc774\uc544\uc6c3' },
-  { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9' },
-  { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
+  { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'layout', label: '\ub808\uc774\uc544\uc6c3', tour: 'tab-layout' },
+  { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9', tour: 'tab-text' },
+  { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
 function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard }) {
@@ -5841,7 +5849,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // Tab bar
       React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
-        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
+        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
