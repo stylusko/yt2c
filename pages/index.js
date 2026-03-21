@@ -1161,6 +1161,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const [rangeDragActive, setRangeDragActive] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
+  const panAnimRef = useRef(null);
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -1437,26 +1438,65 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
     } else if (zoomLevel > 1) {
-      // Zoomed + outside range: click = seek, drag = pan
+      // Zoomed + outside range: click = seek, drag = pan with momentum & bounce
+      if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null; }
       manualSeekOutside.current = true;
       seekTo(time);
       const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
       const startPanCenter = zoomCenter;
       const panRect = seekRef.current.getBoundingClientRect();
       let panning = false;
+      let currentCenter = zoomCenter;
+      let lastX = startPanX;
+      let lastTime = Date.now();
+      let velocity = 0;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
         if (!panning && Math.abs(mcx - startPanX) > 8) panning = true;
         if (panning) {
-          const deltaPx = mcx - startPanX;
-          const deltaRatio = -deltaPx / panRect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+          var now = Date.now(); var dt = now - lastTime;
+          if (dt > 0) velocity = (mcx - lastX) / dt;
+          lastX = mcx; lastTime = now;
+          var deltaPx = mcx - startPanX;
+          var deltaRatio = -deltaPx / panRect.width / zoomLevel;
+          var raw = startPanCenter + deltaRatio;
+          // Rubber-band at edges
+          if (raw < 0) { currentCenter = raw * 0.25; }
+          else if (raw > 1) { currentCenter = 1 + (raw - 1) * 0.25; }
+          else { currentCenter = raw; }
+          setZoomCenter(currentCenter);
         }
       };
       const onUp = () => {
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+        // Momentum + spring-back animation
+        var center = currentCenter;
+        var vel = panning ? -velocity / panRect.width / zoomLevel * 16 : 0;
+        var animate = function() {
+          if (center < 0 || center > 1) {
+            var target = center < 0 ? 0 : 1;
+            center += (target - center) * 0.18;
+            vel *= 0.4;
+            if (Math.abs(center - target) < 0.0005 && Math.abs(vel) < 0.0001) {
+              setZoomCenter(target); panAnimRef.current = null; return;
+            }
+          } else {
+            vel *= 0.92;
+            center += vel;
+            if (Math.abs(vel) < 0.0001) {
+              setZoomCenter(Math.max(0, Math.min(1, center))); panAnimRef.current = null; return;
+            }
+          }
+          setZoomCenter(center);
+          panAnimRef.current = requestAnimationFrame(animate);
+        };
+        if (panning && (Math.abs(vel) > 0.0005 || center < 0 || center > 1)) {
+          panAnimRef.current = requestAnimationFrame(animate);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, currentCenter)));
+        }
       };
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
