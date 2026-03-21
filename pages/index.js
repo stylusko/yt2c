@@ -5897,8 +5897,9 @@ function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
   }
   tooltipTop = Math.max(16, Math.min(tooltipTop, window.innerHeight - tooltipH - 16));
   return React.createElement(React.Fragment, null,
+    React.createElement("style", null, '@keyframes tourGlow{0%,100%{box-shadow:0 0 0 9999px rgba(0,0,0,0.75),0 0 8px 2px rgba(99,102,241,0.4)}50%{box-shadow:0 0 0 9999px rgba(0,0,0,0.75),0 0 20px 6px rgba(99,102,241,0.7)}}'),
     React.createElement("div", { onClick: onSkip, style: { position: 'fixed', inset: 0, zIndex: 10000 } }),
-    React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.75)', border: '2px solid rgba(99,102,241,0.5)', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
+    React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, border: '2px solid rgba(99,102,241,0.6)', animation: 'tourGlow 2s ease-in-out infinite', zIndex: 10001, pointerEvents: 'none', transition: 'top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease' } }),
     React.createElement("div", { style: { position: 'fixed', top: tooltipTop, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
       React.createElement("div", { style: { fontWeight: 600, fontSize: 15, color: T.text, marginBottom: 6 } }, stepData.title),
       React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.6 } }, stepData.desc),
