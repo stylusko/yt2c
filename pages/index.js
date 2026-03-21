@@ -1264,8 +1264,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       }
     }
     var autoEnd = Math.min(15, duration);
-    onStartChange(fmtMM(0));
-    onEndChange(fmtMM(autoEnd));
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
     if (duration > 20) {
       var z = Math.min(Math.ceil(duration / 20), 5);
       setZoomLevel(z);
@@ -2008,6 +2008,18 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; setReady(false); setPlaying(false); } };
   }, [videoId, collapsed]);
+
+  // Auto-set 0-15s clip when new video loads
+  const prevVideoIdRef = useRef(null);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    if (parseTime(start) != null) return;
+    var autoEnd = Math.min(15, duration);
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop
   useEffect(() => {
