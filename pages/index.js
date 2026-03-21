@@ -1458,16 +1458,16 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     } else if (zoomLevel > 1) {
       // Zoomed + outside range: click = seek, drag = pan with momentum & bounce
       if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null; }
-      manualSeekOutside.current = true;
-      seekTo(time);
       const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
       const startPanCenter = zoomCenter;
       const panRect = seekRef.current.getBoundingClientRect();
+      const clickTime = time;
       let panning = false;
       let currentCenter = zoomCenter;
       let lastX = startPanX;
       let lastTime = Date.now();
       let velocity = 0;
+      const panSpeed = 1.5;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
@@ -1477,7 +1477,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           if (dt > 0) velocity = (mcx - lastX) / dt;
           lastX = mcx; lastTime = now;
           var deltaPx = mcx - startPanX;
-          var deltaRatio = -deltaPx / panRect.width / zoomLevel;
+          var deltaRatio = -deltaPx / panRect.width / zoomLevel * panSpeed;
           var raw = startPanCenter + deltaRatio;
           // Rubber-band at edges
           if (raw < 0) { currentCenter = raw * 0.25; }
@@ -1489,9 +1489,15 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       const onUp = () => {
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+        if (!panning) {
+          // Click without drag → seek
+          manualSeekOutside.current = true;
+          seekTo(clickTime);
+          return;
+        }
         // Momentum + spring-back animation
         var center = currentCenter;
-        var vel = panning ? -velocity / panRect.width / zoomLevel * 16 : 0;
+        var vel = -velocity / panRect.width / zoomLevel * panSpeed * 16;
         var animate = function() {
           if (center < 0 || center > 1) {
             var target = center < 0 ? 0 : 1;
@@ -1510,7 +1516,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           setZoomCenter(center);
           panAnimRef.current = requestAnimationFrame(animate);
         };
-        if (panning && (Math.abs(vel) > 0.0005 || center < 0 || center > 1)) {
+        if (Math.abs(vel) > 0.0005 || center < 0 || center > 1) {
           panAnimRef.current = requestAnimationFrame(animate);
         } else {
           setZoomCenter(Math.max(0, Math.min(1, currentCenter)));
