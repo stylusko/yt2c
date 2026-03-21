@@ -1217,22 +1217,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           onReady: (e) => {
             if (cancelled) return;
             setReady(true);
-            var dur = e.target.getDuration() || 0;
-            setDuration(dur);
-            // Auto-set 0-15s clip with zoom on new video
-            if (dur > 0) {
-              var autoEnd = Math.min(15, dur);
-              onStartChange(fmtMM(0));
-              onEndChange(fmtMM(autoEnd));
-              if (dur > 20) {
-                var z = Math.min(Math.ceil(dur / 20), 5);
-                setZoomLevel(z);
-                setZoomCenter(1 / (2 * z));
-              } else {
-                setZoomLevel(1);
-                setZoomCenter(0.5);
-              }
-            }
+            setDuration(e.target.getDuration() || 0);
           },
           onStateChange: (e) => {
             setPlaying(e.data === window.YT.PlayerState.PLAYING);
@@ -1252,6 +1237,25 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
   }, [videoId]);
+
+  // Auto-set 0-15s clip when new video loads (fresh callbacks, no stale closure)
+  const prevVideoIdRef = useRef(null);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    var autoEnd = Math.min(15, duration);
+    onStartChange(fmtMM(0));
+    onEndChange(fmtMM(autoEnd));
+    if (duration > 20) {
+      var z = Math.min(Math.ceil(duration / 20), 5);
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop within clip range (uses refs for always-current values)
   useEffect(() => {
