@@ -1744,7 +1744,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
           React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
         ),
-        React.createElement("div", { style: { position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
       ),
       vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vStartPct + '% - 10px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // ── End bracket handle ──
@@ -1754,7 +1753,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
           React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
         ),
-        React.createElement("div", { style: { position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
       ),
       vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vEndPct + '% - 4px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Unified hit area when markers are close
