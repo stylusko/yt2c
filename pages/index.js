@@ -3687,6 +3687,22 @@ function getTrafficUi(queueStatus) {
   };
 }
 
+function AdBanner({ adSlot }) {
+  const adRef = useRef(null);
+  useEffect(() => {
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  }, []);
+  return React.createElement("ins", {
+    ref: adRef,
+    className: "adsbygoogle",
+    style: { display: 'block', width: 300, height: 250 },
+    "data-ad-client": "ca-pub-4344666254384298",
+    "data-ad-slot": adSlot,
+    "data-ad-format": "auto",
+    "data-full-width-responsive": "true",
+  });
+}
+
 function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
@@ -3708,22 +3724,8 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
         title: generating ? '\uC911\uB2E8' : '\uB2EB\uAE30',
       }, "\u2715"),
 
-      // Ad placeholder (app intro with real logo)
-      React.createElement("div", {
-        style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, position: 'relative', overflow: 'hidden' }
-      },
-        // Decorative circles
-        React.createElement("div", { style: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(99,102,241,0.15)' } }),
-        React.createElement("div", { style: { position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.12)' } }),
-        // App logo (icon-round.png)
-        React.createElement("img", { src: "/icon-round.png", style: { width: 64, height: 64, borderRadius: 16, boxShadow: '0 4px 20px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }),
-        // Font logo
-        React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 28, color: '#fff', letterSpacing: '0.06em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
-        // Sub copy
-        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
-        // Sponsored label
-        React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
-      ),
+      // AdSense ad unit
+      React.createElement(AdBanner, { adSlot: "5558875283" }),
 
       // Progress area
       React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
