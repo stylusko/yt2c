@@ -1241,10 +1241,25 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   // Auto-set 0-15s clip when new video loads (fresh callbacks, no stale closure)
   const prevVideoIdRef = useRef(null);
+  const isInitialMountRef = useRef(true);
   useEffect(() => {
     if (!videoId || duration <= 0) return;
     if (prevVideoIdRef.current === videoId) return;
     prevVideoIdRef.current = videoId;
+    // On initial mount, preserve saved start/end from localStorage
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (parseTime(start) != null) {
+        // Saved values exist — just set appropriate zoom
+        if (duration > 20) {
+          var zz = Math.min(Math.ceil(duration / 20), 5);
+          setZoomLevel(zz);
+          var ss = parseTime(start);
+          setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
+        }
+        return;
+      }
+    }
     var autoEnd = Math.min(15, duration);
     onStartChange(fmtMM(0));
     onEndChange(fmtMM(autoEnd));
@@ -1453,7 +1468,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        if (!panning && Math.abs(mcx - startPanX) > 8) panning = true;
+        if (!panning && Math.abs(mcx - startPanX) > 3) panning = true;
         if (panning) {
           var now = Date.now(); var dt = now - lastTime;
           if (dt > 0) velocity = (mcx - lastX) / dt;
