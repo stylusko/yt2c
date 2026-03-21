@@ -1138,7 +1138,7 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, onTitleFetch }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1162,6 +1162,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const panAnimRef = useRef(null);
+  const onTitleFetchRef = useRef(onTitleFetch);
+  onTitleFetchRef.current = onTitleFetch;
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -1219,6 +1221,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
             if (cancelled) return;
             setReady(true);
             setDuration(e.target.getDuration() || 0);
+            try { var vd = e.target.getVideoData(); if (vd && vd.title && onTitleFetchRef.current) onTitleFetchRef.current(vd.title); } catch(ex) {}
           },
           onStateChange: (e) => {
             setPlaying(e.data === window.YT.PlayerState.PLAYING);
@@ -3295,7 +3298,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 14, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, width: Math.max(80, nameValue.length * 10) },
               })
             : React.createElement("span", {
-                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none' },
+                onClick: (e) => { e.stopPropagation(); startEditName(); },
+                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none', cursor: 'pointer' },
               }, displayName),
           !editingName && React.createElement("button", {
             onClick: (e) => { e.stopPropagation(); startEditName(); },
@@ -3346,7 +3350,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                           hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
                           card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                         ),
-                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
@@ -5690,7 +5694,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   ),
                 )
               : React.createElement(React.Fragment, null,
-                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   (() => {
                     var s = parseTime(card.start), e = parseTime(card.end);
                     var hasUrl = !!(card.url || globalUrl);
@@ -6018,7 +6022,15 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Card info header
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 8px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
         React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
-        React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
+        editingName
+          ? React.createElement("input", {
+              ref: nameRef, value: nameValue,
+              onChange: (e) => setNameValue(e.target.value),
+              onBlur: commitName,
+              onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); },
+              style: { background: 'transparent', border: '1px solid ' + T.accent, color: T.text, fontSize: 14, fontWeight: 600, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 },
+            })
+          : React.createElement("span", { onClick: startEditName, style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, cursor: 'pointer' } }, displayName),
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, (activeIndex + 1) + ' / ' + cards.length + '\uc7a5'),
       ),
       // Tab bar
