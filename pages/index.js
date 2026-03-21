@@ -6805,7 +6805,7 @@ export default function App() {
     // Floating help button
     !showHelpModal && !showTutorial && React.createElement("button", {
       onClick: () => setShowHelpModal(true),
-      style: { position: 'fixed', bottom: mob ? 20 : 24, right: mob ? 16 : 24, width: mob ? 40 : 44, height: mob ? 40 : 44, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: T.accent, fontSize: mob ? 16 : 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, transition: 'all 0.2s ease', boxShadow: '0 2px 12px rgba(99,102,241,0.2)', backdropFilter: 'blur(8px)' },
+      style: { position: 'fixed', bottom: mob ? 48 : 52, right: mob ? 16 : 24, width: mob ? 40 : 44, height: mob ? 40 : 44, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: T.accent, fontSize: mob ? 16 : 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, transition: 'all 0.2s ease', boxShadow: '0 2px 12px rgba(99,102,241,0.2)', backdropFilter: 'blur(8px)' },
       onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.3)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.35)'; },
       onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(99,102,241,0.2)'; },
     }, "?"),
