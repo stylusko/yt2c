@@ -3219,7 +3219,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 클립 편집
           React.createElement(Section, { title: "클립 편집" },
-            React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
+            !hasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -3241,8 +3241,9 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                           React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                         )
                       : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
-                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hasVideo) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
-                          hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                          hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                          card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                         ),
                     React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
                   ),
@@ -5040,8 +5041,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   };
 
   // Tab content renderers
+  const mobVideoUrl = card.url || globalUrl || '';
+  const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5061,8 +5064,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                   React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                 )
               : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 } },
-                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hv) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
-                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                 ); })(),
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
@@ -5543,8 +5547,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
 
   // \u2500\u2500 Fill Tab \u2500\u2500
+  const deskVideoUrl = card.url || globalUrl || '';
+  const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
   const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !deskHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5566,8 +5572,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                 )
               : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
-                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hv) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
-                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                 ); })(),
             card.appliedStart
               ? React.createElement(React.Fragment, null,
