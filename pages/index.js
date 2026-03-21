@@ -23,13 +23,13 @@ const RECENT_FEATURES = [
 /* ── Tutorial ── */
 const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
 const TUTORIAL_STEPS_MOBILE = [
-  { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC5B4\uC694.' },
+  { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uC785\uB2C8\uB2E4. \uC0C1\uB2E8 \u2699 \uC124\uC815\uC5D0\uC11C \uACF5\uD1B5 URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB418\uACE0, \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="card-nav"]', title: '\uCE74\uB4DC \uD0D0\uC0C9', desc: '\uD654\uC0B4\uD45C\uC640 \uC810\uC73C\uB85C \uCE74\uB4DC\uB97C \uC804\uD658\uD558\uACE0, + \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uC138\uC694.' },
   { target: '[data-tour="edit-area"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uD074\uB9BD \uD3B8\uC9D1\xB7\uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774 \uD0ED\uC73C\uB85C \uCE74\uB4DC\uB97C \uAFB8\uBA70\uBCF4\uC138\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 const TUTORIAL_STEPS_DESKTOP = [
-  { target: '[data-tour="global-settings"]', title: '\uAE30\uBCF8 \uC124\uC815', desc: 'YouTube URL, \uBE44\uC728, \uD615\uC2DD, \uD574\uC0C1\uB3C4\uB97C \uC124\uC815\uD558\uC138\uC694.' },
+  { target: '[data-tour="global-settings"]', title: '\uAE30\uBCF8 \uC124\uC815', desc: '\uACF5\uD1B5 YouTube URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB429\uB2C8\uB2E4. \uCE74\uB4DC\uBCC4\uB85C \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F0\uB824\uBA74 \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uC138\uC694.' },
   { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774\uB97C \uD3B8\uC9D1\uD558\uC138\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
@@ -5878,13 +5878,19 @@ function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
   const pad = 8;
   const isLast = step === totalSteps - 1;
   const spaceBelow = window.innerHeight - (rect.top + rect.height);
-  const showBelow = spaceBelow > 180;
-  const tooltipTop = showBelow ? rect.top + rect.height + pad + 12 : undefined;
-  const tooltipBottom = showBelow ? undefined : (window.innerHeight - rect.top + pad + 12);
+  const spaceAbove = rect.top;
+  const tooltipH = 160;
+  const showBelow = spaceBelow > tooltipH + pad + 20 || spaceBelow >= spaceAbove;
+  var tooltipTop, tooltipBottom;
+  if (showBelow) {
+    tooltipTop = Math.min(rect.top + rect.height + pad + 12, window.innerHeight - tooltipH - 16);
+  } else {
+    tooltipBottom = Math.max(window.innerHeight - rect.top + pad + 12, 16);
+  }
   return React.createElement(React.Fragment, null,
     React.createElement("div", { onClick: onSkip, style: { position: 'fixed', inset: 0, zIndex: 10000 } }),
     React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.75)', border: '2px solid rgba(99,102,241,0.5)', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
-    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, bottom: tooltipBottom, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
+    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, bottom: tooltipBottom, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
       React.createElement("div", { style: { fontWeight: 600, fontSize: 15, color: T.text, marginBottom: 6 } }, stepData.title),
       React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.6 } }, stepData.desc),
       React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 } },
@@ -5901,7 +5907,7 @@ function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
 /* ── Help Modal ── */
 function HelpModal({ onClose, onStartTour, mob }) {
   const sections = [
-    { title: '1. YouTube URL \uC785\uB825', desc: '\uD3B8\uC9D1\uD560 \uC601\uC0C1\uC758 YouTube \uB9C1\uD06C\uB97C \uC0C1\uB2E8\uC5D0 \uC785\uB825\uD558\uC138\uC694.' },
+    { title: '1. YouTube URL \uC785\uB825', desc: '\uACF5\uD1B5 URL: \uC0C1\uB2E8 \uC124\uC815\uC5D0\uC11C \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB429\uB2C8\uB2E4.\n\uAC1C\uBCC4 URL: \uAC01 \uCE74\uB4DC\uC758 \uD074\uB9BD \uD3B8\uC9D1\uC5D0\uC11C \uB530\uB85C \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
     { title: '2. \uCE74\uB4DC \uCD94\uAC00 & \uC120\uD0DD', desc: '+ \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uACE0, \uAC01 \uCE74\uB4DC\uB97C \uC120\uD0DD\uD574 \uD3B8\uC9D1\uD558\uC138\uC694. \uCD5C\uB300 10\uAC1C\uAE4C\uC9C0.' },
     { title: '3. \uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1\uC758 \uC2DC\uC791~\uB05D \uAD6C\uAC04\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD(\uC804\uCCB4/\uD06C\uB86D)\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
     { title: '4. \uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58\uB97C \uC120\uD0DD\uD558\uC138\uC694.' },
