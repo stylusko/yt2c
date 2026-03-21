@@ -1723,18 +1723,17 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       // Playhead
       React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 10, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
     ),
-    // Zoom control bar (compact, only when zoomed)
-    zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 8px' } },
-      React.createElement("button", {
+    // Zoom control bar
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '2px 8px' } },
+      zoomLevel > 1 && React.createElement("button", {
         onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
         style: { width: 20, height: 20, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
       }, '\u2212'),
-      React.createElement("span", { style: { fontSize: 10, color: T.accent, fontWeight: 600, minWidth: 28, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
       React.createElement("button", {
         onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-        style: { width: 20, height: 20, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-      }, '+'),
-      React.createElement("button", {
+        style: { height: 20, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textMuted, fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, padding: '0 6px', lineHeight: 1 },
+      }, zoomLevel > 1 ? '\u00D7' + zoomLevel.toFixed(1) + ' +' : '\uD83D\uDD0D \uD0C0\uC784\uB77C\uC778 \uD655\uB300'),
+      zoomLevel > 1 && React.createElement("button", {
         onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
         style: { fontSize: 9, color: T.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' },
       }, '\uB9AC\uC14B'),
@@ -2366,18 +2365,17 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Playhead
           React.createElement("div", { style: { position: 'absolute', top: 4, width: 2, height: 20, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
         ),
-        // Zoom control bar (compact, only when zoomed)
-        zoomLevel > 1 && React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '3px 0' } },
-          React.createElement("button", {
+        // Zoom control bar
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '3px 0' } },
+          zoomLevel > 1 && React.createElement("button", {
             onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
             style: { width: 22, height: 22, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
           }, '\u2212'),
-          React.createElement("span", { style: { fontSize: 10, color: T.accent, fontWeight: 600, minWidth: 28, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
           React.createElement("button", {
             onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-            style: { width: 22, height: 22, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-          }, '+'),
-          React.createElement("button", {
+            style: { height: 22, borderRadius: 4, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textMuted, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, padding: '0 8px', lineHeight: 1 },
+          }, zoomLevel > 1 ? '\u00D7' + zoomLevel.toFixed(1) + ' +' : '\uD83D\uDD0D \uD0C0\uC784\uB77C\uC778 \uD655\uB300'),
+          zoomLevel > 1 && React.createElement("button", {
             onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
             style: { fontSize: 9, color: T.textMuted, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px' },
           }, '\uB9AC\uC14B'),
