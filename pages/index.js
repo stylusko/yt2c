@@ -1219,11 +1219,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
             setReady(true);
             var dur = e.target.getDuration() || 0;
             setDuration(dur);
-            // If start is set, seek there; otherwise auto-set 0-15s clip with zoom
-            const ss = parseTime(start);
-            if (ss != null) {
-              e.target.seekTo(ss, true);
-            } else if (dur > 0) {
+            // Auto-set 0-15s clip with zoom on new video
+            if (dur > 0) {
               var autoEnd = Math.min(15, dur);
               onStartChange(fmtMM(0));
               onEndChange(fmtMM(autoEnd));
@@ -1231,6 +1228,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
                 var z = Math.min(Math.ceil(dur / 20), 5);
                 setZoomLevel(z);
                 setZoomCenter(1 / (2 * z));
+              } else {
+                setZoomLevel(1);
+                setZoomCenter(0.5);
               }
             }
           },
