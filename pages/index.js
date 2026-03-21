@@ -1766,11 +1766,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         (function() {
           if (duration <= 0) return null;
           var ticks = [];
-          var majorInterval, minorInterval;
-          if (zoomLevel < 2) { majorInterval = 30; minorInterval = 10; }
-          else if (zoomLevel < 5) { majorInterval = 10; minorInterval = 5; }
-          else if (zoomLevel < 10) { majorInterval = 5; minorInterval = 1; }
-          else { majorInterval = 1; minorInterval = 0.5; }
+          var majorInterval, minorInterval, vd = visibleDuration;
+          if (vd > 600) { majorInterval = 120; minorInterval = 30; }
+          else if (vd > 300) { majorInterval = 60; minorInterval = 15; }
+          else if (vd > 120) { majorInterval = 30; minorInterval = 10; }
+          else if (vd > 60) { majorInterval = 10; minorInterval = 5; }
+          else if (vd > 20) { majorInterval = 5; minorInterval = 1; }
+          else { majorInterval = 2; minorInterval = 0.5; }
           var tickStart = Math.floor(actualVisibleStart / minorInterval) * minorInterval;
           var tickEnd = Math.ceil(actualVisibleEnd / minorInterval) * minorInterval;
           for (var t = tickStart; t <= tickEnd; t += minorInterval) {
