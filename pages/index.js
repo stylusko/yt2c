@@ -1665,7 +1665,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      onWheel: handleWheel,
       style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
