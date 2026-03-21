@@ -3145,11 +3145,17 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [pendingImg, setPendingImg] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
   const nameRef = useRef(null);
+  const urlInputRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
+  useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
+  const videoUrl = card.url || globalUrl || '';
+  const hasVideo = videoUrl && YOUTUBE_HOST_RE.test(videoUrl);
+  const truncUrl = videoUrl.length > 50 ? videoUrl.slice(0, 50) + '...' : videoUrl;
 
   const displayName = card.name || card.title || card.subtitle || `카드 ${index + 1}`;
   const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
@@ -3223,7 +3229,21 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
                   )
                 : React.createElement(React.Fragment, null,
-                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
+                    hasVideo && !urlEditing
+                      ? React.createElement("div", {
+                          onClick: () => setUrlEditing(true),
+                          style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 4 },
+                          onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                          onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                        },
+                          React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                          React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? truncUrl : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                        )
+                      : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hasVideo) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
+                          hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                        ),
                     React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
                   ),
             ),
