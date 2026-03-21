@@ -1432,8 +1432,32 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
+    } else if (zoomLevel > 1) {
+      // Zoomed + outside range: click = seek, drag = pan
+      manualSeekOutside.current = true;
+      seekTo(time);
+      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
+      const startPanCenter = zoomCenter;
+      const panRect = seekRef.current.getBoundingClientRect();
+      let panning = false;
+      const onMove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
+        const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (!panning && Math.abs(mcx - startPanX) > 8) panning = true;
+        if (panning) {
+          const deltaPx = mcx - startPanX;
+          const deltaRatio = -deltaPx / panRect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+      };
+      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
-      // Outside range: normal seek
+      // Not zoomed + outside range: seek + drag to scrub
       manualSeekOutside.current = !inRange;
       seekTo(time);
       setDragging(true); setDragTime(time); setDragX(x);
@@ -1665,7 +1689,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : (zoomLevel > 1 ? 'crosshair' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
       React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
