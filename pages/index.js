@@ -1228,7 +1228,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
               onStartChange(fmtMM(0));
               onEndChange(fmtMM(autoEnd));
               if (dur > 20) {
-                var z = Math.min(dur / 20, 5);
+                var z = Math.min(Math.ceil(dur / 20), 5);
                 setZoomLevel(z);
                 setZoomCenter(1 / (2 * z));
               }
@@ -1432,36 +1432,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
-    } else if (zoomLevel > 1) {
-      // Panning mode when zoomed — but delegate to playhead/marker if near
-      const rect = seekRef.current.getBoundingClientRect();
-      const cx = isTouch ? e.touches[0].clientX : e.clientX;
-      const playheadX = rect.left + (vPct / 100) * rect.width;
-      const startMarkerX = vStartPct != null ? rect.left + (vStartPct / 100) * rect.width : null;
-      const endMarkerX = vEndPct != null ? rect.left + (vEndPct / 100) * rect.width : null;
-      if (Math.abs(cx - playheadX) <= 10) { startPlayheadDrag(e); return; }
-      if (startMarkerX != null && Math.abs(cx - startMarkerX) <= 5) { startSeekMarkerDrag('start', e); return; }
-      if (endMarkerX != null && Math.abs(cx - endMarkerX) <= 5) { startSeekMarkerDrag('end', e); return; }
-      const startPanCenter = zoomCenter;
-      const startPanX = cx;
-      let panned = false;
-      const onMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(mcx - startPanX) > 5) panned = true;
-        if (panned) {
-          const deltaPx = mcx - startPanX;
-          const deltaRatio = -deltaPx / rect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
-        }
-      };
-      const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
       // Outside range: normal seek
       manualSeekOutside.current = !inRange;
@@ -1679,19 +1649,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         React.createElement("div", { style: { background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.7)', borderRadius: 4, padding: '2px 5px' } },
           React.createElement("button", {
-            onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
+            onClick: () => { var nz = Math.max(1, Math.ceil(zoomLevel) - 1); if (nz <= 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
             style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '\u2212'),
-          React.createElement("input", {
-            type: 'range', min: 0, max: 100, value: Math.round(Math.log(zoomLevel) / Math.log(20) * 100),
-            onChange: (e) => { const nz = Math.pow(20, e.target.value / 100); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } } },
-            style: { width: 50, height: 3, accentColor: T.accent, cursor: 'pointer' },
-          }),
+          React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 600, minWidth: 24, textAlign: 'center' } }, '\u00D7' + Math.round(zoomLevel)),
           React.createElement("button", {
-            onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-            style: { width: 16, height: 16, border: 'none', background: 'none', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+            onClick: () => { var nz = Math.min(10, Math.floor(zoomLevel) + 1); setZoomLevel(nz); if (zoomLevel <= 1) { var ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel < 10 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '+'),
-          zoomLevel > 1 && React.createElement("span", { style: { fontSize: 9, color: T.accent, fontWeight: 600, marginLeft: 1 } }, '\u00D7' + zoomLevel.toFixed(1)),
         ),
       ),
     ),
@@ -1701,7 +1666,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
       onWheel: handleWheel,
-      style: { position: 'relative', height: 54, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 4, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
       React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
@@ -1736,7 +1701,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       // Dimming outside selection (right)
       vEndPct != null && vEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
       // Selected range fill
-      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s' } }),
+      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+      ),
       // ── Start bracket handle ──
       vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
         React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '4px 0 0 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
@@ -1767,6 +1734,28 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
+    ),
+    // Horizontal scrollbar (visible when zoomed)
+    zoomLevel > 1 && duration > 0 && React.createElement("div", {
+      onMouseDown: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        var rect = e.currentTarget.getBoundingClientRect();
+        var thumbW = (visibleDuration / duration) * rect.width;
+        var thumbLeft = (actualVisibleStart / duration) * rect.width;
+        var cx = e.clientX - rect.left;
+        var onThumb = cx >= thumbLeft && cx <= thumbLeft + thumbW;
+        if (onThumb) {
+          var startX = e.clientX; var startCenter = zoomCenter;
+          var onMove = function(ev) { var delta = ev.clientX - startX; var deltaRatio = delta / rect.width; setZoomCenter(Math.max(0, Math.min(1, startCenter + deltaRatio))); };
+          var onUp = function() { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+          window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, cx / rect.width)));
+        }
+      },
+      style: { position: 'relative', height: 8, margin: '0 0 2px', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer' },
+    },
+      React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: (actualVisibleStart / duration * 100) + '%', width: Math.max(visibleDuration / duration * 100, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
     ),
     // Controls row: play + start/end capture+input
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
