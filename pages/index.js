@@ -4966,6 +4966,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const urlInputRef = useRef(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -5049,7 +5051,19 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, marginBottom: 8 } }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 40 ? vu.slice(0, 40) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 8 },
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hv) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
@@ -5412,6 +5426,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [videoLoading, setVideoLoading] = useState(false);
   const [clipError, setClipError] = useState(null);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const urlInputRef = useRef(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5538,7 +5554,21 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 50 ? vu.slice(0, 50) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' },
+                  onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                  onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), onBlur: () => { if (hv) setUrlEditing(false); }, style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC811\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement(React.Fragment, null,
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
