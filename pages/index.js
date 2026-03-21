@@ -5881,16 +5881,17 @@ function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
   const spaceAbove = rect.top;
   const tooltipH = 160;
   const showBelow = spaceBelow > tooltipH + pad + 20 || spaceBelow >= spaceAbove;
-  var tooltipTop, tooltipBottom;
+  var tooltipTop;
   if (showBelow) {
-    tooltipTop = Math.min(rect.top + rect.height + pad + 12, window.innerHeight - tooltipH - 16);
+    tooltipTop = rect.top + rect.height + pad + 12;
   } else {
-    tooltipBottom = Math.max(window.innerHeight - rect.top + pad + 12, 16);
+    tooltipTop = rect.top - pad - 12 - tooltipH;
   }
+  tooltipTop = Math.max(16, Math.min(tooltipTop, window.innerHeight - tooltipH - 16));
   return React.createElement(React.Fragment, null,
     React.createElement("div", { onClick: onSkip, style: { position: 'fixed', inset: 0, zIndex: 10000 } }),
     React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.75)', border: '2px solid rgba(99,102,241,0.5)', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
-    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, bottom: tooltipBottom, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
+    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
       React.createElement("div", { style: { fontWeight: 600, fontSize: 15, color: T.text, marginBottom: 6 } }, stepData.title),
       React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.6 } }, stepData.desc),
       React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 } },
