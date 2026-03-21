@@ -1689,7 +1689,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : (zoomLevel > 1 ? 'crosshair' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
       React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
