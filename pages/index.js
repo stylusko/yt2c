@@ -6,18 +6,32 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0316';
-const BUILD_NUM = 12; // same-day deploy count
+const BUILD_DATE = '2026.0321';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uD29C\uD1A0\uB9AC\uC5BC & \uB3C4\uC6C0\uB9D0 \uAE30\uB2A5 \uCD94\uAC00',
   '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
   '\uB370\uC2A4\uD06C\uD1B1 \uD06C\uB86D \uBBF8\uB9AC\uBCF4\uAE30+\uC2AC\uB77C\uC774\uB354 \uAC00\uB85C \uBC30\uCE58',
   '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
   '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
-  '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
+];
+
+/* ── Tutorial ── */
+const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
+const TUTORIAL_STEPS_MOBILE = [
+  { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC5B4\uC694.' },
+  { target: '[data-tour="card-nav"]', title: '\uCE74\uB4DC \uD0D0\uC0C9', desc: '\uD654\uC0B4\uD45C\uC640 \uC810\uC73C\uB85C \uCE74\uB4DC\uB97C \uC804\uD658\uD558\uACE0, + \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uC138\uC694.' },
+  { target: '[data-tour="edit-area"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uD074\uB9BD \uD3B8\uC9D1\xB7\uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774 \uD0ED\uC73C\uB85C \uCE74\uB4DC\uB97C \uAFB8\uBA70\uBCF4\uC138\uC694.' },
+  { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
+];
+const TUTORIAL_STEPS_DESKTOP = [
+  { target: '[data-tour="global-settings"]', title: '\uAE30\uBCF8 \uC124\uC815', desc: 'YouTube URL, \uBE44\uC728, \uD615\uC2DD, \uD574\uC0C1\uB3C4\uB97C \uC124\uC815\uD558\uC138\uC694.' },
+  { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uB808\uC774\uC544\uC6C3\xB7\uD14D\uC2A4\uD2B8\xB7\uC624\uBC84\uB808\uC774\uB97C \uD3B8\uC9D1\uD558\uC138\uC694.' },
+  { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 
 /* ── YouTube URL helpers ── */
@@ -5842,6 +5856,80 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 }
 
 
+/* ── Tutorial Overlay ── */
+function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
+  const [rect, setRect] = useState(null);
+  useEffect(() => {
+    if (!stepData) return;
+    const update = () => {
+      const el = document.querySelector(stepData.target);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      }
+    };
+    update();
+    const timer = setTimeout(update, 100);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { clearTimeout(timer); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [stepData, step]);
+  if (!rect || !stepData) return null;
+  const pad = 8;
+  const isLast = step === totalSteps - 1;
+  const spaceBelow = window.innerHeight - (rect.top + rect.height);
+  const showBelow = spaceBelow > 180;
+  const tooltipTop = showBelow ? rect.top + rect.height + pad + 12 : undefined;
+  const tooltipBottom = showBelow ? undefined : (window.innerHeight - rect.top + pad + 12);
+  return React.createElement(React.Fragment, null,
+    React.createElement("div", { onClick: onSkip, style: { position: 'fixed', inset: 0, zIndex: 10000 } }),
+    React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.75)', border: '2px solid rgba(99,102,241,0.5)', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
+    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, bottom: tooltipBottom, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10002, transition: 'all 0.3s ease' } },
+      React.createElement("div", { style: { fontWeight: 600, fontSize: 15, color: T.text, marginBottom: 6 } }, stepData.title),
+      React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.6 } }, stepData.desc),
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, (step + 1) + ' / ' + totalSteps),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+          React.createElement("button", { onClick: onSkip, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer' } }, "\uAC74\uB108\uB6F0\uAE30"),
+          React.createElement("button", { onClick: onNext, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' } }, isLast ? "\uC644\uB8CC" : "\uB2E4\uC74C"),
+        ),
+      ),
+    ),
+  );
+}
+
+/* ── Help Modal ── */
+function HelpModal({ onClose, onStartTour, mob }) {
+  const sections = [
+    { title: '1. YouTube URL \uC785\uB825', desc: '\uD3B8\uC9D1\uD560 \uC601\uC0C1\uC758 YouTube \uB9C1\uD06C\uB97C \uC0C1\uB2E8\uC5D0 \uC785\uB825\uD558\uC138\uC694.' },
+    { title: '2. \uCE74\uB4DC \uCD94\uAC00 & \uC120\uD0DD', desc: '+ \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uACE0, \uAC01 \uCE74\uB4DC\uB97C \uC120\uD0DD\uD574 \uD3B8\uC9D1\uD558\uC138\uC694. \uCD5C\uB300 10\uAC1C\uAE4C\uC9C0.' },
+    { title: '3. \uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1\uC758 \uC2DC\uC791~\uB05D \uAD6C\uAC04\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD(\uC804\uCCB4/\uD06C\uB86D)\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+    { title: '4. \uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58\uB97C \uC120\uD0DD\uD558\uC138\uC694.' },
+    { title: '5. \uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+    { title: '6. \uC624\uBC84\uB808\uC774', desc: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uC5EC \uCE74\uB4DC \uC704\uC5D0 \uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4\uB97C \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
+    { title: '7. \uC0DD\uC131\uD558\uAE30', desc: '\uBAA8\uB4E0 \uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC0DD\uC131 \uBC84\uD2BC\uC744 \uB20C\uB7EC \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4DC\uC138\uC694!' },
+  ];
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? 20 : 28, maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto', boxShadow: T.shadowLg } },
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 } },
+        React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: T.text, margin: 0 } }, "\uC0AC\uC6A9 \uAC00\uC774\uB4DC"),
+        React.createElement("button", { onClick: onClose, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', padding: '4px 8px' } }, "\u2715"),
+      ),
+      sections.map((s, i) => React.createElement("div", { key: i, style: { padding: '12px 0', borderBottom: i < sections.length - 1 ? '1px solid ' + T.border : 'none' } },
+        React.createElement("div", { style: { fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 4 } }, s.title),
+        React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, s.desc),
+      )),
+      React.createElement("button", {
+        onClick: () => { onClose(); onStartTour(); },
+        style: { marginTop: 20, width: '100%', padding: '12px 0', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.12)', border: '1px solid ' + T.accent, color: T.accent, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' },
+      }, "\uD29C\uD1A0\uB9AC\uC5BC \uB2E4\uC2DC \uBCF4\uAE30"),
+    ),
+  );
+}
+
 /* ── App ── */
 export default function App() {
   const mob = useIsMobile();
@@ -5874,6 +5962,9 @@ export default function App() {
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
   const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
@@ -5882,6 +5973,21 @@ export default function App() {
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
+
+  // Tutorial auto-start on first editor entry
+  useEffect(() => {
+    if (editorMode === 'editor' && typeof window !== 'undefined') {
+      const done = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+      if (!done) {
+        const timer = setTimeout(() => { setTutorialStep(0); setShowTutorial(true); }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [editorMode]);
+
+  const startTutorial = useCallback(() => { setTutorialStep(0); setShowTutorial(true); }, []);
+  const endTutorial = useCallback(() => { setShowTutorial(false); setTutorialStep(0); if (typeof window !== 'undefined') localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); }, []);
+  const tutorialSteps = mob ? TUTORIAL_STEPS_MOBILE : TUTORIAL_STEPS_DESKTOP;
 
   // Close info panel on outside click
   useEffect(() => {
@@ -6437,18 +6543,22 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
+              React.createElement("button", { onClick: () => setShowHelpModal(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "?"),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
+                'data-tour': 'generate',
                 onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
+              React.createElement("button", { onClick: () => setShowHelpModal(true), style: { padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "?"),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uBCF4\uB0B4\uAE30"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
+                'data-tour': 'generate',
                 onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "생성하기"),
@@ -6457,9 +6567,9 @@ export default function App() {
     ),
 
     // ── Fixed Card Preview (mobile only) ──
-    mob && React.createElement("div", { style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
+    mob && React.createElement("div", { 'data-tour': 'preview', style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '10px 0' } },
+      React.createElement("div", { 'data-tour': 'card-nav', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '10px 0' } },
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted, fontWeight: 500, minWidth: 28, textAlign: 'center' } }, (activeCardIdx + 1) + "/" + cards.length),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
@@ -6529,7 +6639,7 @@ export default function App() {
 
       // Global Settings (desktop only — mobile uses header icon)
       !mob && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
+          React.createElement("div", { 'data-tour': 'global-settings', style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
             React.createElement("div", { style: { flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 8 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', flexShrink: 0 } }, "URL"),
               React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '6px 10px', fontSize: 13 } })
@@ -6566,7 +6676,7 @@ export default function App() {
         ),
 
       // Cards — mobile carousel vs desktop list
-      mob ? React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
+      mob ? React.createElement("div", { 'data-tour': 'edit-area', style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
         React.createElement(MobileCardCarousel, {
           cards, activeIndex: Math.min(activeCardIdx, cards.length - 1),
           onActiveChange: setActiveCardIdx,
@@ -6583,21 +6693,23 @@ export default function App() {
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
         }),
-      ) : React.createElement(DesktopCardPanel, {
-        cards,
-        activeIndex: Math.min(activeCardIdx, cards.length - 1),
-        onActiveChange: setActiveCardIdx,
-        onCardChange: updateCard,
-        onRemove: (i) => removeCard(i),
-        onDuplicate: (i) => duplicateCard(i),
-        onAdd: addCard,
-        globalUrl, aspectRatio, outputFormat, globalBgImage,
-        onReorder: () => setShowReorder(true),
-        onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
-        onApplyOverlayToAll: applyOverlayToAll,
-        onRemoveOverlayFromAll: removeOverlayFromAll,
-        onMoveCard: moveCard,
-      }),
+      ) : React.createElement("div", { 'data-tour': 'card-panel' },
+        React.createElement(DesktopCardPanel, {
+          cards,
+          activeIndex: Math.min(activeCardIdx, cards.length - 1),
+          onActiveChange: setActiveCardIdx,
+          onCardChange: updateCard,
+          onRemove: (i) => removeCard(i),
+          onDuplicate: (i) => duplicateCard(i),
+          onAdd: addCard,
+          globalUrl, aspectRatio, outputFormat, globalBgImage,
+          onReorder: () => setShowReorder(true),
+          onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+          onApplyOverlayToAll: applyOverlayToAll,
+          onRemoveOverlayFromAll: removeOverlayFromAll,
+          onMoveCard: moveCard,
+        }),
+      ),
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
@@ -6652,6 +6764,13 @@ export default function App() {
       globalBgImage, setGlobalBgImage,
       onDismiss: () => setShowGlobalSettings(false),
     }),
+    showTutorial && tutorialSteps[tutorialStep] && React.createElement(TutorialOverlay, {
+      mob, step: tutorialStep, totalSteps: tutorialSteps.length,
+      stepData: tutorialSteps[tutorialStep],
+      onNext: () => { if (tutorialStep < tutorialSteps.length - 1) setTutorialStep(s => s + 1); else endTutorial(); },
+      onSkip: endTutorial,
+    }),
+    showHelpModal && React.createElement(HelpModal, { mob, onClose: () => setShowHelpModal(false), onStartTour: startTutorial }),
     ), // end editor Fragment
 
     shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
