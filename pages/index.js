@@ -1162,6 +1162,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const panAnimRef = useRef(null);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
   const onTitleFetchRef = useRef(onTitleFetch);
   onTitleFetchRef.current = onTitleFetch;
 
@@ -1250,12 +1251,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     if (prevVideoIdRef.current === videoId) return;
     prevVideoIdRef.current = videoId;
     // On initial mount, preserve saved start/end from localStorage
+    var mz = Math.max(2, Math.round(duration / 75));
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
       if (parseTime(start) != null) {
         // Saved values exist — just set appropriate zoom
-        if (duration > 20) {
-          var zz = Math.min(Math.ceil(duration / 20), 5);
+        var zz = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+        if (zz > 1) {
           setZoomLevel(zz);
           var ss = parseTime(start);
           setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
@@ -1266,8 +1268,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     var autoEnd = Math.min(15, duration);
     if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
     else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
-    if (duration > 20) {
-      var z = Math.min(Math.ceil(duration / 20), 5);
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
       setZoomLevel(z);
       setZoomCenter(1 / (2 * z));
     } else {
@@ -1367,7 +1369,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = actualVisibleStart + mouseX * visibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
@@ -1746,8 +1748,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           }, '\u2212'),
           React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 600, minWidth: 24, textAlign: 'center' } }, '\u00D7' + Math.round(zoomLevel)),
           React.createElement("button", {
-            onClick: () => { var nz = Math.min(10, Math.floor(zoomLevel) + 1); setZoomLevel(nz); if (zoomLevel <= 1) { var ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel < 10 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+            onClick: () => { var nz = Math.min(maxZoom, Math.floor(zoomLevel) + 1); setZoomLevel(nz); if (zoomLevel <= 1) { var ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel < maxZoom ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '+'),
         ),
       ),
@@ -1935,6 +1937,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
@@ -2019,6 +2022,15 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     var autoEnd = Math.min(15, duration);
     if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
     else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    var mz = Math.max(2, Math.round(duration / 75));
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
   }, [videoId, duration]);
 
   // Poll current time + auto-loop
@@ -2108,7 +2120,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       return;
     }
     const scale = d / pinchRef.current.startDist;
-    const newZoom = Math.max(1, Math.min(20, pinchRef.current.startZoom * scale));
+    const newZoom = Math.max(1, Math.min(maxZoom, pinchRef.current.startZoom * scale));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(newZoom); }
   };
 
@@ -2120,7 +2132,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = mActualVisibleStart + mouseX * mVisibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
@@ -2437,12 +2449,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
                 style: { width: 18, height: 18, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
               }, '\u2212'),
               React.createElement("input", {
-                type: 'range', min: 0, max: 100, value: Math.round(Math.log(zoomLevel) / Math.log(20) * 100),
-                onChange: (e) => { const nz = Math.pow(20, e.target.value / 100); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } } },
+                type: 'range', min: 0, max: 100, value: Math.round(Math.log(Math.max(1, zoomLevel)) / Math.log(Math.max(2, maxZoom)) * 100),
+                onChange: (e) => { const nz = Math.pow(Math.max(2, maxZoom), e.target.value / 100); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(Math.min(maxZoom, nz)); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } } },
                 style: { width: 50, height: 3, accentColor: T.accent, cursor: 'pointer' },
               }),
               React.createElement("button", {
-                onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+                onClick: () => { const nz = Math.min(maxZoom, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
                 style: { width: 18, height: 18, border: 'none', background: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
               }, '+'),
               zoomLevel > 1 && React.createElement("span", { style: { fontSize: 9, color: T.accent, fontWeight: 600, marginLeft: 1 } }, '\u00D7' + zoomLevel.toFixed(1)),
