@@ -1701,7 +1701,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
       onWheel: handleWheel,
-      style: { position: 'relative', height: 60, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 12, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 4, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
       React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
@@ -1758,13 +1758,13 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       // Unified hit area when markers are close
       markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 16px)', height: 36, cursor: 'ew-resize', zIndex: 6, touchAction: 'none' } }),
       // ── Playhead (vertical line + triangle) ──
-      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 56, cursor: 'grab', zIndex: 4, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
+      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 54, cursor: 'grab', zIndex: 4, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
         // Triangle indicator at top
         React.createElement("div", { style: { position: 'absolute', top: 12, left: 7, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
         // Vertical line spanning track
         React.createElement("div", { style: { position: 'absolute', top: 17, left: 9, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
       ),
-      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 56, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
       dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
     ),
