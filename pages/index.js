@@ -1766,13 +1766,17 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         (function() {
           if (duration <= 0) return null;
           var ticks = [];
-          var majorInterval, minorInterval, vd = visibleDuration;
-          if (vd > 600) { majorInterval = 120; minorInterval = 30; }
-          else if (vd > 300) { majorInterval = 60; minorInterval = 15; }
-          else if (vd > 120) { majorInterval = 30; minorInterval = 10; }
-          else if (vd > 60) { majorInterval = 10; minorInterval = 5; }
-          else if (vd > 20) { majorInterval = 5; minorInterval = 1; }
-          else { majorInterval = 2; minorInterval = 0.5; }
+          var majorInterval, minorInterval;
+          var ns = [1, 2, 5, 10, 15, 30, 60, 120, 300];
+          var best = 30, bd = 999;
+          for (var ni = 0; ni < ns.length; ni++) {
+            var c = visibleDuration / ns[ni];
+            if (c < 3) continue;
+            var dd = Math.abs(c - 7);
+            if (dd < bd) { bd = dd; best = ns[ni]; }
+          }
+          majorInterval = best;
+          minorInterval = majorInterval >= 60 ? 15 : majorInterval >= 10 ? 5 : majorInterval >= 5 ? 1 : 0.5;
           var tickStart = Math.floor(actualVisibleStart / minorInterval) * minorInterval;
           var tickEnd = Math.ceil(actualVisibleEnd / minorInterval) * minorInterval;
           for (var t = tickStart; t <= tickEnd; t += minorInterval) {
