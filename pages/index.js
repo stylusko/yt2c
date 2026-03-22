@@ -2346,44 +2346,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       }
 
       if (mode === 'range' && rangeDragStarted) {
-        // Inertia animation
-        const pxPerMs = velocity;
-        const rectW = rect.width;
-        if (Math.abs(pxPerMs) > 0.15) {
-          let vx = pxPerMs * 16; // px per frame (~16ms)
-          let curCx = lastCx;
-          const friction = 0.92;
-          const inertiaFrame = () => {
-            vx *= friction;
-            if (Math.abs(vx) < 0.3) {
-              // Final commit
-              const { time: ft } = calcSeekTime(curCx);
-              const fd = ft - time;
-              let fns = snapStartSec + fd, fne = snapEndSec + fd;
-              if (fns < 0) { fns = 0; fne = clipDur; }
-              if (fne > duration) { fne = duration; fns = duration - clipDur; }
-              if (onClipChange) onClipChange(fmtMM(fns), fmtMM(fne));
-              else { onStartChange(fmtMM(fns)); onEndChange(fmtMM(fne)); }
-              setRangeDragActive(false);
-              return;
-            }
-            curCx += vx;
-            // Clamp to seekbar bounds
-            curCx = Math.max(rect.left, Math.min(rect.right, curCx));
-            const { time: it } = calcSeekTime(curCx);
-            const id = it - time;
-            let ins = snapStartSec + id, ine = snapEndSec + id;
-            if (ins < 0) { ins = 0; ine = clipDur; vx = 0; }
-            if (ine > duration) { ine = duration; ins = duration - clipDur; vx = 0; }
-            manualSeekOutside.current = false;
-            if (onClipChange) onClipChange(fmtPrecise(ins), fmtPrecise(ine));
-            else { onStartChange(fmtPrecise(ins)); onEndChange(fmtPrecise(ine)); }
-            requestAnimationFrame(inertiaFrame);
-          };
-          requestAnimationFrame(inertiaFrame);
-          return; // Don't setRangeDragActive(false) yet — inertia handles it
-        }
-        // No inertia — just commit
+        // No inertia for range drag — commit final position immediately
         const { time: t } = calcSeekTime(lastCx);
         const delta = t - time;
         let ns = snapStartSec + delta, ne = snapEndSec + delta;
