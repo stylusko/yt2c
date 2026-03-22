@@ -688,25 +688,25 @@ function injectSliderStyle() {
   border: none;
 }
 .yt2c-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid rgba(255,255,255,0.9);
-  box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6);
-  margin-top: -5px;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  margin-top: -6px;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: grab;
 }
 .yt2c-slider::-moz-range-thumb {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: 2px solid rgba(255,255,255,0.9);
-  box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6);
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   cursor: grab;
 }
