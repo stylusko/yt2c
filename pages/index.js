@@ -20,6 +20,12 @@ const RECENT_FEATURES = [
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
 ];
 
+/* ── Icons ── */
+const ICON_SPEAKER = "M163.51,24.81a8,8,0,0,0-8.42.88L85.25,80H40A16,16,0,0,0,24,96v64a16,16,0,0,0,16,16H85.25l69.84,54.31A8,8,0,0,0,168,224V32A8,8,0,0,0,163.51,24.81ZM152,207.64,92.91,161.69A7.94,7.94,0,0,0,88,160H40V96H88a7.94,7.94,0,0,0,4.91-1.69L152,48.36ZM208,104v48a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm32-16v80a8,8,0,0,1-16,0V88a8,8,0,0,1,16,0Z";
+const ICON_SPEAKER_MUTE = "M53.92,34.62A8,8,0,1,0,42.08,45.38L73.55,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V175.09l42.08,46.29a8,8,0,1,0,11.84-10.76ZM32,96H72v64H32ZM144,207.64,88,164.09V95.89l56,61.6Zm42-63.77a24,24,0,0,0,0-31.72,8,8,0,1,1,12-10.57,40,40,0,0,1,0,52.88,8,8,0,0,1-12-10.59Zm-80.16-76a8,8,0,0,1,1.4-11.23l39.85-31A8,8,0,0,1,160,32v74.83a8,8,0,0,1-16,0V48.36l-26.94,21A8,8,0,0,1,105.84,67.91ZM248,128a79.9,79.9,0,0,1-20.37,53.34,8,8,0,0,1-11.92-10.67,64,64,0,0,0,0-85.33,8,8,0,1,1,11.92-10.67A79.83,79.83,0,0,1,248,128Z";
+const ICON_CHECK = "M243.28,68.24l-24-23.56a16,16,0,0,0-22.59,0L104,136.23l-36.69-35.6a16,16,0,0,0-22.58.05l-24,24a16,16,0,0,0,0,22.61l71.62,72a16,16,0,0,0,22.63,0L243.33,90.91A16,16,0,0,0,243.28,68.24ZM103.62,208,32,136l24-24a.6.6,0,0,1,.08.08l42.35,41.09a8,8,0,0,0,11.19,0L208.06,56,232,79.6Z";
+function SvgIcon({ path, size }) { return React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size || 16, height: size || 16, fill: "currentColor", viewBox: "0 0 256 256" }, React.createElement("path", { d: path })); }
+
 /* ── Tutorial ── */
 const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
 const TUTORIAL_STEPS_MOBILE = [
@@ -1865,7 +1871,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       React.createElement("button", {
         onClick: toggleMute,
         style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-      }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+      }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 14 })),
       // Start: capture btn + input
       React.createElement("div", { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 3 } },
         React.createElement("button", {
@@ -2527,7 +2533,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Play/Pause
           React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
           // Mute
-          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
           // Spacer
           React.createElement("div", { style: { flex: 1 } }),
           // Start: capture btn + input
@@ -3173,7 +3179,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     ? React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
         style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, vpMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A')
+      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
     : null;
 
   // Split mode: constrain video to video area
@@ -5744,7 +5750,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     return React.createElement("button", {
                       onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                    }, valid && React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: 16, height: 16, fill: "currentColor", viewBox: "0 0 256 256" }, React.createElement("path", { d: "M243.28,68.24l-24-23.56a16,16,0,0,0-22.59,0L104,136.23l-36.69-35.6a16,16,0,0,0-22.58.05l-24,24a16,16,0,0,0,0,22.61l71.62,72a16,16,0,0,0,22.63,0L243.33,90.91A16,16,0,0,0,243.28,68.24ZM103.62,208,32,136l24-24a.6.6,0,0,1,.08.08l42.35,41.09a8,8,0,0,0,11.19,0L208.06,56,232,79.6Z" })), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
+                    }, valid && React.createElement(SvgIcon, { path: ICON_CHECK, size: 16 }), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
                 ),
           ),
