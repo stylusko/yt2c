@@ -20,12 +20,21 @@ const RECENT_FEATURES = [
   '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
 ];
 
+/* ── Icons ── */
+const ICON_SPEAKER = "M163.51,24.81a8,8,0,0,0-8.42.88L85.25,80H40A16,16,0,0,0,24,96v64a16,16,0,0,0,16,16H85.25l69.84,54.31A8,8,0,0,0,168,224V32A8,8,0,0,0,163.51,24.81ZM152,207.64,92.91,161.69A7.94,7.94,0,0,0,88,160H40V96H88a7.94,7.94,0,0,0,4.91-1.69L152,48.36ZM208,104v48a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm32-16v80a8,8,0,0,1-16,0V88a8,8,0,0,1,16,0Z";
+const ICON_SPEAKER_MUTE = "M53.92,34.62A8,8,0,1,0,42.08,45.38L73.55,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V175.09l42.08,46.29a8,8,0,1,0,11.84-10.76ZM32,96H72v64H32ZM144,207.64,88,164.09V95.89l56,61.6Zm42-63.77a24,24,0,0,0,0-31.72,8,8,0,1,1,12-10.57,40,40,0,0,1,0,52.88,8,8,0,0,1-12-10.59Zm-80.16-76a8,8,0,0,1,1.4-11.23l39.85-31A8,8,0,0,1,160,32v74.83a8,8,0,0,1-16,0V48.36l-26.94,21A8,8,0,0,1,105.84,67.91ZM248,128a79.9,79.9,0,0,1-20.37,53.34,8,8,0,0,1-11.92-10.67,64,64,0,0,0,0-85.33,8,8,0,1,1,11.92-10.67A79.83,79.83,0,0,1,248,128Z";
+const ICON_PLAY = "M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z";
+const ICON_PAUSE = "M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z";
+const ICON_CHECK = "M243.28,68.24l-24-23.56a16,16,0,0,0-22.59,0L104,136.23l-36.69-35.6a16,16,0,0,0-22.58.05l-24,24a16,16,0,0,0,0,22.61l71.62,72a16,16,0,0,0,22.63,0L243.33,90.91A16,16,0,0,0,243.28,68.24ZM103.62,208,32,136l24-24a.6.6,0,0,1,.08.08l42.35,41.09a8,8,0,0,0,11.19,0L208.06,56,232,79.6Z";
+function SvgIcon({ path, size }) { return React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size || 16, height: size || 16, fill: "currentColor", viewBox: "0 0 256 256" }, React.createElement("path", { d: path })); }
+
 /* ── Tutorial ── */
 const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
 const TUTORIAL_STEPS_MOBILE = [
   { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uC785\uB2C8\uB2E4. \uC0C1\uB2E8 \u2699 \uC124\uC815\uC5D0\uC11C \uACF5\uD1B5 URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB418\uACE0, \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="card-nav"]', title: '\uCE74\uB4DC \uD0D0\uC0C9', desc: '\uD654\uC0B4\uD45C\uC640 \uC810\uC73C\uB85C \uCE74\uB4DC\uB97C \uC804\uD658\uD558\uACE0, + \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uC138\uC694.' },
-  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uACE0 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-clip-adjust"]', title: '\uD074\uB9BD \uC870\uC815', desc: '\uC601\uC0C1\uC758 \uC704\uCE58, \uD655\uB300, \uBC1D\uAE30\uB97C \uC870\uC808\uD558\uACE0 \uCE74\uB4DC \uBE44\uC728\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-overlay"]', title: '\uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
@@ -138,12 +147,12 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
-  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const MAX_CARDS = 10;
@@ -156,9 +165,9 @@ const DEFAULT_CARD = () => ({
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
-  title: "제목을 입력하세요", titleSize: 56, titleFont: "Pretendard-Bold.otf",
-  subtitle: "부제목을 입력하세요", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
-  body: "본문 내용을 입력하세요", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
+  title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
+  subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
+  body: "본문 내용을 입력하세요", bodySize: 40, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
@@ -203,6 +212,13 @@ function fmtMM(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
+}
+// Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
+function fmtPrecise(s) {
+  if (s == null || isNaN(s)) return '--:--';
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + sec.toFixed(1).padStart(4, '0');
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
@@ -640,11 +656,100 @@ function LayoutThumb({ type, label, active, onClick }) {
 /* ── Slider Row ── */
 const zoomToSlider = (v) => v <= 100 ? v * 2 : 200 + (v - 100) * 2 / 3;
 const zoomFromSlider = (s) => Math.round(s <= 200 ? s / 2 : 100 + (s - 200) * 1.5);
+
+/* Inject custom slider styles once */
+let _sliderStyleInjected = false;
+function injectSliderStyle() {
+  if (_sliderStyleInjected || typeof document === 'undefined') return;
+  _sliderStyleInjected = true;
+  const css = `
+.yt2c-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+}
+.yt2c-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+.yt2c-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+}
+.yt2c-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  margin-top: -6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:hover::-moz-range-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:active::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.5), 0 1px 4px rgba(0,0,0,0.6);
+}
+`;
+  const el = document.createElement('style');
+  el.setAttribute('data-yt2c-slider', '1');
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
 function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue, toSlider, fromSlider }) {
   const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
   const displayVal = suffix === '%' && typeof value === 'number' && value <= 1 && max <= 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   const sliderVal = toSlider ? toSlider(value) : value;
   const sliderDef = toSlider ? toSlider(defVal) : defVal;
+  const sliderMin = min;
+  const sliderMax = max;
+  const defPct = ((sliderDef - sliderMin) / (sliderMax - sliderMin)) * 100;
+  const fillPct = ((sliderVal - sliderMin) / (sliderMax - sliderMin)) * 100;
+
+  useEffect(() => { injectSliderStyle(); }, []);
+
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -653,7 +758,66 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.007, step); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("div", { style: { flex: 1, position: 'relative', display: 'flex', alignItems: 'center' } },
+      /* filled track layer */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '100%',
+          height: 3,
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.15)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }
+      }),
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: Math.min(100, Math.max(0, fillPct)) + '%',
+          height: 3,
+          borderRadius: 999,
+          background: 'linear-gradient(90deg, rgba(99,102,241,0.7), #6366f1)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }
+      }),
+      /* default value tick */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 'calc(' + defPct + '% - 0.5px)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 1,
+          height: 8,
+          background: 'rgba(255,255,255,0.35)',
+          pointerEvents: 'none',
+          zIndex: 3,
+          borderRadius: 1,
+        }
+      }),
+      React.createElement("input", {
+        type: "range",
+        min: sliderMin,
+        max: sliderMax,
+        step,
+        value: sliderVal,
+        className: 'yt2c-slider',
+        onChange: (e) => {
+          const v = parseFloat(e.target.value);
+          const snap = Math.max(Math.abs(sliderMax - sliderMin) * 0.02, step * 2);
+          onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v));
+        },
+        style: { height: 20, position: 'relative', zIndex: 2 },
+      }),
+    ),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
@@ -665,11 +829,40 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
 }
 
 /* ── Text Field Row (checkbox + input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId }) {
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets }) {
   const disabled = enabled === false;
   const input = rows
-    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, maxWidth: 360, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
-    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, maxWidth: 360, opacity: disabled ? 0.35 : 1 } });
+    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
+
+  const PRESET_LABELS = ['S', 'M', 'L', 'XL'];
+
+  const sizeControls = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, opacity: disabled ? 0.35 : 1, flexShrink: 0 } },
+    presets && React.createElement("div", { style: { display: 'flex', gap: 3 } },
+      presets.map((pv, pi) => React.createElement("button", {
+        key: pv,
+        disabled,
+        onClick: () => onSizeChange(pv),
+        style: {
+          padding: '2px 6px', fontSize: 10, borderRadius: 4, cursor: disabled ? 'default' : 'pointer',
+          border: `1px solid ${size === pv ? T.accent : T.border}`,
+          background: size === pv ? T.accent : 'rgba(255,255,255,0.04)',
+          color: size === pv ? '#fff' : T.textMuted,
+          fontWeight: size === pv ? 600 : 400, lineHeight: 1.4, transition: 'all 0.12s',
+        }
+      }, PRESET_LABELS[pi]))
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
+        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "\uD06C\uAE30"),
+        React.createElement("input", { type: "number", value: size, disabled, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 44, height: 28, padding: '0 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none', boxSizing: 'border-box' } }),
+      ),
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
+        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: color, disabled, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: disabled ? 'default' : 'pointer', background: 'transparent', boxSizing: 'border-box' } }),
+      ),
+    )
+  );
 
   return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
     React.createElement("div", {
@@ -679,16 +872,7 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
       React.createElement("div", { style: { position: 'absolute', inset: -10 } }),
       enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
     input,
-    React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center', opacity: disabled ? 0.35 : 1 } },
-      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
-        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "크기"),
-        React.createElement("input", { type: "number", value: size, disabled, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 44, padding: '7px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none' } }),
-      ),
-      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
-        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "색상"),
-        React.createElement("input", { type: "color", value: color, disabled, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: disabled ? 'default' : 'pointer', background: 'transparent' } }),
-      ),
-    )
+    sizeControls,
   );
 }
 
@@ -1023,7 +1207,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onPointerDown: handleZDown,
-      style: { position: 'relative', height: 28, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+      style: { position: 'relative', height: 28, cursor: (zDrag || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1138,7 +1322,7 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, onTitleFetch }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1161,6 +1345,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const [rangeDragActive, setRangeDragActive] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
+  const panAnimRef = useRef(null);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
+  const onTitleFetchRef = useRef(onTitleFetch);
+  onTitleFetchRef.current = onTitleFetch;
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -1218,9 +1406,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
             if (cancelled) return;
             setReady(true);
             setDuration(e.target.getDuration() || 0);
-            // If start is set, seek there
-            const ss = parseTime(start);
-            if (ss != null) e.target.seekTo(ss, true);
+            try { var vd = e.target.getVideoData(); if (vd && vd.title && onTitleFetchRef.current) onTitleFetchRef.current(vd.title); } catch(ex) {}
           },
           onStateChange: (e) => {
             setPlaying(e.data === window.YT.PlayerState.PLAYING);
@@ -1240,6 +1426,41 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
   }, [videoId]);
+
+  // Auto-set 0-15s clip when new video loads (fresh callbacks, no stale closure)
+  const prevVideoIdRef = useRef(null);
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    // On initial mount, preserve saved start/end from localStorage
+    var mz = Math.max(2, Math.round(duration / 75));
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (parseTime(start) != null) {
+        // Saved values exist — just set appropriate zoom
+        var zz = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+        if (zz > 1) {
+          setZoomLevel(zz);
+          var ss = parseTime(start);
+          setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
+        }
+        return;
+      }
+    }
+    var autoEnd = Math.min(15, duration);
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop within clip range (uses refs for always-current values)
   useEffect(() => {
@@ -1309,10 +1530,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   // Zoom helpers
   const visibleDuration = duration / zoomLevel;
-  const visibleStart = Math.max(0, zoomCenter * duration - visibleDuration / 2);
-  const visibleEnd = Math.min(duration, visibleStart + visibleDuration);
-  const actualVisibleStart = visibleEnd - visibleDuration < 0 ? 0 : visibleStart;
-  const actualVisibleEnd = actualVisibleStart + visibleDuration;
+  const actualVisibleStart = Math.max(0, Math.min(duration - visibleDuration, zoomCenter * duration - visibleDuration / 2));
+  const actualVisibleEnd = Math.min(duration, actualVisibleStart + visibleDuration);
   const toVisualPct = (sec) => {
     const p = ((sec - actualVisibleStart) / visibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
@@ -1332,7 +1551,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = actualVisibleStart + mouseX * visibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
@@ -1353,10 +1572,35 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       let longPressTriggered = false;
       let longPressTimer = null;
 
+      let deskAutoPanId = null;
+      let deskLastCx = startClientX;
+      let deskAutoPanTimeOffset = 0;
+      const stopDeskAutoPan = () => { if (deskAutoPanId) { cancelAnimationFrame(deskAutoPanId); deskAutoPanId = null; } };
+      const startDeskAutoPan = () => {
+        if (deskAutoPanId || zoomLevel <= 1 || !seekRef.current) return;
+        const panRect = seekRef.current.getBoundingClientRect();
+        const panStep = () => {
+          const edgeZone = 30;
+          const leftDist = deskLastCx - panRect.left;
+          const rightDist = panRect.right - deskLastCx;
+          let panDir = 0;
+          if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+          else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+          if (panDir !== 0) {
+            const speed = 0.003 * panDir;
+            deskAutoPanTimeOffset += speed * duration;
+            setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+          }
+          deskAutoPanId = requestAnimationFrame(panStep);
+        };
+        deskAutoPanId = requestAnimationFrame(panStep);
+      };
       const doRangeMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
+        deskLastCx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (zoomLevel > 1) startDeskAutoPan();
         const { time: t, x: mx } = calcSeekTime(ev);
-        const delta = t - time;
+        const delta = t - time + deskAutoPanTimeOffset;
         let newStart = snapStart + delta;
         let newEnd = snapEnd + delta;
         if (newStart < 0) { newStart = 0; newEnd = clipDur; }
@@ -1400,6 +1644,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         var onUp = () => {
           clearTimeout(longPressTimer);
+          stopDeskAutoPan();
           if (!longPressTriggered && !isDragging) seekTo(time);
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -1414,6 +1659,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           if (isDragging) doRangeMove(ev);
         };
         const onUp = () => {
+          stopDeskAutoPan();
           if (!isDragging) { manualSeekOutside.current = false; seekTo(time); }
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -1421,37 +1667,76 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed — but delegate to playhead/marker if near
-      const rect = seekRef.current.getBoundingClientRect();
-      const cx = isTouch ? e.touches[0].clientX : e.clientX;
-      const playheadX = rect.left + (vPct / 100) * rect.width;
-      const startMarkerX = vStartPct != null ? rect.left + (vStartPct / 100) * rect.width : null;
-      const endMarkerX = vEndPct != null ? rect.left + (vEndPct / 100) * rect.width : null;
-      if (Math.abs(cx - playheadX) <= 10) { startPlayheadDrag(e); return; }
-      if (startMarkerX != null && Math.abs(cx - startMarkerX) <= 5) { startSeekMarkerDrag('start', e); return; }
-      if (endMarkerX != null && Math.abs(cx - endMarkerX) <= 5) { startSeekMarkerDrag('end', e); return; }
+      // Zoomed + outside range: click = seek, drag = pan with momentum & bounce
+      if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null; }
+      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
       const startPanCenter = zoomCenter;
-      const startPanX = cx;
-      let panned = false;
+      const panRect = seekRef.current.getBoundingClientRect();
+      const clickTime = time;
+      let panning = false;
+      let currentCenter = zoomCenter;
+      let lastX = startPanX;
+      let lastTime = Date.now();
+      let velocity = 0;
+      const panSpeed = 1.5;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(mcx - startPanX) > 5) panned = true;
-        if (panned) {
-          const deltaPx = mcx - startPanX;
-          const deltaRatio = -deltaPx / rect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        if (!panning && Math.abs(mcx - startPanX) > 3) panning = true;
+        if (panning) {
+          var now = Date.now(); var dt = now - lastTime;
+          if (dt > 0) velocity = (mcx - lastX) / dt;
+          lastX = mcx; lastTime = now;
+          var deltaPx = mcx - startPanX;
+          var deltaRatio = -deltaPx / panRect.width / zoomLevel * panSpeed;
+          var raw = startPanCenter + deltaRatio;
+          // Rubber-band at edges
+          if (raw < 0) { currentCenter = raw * 0.25; }
+          else if (raw > 1) { currentCenter = 1 + (raw - 1) * 0.25; }
+          else { currentCenter = raw; }
+          setZoomCenter(currentCenter);
         }
       };
       const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+        if (!panning) {
+          // Click without drag → seek
+          manualSeekOutside.current = true;
+          seekTo(clickTime);
+          return;
+        }
+        // Momentum + spring-back animation
+        var center = currentCenter;
+        var vel = -velocity / panRect.width / zoomLevel * panSpeed * 16;
+        var animate = function() {
+          if (center < 0 || center > 1) {
+            var target = center < 0 ? 0 : 1;
+            center += (target - center) * 0.18;
+            vel *= 0.4;
+            if (Math.abs(center - target) < 0.0005 && Math.abs(vel) < 0.0001) {
+              setZoomCenter(target); panAnimRef.current = null; return;
+            }
+          } else {
+            vel *= 0.92;
+            center += vel;
+            if (Math.abs(vel) < 0.0001) {
+              setZoomCenter(Math.max(0, Math.min(1, center))); panAnimRef.current = null; return;
+            }
+          }
+          setZoomCenter(center);
+          panAnimRef.current = requestAnimationFrame(animate);
+        };
+        if (Math.abs(vel) > 0.0005 || center < 0 || center > 1) {
+          panAnimRef.current = requestAnimationFrame(animate);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, currentCenter)));
+        }
       };
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
-      // Outside range: normal seek
+      // Not zoomed + outside range: seek + drag to scrub
       manualSeekOutside.current = !inRange;
       seekTo(time);
       setDragging(true); setDragTime(time); setDragX(x);
@@ -1601,18 +1886,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const dangerC = '#ef4444';
   const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 10;
 
-  const handleMinimapDown = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
-    setPos(e.clientX);
-    const onMove = (ev) => { setPos(ev.clientX); };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  };
-
-  const mmStartPct = duration > 0 ? (actualVisibleStart / duration * 100) : 0;
-  const mmWidthPct = duration > 0 ? (visibleDuration / duration * 100) : 100;
-
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
     React.createElement("div", { ref: playerWrapRef, style: { position: 'relative', width: '100%', height: 200, background: '#000', overflow: 'hidden' } },
@@ -1674,81 +1947,134 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           React.createElement("span", { style: { color: '#fff', fontSize: 18, marginLeft: 3 } }, "\u25B6")
         )
       ),
-      // Current time badge
-      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+      // Current time badge + zoom slider
+      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 } },
+        React.createElement("div", { style: { background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.7)', borderRadius: 4, padding: '2px 5px' } },
+          React.createElement("button", {
+            onClick: () => { var nz = Math.max(1, Math.ceil(zoomLevel) - 1); if (nz <= 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+          }, '\u2212'),
+          React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 600, minWidth: 24, textAlign: 'center' } }, '\u00D7' + Math.round(zoomLevel)),
+          React.createElement("button", {
+            onClick: () => { var nz = Math.min(maxZoom, Math.floor(zoomLevel) + 1); setZoomLevel(nz); if (zoomLevel <= 1) { var ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel < maxZoom ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+          }, '+'),
+        ),
+      ),
     ),
-    // Seekbar
+    // Seekbar (CapCut-style timeline)
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      onWheel: handleWheel,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 16, marginBottom: 20, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: (dragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
-      // Track bg
-      React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-      // Selected range highlight
-      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 10 : 12, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: rangeDragActive ? 8 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.5, cursor: rangeDragActive ? 'grabbing' : 'grab', pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 8px ' + accentC : 'none' } }),
-      // Start marker (visible line + label + hit area)
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 1px)', pointerEvents: 'none' } },
-        React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
+      // ── Time ruler (top 18px) ──
+      React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
+        (function() {
+          if (duration <= 0) return null;
+          var ticks = [];
+          var majorInterval, minorInterval;
+          var ns = [1, 2, 5, 10, 15, 30, 60, 120, 300];
+          var best = 30, bd = 999;
+          for (var ni = 0; ni < ns.length; ni++) {
+            var c = visibleDuration / ns[ni];
+            if (c < 3) continue;
+            var dd = Math.abs(c - 7);
+            if (dd < bd) { bd = dd; best = ns[ni]; }
+          }
+          majorInterval = best;
+          minorInterval = majorInterval >= 60 ? 15 : majorInterval >= 10 ? 5 : majorInterval >= 5 ? 1 : 0.5;
+          var tickStart = Math.floor(actualVisibleStart / minorInterval) * minorInterval;
+          var tickEnd = Math.ceil(actualVisibleEnd / minorInterval) * minorInterval;
+          for (var t = tickStart; t <= tickEnd; t += minorInterval) {
+            var tt = Math.round(t * 100) / 100;
+            if (tt < 0 || tt > duration) continue;
+            var pct = ((tt - actualVisibleStart) / visibleDuration) * 100;
+            if (pct < -1 || pct > 101) continue;
+            var isMajor = Math.abs(tt % majorInterval) < 0.01 || Math.abs(tt % majorInterval - majorInterval) < 0.01;
+            ticks.push(React.createElement("div", { key: 'tick-' + tt, style: { position: 'absolute', left: pct + '%', bottom: 0, width: 1, height: isMajor ? 8 : 4, background: isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)' } }));
+            if (isMajor) {
+              ticks.push(React.createElement("div", { key: 'lbl-' + tt, style: { position: 'absolute', left: pct + '%', top: 1, transform: 'translateX(-50%)', fontSize: 9, color: T.textMuted, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' } }, fmtMM(tt)));
+            }
+          }
+          return ticks;
+        })()
       ),
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vStartPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
-      // End marker (visible line + label + hit area)
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vEndPct + '% - 1px)', pointerEvents: 'none' } },
-        React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
+      // ── Track area (18px..54px = 36px height) ──
+      React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 36, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
+      // Dimming outside selection (left)
+      vStartPct != null && vStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: vStartPct + '%', height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+      // Dimming outside selection (right)
+      vEndPct != null && vEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+      // Selected range fill
+      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
       ),
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vEndPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // ── Start bracket handle ──
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
+        React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '4px 0 0 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+        ),
+      ),
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vStartPct + '% - 10px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // ── End bracket handle ──
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
+        React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '0 4px 4px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+        ),
+      ),
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vEndPct + '% - 4px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Unified hit area when markers are close
-      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 5px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 10px)', height: 28, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
-      // Playhead hit area + visual element
-      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
-        React.createElement("div", { style: { position: 'absolute', top: 8, left: 5, width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
+      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 16px)', height: 36, cursor: 'ew-resize', zIndex: 6, touchAction: 'none' } }),
+      // ── Playhead (vertical line + triangle) ──
+      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 54, cursor: 'grab', zIndex: 4, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
+        // Triangle indicator at top
+        React.createElement("div", { style: { position: 'absolute', top: 12, left: 7, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
+        // Vertical line spanning track
+        React.createElement("div", { style: { position: 'absolute', top: 17, left: 9, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
       ),
-      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 24, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
-      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
+      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
     ),
-    // Minimap (visible when zoomed)
+    // Horizontal scrollbar (visible when zoomed)
     zoomLevel > 1 && duration > 0 && React.createElement("div", {
-      onMouseDown: handleMinimapDown,
-      style: { position: 'relative', height: 14, margin: '2px 8px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 3, cursor: 'pointer', overflow: 'hidden' },
+      onMouseDown: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        var rect = e.currentTarget.getBoundingClientRect();
+        var thumbW = (visibleDuration / duration) * rect.width;
+        var thumbLeft = (actualVisibleStart / duration) * rect.width;
+        var cx = e.clientX - rect.left;
+        var onThumb = cx >= thumbLeft && cx <= thumbLeft + thumbW;
+        if (onThumb) {
+          var startX = e.clientX; var startCenter = zoomCenter;
+          var onMove = function(ev) { var delta = ev.clientX - startX; var deltaRatio = delta / rect.width; setZoomCenter(Math.max(0, Math.min(1, startCenter + deltaRatio))); };
+          var onUp = function() { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+          window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, cx / rect.width)));
+        }
+      },
+      style: { position: 'relative', height: 8, margin: '0 0 2px', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer' },
     },
-      // Visible window indicator
-      React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mmStartPct + '%', width: Math.max(mmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 3, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-      // Selected range
-      startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 4, height: 6, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-      // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 10, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
-    ),
-    // Zoom control bar (always visible)
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '4px 8px', background: T.surface } },
-      React.createElement("button", {
-        onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
-        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-      }, '\u2212'),
-      React.createElement("span", { style: { fontSize: 11, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 32, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
-      React.createElement("button", {
-        onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-      }, '+'),
-      React.createElement("button", {
-        onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-        style: { fontSize: 10, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', visibility: zoomLevel > 1 ? 'visible' : 'hidden' },
-      }, '\uB9AC\uC14B'),
+      React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: (actualVisibleStart / duration * 100) + '%', width: Math.max(visibleDuration / duration * 100, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
     ),
     // Controls row: play + start/end capture+input
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
       React.createElement("button", {
         onClick: togglePlay,
         style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-      }, playing ? '\u23F8' : '\u25B6'),
+      }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 14 })),
       React.createElement("button", {
         onClick: toggleMute,
-        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-      }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+      }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 14 })),
       // Start: capture btn + input
       React.createElement("div", { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 3 } },
         React.createElement("button", {
@@ -1785,8 +2111,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
-    // Warning toast (prominent for mobile)
+    // Warning toast
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
@@ -1794,7 +2119,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 }
 
 /* ── MobileClipSelector: compact clip picker for mobile ── */
-function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply }) {
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply, onTitleFetch, initialOpen }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1808,9 +2133,11 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const warnTimer = useRef(null);
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!initialOpen);
   const [closing, setClosing] = useState(false);
   const [rangeDragActive, setRangeDragActive] = useState(false);
+  const [rangeTouched, setRangeTouched] = useState(false);
+  const [rangeDragLabel, setRangeDragLabel] = useState(null);
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const [mDragging, setMDragging] = useState(false);
@@ -1827,13 +2154,16 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
+  const panInertiaRef = useRef(null); // rAF id for pan inertia — cancel on new touch
+  const isInitialMountRef = useRef(true);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
   const MAX_CLIP = 30;
-  const overLimit = clipLen != null && clipLen > MAX_CLIP;
+  const overLimit = clipLen != null && clipLen > MAX_CLIP + 0.5;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
@@ -1881,6 +2211,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             if (cancelled) return;
             setReady(true);
             setDuration(e.target.getDuration() || 0);
+            try { var vd = e.target.getVideoData(); if (vd && vd.title && onTitleFetch) onTitleFetch(vd.title); } catch(ex) {}
             const ss = parseTime(start);
             if (ss != null) e.target.seekTo(ss, true);
           },
@@ -1900,6 +2231,39 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; setReady(false); setPlaying(false); } };
   }, [videoId, collapsed]);
+
+  // Auto-set 0-15s clip when new video loads
+  const prevVideoIdRef = useRef(null);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    var mz = Math.max(2, Math.round(duration / 75));
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (parseTime(start) != null) {
+        var zz = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+        if (zz > 1) {
+          setZoomLevel(zz);
+          var ss = parseTime(start);
+          setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
+        }
+        return;
+      }
+    }
+    if (parseTime(start) != null) return;
+    var autoEnd = Math.min(15, duration);
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop
   useEffect(() => {
@@ -1962,10 +2326,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Zoom helpers
   const mVisibleDuration = duration / zoomLevel;
-  const mVisibleStart = Math.max(0, zoomCenter * duration - mVisibleDuration / 2);
-  const mVisibleEnd = Math.min(duration, mVisibleStart + mVisibleDuration);
-  const mActualVisibleStart = mVisibleEnd - mVisibleDuration < 0 ? 0 : mVisibleStart;
-  const mActualVisibleEnd = mActualVisibleStart + mVisibleDuration;
+  const mActualVisibleStart = Math.max(0, Math.min(duration - mVisibleDuration, zoomCenter * duration - mVisibleDuration / 2));
+  const mActualVisibleEnd = Math.min(duration, mActualVisibleStart + mVisibleDuration);
   const mToVisualPct = (sec) => {
     const p = ((sec - mActualVisibleStart) / mVisibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
@@ -1988,7 +2350,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       return;
     }
     const scale = d / pinchRef.current.startDist;
-    const newZoom = Math.max(1, Math.min(20, pinchRef.current.startZoom * scale));
+    const newZoom = Math.max(1, Math.min(maxZoom, pinchRef.current.startZoom * scale));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(newZoom); }
   };
 
@@ -2000,178 +2362,261 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = mActualVisibleStart + mouseX * mVisibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
   };
 
+  // Unified pointer-capture based drag handler for seekbar
+  // Uses setPointerCapture to guarantee all move/up events reach this element,
+  // even when inside iOS scrollable containers that steal touch events.
   const handleSeekDown = (e) => {
-    // Check for pinch (2+ touches)
-    if (e.touches && e.touches.length >= 2) { handlePinch(e); return; }
+    // Only handle pointer events (not touch/mouse — we switched to onPointerDown)
+    if (e.pointerId == null) return;
+    // Cancel any ongoing pan inertia when a new touch starts
+    if (panInertiaRef.current != null) { cancelAnimationFrame(panInertiaRef.current); panInertiaRef.current = null; }
     e.preventDefault();
-    const isTouch = e.type === 'touchstart';
-    const startClientX = isTouch ? e.touches[0].clientX : e.clientX;
+    e.stopPropagation();
+    const el = seekRef.current;
+    if (!el) return;
+    el.setPointerCapture(e.pointerId);
+    const startClientX = e.clientX;
     const { time, x } = calcSeekTime(startClientX);
+    const rect = el.getBoundingClientRect();
+
+    // Calculate distances to bracket handles
+    const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+    const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+    const dStart = startMarkerX != null ? Math.abs(startClientX - startMarkerX) : Infinity;
+    const dEnd = endMarkerX != null ? Math.abs(startClientX - endMarkerX) : Infinity;
     const inRange = startSec != null && endSec != null && endSec > startSec && time >= startSec && time <= endSec;
 
-    if (inRange) {
-      const snapStart = startSec;
-      const snapEnd = endSec;
-      const clipDur = snapEnd - snapStart;
-      let isDragging = false;
-      let longPressTriggered = false;
+    // Determine drag mode
+    // PRIORITY 1: Bracket handle (within 35px of bracket edge)
+    const bracketThreshold = 35;
+    const nearStart = dStart <= bracketThreshold;
+    const nearEnd = dEnd <= bracketThreshold;
+    let mode = 'seek'; // default
+    let bracketType = null;
+    if (startSec != null && endSec != null && (nearStart || nearEnd)) {
+      mode = 'bracket';
+      bracketType = (nearStart && nearEnd) ? (dStart <= dEnd ? 'start' : 'end') : (nearStart ? 'start' : 'end');
+    }
+    // PRIORITY 2: Range drag (inside selected area, not near bracket)
+    else if (inRange) {
+      mode = 'range';
+    }
+    // PRIORITY 3: Pan when zoomed
+    else if (zoomLevel > 1) {
+      mode = 'pan';
+    }
 
-      // Show first-time tooltip
-      if (isTouch) {
-        try {
-          if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
-            localStorage.setItem('yt2c_rangeDragTipShown', '1');
-            setShowRangeTip(true);
-            if (rangeTipTimer.current) clearTimeout(rangeTipTimer.current);
-            rangeTipTimer.current = setTimeout(() => setShowRangeTip(false), 3000);
-          }
-        } catch(ex) {}
-      }
+    // State for drag
+    const snapStartSec = startSec;
+    const snapEndSec = endSec;
+    const clipDur = (snapStartSec != null && snapEndSec != null) ? snapEndSec - snapStartSec : 0;
+    let rangeDragStarted = false;
+    let panned = false;
+    const startPanCenter = zoomCenter;
 
-      const doRangeMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const { time: t } = calcSeekTime(cx);
-        const delta = t - time;
-        let newStart = snapStart + delta;
-        let newEnd = snapEnd + delta;
-        if (newStart < 0) { newStart = 0; newEnd = clipDur; }
-        if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
-        manualSeekOutside.current = false;
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
-      };
-
-      const startRangeDrag = () => {
-        isDragging = true;
-        setRangeDragActive(true);
-      };
-
-      // Long press mode (mobile-primary component)
-      const longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        startRangeDrag();
-      }, 300);
-
-      const onMove = (ev) => {
-        if (!longPressTriggered) {
-          const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-          if (Math.abs(cx - startClientX) > 10) {
-            clearTimeout(longPressTimer);
-            // Fall back to seek with drag tooltip
-            manualSeekOutside.current = false;
-            seekTo(time);
-            mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
-            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const r = calcSeekTime(scx); seekTo(r.time); setMDragTime(r.time); setMDragX(r.x); };
-            const seekUp = () => { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
-            window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-            window.addEventListener('touchmove', seekMove, { passive: false }); window.addEventListener('touchend', seekUp);
-            window.addEventListener('mousemove', seekMove); window.addEventListener('mouseup', seekUp);
-            return;
-          }
-          return;
+    // Range touch: immediate visual feedback
+    if (mode === 'range') {
+      setRangeTouched(true);
+      setRangeDragLabel({ start: snapStartSec, end: snapEndSec });
+      try {
+        if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
+          localStorage.setItem('yt2c_rangeDragTipShown', '1');
+          setShowRangeTip(true);
+          if (rangeTipTimer.current) clearTimeout(rangeTipTimer.current);
+          rangeTipTimer.current = setTimeout(() => setShowRangeTip(false), 3000);
         }
-        doRangeMove(ev);
-      };
-      var onUp = () => {
-        clearTimeout(longPressTimer);
-        if (!longPressTriggered && !isDragging) seekTo(time);
-        setRangeDragActive(false);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    } else if (zoomLevel > 1) {
-      // Panning mode when zoomed — but delegate to playhead/marker if near
-      const rect = seekRef.current.getBoundingClientRect();
-      const playheadX = rect.left + (mvPct / 100) * rect.width;
-      const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
-      const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
-      if (Math.abs(startClientX - playheadX) <= 14) { startPlayheadDrag(e); return; }
-      if (startMarkerX != null && Math.abs(startClientX - startMarkerX) <= 12) { startSeekMarkerDrag('start', e); return; }
-      if (endMarkerX != null && Math.abs(startClientX - endMarkerX) <= 12) { startSeekMarkerDrag('end', e); return; }
-      const startPanCenter = zoomCenter;
-      const startPanX = startClientX;
-      let panned = false;
-      const onMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(cx - startPanX) > 10) panned = true;
-        if (panned) {
-          const deltaPx = cx - startPanX;
-          const deltaRatio = -deltaPx / rect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
-        }
-      };
-      const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-    } else {
-      // Outside range: normal seek with drag tooltip
+      } catch(ex) {}
+    }
+
+    // For seek mode, apply immediately
+    if (mode === 'seek') {
       manualSeekOutside.current = true;
       seekTo(time);
       mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
-      const onMove = (ev) => {
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const r = calcSeekTime(cx);
-        const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
+    }
+
+    let rafPending = false;
+    let lastCx = startClientX;
+    let autoPanId = null;
+    let autoPanTimeOffset = 0; // accumulated time shift from auto-pan
+
+    // Auto-pan: when dragging range/bracket near seekbar edge while zoomed, scroll timeline
+    // Compensates drag position so the range stays pinned under the finger
+    const startAutoPan = () => {
+      if (autoPanId || zoomLevel <= 1) return;
+      const panStep = () => {
+        const edgeZone = 30;
+        const leftDist = lastCx - rect.left;
+        const rightDist = rect.right - lastCx;
+        let panDir = 0;
+        if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+        else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+        if (panDir !== 0) {
+          const speed = 0.003 * panDir;
+          // Accumulate the time offset so drag position stays pinned
+          autoPanTimeOffset += speed * duration;
+          setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+        }
+        autoPanId = requestAnimationFrame(panStep);
+      };
+      autoPanId = requestAnimationFrame(panStep);
+    };
+    const stopAutoPan = () => { if (autoPanId) { cancelAnimationFrame(autoPanId); autoPanId = null; } };
+
+    const onMove = (ev) => {
+      lastCx = ev.clientX;
+      // Start/maintain auto-pan for range and bracket drags when zoomed
+      if ((mode === 'range' && rangeDragStarted) || mode === 'bracket') {
+        if (zoomLevel > 1) startAutoPan();
+      }
+      if (mode === 'bracket') {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(() => {
+          rafPending = false;
+          const r = calcSeekTime(lastCx);
+          let t = Math.max(0, Math.min(duration, r.time));
+          if (bracketType === 'start') {
+            if (snapEndSec != null && t >= snapEndSec - 0.5) return;
+            if (snapEndSec != null && snapEndSec - t > 30) { t = snapEndSec - 30; showWarn(); }
+            onStartChange(fmtPrecise(t));
+          } else {
+            if (t <= snapStartSec + 0.5) return;
+            if (t - snapStartSec > 30) { t = snapStartSec + 30; showWarn(); }
+            onEndChange(fmtPrecise(t));
+          }
+        });
+      } else if (mode === 'range') {
+        if (!rangeDragStarted && Math.abs(lastCx - startClientX) > 3) {
+          rangeDragStarted = true;
+          setRangeDragActive(true);
+        }
+        if (rangeDragStarted) {
+          if (rafPending) return;
+          rafPending = true;
+          requestAnimationFrame(() => {
+            rafPending = false;
+            const { time: t } = calcSeekTime(lastCx);
+            const delta = t - time + autoPanTimeOffset;
+            let ns = snapStartSec + delta, ne = snapEndSec + delta;
+            if (ns < 0) { ns = 0; ne = clipDur; }
+            if (ne > duration) { ne = duration; ns = duration - clipDur; }
+            manualSeekOutside.current = false;
+            setRangeDragLabel({ start: ns, end: ne });
+            if (onClipChange) onClipChange(fmtPrecise(ns), fmtPrecise(ne));
+            else { onStartChange(fmtPrecise(ns)); onEndChange(fmtPrecise(ne)); }
+          });
+        }
+      } else if (mode === 'pan') {
+        if (!panned && Math.abs(lastCx - startClientX) > 4) panned = true;
+        if (panned) {
+          const deltaPx = lastCx - startClientX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
+      } else {
+        // seek
+        const r = calcSeekTime(lastCx);
+        const inR = snapStartSec != null && snapEndSec != null && r.time >= snapStartSec && r.time <= snapEndSec;
         manualSeekOutside.current = !inR;
         seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
-      };
-      const onUp = () => {
-        mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-    }
-  };
-
-  const startSeekMarkerDrag = (type, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const snapEndSec = endSec;
-    const snapStartSec = startSec;
-    const isTouch = e.type === 'touchstart';
-    const cx = isTouch ? e.touches[0].clientX : e.clientX;
-    const { time } = calcSeekTime(cx);
-    const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(mcx);
-      const t = Math.max(0, Math.min(duration, r.time));
-      if (type === 'start') {
-        if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
-        onStartChange(fmtMM(t));
-      } else {
-        if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
-        onEndChange(fmtMM(t));
       }
     };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
+
+    // Track velocity for inertia (range drag)
+    let prevCx = startClientX;
+    let prevTime = performance.now();
+    let velocity = 0;
+
+    const updateVelocity = (cx) => {
+      const now = performance.now();
+      const dt = now - prevTime;
+      if (dt > 0 && dt < 100) {
+        const v = (cx - prevCx) / dt; // px/ms
+        velocity = velocity * 0.3 + v * 0.7; // smooth
+      }
+      prevCx = cx;
+      prevTime = now;
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
+
+    // Wrap original onMove to also track velocity
+    const origOnMove = onMove;
+    const wrappedOnMove = (ev) => {
+      if (mode === 'range' || mode === 'pan') updateVelocity(ev.clientX);
+      origOnMove(ev);
+    };
+
+    const onUp = (ev) => {
+      stopAutoPan();
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(ex) {} }
+      el.removeEventListener('pointermove', wrappedOnMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+
+      // Commit final values as clean integer-second format with 30s enforcement
+      if (mode === 'bracket') {
+        const r = calcSeekTime(lastCx);
+        let t = Math.max(0, Math.min(duration, r.time));
+        if (bracketType === 'start') {
+          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - 1;
+          if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
+          onStartChange(fmtMM(Math.max(0, t)));
+        } else {
+          if (t <= snapStartSec) t = snapStartSec + 1;
+          if (t - snapStartSec > 30) t = snapStartSec + 30;
+          onEndChange(fmtMM(Math.min(duration, t)));
+        }
+      }
+
+      if (mode === 'range' && rangeDragStarted) {
+        // No inertia for range drag — commit final position immediately
+        const { time: t } = calcSeekTime(lastCx);
+        const delta = t - time + autoPanTimeOffset;
+        let ns = snapStartSec + delta, ne = snapEndSec + delta;
+        if (ns < 0) { ns = 0; ne = clipDur; }
+        if (ne > duration) { ne = duration; ns = duration - clipDur; }
+        if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
+        else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+      }
+
+      if (mode === 'range' && !rangeDragStarted) {
+        seekTo(time);
+        manualSeekOutside.current = false;
+      }
+      if (mode === 'range') { setRangeDragActive(false); setRangeTouched(false); setRangeDragLabel(null); }
+      if (mode === 'pan' && !panned) { manualSeekOutside.current = true; seekTo(time); }
+      if (mode === 'pan' && panned) {
+        // Inertia animation for pan
+        const pxPerMs = velocity;
+        if (Math.abs(pxPerMs) > 0.15) {
+          let vx = pxPerMs * 16; // px per frame (~16ms)
+          const friction = 0.92;
+          const inertiaFrame = () => {
+            vx *= friction;
+            if (Math.abs(vx) < 0.3) { panInertiaRef.current = null; return; }
+            const deltaRatio = -vx / rect.width / zoomLevel;
+            setZoomCenter((prev) => {
+              const next = prev + deltaRatio;
+              if (next <= 0 || next >= 1) { vx = 0; return Math.max(0, Math.min(1, next)); }
+              return next;
+            });
+            panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+          };
+          panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+        }
+      }
+      if (mode === 'seek') { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); }
+    };
+
+    el.addEventListener('pointermove', wrappedOnMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const startPlayheadDrag = (e) => {
@@ -2309,85 +2754,129 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             )
           ),
           // Time badge
-          ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+          ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3 } },
+            React.createElement("div", { style: { background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+          ),
         ),
         // Seekbar (touch-friendly, 44px hit area)
         React.createElement("div", {
           ref: seekRef,
-          onMouseDown: handleSeekDown, onTouchStart: handleSeekDown,
+          onPointerDown: handleSeekDown,
+          onTouchStart: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
-          style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
+          style: { position: 'relative', height: 80, background: T.surface, cursor: (mDragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 2, overflow: 'visible' },
         },
-          // Track bg
-          React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-          // Selected range
-          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 17 : 20, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: rangeDragActive ? 10 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.6, pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 10px ' + accentC : 'none' } }),
+          // Time ruler (top 18px)
+          React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
+            (function() {
+              if (duration <= 0) return null;
+              var ticks = [];
+              var ns = [1, 2, 5, 10, 15, 30, 60, 120, 300];
+              var best = 30, bd = 999;
+              for (var ni = 0; ni < ns.length; ni++) {
+                var c = mVisibleDuration / ns[ni];
+                if (c < 3) continue;
+                var dd = Math.abs(c - 7);
+                if (dd < bd) { bd = dd; best = ns[ni]; }
+              }
+              var majorInterval = best;
+              var minorInterval = majorInterval >= 60 ? 15 : majorInterval >= 10 ? 5 : majorInterval >= 5 ? 1 : 0.5;
+              var tickStart = Math.floor(mActualVisibleStart / minorInterval) * minorInterval;
+              var tickEnd = Math.ceil(mActualVisibleEnd / minorInterval) * minorInterval;
+              for (var t = tickStart; t <= tickEnd; t += minorInterval) {
+                var tt = Math.round(t * 100) / 100;
+                if (tt < 0 || tt > duration) continue;
+                var pct = ((tt - mActualVisibleStart) / mVisibleDuration) * 100;
+                if (pct < -1 || pct > 101) continue;
+                var isMajor = Math.abs(tt % majorInterval) < 0.01 || Math.abs(tt % majorInterval - majorInterval) < 0.01;
+                ticks.push(React.createElement("div", { key: 'mtick-' + tt, style: { position: 'absolute', left: pct + '%', bottom: 0, width: 1, height: isMajor ? 8 : 4, background: isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)' } }));
+                if (isMajor) {
+                  ticks.push(React.createElement("div", { key: 'mlbl-' + tt, style: { position: 'absolute', left: pct + '%', top: 1, transform: 'translateX(-50%)', fontSize: 9, color: T.textMuted, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' } }, fmtMM(tt)));
+                }
+              }
+              return ticks;
+            })()
+          ),
+          // Track area
+          React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 62, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
+          // Dimming outside selection (left)
+          mvStartPct != null && mvStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: mvStartPct + '%', height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          // Dimming outside selection (right)
+          mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          // Selected range fill
+          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : rangeTouched ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtMM(rangeDragLabel.start) + ' ~ ' + fmtMM(rangeDragLabel.end))
+            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+          ),
           // First-time range drag tooltip
-          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
+          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
             React.createElement("div", { style: { background: 'rgba(99,102,241,0.95)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', position: 'relative' } },
               '\uAE38\uAC8C \uB20C\uB7EC \uAD6C\uAC04\uC744 \uC774\uB3D9\uD558\uC138\uC694',
               React.createElement("div", { style: { position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(99,102,241,0.95)' } })
             )
           ),
-          // Start marker (visible line + label + hit area)
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvStartPct + '% - 1px)', pointerEvents: 'none' } },
-            React.createElement("div", { style: { width: 3, height: 24, background: accentC, borderRadius: 1 } }),
-            React.createElement("div", { style: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
+          // Start bracket handle
+          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + mvStartPct + '% - 10px)', pointerEvents: 'none', zIndex: 3 } },
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '5px 0 0 5px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+            ),
           ),
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
-          // End marker (visible line + label + hit area)
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvEndPct + '% - 1px)', pointerEvents: 'none' } },
-            React.createElement("div", { style: { width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
-            React.createElement("div", { style: { position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
+          /* Start bracket hit area — handled by unified handleSeekDown, no individual handler */
+          // End bracket handle
+          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '0 5px 5px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+            ),
           ),
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          /* End bracket hit area — handled by unified handleSeekDown, no individual handler */
           // Unified hit area when markers are close
-          markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
-          // Playhead hit area + visual element
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
-            React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
+          /* Unified close-markers hit area — handled by unified handleSeekDown */
+          // Playhead (vertical line + triangle)
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 80, cursor: 'grab', zIndex: 5, pointerEvents: 'none', touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+            React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
+            React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          (playing && !mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 80, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
           // Playhead drag tooltip
-          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(mDragTime)),
+          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
         ),
-        // Minimap (visible when zoomed)
+        // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
           ref: minimapRef,
           onPointerDown: handleMobileMinimapDown,
-          style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
+          style: { position: 'relative', height: 8, margin: '4px 0 0', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer', touchAction: 'none' },
         },
-          // Visible window indicator
-          React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 6, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-          // Selected range
-          startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 9, height: 10, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-          // Playhead
-          React.createElement("div", { style: { position: 'absolute', top: 4, width: 2, height: 20, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
+          React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
         ),
-        // Zoom control bar (always visible)
-        React.createElement("div", { style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 0', background: T.surface } },
+        // Zoom slider row (right-aligned, below timeline)
+        duration > 0 && React.createElement("div", { style: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 3, padding: '4px 0 2px' } },
           React.createElement("button", {
             onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
-            style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+            style: { width: 18, height: 18, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '\u2212'),
-          React.createElement("span", { style: { fontSize: 12, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 36, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
+          React.createElement("input", {
+            type: 'range', min: 0, max: 100, value: Math.round(Math.log(Math.max(1, zoomLevel)) / Math.log(Math.max(2, maxZoom)) * 100),
+            onChange: (e) => { const nz = Math.pow(Math.max(2, maxZoom), e.target.value / 100); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(Math.min(maxZoom, nz)); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } } },
+            style: { width: 60, height: 3, accentColor: T.accent, cursor: 'pointer' },
+          }),
           React.createElement("button", {
-            onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-            style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+            onClick: () => { const nz = Math.min(maxZoom, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 18, height: 18, border: 'none', background: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '+'),
-          zoomLevel > 1 && React.createElement("button", {
-            onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-            style: { position: 'absolute', right: 0, fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' },
-          }, '\uB9AC\uC14B'),
+          zoomLevel > 1 && React.createElement("span", { style: { fontSize: 9, color: T.accent, fontWeight: 600, marginLeft: 1 } }, '\u00D7' + zoomLevel.toFixed(1)),
         ),
         // Controls row
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 0', background: T.surface, borderTop: '1px solid ' + T.border } },
           // Play/Pause
-          React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
+          React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 16 })),
           // Mute
-          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
           // Spacer
           React.createElement("div", { style: { flex: 1 } }),
           // Start: capture btn + input
@@ -2400,11 +2889,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
             React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
-          // Clip duration badge
-          clipLen > 0 && React.createElement("span", { style: { padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC, whiteSpace: 'nowrap', flexShrink: 0 } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428'),
         ),
-        // Zoomed seekbar for precision
-        startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
         // Warning toast
         warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
           '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
@@ -3032,8 +3517,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const muteToggle = hasVideoPreview
     ? React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, vpMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A')
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
     : null;
 
   // Split mode: constrain video to video area
@@ -3145,11 +3630,17 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [pendingImg, setPendingImg] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
   const nameRef = useRef(null);
+  const urlInputRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
+  useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
+  const videoUrl = card.url || globalUrl || '';
+  const hasVideo = videoUrl && YOUTUBE_HOST_RE.test(videoUrl);
+  const truncUrl = videoUrl.length > 50 ? videoUrl.slice(0, 50) + '...' : videoUrl;
 
   const displayName = card.name || card.title || card.subtitle || `카드 ${index + 1}`;
   const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
@@ -3188,7 +3679,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 14, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, width: Math.max(80, nameValue.length * 10) },
               })
             : React.createElement("span", {
-                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none' },
+                onClick: (e) => { e.stopPropagation(); startEditName(); },
+                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none', cursor: 'pointer' },
               }, displayName),
           !editingName && React.createElement("button", {
             onClick: (e) => { e.stopPropagation(); startEditName(); },
@@ -3213,7 +3705,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 클립 편집
           React.createElement(Section, { title: "클립 편집" },
-            React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
+            !hasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -3223,8 +3715,23 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
                   )
                 : React.createElement(React.Fragment, null,
-                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
-                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+                    hasVideo && !urlEditing
+                      ? React.createElement("div", {
+                          onClick: () => setUrlEditing(true),
+                          style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 4 },
+                          onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                          onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                        },
+                          React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                          React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? truncUrl : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                        )
+                      : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                          hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                          card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                        ),
+                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
@@ -3413,7 +3920,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               )),
             ),
             React.createElement("button", {
-              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
               style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -4928,10 +5435,38 @@ function TabPill({ label, active, onClick, dataTour }) {
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
   { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'clip-adjust', label: '클립 조정', tour: 'tab-clip-adjust' },
   { id: 'layout', label: '레이아웃', tour: 'tab-layout' },
   { id: 'text', label: '텍스트', tour: 'tab-text' },
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
+
+/* ── ApplyToAllBtn: apply current card's style keys to all other cards ── */
+function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt }) {
+  const [phase, setPhase] = useState('idle');
+  const timerRef = useRef(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  const singleCard = cards.length <= 1;
+  const handleApply = () => {
+    const stylesToCopy = {};
+    keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
+    cards.forEach((c, i) => { if (i !== activeIndex) onCardChange(i, { ...c, ...stylesToCopy }); });
+    setPhase('done');
+    timerRef.current = setTimeout(() => setPhase('idle'), 1500);
+  };
+  const marginTop = mt || 4;
+  if (phase === 'confirm') {
+    return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: marginTop } },
+      React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, (cards.length - 1) + '\uC7A5\uC758 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uD560\uAE4C\uC694?'),
+      React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '6px 10px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '\uCDE8\uC18C'),
+      React.createElement('button', { onClick: handleApply, style: { padding: '6px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '\uC801\uC6A9'),
+    );
+  }
+  if (phase === 'done') {
+    return React.createElement('button', { style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 \uC801\uC6A9\uB428');
+  }
+  return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
+}
 
 function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [activeTab, setActiveTab] = useState('fill');
@@ -4946,6 +5481,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const [clipReopenFlag, setClipReopenFlag] = useState(0);
+  const urlInputRef = useRef(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -4972,6 +5510,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const card = cards[activeIndex];
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
   const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
+
+  // ApplyToAllBtn uses the module-level component defined above
 
   // Name editing
   const [editingName, setEditingName] = useState(false);
@@ -5018,8 +5558,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   };
 
   // Tab content renderers
+  const mobVideoUrl = card.url || globalUrl || '';
+  const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5029,70 +5571,67 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, marginBottom: 8 } }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 40 ? vu.slice(0, 40) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 8 },
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
                     (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
                   ),
                   React.createElement("button", {
-                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
+                    onClick: () => { updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }); setClipReopenFlag(f => f + 1); },
                     style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); } }),
-            // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
-            !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
-                var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
-                if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
-                else update("start", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
-                var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
-                if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
-                else update("end", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-            ),
-            !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-                React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
-                React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
-              ),
-              React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-                React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-              ),
-            ) : null; })(),
-            !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
-              '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
-            ),
+              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
-    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+  );
+
+  const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
+    React.createElement("button", {
+      onClick: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }),
+      style: { marginTop: 4, padding: '8px 0', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + T.border, borderRadius: 8, color: T.textSecondary, fontSize: 12, cursor: 'pointer', width: '100%' },
+    }, '\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654'),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", null,
-      React.createElement("label", { style: labelBase }, "레이아웃"),
-      React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
+      React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
         LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
       )
     ),
-    // 카드 비율
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
     card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
       React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -5103,43 +5642,41 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "안쪽 여백", value: card.textBoxPadding ?? 20, min: 5, max: 60, step: 1, onChange: (v) => update("textBoxPadding", v), suffix: 'px', defaultValue: 20 }),
       React.createElement(SliderRow, { label: "둥글기", value: card.textBoxRadius ?? 12, min: 0, max: 40, step: 1, onChange: (v) => update("textBoxRadius", v), suffix: 'px', defaultValue: 12 }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "배경색"),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uBC30\uACBD\uC0C9"),
         React.createElement("input", { type: "color", value: card.textBoxBgColor ?? "#000000", onChange: (e) => update("textBoxBgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBgColor ?? "#000000"),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.textBoxBgColor ?? "#000000"),
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
         React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.textBoxBgOpacity ?? 0.6, min: 0, max: 1, step: 0.01, onChange: (v) => update("textBoxBgOpacity", v), defaultValue: 0.6 })),
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "테두리 색"),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uD14C\uB450\uB9AC \uC0C9"),
         React.createElement("input", { type: "color", value: card.textBoxBorderColor ?? "#ffffff", onChange: (e) => update("textBoxBorderColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBorderColor ?? "#ffffff"),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.textBoxBorderColor ?? "#ffffff"),
       ),
       React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 4 } },
-      React.createElement("label", { style: labelBase }, "영상 채우기"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-      )
-    ),
-    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement(SectionTitleWithReset, { title: "텍스트 배경 설정", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
-      React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-      card.useBg !== false && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
-          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
-          React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
-        ),
       ),
     ),
+    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
+    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+      React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
+      React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
+      card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+    ),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
@@ -5150,97 +5687,99 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
     updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
   };
-  const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    // 전체 정렬
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uC815\uB82C"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
-      ),
-    ),
-    // 전체 폰트
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement(FontDropdown, {
-        options: FONT_OPTIONS,
-        value: getFontFamily(card.titleFont),
-        onChange: (id) => setAllFont(id),
-      }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
-    ),
-    // 제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
-    },
-      React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
-      ),
-      showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+  const renderTextTab = () => {
+    const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
+    const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      // 전체 정렬
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    // 부제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
-    },
-      React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+      // 전체 폰트
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+        React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFont(id) }),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
       ),
-      showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+      // 제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    // 본문
-    React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' },
-    },
-      React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
-      ),
-      showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+      // 부제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false), presets: [24, 32, 40, 48] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-  );
+      // 본문 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false), presets: [18, 24, 32, 40] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
+        ),
+      ),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange }),
+    );
+  };
 
   const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -5279,12 +5818,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
   );
 
-  const tabContent = { fill: renderFillTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -5354,7 +5894,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Tab pills
-    React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
+    React.createElement("div", { className: 'hide-scrollbar', onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation(), style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
       tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
     ),
 
@@ -5392,6 +5932,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [videoLoading, setVideoLoading] = useState(false);
   const [clipError, setClipError] = useState(null);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const urlInputRef = useRef(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5506,9 +6048,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
   const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
 
+  // DeskApplyToAllBtn uses module-level ApplyToAllBtn
+
   // \u2500\u2500 Fill Tab \u2500\u2500
+  const deskVideoUrl = card.url || globalUrl || '';
+  const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
   const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !deskHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5518,7 +6064,22 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 50 ? vu.slice(0, 50) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' },
+                  onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                  onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement(React.Fragment, null,
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
@@ -5532,7 +6093,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   ),
                 )
               : React.createElement(React.Fragment, null,
-                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   (() => {
                     var s = parseTime(card.start), e = parseTime(card.end);
                     var hasUrl = !!(card.url || globalUrl);
@@ -5546,7 +6107,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     return React.createElement("button", {
                       onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                    }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
+                    }, valid && React.createElement(SvgIcon, { path: ICON_CHECK, size: 16 }), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
                 ),
           ),
@@ -5571,15 +6132,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Layout Tab \u2500\u2500
   const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-      LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
+      React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+      ),
     ),
-    // 카드 비율
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
     card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
       React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "\ubc15\uc2a4 \uc124\uc815"),
@@ -5605,28 +6169,26 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\ud14c\ub450\ub9ac \ub450\uaed8", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 4 } },
-      React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-      )
-    ),
-    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement(SectionTitleWithReset, { title: "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
-      React.createElement(CheckboxRow, { label: "\ubc30\uacbd\uc0c9 \uc0ac\uc6a9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-      card.useBg !== false && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "\uc0c9\uc0c1"),
-          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
-          React.createElement(CheckboxRow, { label: "\ud22c\uba85\ud558\uac8c", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
-        ),
       ),
     ),
+    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
+    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+      React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
+      React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
+      card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+    ),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
@@ -5638,79 +6200,98 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
     updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
   };
-  const renderText = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-    // 전체 정렬
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uC815\uB82C"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
-      ),
-    ),
-    // 전체 폰트
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement(FontDropdown, {
-        options: FONT_OPTIONS,
-        value: getFontFamily(card.titleFont),
-        onChange: (id) => setAllFontDesk(id),
-      }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
-      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+  const renderText = () => {
+    const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
+    const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      // 전체 정렬
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
-      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+      // 전체 폰트
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+        React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFontDesk(id) }),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+      ),
+      // 제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+      // 부제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false), presets: [24, 32, 40, 48] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-  );
+      // 본문 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false), presets: [18, 24, 32, 40] }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
+        ),
+      ),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
+    );
+  };
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
   const updateOverlayDesk = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
@@ -5749,18 +6330,19 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
     }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'] }),
   );
 
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
-    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
+    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; } .hide-scrollbar::-webkit-scrollbar { display: none; }"),
     // Video loading modal
     videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
@@ -5860,7 +6442,15 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Card info header
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 8px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
         React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
-        React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
+        editingName
+          ? React.createElement("input", {
+              ref: nameRef, value: nameValue,
+              onChange: (e) => setNameValue(e.target.value),
+              onBlur: commitName,
+              onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); },
+              style: { background: 'transparent', border: '1px solid ' + T.accent, color: T.text, fontSize: 14, fontWeight: 600, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 },
+            })
+          : React.createElement("span", { onClick: startEditName, style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, cursor: 'pointer' } }, displayName),
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, (activeIndex + 1) + ' / ' + cards.length + '\uc7a5'),
       ),
       // Tab bar
@@ -6183,7 +6773,7 @@ export default function App() {
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
-      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 100, opacity: 1 });
+      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 80, opacity: 1 });
       ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
@@ -6576,7 +7166,6 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
-              React.createElement("button", { onClick: () => setShowHelpModal(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "?"),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
@@ -6587,7 +7176,6 @@ export default function App() {
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-              React.createElement("button", { onClick: () => setShowHelpModal(true), style: { padding: '8px 12px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "?"),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uBCF4\uB0B4\uAE30"),
               React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
               React.createElement("button", {
@@ -6651,7 +7239,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); return aspectRatio === '3:4' ? Math.round(w * 3 / 4) : w; })() }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
@@ -6804,6 +7392,13 @@ export default function App() {
       onSkip: endTutorial,
     }),
     showHelpModal && React.createElement(HelpModal, { mob, onClose: () => setShowHelpModal(false), onStartTour: startTutorial }),
+    // Floating help button
+    !showHelpModal && !showTutorial && React.createElement("button", {
+      onClick: () => setShowHelpModal(true),
+      style: { position: 'fixed', bottom: mob ? 48 : 52, right: mob ? 16 : 24, width: mob ? 40 : 44, height: mob ? 40 : 44, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: T.accent, fontSize: mob ? 16 : 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, transition: 'all 0.2s ease', boxShadow: '0 2px 12px rgba(99,102,241,0.2)', backdropFilter: 'blur(8px)' },
+      onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.3)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.35)'; },
+      onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(99,102,241,0.2)'; },
+    }, "?"),
     ), // end editor Fragment
 
     shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
@@ -6830,8 +7425,10 @@ export default function App() {
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
   input[type=range] { height: 32px; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
+  input[type=range]:active::-moz-range-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
 }`)
   );
 }
