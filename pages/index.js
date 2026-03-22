@@ -1926,7 +1926,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 }
 
 /* ── MobileClipSelector: compact clip picker for mobile ── */
-function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply, onTitleFetch }) {
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply, onTitleFetch, initialOpen }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1940,7 +1940,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const warnTimer = useRef(null);
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!initialOpen);
   const [closing, setClosing] = useState(false);
   const [rangeDragActive, setRangeDragActive] = useState(false);
   const [rangeTouched, setRangeTouched] = useState(false);
@@ -5233,6 +5233,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [videoLoading, setVideoLoading] = useState(false);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
   const [urlEditing, setUrlEditing] = useState(false);
+  const [clipReopenFlag, setClipReopenFlag] = useState(0);
   const urlInputRef = useRef(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
@@ -5339,11 +5340,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                     (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
                   ),
                   React.createElement("button", {
-                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
+                    onClick: () => { updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }); setClipReopenFlag(f => f + 1); },
                     style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
+              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
