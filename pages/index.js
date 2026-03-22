@@ -2172,6 +2172,21 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const isTouch = e.type === 'touchstart';
     const startClientX = isTouch ? e.touches[0].clientX : e.clientX;
     const { time, x } = calcSeekTime(startClientX);
+
+    // Bracket handle proximity check (must be before inRange check)
+    if (seekRef.current && startSec != null && endSec != null) {
+      const rect = seekRef.current.getBoundingClientRect();
+      const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+      const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+      const playheadX = rect.left + (mvPct / 100) * rect.width;
+      const dStart = startMarkerX != null ? Math.abs(startClientX - startMarkerX) : Infinity;
+      const dEnd = endMarkerX != null ? Math.abs(startClientX - endMarkerX) : Infinity;
+      const dPlayhead = Math.abs(startClientX - playheadX);
+      const markerThreshold = 25;
+      if (dStart <= markerThreshold && dStart <= dEnd && dStart < dPlayhead) { startSeekMarkerDrag('start', e); return; }
+      if (dEnd <= markerThreshold && dEnd < dStart && dEnd < dPlayhead) { startSeekMarkerDrag('end', e); return; }
+    }
+
     const inRange = startSec != null && endSec != null && endSec > startSec && time >= startSec && time <= endSec;
 
     if (inRange) {
@@ -2537,7 +2552,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
               React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
             ),
           ),
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 30, height: 80, left: 'calc(' + mvStartPct + '% - 20px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 44, height: 80, left: 'calc(' + mvStartPct + '% - 30px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
           // End bracket handle
           mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
             React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '0 5px 5px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
@@ -2546,7 +2561,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
               React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
             ),
           ),
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 30, height: 80, left: 'calc(' + mvEndPct + '% - 10px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 44, height: 80, left: 'calc(' + mvEndPct + '% - 14px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
           // Unified hit area when markers are close
           markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 10px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 20px)', height: 80, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
           // Playhead (vertical line + triangle)
