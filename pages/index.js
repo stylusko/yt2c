@@ -3900,7 +3900,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               )),
             ),
             React.createElement("button", {
-              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
               style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -5797,7 +5797,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'] }),
@@ -6315,7 +6315,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -6758,7 +6758,7 @@ export default function App() {
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
-      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 100, opacity: 1 });
+      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 80, opacity: 1 });
       ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
