@@ -5320,6 +5320,35 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
   const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
 
+  // ApplyToAllBtn: 현재 카드의 특정 키들을 다른 모든 카드에 적용하는 버튼
+  const ApplyToAllBtn = ({ keysToApply, onApply }) => {
+    const [phase, setPhase] = React.useState('idle'); // idle | confirm | done
+    const timerRef = React.useRef(null);
+    React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+    if (cards.length <= 1) return null;
+    const handleInitialClick = () => setPhase('confirm');
+    const handleCancel = () => setPhase('idle');
+    const handleApply = () => {
+      const stylesToCopy = {};
+      keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
+      cards.forEach((c, i) => { if (i !== activeIndex) onCardChange(i, { ...c, ...stylesToCopy }); });
+      if (onApply) onApply();
+      setPhase('done');
+      timerRef.current = setTimeout(() => setPhase('idle'), 1500);
+    };
+    if (phase === 'confirm') {
+      return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
+        React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, `${cards.length - 1}장의 카드에 적용할까요?`),
+        React.createElement('button', { onClick: handleCancel, style: { padding: '6px 10px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '취소'),
+        React.createElement('button', { onClick: handleApply, style: { padding: '6px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '적용'),
+      );
+    }
+    if (phase === 'done') {
+      return React.createElement('button', { style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 적용됨');
+    }
+    return React.createElement('button', { onClick: handleInitialClick, style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'pointer', width: '100%' } }, '이 설정을 전체 카드에 적용');
+  };
+
   // Name editing
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
@@ -5423,6 +5452,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }),
       style: { marginTop: 4, padding: '8px 0', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + T.border, borderRadius: 8, color: T.textSecondary, fontSize: 12, cursor: 'pointer', width: '100%' },
     }, '\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654'),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'] }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -5486,6 +5516,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         ),
       ),
     ),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
@@ -5586,6 +5617,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
       React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
     ),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'] }),
   );
 
   const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
@@ -5628,6 +5660,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'] }),
   );
 
   const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
