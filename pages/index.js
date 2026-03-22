@@ -1023,7 +1023,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onPointerDown: handleZDown,
-      style: { position: 'relative', height: 28, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+      style: { position: 'relative', height: 28, cursor: (zDrag || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1759,7 +1759,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      style: { position: 'relative', height: 54, background: T.surface, cursor: rangeDragActive ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: (dragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
       // ── Time ruler (top 18px) ──
       React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
@@ -2474,7 +2474,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
-          style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
+          style: { position: 'relative', height: 44, background: T.surface, cursor: (mDragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
         },
           // Track bg
           React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
