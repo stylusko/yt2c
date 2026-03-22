@@ -5441,6 +5441,33 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
+/* ── ApplyToAllBtn: apply current card's style keys to all other cards ── */
+function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt }) {
+  const [phase, setPhase] = useState('idle');
+  const timerRef = useRef(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  const singleCard = cards.length <= 1;
+  const handleApply = () => {
+    const stylesToCopy = {};
+    keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
+    cards.forEach((c, i) => { if (i !== activeIndex) onCardChange(i, { ...c, ...stylesToCopy }); });
+    setPhase('done');
+    timerRef.current = setTimeout(() => setPhase('idle'), 1500);
+  };
+  const marginTop = mt || 4;
+  if (phase === 'confirm') {
+    return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: marginTop } },
+      React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, (cards.length - 1) + '\uC7A5\uC758 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uD560\uAE4C\uC694?'),
+      React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '6px 10px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '\uCDE8\uC18C'),
+      React.createElement('button', { onClick: handleApply, style: { padding: '6px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '\uC801\uC6A9'),
+    );
+  }
+  if (phase === 'done') {
+    return React.createElement('button', { style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 \uC801\uC6A9\uB428');
+  }
+  return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
+}
+
 function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
@@ -5484,34 +5511,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
   const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
 
-  // ApplyToAllBtn: 현재 카드의 특정 키들을 다른 모든 카드에 적용하는 버튼
-  const ApplyToAllBtn = ({ keysToApply, onApply }) => {
-    const [phase, setPhase] = React.useState('idle'); // idle | confirm | done
-    const timerRef = React.useRef(null);
-    React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
-    const singleCard = cards.length <= 1;
-    const handleInitialClick = () => { if (!singleCard) setPhase('confirm'); };
-    const handleCancel = () => setPhase('idle');
-    const handleApply = () => {
-      const stylesToCopy = {};
-      keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
-      cards.forEach((c, i) => { if (i !== activeIndex) onCardChange(i, { ...c, ...stylesToCopy }); });
-      if (onApply) onApply();
-      setPhase('done');
-      timerRef.current = setTimeout(() => setPhase('idle'), 1500);
-    };
-    if (phase === 'confirm') {
-      return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
-        React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, `${cards.length - 1}장의 카드에 적용할까요?`),
-        React.createElement('button', { onClick: handleCancel, style: { padding: '6px 10px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '취소'),
-        React.createElement('button', { onClick: handleApply, style: { padding: '6px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '적용'),
-      );
-    }
-    if (phase === 'done') {
-      return React.createElement('button', { style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 적용됨');
-    }
-    return React.createElement('button', { onClick: handleInitialClick, disabled: singleCard, style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
-  };
+  // ApplyToAllBtn uses the module-level component defined above
 
   // Name editing
   const [editingName, setEditingName] = useState(false);
@@ -5616,7 +5616,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }),
       style: { marginTop: 4, padding: '8px 0', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + T.border, borderRadius: 8, color: T.textSecondary, fontSize: 12, cursor: 'pointer', width: '100%' },
     }, '\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654'),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'] }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -5676,7 +5676,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
@@ -5777,7 +5777,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'] }),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange }),
     );
   };
 
@@ -5821,7 +5821,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'] }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
   );
 
   const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
@@ -6048,31 +6048,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
   const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
 
-  // DeskApplyToAllBtn: desktop version of apply-to-all
-  const DeskApplyToAllBtn = ({ keysToApply }) => {
-    const [phase, setPhase] = React.useState('idle');
-    const timerRef = React.useRef(null);
-    React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
-    const singleCard = cards.length <= 1;
-    const handleApply = () => {
-      const stylesToCopy = {};
-      keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
-      cards.forEach((c, i) => { if (i !== activeCardIdx) updateCard(i, { ...c, ...stylesToCopy }); });
-      setPhase('done');
-      timerRef.current = setTimeout(() => setPhase('idle'), 1500);
-    };
-    if (phase === 'confirm') {
-      return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 } },
-        React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, (cards.length - 1) + '\uC7A5\uC758 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uD560\uAE4C\uC694?'),
-        React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '5px 10px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '\uCDE8\uC18C'),
-        React.createElement('button', { onClick: handleApply, style: { padding: '5px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '\uC801\uC6A9'),
-      );
-    }
-    if (phase === 'done') {
-      return React.createElement('button', { style: { marginTop: 8, padding: '7px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 \uC801\uC6A9\uB428');
-    }
-    return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: 8, padding: '7px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
-  };
+  // DeskApplyToAllBtn uses module-level ApplyToAllBtn
 
   // \u2500\u2500 Fill Tab \u2500\u2500
   const deskVideoUrl = card.url || globalUrl || '';
@@ -6212,7 +6188,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(DeskApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex: activeCardIdx, onCardChange: updateCard, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
@@ -6313,7 +6289,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(DeskApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex: activeCardIdx, onCardChange: updateCard, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
     );
   };
 
@@ -6359,7 +6335,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
     }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
-    React.createElement(DeskApplyToAllBtn, { keysToApply: ['overlays'] }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex: activeCardIdx, onCardChange: updateCard, keysToApply: ['overlays'] }),
   );
 
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
