@@ -2842,9 +2842,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
             React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 80, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(currentTime)),
           // Playhead drag tooltip
-          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
+          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
         ),
         // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
