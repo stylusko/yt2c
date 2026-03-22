@@ -1872,7 +1872,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 14 })),
       React.createElement("button", {
         onClick: toggleMute,
-        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
       }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 14 })),
       // Start: capture btn + input
       React.createElement("div", { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 3 } },
@@ -2535,7 +2535,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Play/Pause
           React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 16 })),
           // Mute
-          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
+          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
           // Spacer
           React.createElement("div", { style: { flex: 1 } }),
           // Start: capture btn + input
@@ -3180,7 +3180,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const muteToggle = hasVideoPreview
     ? React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
       }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
     : null;
 
