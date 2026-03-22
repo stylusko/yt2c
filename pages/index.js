@@ -2145,6 +2145,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [mDragTime, setMDragTime] = useState(null);
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
+  // Auto-set 0-15s immediately when opening with no selection
+  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } }, []);
   const handleClose = () => {
     if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} }
     setClosing(true);
@@ -2723,7 +2725,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", {
-    onClick: () => setCollapsedAndNotify(false),
+    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } setCollapsedAndNotify(false); },
     style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
   },
     React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
