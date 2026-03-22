@@ -212,6 +212,13 @@ function fmtMM(s) {
   const sec = Math.floor(s % 60);
   return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
 }
+// Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
+function fmtPrecise(s) {
+  if (s == null || isNaN(s)) return '--:--';
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + sec.toFixed(1).padStart(4, '0');
+}
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
 /* ── Design Tokens ── */
@@ -2234,45 +2241,57 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
     }
 
+    let rafPending = false;
+    let lastCx = startClientX;
     const onMove = (ev) => {
-      const cx = ev.clientX;
+      lastCx = ev.clientX;
       if (mode === 'bracket') {
-        const r = calcSeekTime(cx);
-        const t = Math.max(0, Math.min(duration, r.time));
-        if (bracketType === 'start') {
-          if (snapEndSec != null && t >= snapEndSec) return;
-          if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
-          onStartChange(fmtMM(t));
-        } else {
-          if (t <= snapStartSec) return;
-          if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
-          onEndChange(fmtMM(t));
-        }
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(() => {
+          rafPending = false;
+          const r = calcSeekTime(lastCx);
+          const t = Math.max(0, Math.min(duration, r.time));
+          if (bracketType === 'start') {
+            if (snapEndSec != null && t >= snapEndSec) return;
+            if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
+            onStartChange(fmtPrecise(t));
+          } else {
+            if (t <= snapStartSec) return;
+            if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
+            onEndChange(fmtPrecise(t));
+          }
+        });
       } else if (mode === 'range') {
-        if (!rangeDragStarted && Math.abs(cx - startClientX) > 6) {
+        if (!rangeDragStarted && Math.abs(lastCx - startClientX) > 3) {
           rangeDragStarted = true;
           setRangeDragActive(true);
         }
         if (rangeDragStarted) {
-          const { time: t } = calcSeekTime(cx);
-          const delta = t - time;
-          let ns = snapStartSec + delta, ne = snapEndSec + delta;
-          if (ns < 0) { ns = 0; ne = clipDur; }
-          if (ne > duration) { ne = duration; ns = duration - clipDur; }
-          manualSeekOutside.current = false;
-          if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
-          else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+          if (rafPending) return;
+          rafPending = true;
+          requestAnimationFrame(() => {
+            rafPending = false;
+            const { time: t } = calcSeekTime(lastCx);
+            const delta = t - time;
+            let ns = snapStartSec + delta, ne = snapEndSec + delta;
+            if (ns < 0) { ns = 0; ne = clipDur; }
+            if (ne > duration) { ne = duration; ns = duration - clipDur; }
+            manualSeekOutside.current = false;
+            if (onClipChange) onClipChange(fmtPrecise(ns), fmtPrecise(ne));
+            else { onStartChange(fmtPrecise(ns)); onEndChange(fmtPrecise(ne)); }
+          });
         }
       } else if (mode === 'pan') {
-        if (!panned && Math.abs(cx - startClientX) > 10) panned = true;
+        if (!panned && Math.abs(lastCx - startClientX) > 10) panned = true;
         if (panned) {
-          const deltaPx = cx - startClientX;
+          const deltaPx = lastCx - startClientX;
           const deltaRatio = -deltaPx / rect.width / zoomLevel;
           setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
         }
       } else {
         // seek
-        const r = calcSeekTime(cx);
+        const r = calcSeekTime(lastCx);
         const inR = snapStartSec != null && snapEndSec != null && r.time >= snapStartSec && r.time <= snapEndSec;
         manualSeekOutside.current = !inR;
         seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
@@ -2284,6 +2303,25 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
+      // Commit final values as clean integer-second format for display
+      if (mode === 'bracket') {
+        const r = calcSeekTime(lastCx);
+        const t = Math.max(0, Math.min(duration, r.time));
+        if (bracketType === 'start') {
+          if (!(snapEndSec != null && t >= snapEndSec)) onStartChange(fmtMM(t));
+        } else {
+          if (t > snapStartSec) onEndChange(fmtMM(t));
+        }
+      }
+      if (mode === 'range' && rangeDragStarted) {
+        const { time: t } = calcSeekTime(lastCx);
+        const delta = t - time;
+        let ns = snapStartSec + delta, ne = snapEndSec + delta;
+        if (ns < 0) { ns = 0; ne = clipDur; }
+        if (ne > duration) { ne = duration; ns = duration - clipDur; }
+        if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
+        else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+      }
       if (mode === 'range' && !rangeDragStarted) {
         seekTo(time);
         manualSeekOutside.current = false;
