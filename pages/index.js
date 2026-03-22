@@ -2205,7 +2205,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       playerRef.current = new window.YT.Player(cid, {
         width: '100%', height: 220,
         videoId: videoId,
-        playerVars: { autoplay: 0, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
+        playerVars: { autoplay: 1, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
         events: {
           onReady: (e) => {
             if (cancelled) return;
