@@ -1362,10 +1362,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   // Zoom helpers
   const visibleDuration = duration / zoomLevel;
-  const visibleStart = Math.max(0, zoomCenter * duration - visibleDuration / 2);
-  const visibleEnd = Math.min(duration, visibleStart + visibleDuration);
-  const actualVisibleStart = visibleEnd - visibleDuration < 0 ? 0 : visibleStart;
-  const actualVisibleEnd = actualVisibleStart + visibleDuration;
+  const actualVisibleStart = Math.max(0, Math.min(duration - visibleDuration, zoomCenter * duration - visibleDuration / 2));
+  const actualVisibleEnd = Math.min(duration, actualVisibleStart + visibleDuration);
   const toVisualPct = (sec) => {
     const p = ((sec - actualVisibleStart) / visibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
@@ -2160,10 +2158,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Zoom helpers
   const mVisibleDuration = duration / zoomLevel;
-  const mVisibleStart = Math.max(0, zoomCenter * duration - mVisibleDuration / 2);
-  const mVisibleEnd = Math.min(duration, mVisibleStart + mVisibleDuration);
-  const mActualVisibleStart = mVisibleEnd - mVisibleDuration < 0 ? 0 : mVisibleStart;
-  const mActualVisibleEnd = mActualVisibleStart + mVisibleDuration;
+  const mActualVisibleStart = Math.max(0, Math.min(duration - mVisibleDuration, zoomCenter * duration - mVisibleDuration / 2));
+  const mActualVisibleEnd = Math.min(duration, mActualVisibleStart + mVisibleDuration);
   const mToVisualPct = (sec) => {
     const p = ((sec - mActualVisibleStart) / mVisibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
