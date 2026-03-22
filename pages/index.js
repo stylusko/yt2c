@@ -2482,7 +2482,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
-          style: { position: 'relative', height: 54, background: T.surface, cursor: (mDragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 2, overflow: 'visible' },
+          style: { position: 'relative', height: 80, background: T.surface, cursor: (mDragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 2, overflow: 'visible' },
         },
           // Time ruler (top 18px)
           React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
@@ -2516,63 +2516,58 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             })()
           ),
           // Track area
-          React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 36, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
+          React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 62, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
           // Dimming outside selection (left)
-          mvStartPct != null && mvStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: mvStartPct + '%', height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          mvStartPct != null && mvStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: mvStartPct + '%', height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
           // Dimming outside selection (right)
-          mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
           // Selected range fill
-          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
             clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
           ),
           // First-time range drag tooltip
-          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 44, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
+          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
             React.createElement("div", { style: { background: 'rgba(99,102,241,0.95)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', position: 'relative' } },
               '\uAE38\uAC8C \uB20C\uB7EC \uAD6C\uAC04\uC744 \uC774\uB3D9\uD558\uC138\uC694',
               React.createElement("div", { style: { position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(99,102,241,0.95)' } })
             )
           ),
           // Start bracket handle
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + mvStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
-            React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '4px 0 0 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + mvStartPct + '% - 10px)', pointerEvents: 'none', zIndex: 3 } },
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '5px 0 0 5px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
             ),
           ),
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 54, left: 'calc(' + mvStartPct + '% - 16px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 30, height: 80, left: 'calc(' + mvStartPct + '% - 20px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
           // End bracket handle
           mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
-            React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '0 4px 4px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
-              React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '0 5px 5px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
             ),
           ),
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 54, left: 'calc(' + mvEndPct + '% - 8px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 30, height: 80, left: 'calc(' + mvEndPct + '% - 10px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
           // Unified hit area when markers are close
-          markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 8px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 16px)', height: 54, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
+          markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 10px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 20px)', height: 80, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
           // Playhead (vertical line + triangle)
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 54, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, onTouchStart: function(e) { e.stopPropagation(); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 80, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
             React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
-            React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
+            React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 80, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
           // Playhead drag tooltip
           mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
         ),
-        // Minimap (visible when zoomed)
+        // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
           ref: minimapRef,
           onPointerDown: handleMobileMinimapDown,
-          style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
+          style: { position: 'relative', height: 8, margin: '4px 0 0', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer', touchAction: 'none' },
         },
-          // Visible window indicator
-          React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 6, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-          // Selected range
-          startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 9, height: 10, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-          // Playhead
-          React.createElement("div", { style: { position: 'absolute', top: 4, width: 2, height: 20, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
+          React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
         ),
         // Controls row
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 0', background: T.surface, borderTop: '1px solid ' + T.border } },
@@ -2592,11 +2587,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
             React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
-          // Clip duration badge
-          clipLen > 0 && React.createElement("span", { style: { padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC, whiteSpace: 'nowrap', flexShrink: 0 } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428'),
         ),
-        // Zoomed seekbar for precision
-        startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
         // Warning toast
         warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
           '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
