@@ -2286,7 +2286,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           });
         }
       } else if (mode === 'pan') {
-        if (!panned && Math.abs(lastCx - startClientX) > 10) panned = true;
+        if (!panned && Math.abs(lastCx - startClientX) > 4) panned = true;
         if (panned) {
           const deltaPx = lastCx - startClientX;
           const deltaRatio = -deltaPx / rect.width / zoomLevel;
