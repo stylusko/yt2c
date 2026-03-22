@@ -2165,43 +2165,58 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
   };
 
+  // Unified pointer-capture based drag handler for seekbar
+  // Uses setPointerCapture to guarantee all move/up events reach this element,
+  // even when inside iOS scrollable containers that steal touch events.
   const handleSeekDown = (e) => {
-    // Check for pinch (2+ touches)
-    if (e.touches && e.touches.length >= 2) { handlePinch(e); return; }
+    // Only handle pointer events (not touch/mouse — we switched to onPointerDown)
+    if (e.pointerId == null) return;
     e.preventDefault();
     e.stopPropagation();
-    const isTouch = e.type === 'touchstart' || e.type === 'pointerdown';
-    const startClientX = (e.touches ? e.touches[0].clientX : e.clientX);
+    const el = seekRef.current;
+    if (!el) return;
+    el.setPointerCapture(e.pointerId);
+    const startClientX = e.clientX;
     const { time, x } = calcSeekTime(startClientX);
-    const rect = seekRef.current.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
 
-    // Calculate distances to all interactive targets
+    // Calculate distances to bracket handles
     const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
     const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
     const dStart = startMarkerX != null ? Math.abs(startClientX - startMarkerX) : Infinity;
     const dEnd = endMarkerX != null ? Math.abs(startClientX - endMarkerX) : Infinity;
     const inRange = startSec != null && endSec != null && endSec > startSec && time >= startSec && time <= endSec;
 
-    // === PRIORITY 1: Bracket handle drag (closest marker within threshold) ===
-    // On mobile, bracket handles get a generous 35px zone from the bracket edge
+    // Determine drag mode
+    // PRIORITY 1: Bracket handle (within 35px of bracket edge)
     const bracketThreshold = 35;
     const nearStart = dStart <= bracketThreshold;
     const nearEnd = dEnd <= bracketThreshold;
+    let mode = 'seek'; // default
+    let bracketType = null;
     if (startSec != null && endSec != null && (nearStart || nearEnd)) {
-      // Pick closest bracket
-      const which = (nearStart && nearEnd) ? (dStart <= dEnd ? 'start' : 'end') : (nearStart ? 'start' : 'end');
-      startSeekMarkerDrag(which, e);
-      return;
+      mode = 'bracket';
+      bracketType = (nearStart && nearEnd) ? (dStart <= dEnd ? 'start' : 'end') : (nearStart ? 'start' : 'end');
+    }
+    // PRIORITY 2: Range drag (inside selected area, not near bracket)
+    else if (inRange) {
+      mode = 'range';
+    }
+    // PRIORITY 3: Pan when zoomed
+    else if (zoomLevel > 1) {
+      mode = 'pan';
     }
 
-    // === PRIORITY 2: Range drag (touch inside selected area) ===
-    if (inRange) {
-      const snapStart = startSec;
-      const snapEnd = endSec;
-      const clipDur = snapEnd - snapStart;
-      let rangeDragStarted = false;
+    // State for drag
+    const snapStartSec = startSec;
+    const snapEndSec = endSec;
+    const clipDur = (snapStartSec != null && snapEndSec != null) ? snapEndSec - snapStartSec : 0;
+    let rangeDragStarted = false;
+    let panned = false;
+    const startPanCenter = zoomCenter;
 
-      // Show first-time tooltip
+    // Show range drag tooltip on first use
+    if (mode === 'range') {
       try {
         if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
           localStorage.setItem('yt2c_rangeDragTipShown', '1');
@@ -2210,124 +2225,77 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           rangeTipTimer.current = setTimeout(() => setShowRangeTip(false), 3000);
         }
       } catch(ex) {}
+    }
 
-      const doRangeMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        const { time: t } = calcSeekTime(cx);
-        const delta = t - time;
-        let newStart = snapStart + delta;
-        let newEnd = snapEnd + delta;
-        if (newStart < 0) { newStart = 0; newEnd = clipDur; }
-        if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
-        manualSeekOutside.current = false;
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
-      };
+    // For seek mode, apply immediately
+    if (mode === 'seek') {
+      manualSeekOutside.current = true;
+      seekTo(time);
+      mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
+    }
 
-      // Immediate drag: 6px movement threshold
-      const onMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const onMove = (ev) => {
+      const cx = ev.clientX;
+      if (mode === 'bracket') {
+        const r = calcSeekTime(cx);
+        const t = Math.max(0, Math.min(duration, r.time));
+        if (bracketType === 'start') {
+          if (snapEndSec != null && t >= snapEndSec) return;
+          if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
+          onStartChange(fmtMM(t));
+        } else {
+          if (t <= snapStartSec) return;
+          if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
+          onEndChange(fmtMM(t));
+        }
+      } else if (mode === 'range') {
         if (!rangeDragStarted && Math.abs(cx - startClientX) > 6) {
           rangeDragStarted = true;
           setRangeDragActive(true);
         }
-        if (rangeDragStarted) doRangeMove(ev);
-      };
-      const onUp = () => {
-        if (!rangeDragStarted) {
-          // Tap without movement = seek to position
-          seekTo(time);
+        if (rangeDragStarted) {
+          const { time: t } = calcSeekTime(cx);
+          const delta = t - time;
+          let ns = snapStartSec + delta, ne = snapEndSec + delta;
+          if (ns < 0) { ns = 0; ne = clipDur; }
+          if (ne > duration) { ne = duration; ns = duration - clipDur; }
           manualSeekOutside.current = false;
+          if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
+          else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
         }
-        setRangeDragActive(false);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      return;
-    }
-
-    // === PRIORITY 3: Pan when zoomed ===
-    if (zoomLevel > 1) {
-      const startPanCenter = zoomCenter;
-      const startPanX = startClientX;
-      let panned = false;
-      const onMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(cx - startPanX) > 10) panned = true;
+      } else if (mode === 'pan') {
+        if (!panned && Math.abs(cx - startClientX) > 10) panned = true;
         if (panned) {
-          const deltaPx = cx - startPanX;
+          const deltaPx = cx - startClientX;
           const deltaRatio = -deltaPx / rect.width / zoomLevel;
           setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
         }
-      };
-      const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-      return;
-    }
-
-    // === PRIORITY 4: Seek (outside range, not zoomed) ===
-    manualSeekOutside.current = true;
-    seekTo(time);
-    mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
-    const onMove = (ev) => {
-      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(cx);
-      const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
-      manualSeekOutside.current = !inR;
-      seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
-    };
-    const onUp = () => {
-      mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
-      window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-    };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-  };
-
-  const startSeekMarkerDrag = (type, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const snapEndSec = endSec;
-    const snapStartSec = startSec;
-    const isTouch = e.type === 'touchstart';
-    const cx = isTouch ? e.touches[0].clientX : e.clientX;
-    const { time } = calcSeekTime(cx);
-    const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(mcx);
-      const t = Math.max(0, Math.min(duration, r.time));
-      if (type === 'start') {
-        if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
-        onStartChange(fmtMM(t));
       } else {
-        if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
-        onEndChange(fmtMM(t));
+        // seek
+        const r = calcSeekTime(cx);
+        const inR = snapStartSec != null && snapEndSec != null && r.time >= snapStartSec && r.time <= snapEndSec;
+        manualSeekOutside.current = !inR;
+        seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
       }
     };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
+
+    const onUp = (ev) => {
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(ex) {} }
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+      if (mode === 'range' && !rangeDragStarted) {
+        seekTo(time);
+        manualSeekOutside.current = false;
+      }
+      if (mode === 'range') setRangeDragActive(false);
+      if (mode === 'pan' && !panned) { manualSeekOutside.current = true; seekTo(time); }
+      if (mode === 'seek') { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); }
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
+
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const startPlayheadDrag = (e) => {
@@ -2472,7 +2440,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         // Seekbar (touch-friendly, 44px hit area)
         React.createElement("div", {
           ref: seekRef,
-          onMouseDown: handleSeekDown, onTouchStart: handleSeekDown,
+          onPointerDown: handleSeekDown,
+          onTouchStart: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
