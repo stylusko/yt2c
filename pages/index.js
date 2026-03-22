@@ -1943,6 +1943,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [collapsed, setCollapsed] = useState(true);
   const [closing, setClosing] = useState(false);
   const [rangeDragActive, setRangeDragActive] = useState(false);
+  const [rangeTouched, setRangeTouched] = useState(false);
+  const [rangeDragLabel, setRangeDragLabel] = useState(null);
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const [mDragging, setMDragging] = useState(false);
@@ -2227,8 +2229,10 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     let panned = false;
     const startPanCenter = zoomCenter;
 
-    // Show range drag tooltip on first use
+    // Range touch: immediate visual feedback
     if (mode === 'range') {
+      setRangeTouched(true);
+      setRangeDragLabel({ start: snapStartSec, end: snapEndSec });
       try {
         if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
           localStorage.setItem('yt2c_rangeDragTipShown', '1');
@@ -2283,6 +2287,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             if (ns < 0) { ns = 0; ne = clipDur; }
             if (ne > duration) { ne = duration; ns = duration - clipDur; }
             manualSeekOutside.current = false;
+            setRangeDragLabel({ start: ns, end: ne });
             if (onClipChange) onClipChange(fmtPrecise(ns), fmtPrecise(ne));
             else { onStartChange(fmtPrecise(ns)); onEndChange(fmtPrecise(ne)); }
           });
@@ -2362,7 +2367,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         seekTo(time);
         manualSeekOutside.current = false;
       }
-      if (mode === 'range') setRangeDragActive(false);
+      if (mode === 'range') { setRangeDragActive(false); setRangeTouched(false); setRangeDragLabel(null); }
       if (mode === 'pan' && !panned) { manualSeekOutside.current = true; seekTo(time); }
       if (mode === 'pan' && panned) {
         // Inertia animation for pan
@@ -2579,8 +2584,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Dimming outside selection (right)
           mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
           // Selected range fill
-          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
-            clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : rangeTouched ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtMM(rangeDragLabel.start) + ' ~ ' + fmtMM(rangeDragLabel.end))
+            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
           ),
           // First-time range drag tooltip
           showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
