@@ -1406,8 +1406,28 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       let longPressTriggered = false;
       let longPressTimer = null;
 
+      let deskAutoPanId = null;
+      let deskLastCx = startClientX;
+      const stopDeskAutoPan = () => { if (deskAutoPanId) { cancelAnimationFrame(deskAutoPanId); deskAutoPanId = null; } };
+      const startDeskAutoPan = () => {
+        if (deskAutoPanId || zoomLevel <= 1 || !seekRef.current) return;
+        const panRect = seekRef.current.getBoundingClientRect();
+        const panStep = () => {
+          const edgeZone = 30;
+          const leftDist = deskLastCx - panRect.left;
+          const rightDist = panRect.right - deskLastCx;
+          let panDir = 0;
+          if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+          else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+          if (panDir !== 0) setZoomCenter(prev => Math.max(0, Math.min(1, prev + 0.003 * panDir)));
+          deskAutoPanId = requestAnimationFrame(panStep);
+        };
+        deskAutoPanId = requestAnimationFrame(panStep);
+      };
       const doRangeMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
+        deskLastCx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (zoomLevel > 1) startDeskAutoPan();
         const { time: t, x: mx } = calcSeekTime(ev);
         const delta = t - time;
         let newStart = snapStart + delta;
@@ -1453,6 +1473,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         var onUp = () => {
           clearTimeout(longPressTimer);
+          stopDeskAutoPan();
           if (!longPressTriggered && !isDragging) seekTo(time);
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -1467,6 +1488,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           if (isDragging) doRangeMove(ev);
         };
         const onUp = () => {
+          stopDeskAutoPan();
           if (!isDragging) { manualSeekOutside.current = false; seekTo(time); }
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -2252,8 +2274,34 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
     let rafPending = false;
     let lastCx = startClientX;
+    let autoPanId = null;
+
+    // Auto-pan: when dragging range/bracket near seekbar edge while zoomed, scroll timeline
+    const startAutoPan = () => {
+      if (autoPanId || zoomLevel <= 1) return;
+      const panStep = () => {
+        const edgeZone = 30; // px from edge to trigger
+        const leftDist = lastCx - rect.left;
+        const rightDist = rect.right - lastCx;
+        let panDir = 0;
+        if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+        else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+        if (panDir !== 0) {
+          const speed = 0.003 * panDir;
+          setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+        }
+        autoPanId = requestAnimationFrame(panStep);
+      };
+      autoPanId = requestAnimationFrame(panStep);
+    };
+    const stopAutoPan = () => { if (autoPanId) { cancelAnimationFrame(autoPanId); autoPanId = null; } };
+
     const onMove = (ev) => {
       lastCx = ev.clientX;
+      // Start/maintain auto-pan for range and bracket drags when zoomed
+      if ((mode === 'range' && rangeDragStarted) || mode === 'bracket') {
+        if (zoomLevel > 1) startAutoPan();
+      }
       if (mode === 'bracket') {
         if (rafPending) return;
         rafPending = true;
@@ -2332,6 +2380,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     };
 
     const onUp = (ev) => {
+      stopAutoPan();
       if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(ex) {} }
       el.removeEventListener('pointermove', wrappedOnMove);
       el.removeEventListener('pointerup', onUp);
