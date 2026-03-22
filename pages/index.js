@@ -5325,8 +5325,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const [phase, setPhase] = React.useState('idle'); // idle | confirm | done
     const timerRef = React.useRef(null);
     React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
-    if (cards.length <= 1) return null;
-    const handleInitialClick = () => setPhase('confirm');
+    const singleCard = cards.length <= 1;
+    const handleInitialClick = () => { if (!singleCard) setPhase('confirm'); };
     const handleCancel = () => setPhase('idle');
     const handleApply = () => {
       const stylesToCopy = {};
@@ -5346,7 +5346,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     if (phase === 'done') {
       return React.createElement('button', { style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 적용됨');
     }
-    return React.createElement('button', { onClick: handleInitialClick, style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'pointer', width: '100%' } }, '이 설정을 전체 카드에 적용');
+    return React.createElement('button', { onClick: handleInitialClick, disabled: singleCard, style: { marginTop: 4, padding: '8px 0', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
   };
 
   // Name editing
