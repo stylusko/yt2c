@@ -1408,6 +1408,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
       let deskAutoPanId = null;
       let deskLastCx = startClientX;
+      let deskAutoPanTimeOffset = 0;
       const stopDeskAutoPan = () => { if (deskAutoPanId) { cancelAnimationFrame(deskAutoPanId); deskAutoPanId = null; } };
       const startDeskAutoPan = () => {
         if (deskAutoPanId || zoomLevel <= 1 || !seekRef.current) return;
@@ -1419,7 +1420,11 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           let panDir = 0;
           if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
           else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
-          if (panDir !== 0) setZoomCenter(prev => Math.max(0, Math.min(1, prev + 0.003 * panDir)));
+          if (panDir !== 0) {
+            const speed = 0.003 * panDir;
+            deskAutoPanTimeOffset += speed * duration;
+            setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+          }
           deskAutoPanId = requestAnimationFrame(panStep);
         };
         deskAutoPanId = requestAnimationFrame(panStep);
@@ -1429,7 +1434,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         deskLastCx = ev.touches ? ev.touches[0].clientX : ev.clientX;
         if (zoomLevel > 1) startDeskAutoPan();
         const { time: t, x: mx } = calcSeekTime(ev);
-        const delta = t - time;
+        const delta = t - time + deskAutoPanTimeOffset;
         let newStart = snapStart + delta;
         let newEnd = snapEnd + delta;
         if (newStart < 0) { newStart = 0; newEnd = clipDur; }
@@ -2275,12 +2280,14 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     let rafPending = false;
     let lastCx = startClientX;
     let autoPanId = null;
+    let autoPanTimeOffset = 0; // accumulated time shift from auto-pan
 
     // Auto-pan: when dragging range/bracket near seekbar edge while zoomed, scroll timeline
+    // Compensates drag position so the range stays pinned under the finger
     const startAutoPan = () => {
       if (autoPanId || zoomLevel <= 1) return;
       const panStep = () => {
-        const edgeZone = 30; // px from edge to trigger
+        const edgeZone = 30;
         const leftDist = lastCx - rect.left;
         const rightDist = rect.right - lastCx;
         let panDir = 0;
@@ -2288,6 +2295,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
         if (panDir !== 0) {
           const speed = 0.003 * panDir;
+          // Accumulate the time offset so drag position stays pinned
+          autoPanTimeOffset += speed * duration;
           setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
         }
         autoPanId = requestAnimationFrame(panStep);
@@ -2330,7 +2339,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           requestAnimationFrame(() => {
             rafPending = false;
             const { time: t } = calcSeekTime(lastCx);
-            const delta = t - time;
+            const delta = t - time + autoPanTimeOffset;
             let ns = snapStartSec + delta, ne = snapEndSec + delta;
             if (ns < 0) { ns = 0; ne = clipDur; }
             if (ne > duration) { ne = duration; ns = duration - clipDur; }
@@ -2404,7 +2413,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       if (mode === 'range' && rangeDragStarted) {
         // No inertia for range drag — commit final position immediately
         const { time: t } = calcSeekTime(lastCx);
-        const delta = t - time;
+        const delta = t - time + autoPanTimeOffset;
         let ns = snapStartSec + delta, ne = snapEndSec + delta;
         if (ns < 0) { ns = 0; ne = clipDur; }
         if (ne > duration) { ne = duration; ns = duration - clipDur; }
