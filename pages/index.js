@@ -5205,6 +5205,7 @@ function TabPill({ label, active, onClick, dataTour }) {
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
   { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'clip-adjust', label: '클립 조정', tour: 'tab-clip-adjust' },
   { id: 'layout', label: '레이아웃', tour: 'tab-layout' },
   { id: 'text', label: '텍스트', tour: 'tab-text' },
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
@@ -5335,34 +5336,12 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
               : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); } }),
-            // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
-            !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
-                var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
-                if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
-                else update("start", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
-                var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
-                if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
-                else update("end", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-            ),
-            !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-                React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
-                React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
-              ),
-              React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-                React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-              ),
-            ) : null; })(),
-            !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
-              '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
-            ),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
+  );
+
+  const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
@@ -5578,7 +5557,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     }, "+ 이미지 추가"),
   );
 
-  const tabContent = { fill: renderFillTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
