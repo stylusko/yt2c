@@ -661,6 +661,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
   const displayVal = suffix === '%' && typeof value === 'number' && value <= 1 && max <= 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   const sliderVal = toSlider ? toSlider(value) : value;
   const sliderDef = toSlider ? toSlider(defVal) : defVal;
+  const defPct = ((sliderDef - min) / (max - min)) * 100;
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -669,7 +670,10 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.02, step * 2); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { flex: 1, accentColor: T.accent, height: 20 } }),
+    React.createElement("div", { style: { flex: 1, position: 'relative' } },
+      React.createElement("div", { style: { position: 'absolute', left: defPct + '%', top: 0, width: 1, height: 20, background: 'rgba(255,255,255,0.25)', pointerEvents: 'none', zIndex: 1 } }),
+      React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.02, step * 2); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { width: '100%', accentColor: T.accent, height: 20, position: 'relative', zIndex: 2 } }),
+    ),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
@@ -5690,7 +5694,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Tab pills
-    React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+    React.createElement("div", { className: 'hide-scrollbar', onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation(), style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
       tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
     ),
 
