@@ -1967,7 +1967,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
   const MAX_CLIP = 30;
-  const overLimit = clipLen != null && clipLen > MAX_CLIP;
+  const overLimit = clipLen != null && clipLen > MAX_CLIP + 0.5;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
