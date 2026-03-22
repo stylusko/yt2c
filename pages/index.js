@@ -1958,6 +1958,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
+  const panInertiaRef = useRef(null); // rAF id for pan inertia — cancel on new touch
   const isInitialMountRef = useRef(true);
   const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
 
@@ -2178,6 +2179,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const handleSeekDown = (e) => {
     // Only handle pointer events (not touch/mouse — we switched to onPointerDown)
     if (e.pointerId == null) return;
+    // Cancel any ongoing pan inertia when a new touch starts
+    if (panInertiaRef.current != null) { cancelAnimationFrame(panInertiaRef.current); panInertiaRef.current = null; }
     e.preventDefault();
     e.stopPropagation();
     const el = seekRef.current;
@@ -2396,6 +2399,26 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       }
       if (mode === 'range') setRangeDragActive(false);
       if (mode === 'pan' && !panned) { manualSeekOutside.current = true; seekTo(time); }
+      if (mode === 'pan' && panned) {
+        // Inertia animation for pan
+        const pxPerMs = velocity;
+        if (Math.abs(pxPerMs) > 0.15) {
+          let vx = pxPerMs * 16; // px per frame (~16ms)
+          const friction = 0.92;
+          const inertiaFrame = () => {
+            vx *= friction;
+            if (Math.abs(vx) < 0.3) { panInertiaRef.current = null; return; }
+            const deltaRatio = -vx / rect.width / zoomLevel;
+            setZoomCenter((prev) => {
+              const next = prev + deltaRatio;
+              if (next <= 0 || next >= 1) { vx = 0; return Math.max(0, Math.min(1, next)); }
+              return next;
+            });
+            panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+          };
+          panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+        }
+      }
       if (mode === 'seek') { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); }
     };
 
