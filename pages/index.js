@@ -2251,14 +2251,14 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         requestAnimationFrame(() => {
           rafPending = false;
           const r = calcSeekTime(lastCx);
-          const t = Math.max(0, Math.min(duration, r.time));
+          let t = Math.max(0, Math.min(duration, r.time));
           if (bracketType === 'start') {
-            if (snapEndSec != null && t >= snapEndSec) return;
-            if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
+            if (snapEndSec != null && t >= snapEndSec - 0.5) return;
+            if (snapEndSec != null && snapEndSec - t > 30) { t = snapEndSec - 30; showWarn(); }
             onStartChange(fmtPrecise(t));
           } else {
-            if (t <= snapStartSec) return;
-            if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
+            if (t <= snapStartSec + 0.5) return;
+            if (t - snapStartSec > 30) { t = snapStartSec + 30; showWarn(); }
             onEndChange(fmtPrecise(t));
           }
         });
@@ -2298,22 +2298,89 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       }
     };
 
+    // Track velocity for inertia (range drag)
+    let prevCx = startClientX;
+    let prevTime = performance.now();
+    let velocity = 0;
+
+    const updateVelocity = (cx) => {
+      const now = performance.now();
+      const dt = now - prevTime;
+      if (dt > 0 && dt < 100) {
+        const v = (cx - prevCx) / dt; // px/ms
+        velocity = velocity * 0.3 + v * 0.7; // smooth
+      }
+      prevCx = cx;
+      prevTime = now;
+    };
+
+    // Wrap original onMove to also track velocity
+    const origOnMove = onMove;
+    const wrappedOnMove = (ev) => {
+      if (mode === 'range' || mode === 'pan') updateVelocity(ev.clientX);
+      origOnMove(ev);
+    };
+
     const onUp = (ev) => {
       if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(ex) {} }
-      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointermove', wrappedOnMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);
-      // Commit final values as clean integer-second format for display
+
+      // Commit final values as clean integer-second format with 30s enforcement
       if (mode === 'bracket') {
         const r = calcSeekTime(lastCx);
-        const t = Math.max(0, Math.min(duration, r.time));
+        let t = Math.max(0, Math.min(duration, r.time));
         if (bracketType === 'start') {
-          if (!(snapEndSec != null && t >= snapEndSec)) onStartChange(fmtMM(t));
+          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - 1;
+          if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
+          onStartChange(fmtMM(Math.max(0, t)));
         } else {
-          if (t > snapStartSec) onEndChange(fmtMM(t));
+          if (t <= snapStartSec) t = snapStartSec + 1;
+          if (t - snapStartSec > 30) t = snapStartSec + 30;
+          onEndChange(fmtMM(Math.min(duration, t)));
         }
       }
+
       if (mode === 'range' && rangeDragStarted) {
+        // Inertia animation
+        const pxPerMs = velocity;
+        const rectW = rect.width;
+        if (Math.abs(pxPerMs) > 0.15) {
+          let vx = pxPerMs * 16; // px per frame (~16ms)
+          let curCx = lastCx;
+          const friction = 0.92;
+          const inertiaFrame = () => {
+            vx *= friction;
+            if (Math.abs(vx) < 0.3) {
+              // Final commit
+              const { time: ft } = calcSeekTime(curCx);
+              const fd = ft - time;
+              let fns = snapStartSec + fd, fne = snapEndSec + fd;
+              if (fns < 0) { fns = 0; fne = clipDur; }
+              if (fne > duration) { fne = duration; fns = duration - clipDur; }
+              if (onClipChange) onClipChange(fmtMM(fns), fmtMM(fne));
+              else { onStartChange(fmtMM(fns)); onEndChange(fmtMM(fne)); }
+              setRangeDragActive(false);
+              return;
+            }
+            curCx += vx;
+            // Clamp to seekbar bounds
+            curCx = Math.max(rect.left, Math.min(rect.right, curCx));
+            const { time: it } = calcSeekTime(curCx);
+            const id = it - time;
+            let ins = snapStartSec + id, ine = snapEndSec + id;
+            if (ins < 0) { ins = 0; ine = clipDur; vx = 0; }
+            if (ine > duration) { ine = duration; ins = duration - clipDur; vx = 0; }
+            manualSeekOutside.current = false;
+            if (onClipChange) onClipChange(fmtPrecise(ins), fmtPrecise(ine));
+            else { onStartChange(fmtPrecise(ins)); onEndChange(fmtPrecise(ine)); }
+            requestAnimationFrame(inertiaFrame);
+          };
+          requestAnimationFrame(inertiaFrame);
+          return; // Don't setRangeDragActive(false) yet — inertia handles it
+        }
+        // No inertia — just commit
         const { time: t } = calcSeekTime(lastCx);
         const delta = t - time;
         let ns = snapStartSec + delta, ne = snapEndSec + delta;
@@ -2322,6 +2389,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
         else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
       }
+
       if (mode === 'range' && !rangeDragStarted) {
         seekTo(time);
         manualSeekOutside.current = false;
@@ -2331,7 +2399,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       if (mode === 'seek') { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); }
     };
 
-    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointermove', wrappedOnMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onUp);
   };
