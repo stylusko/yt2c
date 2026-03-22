@@ -7426,11 +7426,11 @@ export default function App() {
 
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
-  input[type=range] { height: 36px; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
-  input[type=range]:active::-moz-range-thumb { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
+  input[type=range] { height: 44px; padding: 0; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #ffffff 10px, rgba(255,255,255,0.9) 11px, transparent 12px); border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: transform 0.15s ease, box-shadow 0.15s ease; margin-top: -21px; }
+  input[type=range]::-moz-range-thumb { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #ffffff 10px, rgba(255,255,255,0.9) 11px, transparent 12px); border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]:active::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.4); }
+  input[type=range]:active::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.4); }
 }`)
   );
 }
