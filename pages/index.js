@@ -5456,10 +5456,10 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   };
   const marginTop = mt || 4;
   if (phase === 'confirm') {
-    return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: marginTop } },
-      React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, (cards.length - 1) + '\uC7A5\uC758 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uD560\uAE4C\uC694?'),
-      React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '6px 10px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '\uCDE8\uC18C'),
-      React.createElement('button', { onClick: handleApply, style: { padding: '6px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '\uC801\uC6A9'),
+    return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: marginTop, flexWrap: 'nowrap' } },
+      React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, whiteSpace: 'nowrap' } }, (cards.length - 1) + '\uC7A5 \uC801\uC6A9?'),
+      React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '5px 8px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', flexShrink: 0 } }, '\uCDE8\uC18C'),
+      React.createElement('button', { onClick: handleApply, style: { padding: '5px 8px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600, flexShrink: 0 } }, '\uC801\uC6A9'),
     );
   }
   if (phase === 'done') {
