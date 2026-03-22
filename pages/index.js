@@ -7426,11 +7426,11 @@ export default function App() {
 
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
-  input[type=range] { height: 32px; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
-  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
-  input[type=range]:active::-moz-range-thumb { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
+  input[type=range] { height: 36px; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
+  input[type=range]:active::-moz-range-thumb { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.6); }
 }`)
   );
 }
