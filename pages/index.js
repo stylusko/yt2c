@@ -656,12 +656,100 @@ function LayoutThumb({ type, label, active, onClick }) {
 /* ── Slider Row ── */
 const zoomToSlider = (v) => v <= 100 ? v * 2 : 200 + (v - 100) * 2 / 3;
 const zoomFromSlider = (s) => Math.round(s <= 200 ? s / 2 : 100 + (s - 200) * 1.5);
+
+/* Inject custom slider styles once */
+let _sliderStyleInjected = false;
+function injectSliderStyle() {
+  if (_sliderStyleInjected || typeof document === 'undefined') return;
+  _sliderStyleInjected = true;
+  const css = `
+.yt2c-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+}
+.yt2c-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+}
+.yt2c-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+}
+.yt2c-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6);
+  margin-top: -5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0 0 0 rgba(99,102,241,0), 0 1px 4px rgba(0,0,0,0.6);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:hover::-moz-range-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:active::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.5), 0 1px 4px rgba(0,0,0,0.6);
+}
+`;
+  const el = document.createElement('style');
+  el.setAttribute('data-yt2c-slider', '1');
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
 function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue, toSlider, fromSlider }) {
   const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
   const displayVal = suffix === '%' && typeof value === 'number' && value <= 1 && max <= 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   const sliderVal = toSlider ? toSlider(value) : value;
   const sliderDef = toSlider ? toSlider(defVal) : defVal;
-  const defPct = ((sliderDef - min) / (max - min)) * 100;
+  const sliderMin = min;
+  const sliderMax = max;
+  const defPct = ((sliderDef - sliderMin) / (sliderMax - sliderMin)) * 100;
+  const fillPct = ((sliderVal - sliderMin) / (sliderMax - sliderMin)) * 100;
+
+  useEffect(() => { injectSliderStyle(); }, []);
+
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -670,9 +758,65 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("div", { style: { flex: 1, position: 'relative' } },
-      React.createElement("div", { style: { position: 'absolute', left: defPct + '%', top: 0, width: 1, height: 20, background: 'rgba(255,255,255,0.25)', pointerEvents: 'none', zIndex: 1 } }),
-      React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.02, step * 2); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { width: '100%', accentColor: T.accent, height: 20, position: 'relative', zIndex: 2 } }),
+    React.createElement("div", { style: { flex: 1, position: 'relative', display: 'flex', alignItems: 'center' } },
+      /* filled track layer */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '100%',
+          height: 3,
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.1)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }
+      }),
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: Math.min(100, Math.max(0, fillPct)) + '%',
+          height: 3,
+          borderRadius: 999,
+          background: 'linear-gradient(90deg, rgba(99,102,241,0.7), #6366f1)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }
+      }),
+      /* default value tick */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 'calc(' + defPct + '% - 0.5px)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 1,
+          height: 8,
+          background: 'rgba(255,255,255,0.35)',
+          pointerEvents: 'none',
+          zIndex: 3,
+          borderRadius: 1,
+        }
+      }),
+      React.createElement("input", {
+        type: "range",
+        min: sliderMin,
+        max: sliderMax,
+        step,
+        value: sliderVal,
+        className: 'yt2c-slider',
+        onChange: (e) => {
+          const v = parseFloat(e.target.value);
+          const snap = Math.max(Math.abs(sliderMax - sliderMin) * 0.02, step * 2);
+          onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v));
+        },
+        style: { height: 20, position: 'relative', zIndex: 2 },
+      }),
     ),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
