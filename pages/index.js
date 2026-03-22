@@ -5885,6 +5885,32 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
   const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
 
+  // DeskApplyToAllBtn: desktop version of apply-to-all
+  const DeskApplyToAllBtn = ({ keysToApply }) => {
+    const [phase, setPhase] = React.useState('idle');
+    const timerRef = React.useRef(null);
+    React.useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+    const singleCard = cards.length <= 1;
+    const handleApply = () => {
+      const stylesToCopy = {};
+      keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
+      cards.forEach((c, i) => { if (i !== activeCardIdx) updateCard(i, { ...c, ...stylesToCopy }); });
+      setPhase('done');
+      timerRef.current = setTimeout(() => setPhase('idle'), 1500);
+    };
+    if (phase === 'confirm') {
+      return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 } },
+        React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, flex: 1 } }, (cards.length - 1) + '\uC7A5\uC758 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uD560\uAE4C\uC694?'),
+        React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '5px 10px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer' } }, '\uCDE8\uC18C'),
+        React.createElement('button', { onClick: handleApply, style: { padding: '5px 10px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600 } }, '\uC801\uC6A9'),
+      );
+    }
+    if (phase === 'done') {
+      return React.createElement('button', { style: { marginTop: 8, padding: '7px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 \uC801\uC6A9\uB428');
+    }
+    return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: 8, padding: '7px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
+  };
+
   // \u2500\u2500 Fill Tab \u2500\u2500
   const deskVideoUrl = card.url || globalUrl || '';
   const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
@@ -6023,6 +6049,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         ),
       ),
     ),
+    React.createElement(DeskApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
@@ -6106,6 +6133,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
       React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
     ),
+    React.createElement(DeskApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
   );
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
@@ -6150,6 +6178,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
     }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
+    React.createElement(DeskApplyToAllBtn, { keysToApply: ['overlays'] }),
   );
 
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
