@@ -47,13 +47,27 @@ function saveOverlay(name, base64Data) {
 function saveBackground(name, base64Data) {
   const dir = path.join(STORAGE_DIR, 'backgrounds');
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  // Detect format from data URI prefix
-  const isJpeg = base64Data.startsWith('data:image/jpeg') || base64Data.startsWith('data:image/jpg');
-  const isWebP = base64Data.startsWith('data:image/webp');
+  // Detect format from data URI prefix (case-insensitive, support all MIME subtypes)
+  const isJpeg = /^data:image\/jpe?g/i.test(base64Data);
+  const isWebP = /^data:image\/webp/i.test(base64Data);
   const ext = isWebP ? 'webp' : isJpeg ? 'jpg' : 'png';
   const filePath = path.join(dir, `${name}.${ext}`);
-  const data = base64Data.replace(/^data:image\/[a-z+]+;base64,/, '');
-  fs.writeFileSync(filePath, Buffer.from(data, 'base64'));
+  // Strip data URI prefix (case-insensitive, handle any image MIME type)
+  const data = base64Data.replace(/^data:image\/[a-zA-Z0-9.+_-]+;base64,/i, '');
+  if (data === base64Data && base64Data.startsWith('data:')) {
+    console.warn(`[saveBackground] WARNING: data URI prefix not stripped. First 80 chars: ${base64Data.substring(0, 80)}`);
+  }
+  const buf = Buffer.from(data, 'base64');
+  console.log(`[saveBackground] ${name}: input=${(base64Data.length / 1024).toFixed(1)}KB(base64), decoded=${buf.length} bytes, ext=${ext}`);
+  if (buf.length < 100) {
+    console.error(`[saveBackground] WARNING: decoded buffer suspiciously small (${buf.length} bytes) for ${name}`);
+  }
+  fs.writeFileSync(filePath, buf);
+  // Verify file was written correctly
+  const stat = fs.statSync(filePath);
+  if (stat.size < 100) {
+    console.error(`[saveBackground] WARNING: written file is only ${stat.size} bytes: ${filePath}`);
+  }
   return filePath;
 }
 
