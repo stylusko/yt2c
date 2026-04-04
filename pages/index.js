@@ -7221,6 +7221,7 @@ export default function App() {
           card.appliedEnd = h.end || '0:10';
           card.title = h.title || '';
           card.subtitle = h.subtitle || '';
+          card.useSubtitle = false;
           card.body = h.body || '';
           card.name = (h.title || '').replace(/\n/g, ' ');
           // Apply preset style
