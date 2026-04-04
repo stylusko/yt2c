@@ -7382,28 +7382,44 @@ export default function App() {
     }),
 
     // AI background floating banner (shown on any screen while running)
-    aiEditRunning && React.createElement("div", {
-      style: { position: 'fixed', bottom: mob ? 60 : 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: 'rgba(5,150,105,0.95)', backdropFilter: 'blur(12px)', borderRadius: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', maxWidth: mob ? 'calc(100% - 32px)' : 480, animation: 'modeStepIn 0.4s ease' },
-    },
-      React.createElement("div", { style: { width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
-      React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-        React.createElement("span", { style: { fontSize: 13, color: '#fff', fontWeight: 600 } }, "AI \uBD84\uC11D \uC911"),
-        aiEditStatus?.message && React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginLeft: 8 } }, aiEditStatus.message),
-      ),
-      React.createElement("button", {
-        onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditStatus(null); },
-        style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
-      }, "\uCDE8\uC18C"),
-    ),
+    aiEditRunning && (() => {
+      const stepMap = { info: 0, subtitle: 1, analyze: 2 };
+      const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
+      const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
+      return React.createElement("div", {
+        style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(5,150,105,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
+      },
+        // Progress bar
+        React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.15)' } },
+          React.createElement("div", { style: { height: '100%', width: pct + '%', background: '#6ee7b7', transition: 'width 0.6s ease', borderRadius: '0 2px 2px 0' } }),
+        ),
+        React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+          React.createElement("div", { style: { width: 20, height: 20, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+          React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 } },
+              React.createElement("span", { style: { fontSize: 14, color: '#fff', fontWeight: 600 } }, "AI \uBD84\uC11D \uC911"),
+              React.createElement("span", { style: { fontSize: 12, color: '#a7f3d0', fontWeight: 500 } }, pct + "%"),
+            ),
+            aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.7)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, aiEditStatus.message),
+          ),
+          React.createElement("button", {
+            onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditStatus(null); },
+            style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+          }, "\uCDE8\uC18C"),
+        ),
+      );
+    })(),
     // AI error floating banner
     !aiEditRunning && aiEditError && React.createElement("div", {
-      style: { position: 'fixed', bottom: mob ? 60 : 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: 'rgba(220,38,38,0.95)', backdropFilter: 'blur(12px)', borderRadius: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', maxWidth: mob ? 'calc(100% - 32px)' : 480, animation: 'modeStepIn 0.4s ease' },
+      style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(220,38,38,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
     },
-      React.createElement("span", { style: { fontSize: 13, color: '#fff' } }, aiEditError.message || 'AI \uBD84\uC11D \uC2E4\uD328'),
-      React.createElement("button", {
-        onClick: () => setAiEditError(null),
-        style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
-      }, "\uB2EB\uAE30"),
+      React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("span", { style: { flex: 1, fontSize: 13, color: '#fff', lineHeight: 1.4 } }, aiEditError.message || 'AI \uBD84\uC11D \uC2E4\uD328'),
+        React.createElement("button", {
+          onClick: () => setAiEditError(null),
+          style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+        }, "\uB2EB\uAE30"),
+      ),
     ),
 
     wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
