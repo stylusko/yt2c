@@ -2910,6 +2910,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, onReady }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const timerRef = useRef(null);
   const loopRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -2964,7 +2966,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         events: {
           onReady: (e) => {
             if (!cancelled) {
-              e.target.mute();
+              if (mutedRef.current) e.target.mute(); else e.target.unMute();
               e.target.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
             }
           },
@@ -3045,7 +3047,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady }) {
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
@@ -3059,7 +3061,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
-  const [vpMuted, setVpMuted] = useState(true);
+  const [vpMutedLocal, setVpMutedLocal] = useState(true);
+  const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
+  const setVpMuted = onMuteToggle || setVpMutedLocal;
   const [imgDims, setImgDims] = useState(null);
 
   useEffect(() => {
@@ -3518,7 +3522,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Mute toggle button (bottom-right corner)
   const muteToggle = hasVideoPreview
     ? React.createElement("button", {
-        onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
+        onClick: (e) => { e.stopPropagation(); if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m); },
         style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
       }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
     : null;
@@ -3950,6 +3954,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [videoReady, setVideoReady] = useState({});
+  const [previewMuted, setPreviewMuted] = useState(true);
   const prevIdx = useRef(currentIdx);
   useEffect(() => { if (prevIdx.current !== currentIdx) { setVideoReady(prev => ({ ...prev, [currentIdx]: false })); prevIdx.current = currentIdx; } }, [currentIdx]);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -4021,7 +4026,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })) }),
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
