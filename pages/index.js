@@ -4817,10 +4817,10 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
     return () => clearInterval(timer);
   }, [siteStats]);
   const cardBase = {
-    flex: 1, minWidth: mob ? 'auto' : 240, maxWidth: mob ? 'none' : 420,
-    background: T.surface, borderRadius: mob ? 10 : 14, padding: mob ? '12px 14px' : '18px 24px',
+    flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
+    background: T.surface, borderRadius: mob ? 10 : 16, padding: mob ? '12px 14px' : 32,
     border: `1.5px solid ${T.border}`, cursor: 'pointer',
-    transition: 'all 0.2s ease', display: 'flex', flexDirection: mob ? 'row' : 'column', alignItems: mob ? 'center' : 'stretch', gap: mob ? 12 : 12,
+    transition: 'all 0.2s ease', display: 'flex', flexDirection: mob ? 'row' : 'column', alignItems: mob ? 'center' : 'stretch', gap: mob ? 12 : 16,
   };
   const flowSteps = [
     { icon: "\uD83D\uDD17", label: "\uB9C1\uD06C \uC785\uB825" },
@@ -4869,7 +4869,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
     // Section 3: Cards — AI자동편집 → 쉬운편집 → 자유편집
-    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 16, width: '100%', maxWidth: 860, justifyContent: 'center' } },
+    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // 1) AI auto-edit card
       React.createElement("div", {
         onClick: onSelectAiEdit,
@@ -4883,15 +4883,31 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
           boxShadow: hovered === 'ai' ? '0 8px 32px rgba(5,150,105,0.4)' : '0 4px 20px rgba(5,150,105,0.2)',
         },
       },
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
-          React.createElement("span", { style: { fontSize: mob ? 22 : 28 } }, "\uD83E\uDD16"),
-          React.createElement("span", { style: { fontSize: mob ? 10 : 11, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
-        ),
-        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-          React.createElement("h2", { style: { fontSize: mob ? 15 : 18, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544 \uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9 \uC0DD\uC131"),
-        ),
-        React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
+                React.createElement("span", { style: { fontSize: 22 } }, "\uD83E\uDD16"),
+                React.createElement("span", { style: { fontSize: 10, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+              ),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544 \uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9 \uC0DD\uC131"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("span", { style: { fontSize: 32 } }, "\uD83E\uDD16"),
+                React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+              ),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#a7f3d0' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
       ),
       // 2) Easy mode card
       React.createElement("div", {
@@ -4906,12 +4922,25 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
           boxShadow: hovered === 'easy' ? '0 8px 32px rgba(109,40,217,0.4)' : '0 4px 20px rgba(109,40,217,0.2)',
         },
       },
-        React.createElement("div", { style: { fontSize: mob ? 22 : 28, flexShrink: 0 } }, "\u2728"),
-        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-          React.createElement("h2", { style: { fontSize: mob ? 15 : 18, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694"),
-        ),
-        React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: '#e9d5ff', flexShrink: 0 } }, "\u2192"),
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\u2728"),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#e9d5ff', flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
       ),
       // 3) Free mode card
       React.createElement("div", {
@@ -4919,12 +4948,25 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
         onMouseEnter: () => setHovered('free'), onMouseLeave: () => setHovered(null),
         style: { ...cardBase, borderColor: hovered === 'free' ? T.accent : T.border, background: hovered === 'free' ? 'rgba(99,102,241,0.06)' : T.surface },
       },
-        React.createElement("div", { style: { fontSize: mob ? 22 : 28, flexShrink: 0 } }, "\uD83C\uDFA8"),
-        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-          React.createElement("h2", { style: { fontSize: mob ? 15 : 18, fontWeight: 700, color: T.text, margin: 0, marginBottom: 2 } }, "\uC790\uC720\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textSecondary, lineHeight: 1.4, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694"),
-        ),
-        React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: T.accent, flexShrink: 0 } }, "\u2192"),
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83C\uDFA8"),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: T.text, margin: 0, marginBottom: 2 } }, "\uC790\uC720\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 11, color: T.textSecondary, lineHeight: 1.4, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: T.accent, flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFA8"),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3\uACFC \uD14D\uC2A4\uD2B8 \uB4F1", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
       ),
     ),
   );
