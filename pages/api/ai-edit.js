@@ -2,7 +2,8 @@ import { getVideoInfo, extractSubtitles } from '../../lib/subtitle.js';
 import { analyzeHighlights } from '../../lib/claude.js';
 
 export const config = {
-  api: { bodyParser: false },
+  api: { bodyParser: false, responseLimit: false },
+  maxDuration: 300,
 };
 
 function send(res, event, data) {
@@ -31,6 +32,13 @@ export default async function handler(req, res) {
   // 클라이언트 연결 해제 감지
   let aborted = false;
   req.on('close', () => { aborted = true; });
+
+  // Keepalive heartbeat (15초마다) — Railway 프록시 타임아웃 방지
+  const heartbeat = setInterval(() => {
+    if (!aborted) {
+      try { res.write(': heartbeat\n\n'); } catch {}
+    }
+  }, 15000);
 
   try {
     // 1. 영상 정보 조회
@@ -117,8 +125,10 @@ export default async function handler(req, res) {
       source: subtitleData.source,
     });
 
+    clearInterval(heartbeat);
     res.end();
   } catch (err) {
+    clearInterval(heartbeat);
     console.error('[ai-edit] 에러:', err);
     if (!aborted) {
       send(res, 'error_event', {
