@@ -4818,7 +4818,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
   }, [siteStats]);
   const cardBase = {
     flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
-    background: T.surface, borderRadius: mob ? 10 : 16, padding: mob ? '12px 14px' : 32,
+    background: T.surface, borderRadius: mob ? 10 : 16, padding: mob ? '14px 16px' : 32,
     border: `1.5px solid ${T.border}`, cursor: 'pointer',
     transition: 'all 0.2s ease', display: 'flex', flexDirection: mob ? 'row' : 'column', alignItems: mob ? 'center' : 'stretch', gap: mob ? 12 : 16,
   };
@@ -4885,12 +4885,12 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
       },
         mob
           ? React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
-                React.createElement("span", { style: { fontSize: 22 } }, "\uD83E\uDD16"),
-                React.createElement("span", { style: { fontSize: 10, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
-              ),
+              React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83E\uDD16"),
               React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                  React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                  React.createElement("span", { style: { fontSize: 9, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '1px 6px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+                ),
                 React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544 \uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9 \uC0DD\uC131"),
               ),
               React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
