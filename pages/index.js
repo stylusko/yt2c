@@ -6690,7 +6690,9 @@ export default function App() {
   const [aiEditStatus, setAiEditStatus] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
   const [aiMode, setAiMode] = useState(false);
+  const [aiEditRunning, setAiEditRunning] = useState(false);
   const aiEventSourceRef = useRef(null);
+  const aiWizardDataRef = useRef(null);
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
@@ -7170,7 +7172,13 @@ export default function App() {
     const presetId = wizardData.presetId;
     const aspectRatio = wizardData.aspectRatio;
 
-    setEditorMode('ai-loading');
+    // Save wizard data for background completion
+    aiWizardDataRef.current = { url, presetId, aspectRatio };
+
+    // Go back to main screen, run in background
+    setEditorMode(null);
+    setAiMode(false);
+    setAiEditRunning(true);
     setAiEditStatus({ step: 'info', message: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778 \uC911...' });
     setAiEditError(null);
 
@@ -7191,6 +7199,7 @@ export default function App() {
       } catch { setAiEditError({ message: '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958' }); }
       es.close();
       aiEventSourceRef.current = null;
+      setAiEditRunning(false);
     });
 
     es.addEventListener('result', (e) => {
@@ -7198,10 +7207,14 @@ export default function App() {
       aiEventSourceRef.current = null;
       try {
         const { highlights, videoInfo } = JSON.parse(e.data);
-        const preset = STYLE_PRESETS.find(p => p.id === presetId) || STYLE_PRESETS[0];
+        const wd = aiWizardDataRef.current || {};
+        const _url = wd.url || url;
+        const _presetId = wd.presetId || presetId;
+        const _aspectRatio = wd.aspectRatio || aspectRatio;
+        const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
         const newCards = highlights.map((h) => {
           const card = DEFAULT_CARD();
-          card.url = url;
+          card.url = _url;
           card.start = h.start || '0:00';
           card.end = h.end || '0:10';
           card.appliedStart = h.start || '0:00';
@@ -7238,13 +7251,15 @@ export default function App() {
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
           if (p.id !== targetId) return p;
-          return { ...p, globalUrl: url, aspectRatio, cards: newCards };
+          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards };
         }));
         setActiveProjectId(targetId);
+        setAiEditRunning(false);
         setAiMode(false);
         setEditorMode('editor');
       } catch (err) {
         setAiEditError({ message: '\uACB0\uACFC \uCC98\uB9AC \uC911 \uC624\uB958: ' + (err.message || '') });
+        setAiEditRunning(false);
       }
     });
 
@@ -7252,6 +7267,7 @@ export default function App() {
       es.close();
       aiEventSourceRef.current = null;
       setAiEditError({ message: '\uC11C\uBC84 \uC5F0\uACB0\uC774 \uB04A\uC5B4\uC84C\uC2B5\uB2C8\uB2E4.' });
+      setAiEditRunning(false);
     };
   };
 
@@ -7328,13 +7344,30 @@ export default function App() {
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
     }),
 
-    editorMode === 'ai-loading' && React.createElement(AiEditLoadingScreen, {
-      mob,
-      status: aiEditStatus,
-      error: aiEditError,
-      onCancel: () => { setEditorMode(null); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
-      onRetry: () => { handleAiEditComplete(); },
-    }),
+    // AI background floating banner (shown on any screen while running)
+    aiEditRunning && React.createElement("div", {
+      style: { position: 'fixed', bottom: mob ? 60 : 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: 'rgba(5,150,105,0.95)', backdropFilter: 'blur(12px)', borderRadius: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', maxWidth: mob ? 'calc(100% - 32px)' : 480, animation: 'modeStepIn 0.4s ease' },
+    },
+      React.createElement("div", { style: { width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+      React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+        React.createElement("span", { style: { fontSize: 13, color: '#fff', fontWeight: 600 } }, "AI \uBD84\uC11D \uC911"),
+        aiEditStatus?.message && React.createElement("span", { style: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginLeft: 8 } }, aiEditStatus.message),
+      ),
+      React.createElement("button", {
+        onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditStatus(null); },
+        style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+      }, "\uCDE8\uC18C"),
+    ),
+    // AI error floating banner
+    !aiEditRunning && aiEditError && React.createElement("div", {
+      style: { position: 'fixed', bottom: mob ? 60 : 24, left: '50%', transform: 'translateX(-50%)', zIndex: 300, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', background: 'rgba(220,38,38,0.95)', backdropFilter: 'blur(12px)', borderRadius: 999, boxShadow: '0 8px 32px rgba(0,0,0,0.4)', maxWidth: mob ? 'calc(100% - 32px)' : 480, animation: 'modeStepIn 0.4s ease' },
+    },
+      React.createElement("span", { style: { fontSize: 13, color: '#fff' } }, aiEditError.message || 'AI \uBD84\uC11D \uC2E4\uD328'),
+      React.createElement("button", {
+        onClick: () => setAiEditError(null),
+        style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 11, padding: '4px 10px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+      }, "\uB2EB\uAE30"),
+    ),
 
     wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
 

@@ -39,12 +39,12 @@ export default async function handler(req, res) {
 
     if (aborted) return res.end();
 
-    // 2. 영상 길이 체크 (30분 = 1800초)
-    if (videoInfo.duration > 1800) {
+    // 2. 영상 길이 체크 (180분 = 10800초)
+    if (videoInfo.duration > 10800) {
       send(res, 'error_event', {
         code: 'too_long',
         duration: videoInfo.duration,
-        message: `영상이 ${Math.floor(videoInfo.duration / 60)}분입니다. 현재 30분 이하 영상만 지원합니다.`,
+        message: `영상이 ${Math.floor(videoInfo.duration / 60)}분입니다. 현재 180분 이하 영상만 지원합니다.`,
       });
       return res.end();
     }
