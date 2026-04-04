@@ -10,6 +10,7 @@
     "telegram:replay48h": "node scripts/replay-telegram-48h.mjs"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@supabase/supabase-js": "^2.99.0",
     "bullmq": "^5.0.0",
     "formidable": "^3.5.0",

@@ -4789,7 +4789,7 @@ function StylePresetThumb({ preset }) {
 }
 
 /* ── Mode Selection Screen ── */
-function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
+function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }) {
   const [hovered, setHovered] = useState(null);
   const [siteStats, setSiteStats] = useState(null);
   const [animatedStats, setAnimatedStats] = useState({ visitors: 0, cards: 0 });
@@ -4907,23 +4907,41 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
           React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
         ),
       ),
+      // AI auto-edit card
+      React.createElement("div", {
+        onClick: onSelectAiEdit,
+        onMouseEnter: () => setHovered('ai'), onMouseLeave: () => setHovered(null),
+        style: {
+          ...cardBase,
+          background: hovered === 'ai'
+            ? 'linear-gradient(135deg, #065f46 0%, #059669 40%, #10b981 100%)'
+            : 'linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%)',
+          borderColor: hovered === 'ai' ? '#6ee7b7' : 'rgba(16,185,129,0.3)',
+          boxShadow: hovered === 'ai' ? '0 8px 32px rgba(5,150,105,0.4)' : '0 4px 20px rgba(5,150,105,0.2)',
+        },
+      },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          React.createElement("span", { style: { fontSize: mob ? 24 : 32 } }, "\uD83E\uDD16"),
+          React.createElement("span", { style: { fontSize: mob ? 10 : 11, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+        ),
+        React.createElement("div", null,
+          React.createElement("h2", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: mob ? 4 : 8 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+        ),
+        React.createElement("div", { style: { marginTop: 'auto', paddingTop: mob ? 4 : 8 } },
+          React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: '#a7f3d0' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+        ),
+      ),
     ),
   );
 }
 
 /* ── Wizard Screen ── */
-function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel }) {
+function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, aiMode }) {
   const [presetHover, setPresetHover] = useState(null);
   const update = (k, v) => onDataChange({ ...data, [k]: v });
 
-  const stepIndicator = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
-    [1, 2, 3].map(s => React.createElement("div", { key: s, style: {
-      width: s === step ? 32 : 10, height: 10, borderRadius: 5,
-      background: s === step ? T.accent : s < step ? T.accent : 'rgba(255,255,255,0.15)',
-      opacity: s < step ? 0.4 : 1,
-      transition: 'all 0.3s ease',
-    } })),
-  );
+  // stepIndicator is built dynamically below based on aiMode maxStep
 
   const step1 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
     // Step title
@@ -4964,8 +4982,8 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC2A4\uD0C0\uC77C\uC744 \uACE8\uB77C\uC8FC\uC138\uC694"),
       React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uB098\uC911\uC5D0 \uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
     ),
-    // Card count stepper
-    React.createElement("div", null,
+    // Card count stepper (hide in aiMode)
+    !aiMode && React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB9CC\uB4E4 \uCE74\uB4DC \uC7A5\uC218"),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
         React.createElement("button", {
@@ -4979,6 +4997,14 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         }, "+"),
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\xB7\uC0AD\uC81C\uD560 \uC218 \uC788\uC5B4\uC694"),
+    ),
+    // AI mode info
+    aiMode && React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' } },
+      React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\uD83E\uDD16"),
+      React.createElement("div", null,
+        React.createElement("span", { style: { fontSize: 14, color: T.text, fontWeight: 600 } }, "AI\uAC00 \uCE74\uB4DC\uB97C \uC790\uB3D9 \uC0DD\uC131\uD569\uB2C8\uB2E4"),
+        React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, marginTop: 4 } }, "\uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 AI\uAC00 \uBD84\uC11D\uD558\uC5EC \uCE74\uB4DC\uB97C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694. \uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uC218\uC815\uD560 \uC218 \uC788\uC5B4\uC694."),
+      ),
     ),
     // Style presets
     React.createElement("div", null,
@@ -5043,18 +5069,28 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
   );
 
+  const maxStep = aiMode ? 2 : 3;
   const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : true;
+
+  const stepIndicatorEl = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
+    Array.from({ length: maxStep }, (_, i) => i + 1).map(s => React.createElement("div", { key: s, style: {
+      width: s === step ? 32 : 10, height: 10, borderRadius: 5,
+      background: s === step ? (aiMode ? '#10b981' : T.accent) : s < step ? (aiMode ? '#10b981' : T.accent) : 'rgba(255,255,255,0.15)',
+      opacity: s < step ? 0.4 : 1,
+      transition: 'all 0.3s ease',
+    } })),
+  );
 
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', overflow: 'auto' } },
     // Top bar
     React.createElement("div", { style: { padding: mob ? '12px 16px' : '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.border}` } },
-      React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+      React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, aiMode ? "AI \uC790\uB3D9\uD3B8\uC9D1" : "\uC26C\uC6B4\uD3B8\uC9D1"),
       React.createElement("button", { onClick: onCancel, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
     ),
     // Content
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
       React.createElement("div", { style: { width: '100%', maxWidth: 480 } },
-        stepIndicator,
+        stepIndicatorEl,
         step === 1 ? step1 : step === 2 ? step2 : step3,
       ),
     ),
@@ -5063,9 +5099,9 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       step > 1
         ? React.createElement("button", { onClick: onBack, style: { padding: '12px 24px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 14, cursor: 'pointer' } }, "\u2190 \uC774\uC804")
         : React.createElement("div"),
-      step < 3
-        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
-        : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, "\uB9CC\uB4E4\uAE30 \u2728"),
+      step < maxStep
+        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
+        : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
     ),
   );
 }
@@ -5123,6 +5159,62 @@ function WizardLoadingScreen({ mob }) {
       @keyframes wizardGradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
       @keyframes wizardPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
       @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    `),
+  );
+}
+
+/* ── AI Edit Loading Screen ── */
+function AiEditLoadingScreen({ mob, status, error, onCancel, onRetry }) {
+  const steps = [
+    { key: 'info', label: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778' },
+    { key: 'subtitle', label: '\uC790\uB9C9 \uCD94\uCD9C' },
+    { key: 'analyze', label: 'AI \uD575\uC2EC \uAD6C\uAC04 \uBD84\uC11D' },
+  ];
+  const currentStep = status?.step || 'info';
+  const currentIdx = steps.findIndex(s => s.key === currentStep);
+
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', backgroundSize: '400% 400%', animation: 'wizardGradient 6s ease infinite', overflow: 'hidden' } },
+    // Shimmer
+    React.createElement("div", { style: { position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease-in-out infinite' } }),
+    // AI icon
+    React.createElement("div", { style: { fontSize: 56, marginBottom: 32, animation: 'wizardPulse 2s ease-in-out infinite' } }, "\uD83E\uDD16"),
+    // Error state
+    error ? React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 360, textAlign: 'center' } },
+      React.createElement("div", { style: { fontSize: 18, color: '#fca5a5', fontWeight: 600 } }, "\uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.6 } }, error.message || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'),
+      React.createElement("div", { style: { display: 'flex', gap: 12, marginTop: 8 } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '10px 24px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontSize: 14, cursor: 'pointer' } }, "\uB3CC\uC544\uAC00\uAE30"),
+        onRetry && React.createElement("button", { onClick: onRetry, style: { padding: '10px 24px', borderRadius: 999, border: 'none', background: '#059669', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' } }, "\uB2E4\uC2DC \uC2DC\uB3C4"),
+      ),
+    )
+    // Normal loading state
+    : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' } },
+      steps.map((s, i) => {
+        const isDone = i < currentIdx;
+        const isCurrent = i === currentIdx;
+        const isPending = i > currentIdx;
+        return React.createElement("div", { key: s.key, style: {
+          display: 'flex', alignItems: 'center', gap: 12,
+          opacity: isPending ? 0.3 : 1,
+          transform: isPending ? 'translateY(6px)' : 'translateY(0)',
+          transition: 'all 0.4s ease',
+        } },
+          isDone
+            ? React.createElement("span", { style: { fontSize: 20, color: '#6ee7b7' } }, "\u2713")
+            : isCurrent
+              ? React.createElement("div", { style: { width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.2)', borderTopColor: '#6ee7b7', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+              : React.createElement("div", { style: { width: 18, height: 18 } }),
+          React.createElement("span", { style: { fontSize: mob ? 15 : 17, color: isDone ? '#d1fae5' : isCurrent ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: isCurrent ? 600 : 400 } }, s.label),
+        );
+      }),
+      // Status message
+      status?.message && React.createElement("p", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, marginTop: 8, textAlign: 'center', maxWidth: 320 } }, status.message),
+      // Cancel button
+      React.createElement("button", { onClick: onCancel, style: { marginTop: 16, padding: '8px 20px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+    ),
+    // Keyframes reuse
+    React.createElement("style", null, `
+      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
     `),
   );
 }
@@ -6595,6 +6687,10 @@ export default function App() {
   const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
+  const [aiEditStatus, setAiEditStatus] = useState(null);
+  const [aiEditError, setAiEditError] = useState(null);
+  const [aiMode, setAiMode] = useState(false);
+  const aiEventSourceRef = useRef(null);
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
@@ -6674,6 +6770,10 @@ export default function App() {
     } else if (path === '/easy') {
       setEditorMode('wizard');
       setWizardStep(1);
+    } else if (path === '/ai-edit') {
+      setEditorMode('ai-wizard');
+      setAiMode(true);
+      setWizardStep(1);
     } else if (path === '/edit') {
       setEditorMode('editor');
     } else {
@@ -6685,7 +6785,7 @@ export default function App() {
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
-    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/edit' : '/';
+    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'ai-wizard' ? '/ai-edit' : editorMode === 'ai-loading' ? '/ai-edit' : editorMode === 'editor' ? '/edit' : '/';
     if (window.location.pathname !== targetPath) {
       router.push(targetPath, undefined, { shallow: true });
     }
@@ -6697,8 +6797,9 @@ export default function App() {
       if (wizardLoading) return;
       const p = url.split('?')[0];
       if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
+      else if (p === '/ai-edit' && editorMode !== 'ai-wizard') { setEditorMode('ai-wizard'); setWizardStep(1); setAiMode(true); }
       else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
-      else if (p === '/' && editorMode !== null) { setEditorMode(null); }
+      else if (p === '/' && editorMode !== null) { setEditorMode(null); setAiMode(false); }
     };
     router.events.on('routeChangeComplete', onRouteChange);
     return () => router.events.off('routeChangeComplete', onRouteChange);
@@ -7064,7 +7165,99 @@ export default function App() {
     return newCards;
   };
 
+  const handleAiEditComplete = () => {
+    const url = wizardData.url;
+    const presetId = wizardData.presetId;
+    const aspectRatio = wizardData.aspectRatio;
+
+    setEditorMode('ai-loading');
+    setAiEditStatus({ step: 'info', message: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778 \uC911...' });
+    setAiEditError(null);
+
+    // Close any previous SSE connection
+    if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
+
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url));
+    aiEventSourceRef.current = es;
+
+    es.addEventListener('status', (e) => {
+      try { setAiEditStatus(JSON.parse(e.data)); } catch {}
+    });
+
+    es.addEventListener('error_event', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAiEditError(data);
+      } catch { setAiEditError({ message: '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958' }); }
+      es.close();
+      aiEventSourceRef.current = null;
+    });
+
+    es.addEventListener('result', (e) => {
+      es.close();
+      aiEventSourceRef.current = null;
+      try {
+        const { highlights, videoInfo } = JSON.parse(e.data);
+        const preset = STYLE_PRESETS.find(p => p.id === presetId) || STYLE_PRESETS[0];
+        const newCards = highlights.map((h) => {
+          const card = DEFAULT_CARD();
+          card.url = url;
+          card.start = h.start || '0:00';
+          card.end = h.end || '0:10';
+          card.title = h.title || '';
+          card.subtitle = h.subtitle || '';
+          card.body = h.body || '';
+          card.name = (h.title || '').replace(/\n/g, ' ');
+          // Apply preset style
+          card.layout = preset.layout;
+          card.bgColor = preset.bgColor;
+          card.bgOpacity = preset.bgOpacity;
+          card.useGradient = preset.useGradient || false;
+          card.titleColor = preset.titleColor;
+          card.subtitleColor = preset.subtitleColor;
+          card.bodyColor = preset.bodyColor;
+          card.titleSize = preset.titleSize;
+          card.subtitleSize = preset.subtitleSize;
+          card.bodySize = preset.bodySize;
+          card.titleAlign = preset.titleAlign;
+          card.subtitleAlign = preset.subtitleAlign;
+          card.bodyAlign = preset.bodyAlign;
+          if (preset.photoRatio != null) card.photoRatio = preset.photoRatio;
+          if (preset.textBoxX != null) card.textBoxX = preset.textBoxX;
+          if (preset.textBoxY != null) card.textBoxY = preset.textBoxY;
+          if (preset.textBoxWidth != null) card.textBoxWidth = preset.textBoxWidth;
+          if (preset.textBoxPadding != null) card.textBoxPadding = preset.textBoxPadding;
+          if (preset.textBoxRadius != null) card.textBoxRadius = preset.textBoxRadius;
+          if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
+          if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
+          return card;
+        });
+
+        const targetId = pendingProjectId || activeProjectId;
+        setProjects(prev => prev.map(p => {
+          if (p.id !== targetId) return p;
+          return { ...p, globalUrl: url, aspectRatio, cards: newCards };
+        }));
+        setActiveProjectId(targetId);
+        setAiMode(false);
+        setEditorMode('editor');
+      } catch (err) {
+        setAiEditError({ message: '\uACB0\uACFC \uCC98\uB9AC \uC911 \uC624\uB958: ' + (err.message || '') });
+      }
+    });
+
+    es.onerror = () => {
+      es.close();
+      aiEventSourceRef.current = null;
+      setAiEditError({ message: '\uC11C\uBC84 \uC5F0\uACB0\uC774 \uB04A\uC5B4\uC84C\uC2B5\uB2C8\uB2E4.' });
+    };
+  };
+
   const handleWizardComplete = () => {
+    if (aiMode) {
+      handleAiEditComplete();
+      return;
+    }
     setWizardLoading(true);
     setTimeout(() => {
       const newCards = generateWizardCards(wizardData);
@@ -7110,8 +7303,9 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob,
-      onSelectEasy: () => { setEditorMode('wizard'); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+      onSelectEasy: () => { setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
       onSelectFree: () => { setEditorMode('editor'); },
+      onSelectAiEdit: () => { setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
@@ -7120,7 +7314,24 @@ export default function App() {
       onNext: () => setWizardStep(s => Math.min(s + 1, 3)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
-      onCancel: () => { setEditorMode(null); setWizardStep(1); },
+      onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); },
+    }),
+
+    editorMode === 'ai-wizard' && React.createElement(WizardScreen, {
+      mob, step: wizardStep, data: wizardData, aiMode: true,
+      onDataChange: setWizardData,
+      onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
+      onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
+      onComplete: handleWizardComplete,
+      onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
+    }),
+
+    editorMode === 'ai-loading' && React.createElement(AiEditLoadingScreen, {
+      mob,
+      status: aiEditStatus,
+      error: aiEditError,
+      onCancel: () => { setEditorMode(null); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
+      onRetry: () => { handleAiEditComplete(); },
     }),
 
     wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
