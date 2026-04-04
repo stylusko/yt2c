@@ -7253,8 +7253,9 @@ export default function App() {
         const _presetId = wd.presetId || presetId;
         const _aspectRatio = wd.aspectRatio || aspectRatio;
         const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
-        const newCards = highlights.map((h) => {
+        const newCards = highlights.map((h, idx) => {
           const card = DEFAULT_CARD();
+          const isCover = h.type === 'cover' || idx === 0;
           card.url = _url;
           card.start = h.start || '0:00';
           card.end = h.end || '0:10';
@@ -7262,31 +7263,42 @@ export default function App() {
           card.appliedEnd = h.end || '0:10';
           card.title = h.title || '';
           card.subtitle = h.subtitle || '';
-          card.useSubtitle = false;
-          card.body = h.body || '';
+          card.useSubtitle = !isCover;
+          card.body = isCover ? '' : (h.body || '');
+          card.useBody = !isCover;
           card.name = (h.title || '').replace(/\n/g, ' ');
-          // Apply preset style
-          card.layout = preset.layout;
-          card.bgColor = preset.bgColor;
-          card.bgOpacity = preset.bgOpacity;
-          card.useGradient = preset.useGradient || false;
-          card.titleColor = preset.titleColor;
-          card.subtitleColor = preset.subtitleColor;
-          card.bodyColor = preset.bodyColor;
-          card.titleSize = preset.titleSize;
-          card.subtitleSize = preset.subtitleSize;
-          card.bodySize = preset.bodySize;
-          card.titleAlign = preset.titleAlign;
-          card.subtitleAlign = preset.subtitleAlign;
-          card.bodyAlign = preset.bodyAlign;
-          if (preset.photoRatio != null) card.photoRatio = preset.photoRatio;
-          if (preset.textBoxX != null) card.textBoxX = preset.textBoxX;
-          if (preset.textBoxY != null) card.textBoxY = preset.textBoxY;
-          if (preset.textBoxWidth != null) card.textBoxWidth = preset.textBoxWidth;
-          if (preset.textBoxPadding != null) card.textBoxPadding = preset.textBoxPadding;
-          if (preset.textBoxRadius != null) card.textBoxRadius = preset.textBoxRadius;
-          if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
-          if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
+
+          if (isCover) {
+            // Cover card: full background, big title, gradient overlay
+            card.layout = 'full_bg';
+            card.bgColor = '#000000';
+            card.bgOpacity = 0.45;
+            card.titleColor = '#ffffff';
+            card.subtitleColor = '#e0e0e0';
+            card.bodyColor = '#d0d0d0';
+            card.titleSize = 72;
+            card.subtitleSize = 44;
+            card.bodySize = 40;
+            card.titleAlign = 'left';
+            card.subtitleAlign = 'left';
+            card.bodyAlign = 'left';
+          } else {
+            // Highlight cards: photo_top with gradient, compact text area
+            card.layout = 'photo_top';
+            card.useGradient = true;
+            card.photoRatio = 65;
+            card.bgColor = '#121212';
+            card.bgOpacity = 1;
+            card.titleColor = '#ffffff';
+            card.subtitleColor = '#aaaaaa';
+            card.bodyColor = '#d2d2d2';
+            card.titleSize = 56;
+            card.subtitleSize = 40;
+            card.bodySize = 36;
+            card.titleAlign = 'left';
+            card.subtitleAlign = 'left';
+            card.bodyAlign = 'left';
+          }
           return card;
         });
 
