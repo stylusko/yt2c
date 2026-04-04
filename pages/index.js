@@ -7255,44 +7255,33 @@ export default function App() {
         const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
         const newCards = highlights.map((h, idx) => {
           const card = DEFAULT_CARD();
-          const isCover = h.type === 'cover' || idx === 0;
           card.url = _url;
           card.start = h.start || '0:00';
           card.end = h.end || '0:10';
           card.appliedStart = h.start || '0:00';
           card.appliedEnd = h.end || '0:10';
           card.title = h.title || '';
-          card.subtitle = h.subtitle || '';
-          card.useSubtitle = !isCover;
-          card.body = isCover ? '' : (h.body || '');
-          card.useBody = !isCover;
+          card.subtitle = '';
+          card.useSubtitle = false;
+          card.body = '';
+          card.useBody = false;
           card.name = (h.title || '').replace(/\n/g, ' ');
 
-          // All cards: photo_top with gradient
+          // All cards: photo_top with gradient, title only
           card.layout = 'photo_top';
           card.useGradient = true;
+          card.photoRatio = 75;
           card.bgColor = '#121212';
           card.bgOpacity = 1;
           card.titleColor = '#ffffff';
           card.subtitleColor = '#aaaaaa';
           card.bodyColor = '#d2d2d2';
+          card.titleSize = 72;
+          card.subtitleSize = 44;
+          card.bodySize = 40;
           card.titleAlign = 'left';
           card.subtitleAlign = 'left';
           card.bodyAlign = 'left';
-
-          if (isCover) {
-            // Cover: more video area, bigger title, no body
-            card.photoRatio = 75;
-            card.titleSize = 72;
-            card.subtitleSize = 44;
-            card.bodySize = 40;
-          } else {
-            // Highlight: compact text area
-            card.photoRatio = 65;
-            card.titleSize = 56;
-            card.subtitleSize = 40;
-            card.bodySize = 36;
-          }
           return card;
         });
 
