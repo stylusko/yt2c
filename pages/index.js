@@ -7268,36 +7268,30 @@ export default function App() {
           card.useBody = !isCover;
           card.name = (h.title || '').replace(/\n/g, ' ');
 
+          // All cards: photo_top with gradient
+          card.layout = 'photo_top';
+          card.useGradient = true;
+          card.bgColor = '#121212';
+          card.bgOpacity = 1;
+          card.titleColor = '#ffffff';
+          card.subtitleColor = '#aaaaaa';
+          card.bodyColor = '#d2d2d2';
+          card.titleAlign = 'left';
+          card.subtitleAlign = 'left';
+          card.bodyAlign = 'left';
+
           if (isCover) {
-            // Cover card: full background, big title, gradient overlay
-            card.layout = 'full_bg';
-            card.bgColor = '#000000';
-            card.bgOpacity = 0.45;
-            card.titleColor = '#ffffff';
-            card.subtitleColor = '#e0e0e0';
-            card.bodyColor = '#d0d0d0';
+            // Cover: more video area, bigger title, no body
+            card.photoRatio = 75;
             card.titleSize = 72;
             card.subtitleSize = 44;
             card.bodySize = 40;
-            card.titleAlign = 'left';
-            card.subtitleAlign = 'left';
-            card.bodyAlign = 'left';
           } else {
-            // Highlight cards: photo_top with gradient, compact text area
-            card.layout = 'photo_top';
-            card.useGradient = true;
+            // Highlight: compact text area
             card.photoRatio = 65;
-            card.bgColor = '#121212';
-            card.bgOpacity = 1;
-            card.titleColor = '#ffffff';
-            card.subtitleColor = '#aaaaaa';
-            card.bodyColor = '#d2d2d2';
             card.titleSize = 56;
             card.subtitleSize = 40;
             card.bodySize = 36;
-            card.titleAlign = 'left';
-            card.subtitleAlign = 'left';
-            card.bodyAlign = 'left';
           }
           return card;
         });
