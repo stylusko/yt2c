@@ -7204,6 +7204,8 @@ export default function App() {
           card.url = url;
           card.start = h.start || '0:00';
           card.end = h.end || '0:10';
+          card.appliedStart = h.start || '0:00';
+          card.appliedEnd = h.end || '0:10';
           card.title = h.title || '';
           card.subtitle = h.subtitle || '';
           card.body = h.body || '';
