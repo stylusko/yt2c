@@ -2967,8 +2967,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
     setReady(false);
     try {
-      if (pausedRef.current) p.cueVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
-      else p.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+      p.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
     } catch {}
   }, [videoId, startSec, endSec, hasRange]);
 
@@ -2999,15 +2998,17 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           onReady: (e) => {
             if (!cancelled) {
               e.target.mute();
-              if (pausedRef.current) {
-                e.target.cueVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
-              } else {
-                e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
-              }
+              e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
             }
           },
           onStateChange: (e) => {
             if (cancelled) return;
+            if (e.data === window.YT.PlayerState.PLAYING) {
+              // If paused externally, pause immediately after autoplay kicks in
+              if (pausedRef.current) {
+                try { e.target.pauseVideo(); } catch {}
+              }
+            }
             if (e.data === window.YT.PlayerState.PLAYING && !ready) {
               setReady(true);
               // Re-apply mute state multiple times after playback starts (mobile autoplay policy workaround)
@@ -4069,7 +4070,6 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
         const videoUrl = pvc.url || globalUrl || '';
         const isImageBg = !!pvc.uploadedImage || (pvc.fillSource || 'video') === 'image' || (!videoUrl && !!globalBgImage);
         const hasVid = pvc.appliedStart && pvc.appliedEnd && /(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
-        const isNearby = Math.abs(i - currentIdx) <= 1;
         const showSpinner = i === currentIdx && hasVid && !videoReady[i];
         const showUnset = !isImageBg && !hasVid;
         return React.createElement("div", {
@@ -4077,7 +4077,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: isNearby, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
