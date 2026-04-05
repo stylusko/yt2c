@@ -6576,8 +6576,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         // Carousel row
         React.createElement("div", { style: { padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
           React.createElement("button", {
-            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -120, behavior: 'smooth' }); },
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+            onClick: () => { if (activeIndex > 0) { goTo(activeIndex - 1); const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -48, behavior: 'smooth' }); } },
+            disabled: activeIndex === 0,
+            style: { background: 'none', border: 'none', color: activeIndex === 0 ? 'rgba(255,255,255,0.15)' : T.textMuted, fontSize: 12, cursor: activeIndex === 0 ? 'default' : 'pointer', padding: '1px 3px', flexShrink: 0 },
           }, "\u25C0"),
           React.createElement("div", {
             id: 'card-carousel',
@@ -6601,13 +6602,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               },
             },
               React.createElement("div", { style: { pointerEvents: 'none', width: '100%', height: '100%' } },
-                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
+                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false })
               )
             ))
           ),
           React.createElement("button", {
-            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 120, behavior: 'smooth' }); },
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+            onClick: () => { if (activeIndex < cards.length - 1) { goTo(activeIndex + 1); const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 48, behavior: 'smooth' }); } },
+            disabled: activeIndex >= cards.length - 1,
+            style: { background: 'none', border: 'none', color: activeIndex >= cards.length - 1 ? 'rgba(255,255,255,0.15)' : T.textMuted, fontSize: 12, cursor: activeIndex >= cards.length - 1 ? 'default' : 'pointer', padding: '1px 3px', flexShrink: 0 },
           }, "\u25B6"),
         ),
         // Actions row + video toggle
