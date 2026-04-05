@@ -7329,12 +7329,11 @@ export default function App() {
           card.useBody = false;
           card.name = (h.title || '').replace(/\n/g, ' ');
 
-          // All cards: photo_top with gradient, title only
-          card.layout = 'photo_top';
+          // All cards: full_bg (영상이 카드 전체를 꽉 채움) + gradient + 타이틀만
+          card.layout = 'full_bg';
           card.useGradient = true;
-          card.photoRatio = 75;
-          card.bgColor = '#121212';
-          card.bgOpacity = 1;
+          card.bgColor = '#000000';
+          card.bgOpacity = 0.55;
           card.titleColor = '#ffffff';
           card.subtitleColor = '#aaaaaa';
           card.bodyColor = '#d2d2d2';
