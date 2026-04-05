@@ -5,6 +5,7 @@ const nextConfig = {
     return [
       { source: '/easy', destination: '/' },
       { source: '/edit', destination: '/' },
+      { source: '/ai-edit', destination: '/' },
       { source: '/share', destination: '/' },
       { source: '/s/:id', destination: '/' },
     ];
