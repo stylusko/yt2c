@@ -5157,7 +5157,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
   );
 
-  const maxStep = aiMode ? 2 : 3;
+  const maxStep = aiMode ? 1 : 3;
   const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : true;
 
   const stepIndicatorEl = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
@@ -7437,7 +7437,7 @@ export default function App() {
     editorMode === 'ai-wizard' && React.createElement(WizardScreen, {
       mob, step: wizardStep, data: wizardData, aiMode: true,
       onDataChange: setWizardData,
-      onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
+      onNext: () => setWizardStep(s => Math.min(s + 1, 1)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
