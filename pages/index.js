@@ -2930,9 +2930,15 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   endSecRef.current = endSec;
   pausedRef.current = paused;
 
-  const iW = 1920;
-  const iH = 1080;
-  const coverScale = Math.max(width / iW, height / iH);
+  // YouTube videos are 16:9; iframe must be EXACT 16:9 to prevent internal letterboxing
+  const VIDEO_AR = 16 / 9;
+  const containerAR = width / height;
+  // Cover: if container is wider than 16:9, fit by width; else fit by height
+  const baseIframeW = containerAR >= VIDEO_AR ? width : height * VIDEO_AR;
+  const baseIframeH = containerAR >= VIDEO_AR ? width / VIDEO_AR : height;
+  const iW = baseIframeW;
+  const iH = baseIframeH;
+  const coverScale = 1;
 
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
