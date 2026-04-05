@@ -2907,7 +2907,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, onReady }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const mutedRef = useRef(muted);
@@ -2922,6 +2922,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
   const hasRange = endSec != null && endSec > startSec;
+  const startSecRef = useRef(startSec);
+  const endSecRef = useRef(endSec);
+  const pausedRef = useRef(paused);
+  startSecRef.current = startSec;
+  endSecRef.current = endSec;
+  pausedRef.current = paused;
 
   const iW = 1920;
   const iH = 1080;
@@ -2940,18 +2946,43 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   useEffect(() => {
     const p = playerRef.current;
     if (!p || typeof p.mute !== 'function') return;
-    if (muted) p.mute(); else p.unMute();
+    if (muted) p.mute(); else { p.unMute(); p.setVolume(100); }
   }, [muted]);
 
+  // Play/pause without recreating player (keeps mute state alive across card switches)
   useEffect(() => {
-    if (!videoId || !hasRange) return;
+    const p = playerRef.current;
+    if (!p || typeof p.playVideo !== 'function') return;
+    try {
+      if (paused) p.pauseVideo();
+      else p.playVideo();
+    } catch {}
+  }, [paused]);
+
+  // Switch video without destroying player (preserves user gesture / mute state)
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!p || typeof p.loadVideoById !== 'function' || !videoId || !hasRange) return;
+    if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
+    setReady(false);
+    try {
+      if (pausedRef.current) p.cueVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+      else p.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+    } catch {}
+  }, [videoId, startSec, endSec, hasRange]);
+
+  const videoIdRef = useRef(videoId);
+  videoIdRef.current = videoId;
+  useEffect(() => {
+    // Only create player once per component instance
+    if (playerRef.current) return;
     let cancelled = false;
 
     const createPlayer = () => {
-      if (cancelled) return;
-      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      if (cancelled || playerRef.current) return;
+      if (!videoIdRef.current || !(endSecRef.current != null && endSecRef.current > startSecRef.current)) return;
       if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
-      const containerId = 'yt-pv-' + mountId.current + '-' + videoId + '-' + startSec;
+      const containerId = 'yt-pv-' + mountId.current;
       const el = iframeRef.current;
       if (!el) return;
       el.id = containerId;
@@ -2967,7 +2998,11 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           onReady: (e) => {
             if (!cancelled) {
               e.target.mute();
-              e.target.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+              if (pausedRef.current) {
+                e.target.cueVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+              } else {
+                e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+              }
             }
           },
           onStateChange: (e) => {
@@ -2987,22 +3022,24 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
               setTimeout(applyMute, 400);
               setTimeout(applyMute, 1000);
               if (onReadyRef.current) onReadyRef.current();
-              // Start loop checker
+              // Start loop checker — use closure over current endSec via ref
               if (!loopRef.current) {
                 loopRef.current = setInterval(() => {
                   const p = playerRef.current;
                   if (!p || typeof p.getCurrentTime !== 'function') return;
                   const ct = p.getCurrentTime();
-                  if (ct >= endSec - 0.3 || ct < startSec - 0.5) {
-                    p.seekTo(startSec, true);
+                  const curStart = startSecRef.current;
+                  const curEnd = endSecRef.current;
+                  if (ct >= curEnd - 0.3 || ct < curStart - 0.5) {
+                    p.seekTo(curStart, true);
                   }
                 }, 250);
               }
             }
-            // When video ends or pauses at endSec, restart
+            // When video ends or pauses at endSec, restart — unless intentionally paused
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
-              if (!cancelled) {
-                e.target.seekTo(startSec, true);
+              if (!cancelled && !pausedRef.current) {
+                e.target.seekTo(startSecRef.current, true);
                 e.target.playVideo();
               }
             }
@@ -3031,7 +3068,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
-  }, [videoId, startSec, endSec, hasRange]);
+  }, []);
 
   if (!videoId || !hasRange) return null;
 
@@ -3526,9 +3563,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoAreaH = previewH - textH;
 
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
-  const hasVideoPreview = showVideo && card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video';
+  const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video';
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, onReady: onVideoReady })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: onVideoReady })
     : null;
 
   // Mute toggle button (bottom-right corner)
