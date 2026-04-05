@@ -2966,7 +2966,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         events: {
           onReady: (e) => {
             if (!cancelled) {
-              if (mutedRef.current) e.target.mute(); else e.target.unMute();
+              e.target.mute();
               e.target.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
             }
           },
