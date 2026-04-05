@@ -6,12 +6,13 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0405';
-const BUILD_NUM = 10; // same-day deploy count
+const BUILD_DATE = '2026.0406';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  '\uC601\uC0C1 \uC2E4\uC81C \uBE44\uC728 \uAC10\uC9C0\uB85C \uD504\uB9AC\uBDF0-\uB80C\uB354\uB9C1 \uC815\uB82C',
   'AI \uC790\uB3D9\uD3B8\uC9D1 \uBAA8\uB4DC \uCD94\uAC00',
   '\uBAA8\uBC14\uC77C \uC2AC\uB77C\uC774\uB354 \uD130\uCE58 \uD0C0\uAC9F \uD655\uB300',
   '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uAC1C\uC120',
@@ -191,6 +192,42 @@ function useIsMobile(breakpoint = 768) {
     return () => window.removeEventListener('resize', check);
   }, [breakpoint]);
   return mob;
+}
+
+/* ── Video aspect cache (YouTube native dimensions) ── */
+const __videoAspectCache = new Map(); // videoId → { w, h } or 'pending' or 'failed'
+function useVideoAspect(videoId) {
+  const [dims, setDims] = useState(() => {
+    if (!videoId) return null;
+    const cached = __videoAspectCache.get(videoId);
+    return (cached && typeof cached === 'object') ? cached : null;
+  });
+  useEffect(() => {
+    if (!videoId) { setDims(null); return; }
+    const cached = __videoAspectCache.get(videoId);
+    if (cached && typeof cached === 'object') { setDims(cached); return; }
+    if (cached === 'pending' || cached === 'failed') return;
+    __videoAspectCache.set(videoId, 'pending');
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch('/api/video-info?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId));
+        if (!r.ok) throw new Error('video-info failed');
+        const j = await r.json();
+        if (j.width && j.height) {
+          const v = { w: j.width, h: j.height };
+          __videoAspectCache.set(videoId, v);
+          if (!cancelled) setDims(v);
+        } else {
+          __videoAspectCache.set(videoId, 'failed');
+        }
+      } catch {
+        __videoAspectCache.set(videoId, 'failed');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [videoId]);
+  return dims;
 }
 
 /* ── Helpers ── */
@@ -2908,7 +2945,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
 let __vpIdCounter = 0;
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady, videoW, videoH }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const mutedRef = useRef(muted);
@@ -2932,7 +2969,23 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
   const iW = 1920;
   const iH = 1080;
-  const coverScale = Math.max(width / iW, height / iH);
+  // YouTube iframe은 1920x1080 고정, 그 안에 실제 영상이 native aspect로 letter/pillarbox 됨.
+  // 검은 바를 제외한 실제 콘텐츠 영역(contentW/H)을 기준으로 cover-fit 해야 백엔드 렌더링과 일치.
+  const nativeAspect = (videoW && videoH) ? (videoW / videoH) : (iW / iH);
+  const iframeAspect = iW / iH;
+  let contentW, contentH;
+  if (nativeAspect >= iframeAspect) {
+    // 영상이 iframe보다 가로가 김 → 가로 꽉, 위아래 letterbox
+    contentW = iW;
+    contentH = iW / nativeAspect;
+  } else {
+    // 영상이 iframe보다 세로가 김 → 세로 꽉, 좌우 pillarbox
+    contentH = iH;
+    contentW = iH * nativeAspect;
+  }
+  const contentOffsetX = (iW - contentW) / 2;
+  const contentOffsetY = (iH - contentH) / 2;
+  const coverScale = Math.max(width / contentW, height / contentH);
 
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
@@ -3081,10 +3134,14 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
   const vsc = (videoScale ?? 100) / 100;
   const totalScale = coverScale * vsc;
-  const scaledW = iW * totalScale;
-  const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
-  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
+  // 컨텐츠 중심을 카드 중심에 맞추고 videoX/Y(-400~400) 만큼 비례 이동
+  // 기존 공식과 동일한 부호 규칙: 양수 videoX → 영상이 왼쪽으로 이동(오른쪽 부분이 보임)
+  const scaledContentW = contentW * totalScale;
+  const scaledContentH = contentH * totalScale;
+  const scaledContentCenterX = (contentOffsetX + contentW / 2) * totalScale;
+  const scaledContentCenterY = (contentOffsetY + contentH / 2) * totalScale;
+  const offX = scaledContentCenterX - width / 2 + scaledContentW * (videoX ?? 0) / 400;
+  const offY = scaledContentCenterY - height / 2 + scaledContentH * (videoY ?? 0) / 400;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
@@ -3116,6 +3173,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  const nativeDims = useVideoAspect(thumbnailId);
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
   const [vpMutedLocal, setVpMutedLocal] = useState(true);
@@ -3575,7 +3633,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
   const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video' && mountVideo;
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: onVideoReady })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: onVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
   // Mute toggle button (bottom-right corner)
