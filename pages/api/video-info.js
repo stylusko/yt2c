@@ -1,12 +1,6 @@
-import { execFile } from 'child_process';
-import fs from 'fs';
-import { promisify } from 'util';
-import { ensureCookieFile } from '../../lib/worker.js';
+// YouTube 영상의 native width/height를 watch 페이지 HTML에서 추출.
+// yt-dlp 대비 빠르고 의존성 없음. 실패 시 503으로 폴백 유도.
 
-const execFileAsync = promisify(execFile);
-const COOKIE_PATH = '/tmp/yt-cookies.txt';
-
-// Redis: optional cache, graceful fallback
 let _redis = null;
 async function getRedis() {
   if (_redis === false) return null;
@@ -26,6 +20,21 @@ async function getRedis() {
 function extractVideoId(url) {
   const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   return m ? m[1] : null;
+}
+
+// HTML에 여러 스트림의 width/height가 들어있음 — 모두 같은 aspect 가짐.
+// 가장 큰 dimension을 native로 간주.
+function extractLargestDims(html) {
+  const re = /"width":(\d+),"height":(\d+)/g;
+  let best = null;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const w = parseInt(m[1], 10);
+    const h = parseInt(m[2], 10);
+    if (!w || !h || w < 100 || h < 100) continue; // 썸네일 등 제외
+    if (!best || w * h > best.w * best.h) best = { w, h };
+  }
+  return best;
 }
 
 export default async function handler(req, res) {
@@ -50,27 +59,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    ensureCookieFile();
-    const args = [
-      '--skip-download',
-      '--dump-single-json',
-      '--no-playlist',
-      '--js-runtimes', 'node',
-      '--remote-components', 'ejs:github',
-    ];
-    if (fs.existsSync(COOKIE_PATH)) args.push('--cookies', COOKIE_PATH);
-    args.push(url);
-
-    const { stdout } = await execFileAsync('yt-dlp', args, {
-      timeout: 20000,
-      maxBuffer: 20 * 1024 * 1024,
+    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const resp = await fetch(watchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
     });
-    const meta = JSON.parse(stdout);
-    const width = meta.width || null;
-    const height = meta.height || null;
-    const result = { videoId, width, height, title: meta.title || null };
+    if (!resp.ok) throw new Error(`youtube ${resp.status}`);
+    const html = await resp.text();
+    const dims = extractLargestDims(html);
+    if (!dims) throw new Error('dimensions not found');
 
-    if (redis && width && height) {
+    const result = { videoId, width: dims.w, height: dims.h };
+    if (redis) {
       try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 86400); } catch {}
     }
     res.setHeader('Cache-Control', 'public, max-age=3600');
