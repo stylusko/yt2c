@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0406';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -7399,9 +7399,10 @@ export default function App() {
           card.useBody = false;
           card.name = (h.title || '').replace(/\n/g, ' ');
 
-          // All cards: full_bg (영상이 카드 전체를 꽉 채움) + gradient + 타이틀만
-          card.layout = 'full_bg';
+          // All cards: gradient 레이아웃 (photo_top + useGradient), 배경영역 40%, 투명도 55%
+          card.layout = 'photo_top';
           card.useGradient = true;
+          card.photoRatio = 40;
           card.bgColor = '#000000';
           card.bgOpacity = 0.55;
           card.titleColor = '#ffffff';
