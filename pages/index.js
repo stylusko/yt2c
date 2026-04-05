@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0405';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -7543,28 +7543,30 @@ export default function App() {
     // ── Fixed Card Preview (mobile only) ──
     mob && React.createElement("div", { 'data-tour': 'preview', style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
-      React.createElement("div", { 'data-tour': 'card-nav', style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '10px 0' } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, fontWeight: 500, minWidth: 28, textAlign: 'center' } }, (activeCardIdx + 1) + "/" + cards.length),
+      React.createElement("div", { 'data-tour': 'card-nav', style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px' } },
+        React.createElement("span", { style: { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: T.textMuted, fontWeight: 500 } }, (activeCardIdx + 1) + "/" + cards.length),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
           disabled: activeCardIdx === 0,
-          style: { background: 'none', border: 'none', color: activeCardIdx === 0 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx === 0 ? 'default' : 'pointer', padding: '6px 10px', opacity: activeCardIdx === 0 ? 0.3 : 1 },
+          style: { width: 30, height: 30, borderRadius: '50%', background: activeCardIdx === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${activeCardIdx === 0 ? T.border : 'rgba(99,102,241,0.45)'}`, color: activeCardIdx === 0 ? T.textMuted : T.accent, fontSize: 13, cursor: activeCardIdx === 0 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: activeCardIdx === 0 ? 0.4 : 1, transition: 'all 0.15s', flexShrink: 0 },
         }, "◀"),
-        cards.map((_, i) => React.createElement("div", {
-          key: i,
-          onClick: () => setActiveCardIdx(i),
-          style: { width: i === activeCardIdx ? 24 : 12, height: 12, borderRadius: 6, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
-        })),
-        React.createElement("button", {
-          onClick: addCard,
-          disabled: cards.length >= MAX_CARDS,
-          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
-        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          cards.map((_, i) => React.createElement("div", {
+            key: i,
+            onClick: () => setActiveCardIdx(i),
+            style: { width: i === activeCardIdx ? 24 : 10, height: 10, borderRadius: 5, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
+          })),
+        ),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
           disabled: activeCardIdx >= cards.length - 1,
-          style: { background: 'none', border: 'none', color: activeCardIdx >= cards.length - 1 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx >= cards.length - 1 ? 'default' : 'pointer', padding: '6px 10px', opacity: activeCardIdx >= cards.length - 1 ? 0.3 : 1 },
+          style: { width: 30, height: 30, borderRadius: '50%', background: activeCardIdx >= cards.length - 1 ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${activeCardIdx >= cards.length - 1 ? T.border : 'rgba(99,102,241,0.45)'}`, color: activeCardIdx >= cards.length - 1 ? T.textMuted : T.accent, fontSize: 13, cursor: activeCardIdx >= cards.length - 1 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: activeCardIdx >= cards.length - 1 ? 0.4 : 1, transition: 'all 0.15s', flexShrink: 0 },
         }, "▶"),
+        React.createElement("button", {
+          onClick: addCard,
+          disabled: cards.length >= MAX_CARDS,
+          style: { position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', height: 24, padding: '0 10px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
+        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
       ),
       
       // Card header (name, actions)
