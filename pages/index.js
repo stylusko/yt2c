@@ -3085,8 +3085,9 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         transformOrigin: '0 0',
       },
     },
-      React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
+      React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%', display: 'block' } })
     ),
+    React.createElement("style", null, `[id^="yt-pv-"] { width: 100% !important; height: 100% !important; display: block !important; }`),
     React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
   );
 }
