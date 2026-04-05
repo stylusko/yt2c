@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0405';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -3050,6 +3050,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       });
     };
 
+    // Stagger creation across instances (mountId is monotonic) to avoid overwhelming YT API
+    const staggerMs = 50 + ((mountId.current - 1) % 10) * 250;
     const initDelay = setTimeout(() => {
       if (cancelled) return;
       if (window.YT && window.YT.Player) {
@@ -3061,7 +3063,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         }, 200);
         timerRef._poll = poll;
       }
-    }, 50);
+    }, staggerMs);
 
     return () => {
       cancelled = true;
