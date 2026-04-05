@@ -2998,6 +2998,17 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           onReady: (e) => {
             if (!cancelled) {
               e.target.mute();
+              // Force iframe to fill 100% of parent (override YT's width/height attrs)
+              try {
+                const ifr = e.target.getIframe && e.target.getIframe();
+                if (ifr) {
+                  ifr.style.width = '100%';
+                  ifr.style.height = '100%';
+                  ifr.style.display = 'block';
+                  ifr.removeAttribute('width');
+                  ifr.removeAttribute('height');
+                }
+              } catch {}
               e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
             }
           },
@@ -3072,22 +3083,22 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   const totalScale = coverScale * vsc;
   const scaledW = iW * totalScale;
   const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
-  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
+  // Position offset: move video content by videoX/Y (user pan) and center-crop
+  const posLeft = -(scaledW - width) / 2 - scaledW * (videoX ?? 0) / 400;
+  const posTop = -(scaledH - height) / 2 - scaledH * (videoY ?? 0) / 400;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
   },
     React.createElement("div", {
       style: {
-        position: 'absolute', top: 0, left: 0, width: iW, height: iH,
-        transform: 'scale(' + totalScale + ') translate(' + (-offX / totalScale) + 'px, ' + (-offY / totalScale) + 'px)',
-        transformOrigin: '0 0',
+        position: 'absolute', top: posTop, left: posLeft, width: scaledW, height: scaledH,
+        pointerEvents: 'none',
       },
     },
       React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%', display: 'block' } })
     ),
-    React.createElement("style", null, `[id^="yt-pv-"] { width: 100% !important; height: 100% !important; display: block !important; }`),
+    React.createElement("style", null, `[id^="yt-pv-"] { width: 100% !important; height: 100% !important; display: block !important; border: 0 !important; }`),
     React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
   );
 }
