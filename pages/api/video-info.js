@@ -1,13 +1,9 @@
-// YouTube 영상의 native width/height를 yt-dlp로 짧은 세그먼트만 받아 ffprobe로 읽음.
-// frame.js와 동일한 yt-dlp 플래그 사용 (Railway 검증됨).
-import { execFile } from 'child_process';
+// YouTube 영상의 native width/height 조회.
+// downloadYouTubeSegment(proxy retry 포함)로 1초 세그먼트 받고 ffprobe로 dimension 읽음.
 import fs from 'fs';
 import path from 'path';
-import { promisify } from 'util';
-import { ensureCookieFile } from '../../lib/worker.js';
+import { downloadYouTubeSegment, getVideoDimensions } from '../../lib/worker.js';
 
-const execFileAsync = promisify(execFile);
-const COOKIE_PATH = '/tmp/yt-cookies.txt';
 const WORK_DIR = '/tmp/yt2c-storage/videoinfo';
 
 let _redis = null;
@@ -31,6 +27,21 @@ function extractVideoId(url) {
   return m ? m[1] : null;
 }
 
+// 중복 in-flight 호출 방지 (같은 videoId 동시 요청 → 1번만 다운로드)
+const _inflight = new Map();
+
+async function fetchDims(videoId, url) {
+  if (!fs.existsSync(WORK_DIR)) fs.mkdirSync(WORK_DIR, { recursive: true });
+  const segPath = path.join(WORK_DIR, `${videoId}-${Date.now()}.mp4`);
+  try {
+    await downloadYouTubeSegment(url, 0, 1, segPath, null);
+    const dims = await getVideoDimensions(segPath);
+    return dims;
+  } finally {
+    try { if (fs.existsSync(segPath)) fs.unlinkSync(segPath); } catch {}
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
@@ -52,47 +63,22 @@ export default async function handler(req, res) {
     } catch {}
   }
 
-  if (!fs.existsSync(WORK_DIR)) fs.mkdirSync(WORK_DIR, { recursive: true });
-  const segPath = path.join(WORK_DIR, `${videoId}-${Date.now()}.mp4`);
-
   try {
-    ensureCookieFile();
-    const ytdlpArgs = [
-      '--download-sections', '*00:00:00-00:00:01',
-      '-f', 'worst[height>=360]/worst',
-      '--force-keyframes-at-cuts',
-      '--merge-output-format', 'mp4',
-      '--js-runtimes', 'node',
-      '--remote-components', 'ejs:github',
-      '-o', segPath,
-      '--no-playlist',
-    ];
-    if (fs.existsSync(COOKIE_PATH)) ytdlpArgs.push('--cookies', COOKIE_PATH);
-    ytdlpArgs.push(url);
-
-    await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 60000 });
-
-    const { stdout } = await execFileAsync('ffprobe', [
-      '-v', 'error',
-      '-select_streams', 'v:0',
-      '-show_entries', 'stream=width,height',
-      '-of', 'csv=s=x:p=0',
-      segPath,
-    ], { timeout: 15000 });
-
-    const [w, h] = stdout.trim().split('x').map(Number);
-    if (!w || !h) throw new Error('invalid dimensions');
-
-    const result = { videoId, width: w, height: h };
+    let p = _inflight.get(videoId);
+    if (!p) {
+      p = fetchDims(videoId, url);
+      _inflight.set(videoId, p);
+      p.finally(() => _inflight.delete(videoId));
+    }
+    const dims = await p;
+    const result = { videoId, width: dims.width, height: dims.height };
     if (redis) {
-      try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 86400); } catch {}
+      try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 86400 * 7); } catch {}
     }
     res.setHeader('Cache-Control', 'public, max-age=3600');
     return res.json(result);
   } catch (err) {
     console.error('[video-info]', err.message || err);
-    return res.status(500).json({ error: 'failed to fetch video info', detail: String(err.message || err).slice(0, 200) });
-  } finally {
-    try { if (fs.existsSync(segPath)) fs.unlinkSync(segPath); } catch {}
+    return res.status(500).json({ error: 'failed to fetch video info', detail: String(err.message || err).slice(0, 300) });
   }
 }
