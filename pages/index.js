@@ -3123,9 +3123,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const overlayTimer = useRef(null);
 
   useEffect(() => {
-    if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
+    if (card.clipThumbnail) { setThumbSrc(card.clipThumbnail); setTried(-1); }
+    else if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
     else setThumbSrc(null);
-  }, [thumbnailId]);
+  }, [thumbnailId, card.clipThumbnail]);
 
   // Generate canvas overlay (debounced) — same engine as final render
   const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
@@ -3169,7 +3170,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   }, [titleOX, titleOY, subOX, subOY, bodyOXv, bodyOYv]);
 
   const handleThumbError = () => {
-    if (tried === 0) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`); setTried(1); }
+    if (tried === -1 && thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
+    else if (tried === 0) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`); setTried(1); }
     else setThumbSrc(null);
   };
 
@@ -7314,6 +7316,11 @@ export default function App() {
           card.end = h.end || '0:10';
           card.appliedStart = h.start || '0:00';
           card.appliedEnd = h.end || '0:10';
+          // Generate clipThumbnail for the start frame
+          const _startSec = parseTime(h.start || '0:00');
+          if (_startSec != null && _url) {
+            card.clipThumbnail = `/api/frame?url=${encodeURIComponent(_url)}&t=${_startSec}`;
+          }
           card.title = h.title || '';
           card.subtitle = '';
           card.useSubtitle = false;
