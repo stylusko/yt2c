@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0405';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -2955,8 +2955,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     const p = playerRef.current;
     if (!p || typeof p.playVideo !== 'function') return;
     try {
-      if (paused) p.pauseVideo();
-      else p.playVideo();
+      if (paused) {
+        p.pauseVideo();
+      } else {
+        // Switching TO this card: force a fresh load to trigger autoplay reliably
+        p.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+      }
     } catch {}
   }, [paused]);
 
@@ -2998,17 +3002,16 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           onReady: (e) => {
             if (!cancelled) {
               e.target.mute();
-              e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+              // Only the CURRENT card actually loads+plays; others just cue (thumbnail)
+              if (pausedRef.current) {
+                e.target.cueVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+              } else {
+                e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
+              }
             }
           },
           onStateChange: (e) => {
             if (cancelled) return;
-            if (e.data === window.YT.PlayerState.PLAYING) {
-              // If paused externally, pause immediately after autoplay kicks in
-              if (pausedRef.current) {
-                try { e.target.pauseVideo(); } catch {}
-              }
-            }
             if (e.data === window.YT.PlayerState.PLAYING && !ready) {
               setReady(true);
               // Re-apply mute state multiple times after playback starts (mobile autoplay policy workaround)
@@ -3050,8 +3053,6 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       });
     };
 
-    // Stagger creation across instances (mountId is monotonic) to avoid overwhelming YT API
-    const staggerMs = 50 + ((mountId.current - 1) % 10) * 250;
     const initDelay = setTimeout(() => {
       if (cancelled) return;
       if (window.YT && window.YT.Player) {
@@ -3063,7 +3064,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         }, 200);
         timerRef._poll = poll;
       }
-    }, staggerMs);
+    }, 50);
 
     return () => {
       cancelled = true;
