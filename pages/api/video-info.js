@@ -58,27 +58,38 @@ export default async function handler(req, res) {
     } catch {}
   }
 
-  try {
-    const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const resp = await fetch(watchUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    });
-    if (!resp.ok) throw new Error(`youtube ${resp.status}`);
-    const html = await resp.text();
-    const dims = extractLargestDims(html);
-    if (!dims) throw new Error('dimensions not found');
+  // 여러 URL/UA 조합으로 시도 (데이터센터 IP 차단 대응)
+  const attempts = [
+    { url: `https://www.youtube.com/watch?v=${videoId}&hl=en`, ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+    { url: `https://m.youtube.com/watch?v=${videoId}&hl=en`, ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' },
+    { url: `https://www.youtube.com/embed/${videoId}`, ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+  ];
 
-    const result = { videoId, width: dims.w, height: dims.h };
-    if (redis) {
-      try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 86400); } catch {}
+  let lastErr = null;
+  for (const a of attempts) {
+    try {
+      const resp = await fetch(a.url, {
+        headers: {
+          'User-Agent': a.ua,
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml',
+        },
+      });
+      if (!resp.ok) { lastErr = `status ${resp.status}`; continue; }
+      const html = await resp.text();
+      const dims = extractLargestDims(html);
+      if (!dims) { lastErr = `no dims (html ${html.length}b) from ${a.url}`; continue; }
+
+      const result = { videoId, width: dims.w, height: dims.h };
+      if (redis) {
+        try { await redis.set(cacheKey, JSON.stringify(result), 'EX', 86400); } catch {}
+      }
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      return res.json(result);
+    } catch (err) {
+      lastErr = err.message || String(err);
     }
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    return res.json(result);
-  } catch (err) {
-    console.error('[video-info]', err.message || err);
-    return res.status(500).json({ error: 'failed to fetch video info' });
   }
+  console.error('[video-info] all attempts failed:', lastErr);
+  return res.status(500).json({ error: 'failed to fetch video info', detail: lastErr });
 }
