@@ -2959,7 +2959,7 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       playerRef.current = new window.YT.Player(containerId, {
         width: iW, height: iH,
         playerVars: {
-          mute: 1, controls: 0, loop: 0,
+          mute: mutedRef.current ? 1 : 0, controls: 0, loop: 0,
           modestbranding: 1, rel: 0, showinfo: 0, fs: 0,
           playsinline: 1, disablekb: 1, iv_load_policy: 3,
         },
@@ -2974,6 +2974,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
             if (cancelled) return;
             if (e.data === window.YT.PlayerState.PLAYING && !ready) {
               setReady(true);
+              // Re-apply mute state after playback starts (mobile autoplay policy workaround)
+              try { if (mutedRef.current) e.target.mute(); else e.target.unMute(); } catch {}
               if (onReadyRef.current) onReadyRef.current();
               // Start loop checker
               if (!loopRef.current) {
