@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0405';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -7544,7 +7544,7 @@ export default function App() {
     mob && React.createElement("div", { 'data-tour': 'preview', style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
       React.createElement("div", { 'data-tour': 'card-nav', style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px' } },
-        React.createElement("span", { style: { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: T.textMuted, fontWeight: 500 } }, (activeCardIdx + 1) + "/" + cards.length),
+        React.createElement("span", { style: { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: T.text, fontWeight: 700, background: 'rgba(99,102,241,0.12)', padding: '3px 8px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, letterSpacing: 0.2 } }, React.createElement("span", { style: { color: T.accent } }, activeCardIdx + 1), React.createElement("span", { style: { color: T.textMuted, margin: '0 2px' } }, "/"), React.createElement("span", { style: { color: T.textSecondary } }, cards.length)),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
           disabled: activeCardIdx === 0,
