@@ -7797,7 +7797,41 @@ export default function App() {
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
     }),
 
-    // AI edit: 전체화면 오버레이 제거 — 하단 플로팅 배너로 충분
+    // AI edit overlay — 자유편집 모드에서 AI 진행 중일 때 블러 + 진행률 표시
+    aiEditRunning && editorMode === 'editor' && activeProjectId === aiEditTargetId && (() => {
+      const stepMap = { info: 0, subtitle: 1, analyze: 2 };
+      const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
+      const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
+      const steps = [
+        { key: 'info', label: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778' },
+        { key: 'subtitle', label: '\uC790\uB9C9 \uCD94\uCD9C' },
+        { key: 'analyze', label: 'AI \uD575\uC2EC \uAD6C\uAC04 \uBD84\uC11D' },
+      ];
+      return React.createElement("div", {
+        style: { position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(9,9,11,0.75)', backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 },
+      },
+        React.createElement("div", { style: { width: 48, height: 48, border: '3px solid rgba(16,185,129,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.9s linear infinite' } }),
+        React.createElement("div", { style: { textAlign: 'center' } },
+          React.createElement("h3", { style: { fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 6px' } }, "AI \uD3B8\uC9D1 \uC900\uBE44 \uC911..."),
+          React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0 } }, pct + '% \uC644\uB8CC'),
+        ),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, minWidth: 220 } },
+          steps.map((s, i) => {
+            const done = stepIdx > i;
+            const active = stepIdx === i;
+            return React.createElement("div", { key: s.key, style: { display: 'flex', alignItems: 'center', gap: 10, opacity: active || done ? 1 : 0.35 } },
+              done
+                ? React.createElement("span", { style: { fontSize: 16, color: '#10b981', width: 20, textAlign: 'center' } }, "\u2713")
+                : active
+                  ? React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+                  : React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.15)' } }),
+              React.createElement("span", { style: { fontSize: 14, color: done ? '#10b981' : active ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: active ? 600 : 400 } }, s.label),
+            );
+          }),
+        ),
+        aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, maxWidth: 300, textAlign: 'center' } }, aiEditStatus.message),
+      );
+    })(),
 
     // AI background floating banner (shown on any screen while running)
     aiEditRunning && (() => {
