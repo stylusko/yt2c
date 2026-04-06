@@ -3210,8 +3210,9 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
   const _base = previewWidth || 320;
   const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
-  const previewW = (_pw && _ph && _pw > _ph) ? Math.round(_base * _pw / _ph) : _base;
-  const previewH = (_pw && _ph && _ph > _pw) ? Math.round(_base * _ph / _pw) : _base;
+  const _arW = _pw || 1, _arH = _ph || 1;
+  const previewW = (_arW >= _arH) ? _base : Math.round(_base * _arW / _arH);
+  const previewH = (_arH >= _arW) ? _base : Math.round(_base * _arH / _arW);
   const pRatio = (card.photoRatio ?? 50) / 100;
   const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
@@ -6861,7 +6862,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               onPointerDown: (e) => handleCardPointerDown(e, i),
               onDragStart: (e) => e.preventDefault(),
               style: {
-                width: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th&&_tw>_th) ? Math.round(38*_tw/_th) : 38; })(), height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th&&_th>_tw) ? Math.round(38*_th/_tw) : 38; })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
+                width: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); const w=_tw||1,h=_th||1; return (w>=h) ? 38 : Math.round(38*w/h); })(), height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); const w=_tw||1,h=_th||1; return (h>=w) ? 38 : Math.round(38*h/w); })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
                 boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
                 opacity: i === activeIndex || (dragState && dragState.idx === i) ? 1 : 0.55,
                 transition: dragState && dragState.idx === i ? 'box-shadow 0.15s, opacity 0.15s' : 'all 0.2s ease',
@@ -7941,7 +7942,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); var _p = (aspectRatio||'1:1').split(':').map(Number); return (_p[1]>_p[0]) ? Math.round(w * _p[0] / _p[1]) : w; })(), showVideo: !(showPreview || editorSilenced) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced) }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
