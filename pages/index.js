@@ -5164,13 +5164,15 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
         }, "\u203A"),
       )),
     ),
-    // Stats (below workflow)
-    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', animation: 'modeStepIn 0.5s ease 0.3s both' } },
-      "\uC9C0\uAE08\uAE4C\uC9C0 ",
-      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.visitors.toLocaleString() + "\uBA85"),
-      "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
-      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.cards.toLocaleString() + "\uAC1C"),
-      "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+    // Stats (below workflow) — 영역 미리 확보하여 레이아웃 시프트 방지
+    React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', minHeight: mob ? 17 : 20, opacity: siteStats ? 1 : 0, transition: 'opacity 0.4s ease' } },
+      siteStats ? React.createElement(React.Fragment, null,
+        "\uC9C0\uAE08\uAE4C\uC9C0 ",
+        React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.visitors.toLocaleString() + "\uBA85"),
+        "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
+        React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.cards.toLocaleString() + "\uAC1C"),
+        "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+      ) : '\u00A0'
     ),
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
