@@ -5267,7 +5267,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
               React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFA8"),
               React.createElement("div", null,
                 React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3\uACFC \uD14D\uC2A4\uD2B8 \uB4F1", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
+                React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
               ),
               React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
                 React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
