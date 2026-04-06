@@ -7,10 +7,11 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0406';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
+const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
   'AI \uC704\uC800\uB4DC \uCE74\uD53C\uD1A4 \uC120\uD0DD \uB2E8\uACC4 \uBD84\uB9AC',
   '\uC26C\uC6B4\uD3B8\uC9D1 30\uCD08 \uB2E8\uC704 \uAD6C\uAC04 + \uCD5C\uB300 20\uC7A5',
@@ -4332,6 +4333,11 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
       })
     ),
 
+    // Ad banner above navigation
+    ADSENSE_ID && React.createElement("div", { style: { width: '100%', maxWidth: 728, margin: '0 auto', padding: '4px 16px' } },
+      React.createElement(AdBanner, { format: "horizontal", style: { width: '100%', height: 90 } })
+    ),
+
     // Bottom: dots + nav arrows
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16, padding: '16px 24px' } },
       // Left arrow
@@ -4493,21 +4499,6 @@ function getTrafficUi(queueStatus) {
   };
 }
 
-function AdBanner({ adSlot }) {
-  const adRef = useRef(null);
-  useEffect(() => {
-    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
-  }, []);
-  return React.createElement("ins", {
-    ref: adRef,
-    className: "adsbygoogle",
-    style: { display: 'block', width: 300, height: 250 },
-    "data-ad-client": "ca-pub-4344666254384298",
-    "data-ad-slot": adSlot,
-    "data-ad-format": "auto",
-    "data-full-width-responsive": "true",
-  });
-}
 
 function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
@@ -4530,22 +4521,21 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
         title: generating ? '\uC911\uB2E8' : '\uB2EB\uAE30',
       }, "\u2715"),
 
-      // Ad placeholder (app intro with real logo)
-      React.createElement("div", {
-        style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, position: 'relative', overflow: 'hidden' }
-      },
-        // Decorative circles
-        React.createElement("div", { style: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(99,102,241,0.15)' } }),
-        React.createElement("div", { style: { position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.12)' } }),
-        // App logo (icon-round.png)
-        React.createElement("img", { src: "/icon-round.png", style: { width: 64, height: 64, borderRadius: 16, boxShadow: '0 4px 20px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }),
-        // Font logo
-        React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 28, color: '#fff', letterSpacing: '0.06em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
-        // Sub copy
-        React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
-        // Sponsored label
-        React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
-      ),
+      // Ad slot (300x250) or brand fallback
+      ADSENSE_ID
+        ? React.createElement("div", { style: { width: 300, height: 250, borderRadius: 12, overflow: 'hidden' } },
+            React.createElement(AdBanner, { format: "rectangle", style: { width: 300, height: 250 } })
+          )
+        : React.createElement("div", {
+            style: { width: 300, height: 250, borderRadius: 12, background: 'linear-gradient(135deg, #1e1b4b, #312e81)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, position: 'relative', overflow: 'hidden' }
+          },
+            React.createElement("div", { style: { position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(99,102,241,0.15)' } }),
+            React.createElement("div", { style: { position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(139,92,246,0.12)' } }),
+            React.createElement("img", { src: "/icon-round.png", style: { width: 64, height: 64, borderRadius: 16, boxShadow: '0 4px 20px rgba(99,102,241,0.4)', position: 'relative', zIndex: 1 } }),
+            React.createElement("div", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: 28, color: '#fff', letterSpacing: '0.06em', position: 'relative', zIndex: 1 } }, "YOUMECA"),
+            React.createElement("div", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontWeight: 400, position: 'relative', zIndex: 1, textAlign: 'center', lineHeight: 1.5 } }, "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
+            React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
+          ),
 
       // Progress area
       React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
@@ -4834,6 +4824,25 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
       ),
     )
   );
+}
+
+/* ── AdBanner Component ── */
+function AdBanner({ slot, format, style: customStyle }) {
+  const adRef = useRef(null);
+  useEffect(() => {
+    if (!ADSENSE_ID || !adRef.current) return;
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  }, []);
+  if (!ADSENSE_ID) return null;
+  return React.createElement("ins", {
+    ref: adRef,
+    className: "adsbygoogle",
+    style: { display: 'block', ...customStyle },
+    "data-ad-client": ADSENSE_ID,
+    "data-ad-slot": slot || '',
+    "data-ad-format": format || 'auto',
+    "data-full-width-responsive": "true",
+  });
 }
 
 /* ── New Project Modal ── */
@@ -7784,6 +7793,7 @@ export default function App() {
       React.createElement("link", { rel: "preconnect", href: "https://fonts.googleapis.com" }),
       React.createElement("link", { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" }),
       React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700;900&family=Dongle:wght@300;400;700&family=Gamja+Flower&family=East+Sea+Dokdo&family=Single+Day&family=Gasoek+One&display=swap", rel: "stylesheet" }),
+      ADSENSE_ID && React.createElement("script", { async: true, src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`, crossOrigin: "anonymous" }),
     ),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
@@ -8208,6 +8218,13 @@ export default function App() {
       onImport: handleImport,
       onCancel: () => { setImportProject(null); router.push('/', undefined, { shallow: true }); },
     }),
+
+    // Bottom ad banner
+    ADSENSE_ID && React.createElement("div", { style: { position: 'fixed', bottom: 24, left: 0, right: 0, zIndex: 49, display: 'flex', justifyContent: 'center', pointerEvents: 'auto' } },
+      React.createElement("div", { style: { maxWidth: 728, width: '100%', padding: '0 16px' } },
+        React.createElement(AdBanner, { format: "horizontal", style: { width: '100%', height: 90 } })
+      )
+    ),
 
     // Floating footer
     React.createElement("div", { style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '6px 16px', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', fontSize: 10, color: 'rgba(255,255,255,0.5)', pointerEvents: 'none' } },
