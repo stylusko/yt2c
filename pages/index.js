@@ -3833,6 +3833,7 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
   const [error, setError] = useState(null);
+  const [applied, setApplied] = useState(false);
   const hasClip = card.appliedStart && card.appliedEnd;
   const hasTitle = !!(card.title && card.title.trim());
 
@@ -3890,7 +3891,7 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
     // Suggestions
     suggestions && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 } },
       suggestions.map((s, i) => React.createElement("button", {
-        key: i, onClick: () => { onTitleChange(s); setSuggestions(null); },
+        key: i, onClick: () => { onTitleChange(s); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
         style: { padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', color: T.text, fontSize: 12, lineHeight: 1.4, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', whiteSpace: 'pre-line' },
         onMouseEnter: (e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = 'rgba(16,185,129,0.06)'; },
         onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
@@ -3900,6 +3901,10 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
         style: { padding: '4px 8px', background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-start' },
       }, "\uB2EB\uAE30"),
     ),
+    // Applied feedback
+    applied && React.createElement("div", {
+      style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, padding: '4px 10px', borderRadius: T.radiusPill, background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: 11, fontWeight: 600, animation: 'modeStepIn 0.3s ease' },
+    }, "\u2713 \uC801\uC6A9\uB428"),
   );
 }
 
