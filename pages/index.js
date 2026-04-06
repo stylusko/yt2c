@@ -378,9 +378,9 @@ function SectionTitleWithReset({ title, onReset }) {
 
 /* ── Overlay Canvas ── */
 async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipOverlays = false, skipBorder = false } = {}) {
-  const w = outputSize;
   const [aw, ah] = (aspectRatio || '1:1').split(':').map(Number);
-  const h = (aw && ah) ? Math.round(outputSize * ah / aw) : outputSize;
+  const w = (aw && ah && aw > ah) ? Math.round(outputSize * aw / ah) : outputSize;
+  const h = (aw && ah && ah > aw) ? Math.round(outputSize * ah / aw) : outputSize;
   const canvas = document.createElement("canvas");
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d");
@@ -3208,9 +3208,10 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 
 /* ── CardPreview ── */
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
-  const previewW = previewWidth || 320;
+  const _base = previewWidth || 320;
   const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
-  const previewH = (_pw && _ph) ? Math.round(previewW * _ph / _pw) : previewW;
+  const previewW = (_pw && _ph && _pw > _ph) ? Math.round(_base * _pw / _ph) : _base;
+  const previewH = (_pw && _ph && _ph > _pw) ? Math.round(_base * _ph / _pw) : _base;
   const pRatio = (card.photoRatio ?? 50) / 100;
   const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
@@ -6860,7 +6861,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               onPointerDown: (e) => handleCardPointerDown(e, i),
               onDragStart: (e) => e.preventDefault(),
               style: {
-                width: 38, height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th) ? Math.round(38*_th/_tw) : 38; })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
+                width: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th&&_tw>_th) ? Math.round(38*_tw/_th) : 38; })(), height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th&&_th>_tw) ? Math.round(38*_th/_tw) : 38; })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
                 boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
                 opacity: i === activeIndex || (dragState && dragState.idx === i) ? 1 : 0.55,
                 transition: dragState && dragState.idx === i ? 'box-shadow 0.15s, opacity 0.15s' : 'all 0.2s ease',
