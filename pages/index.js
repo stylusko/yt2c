@@ -5351,8 +5351,8 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         }, "\u2212"),
         React.createElement("span", { style: { fontSize: 28, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center' } }, data.cardCount || 3),
         React.createElement("button", {
-          onClick: () => { if ((data.cardCount || 3) < 8) update('cardCount', (data.cardCount || 3) + 1); },
-          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 8 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 8 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          onClick: () => { if ((data.cardCount || 3) < 20) update('cardCount', (data.cardCount || 3) + 1); },
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 20 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 20 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         }, "+"),
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\xB7\uC0AD\uC81C\uD560 \uC218 \uC788\uC5B4\uC694"),
@@ -5390,14 +5390,14 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
 
   const cardCount = data.cardCount || 3;
   const segments = Array.from({ length: cardCount }, (_, i) => ({
-    start: i * 10, end: (i + 1) * 10,
+    start: i * 30, end: (i + 1) * 30,
   }));
-  const totalDuration = cardCount * 10;
+  const totalDuration = cardCount * 30;
 
   const step3 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
     React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
       React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uAD6C\uAC04\uC774 \uC790\uB3D9\uC73C\uB85C \uB098\uB258\uC5C8\uC5B4\uC694"),
-      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uAC01 \uCE74\uB4DC\uC5D0 10\uCD08\uC529 \uADE0\uB4F1\uD558\uAC8C \uBC30\uBD84\uD588\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uAC01 \uCE74\uB4DC\uC5D0 30\uCD08\uC529 \uADE0\uB4F1\uD558\uAC8C \uBC30\uBD84\uD588\uC5B4\uC694"),
     ),
     // Timeline bar
     React.createElement("div", { style: { background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 16 } },
@@ -5416,7 +5416,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
           return React.createElement("div", { key: i, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)' } },
             React.createElement("div", { style: { width: 28, height: 28, borderRadius: '50%', background: `hsl(${240 + i * (60 / Math.max(cardCount - 1, 1))}, 60%, 35%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, i + 1),
             React.createElement("span", { style: { fontSize: 14, color: T.text } }, `${fmtTime(seg.start)} ~ ${fmtTime(seg.end)}`),
-            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, marginLeft: 'auto' } }, "10\uCD08"),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, marginLeft: 'auto' } }, "30\uCD08"),
           );
         }),
       ),
@@ -7504,8 +7504,8 @@ export default function App() {
       if (preset.textBoxRadius != null) card.textBoxRadius = preset.textBoxRadius;
       if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
       if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
-      const startSec = i * 10;
-      const endSec = (i + 1) * 10;
+      const startSec = i * 30;
+      const endSec = (i + 1) * 30;
       card.start = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
       card.end = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
       card.title = `\uCE74\uB4DC ${i + 1} \uC81C\uBAA9`;
