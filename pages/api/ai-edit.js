@@ -17,6 +17,7 @@ export default async function handler(req, res) {
   }
 
   const url = req.query.url;
+  const tone = req.query.tone || 'hooking';
   if (!url) {
     res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
     return;
@@ -102,6 +103,7 @@ export default async function handler(req, res) {
       subtitleData.transcript,
       videoInfo.title,
       videoInfo.duration,
+      tone,
     );
 
     if (aborted) return res.end();
@@ -123,6 +125,7 @@ export default async function handler(req, res) {
         videoId: videoInfo.videoId,
       },
       source: subtitleData.source,
+      transcript: subtitleData.transcript,
     });
 
     clearInterval(heartbeat);

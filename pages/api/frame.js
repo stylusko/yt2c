@@ -2,7 +2,7 @@ import { execFile } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
-import { ensureCookieFile } from '../../lib/worker.js';
+import { ensureCookieFile, downloadYouTubeSegment } from '../../lib/worker.js';
 
 const execFileAsync = promisify(execFile);
 const unlinkAsync = promisify(fs.unlink);
@@ -71,29 +71,9 @@ export default async function handler(req, res) {
   const segPath = path.join(FRAME_DIR, `${segId}.mp4`);
 
   try {
-    // 1단계: yt-dlp --download-sections으로 정확한 1초 세그먼트 다운로드
-    const startTime = secondsToTime(seconds);
-    const endTime = secondsToTime(seconds + 1);
-
-    ensureCookieFile();
-
-    const ytdlpArgs = [
-      '--download-sections', `*${startTime}-${endTime}`,
-      '-f', 'worst[height>=360]/worst',
-      '--force-keyframes-at-cuts',
-      '--merge-output-format', 'mp4',
-      '--js-runtimes', 'node',
-      '--remote-components', 'ejs:github',
-      '-o', segPath,
-      '--no-playlist',
-    ];
-    if (fs.existsSync(COOKIE_PATH)) {
-      ytdlpArgs.push('--cookies', COOKIE_PATH);
-    }
-    ytdlpArgs.push(url);
-
-    console.log('[frame] downloading segment at', startTime);
-    await execFileAsync('yt-dlp', ytdlpArgs, { timeout: 60000 });
+    // 1단계: downloadYouTubeSegment (proxy retry 포함)로 1초 세그먼트 다운로드
+    console.log('[frame] downloading segment at', seconds);
+    await downloadYouTubeSegment(url, seconds, seconds + 1, segPath, null);
 
     // 2단계: 다운로드된 세그먼트에서 첫 프레임 추출
     const ffmpegArgs = [
