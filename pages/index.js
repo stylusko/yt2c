@@ -7798,7 +7798,7 @@ export default function App() {
     }),
 
     // AI edit overlay — 자유편집 모드에서 AI 진행 중일 때 블러 + 진행률 표시
-    aiEditRunning && editorMode === 'editor' && activeProjectId === aiEditTargetId && (() => {
+    aiEditRunning && editorMode === 'editor' && (() => {
       const stepMap = { info: 0, subtitle: 1, analyze: 2 };
       const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
       const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
