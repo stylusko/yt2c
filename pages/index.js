@@ -3829,13 +3829,14 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
 }
 
 /* ── AI Rewrite Button ── */
-function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
+function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange }) {
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState(null);
   const [error, setError] = useState(null);
   const [applied, setApplied] = useState(false);
   const hasClip = card.appliedStart && card.appliedEnd;
-  const hasTitle = !!(card.title && card.title.trim());
+  const fieldLabel = field === 'subtitle' ? '\uBD80\uC81C\uBAA9' : field === 'body' ? '\uBCF8\uBB38' : '\uC81C\uBAA9';
+  const fieldHint = field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
 
   if (!hasClip) return null;
 
@@ -3845,7 +3846,6 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
     setSuggestions(null);
     try {
       let transcript = project?.transcript || '';
-      // If no transcript cached, fetch from subtitle API
       if (!transcript) {
         const videoUrl = card.url || globalUrl;
         if (!videoUrl) { setError('\uC601\uC0C1 URL\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
@@ -3862,8 +3862,10 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
         body: JSON.stringify({
           transcript: segText,
           tone: project?.copyTone || 'hooking',
-          currentTitle: card.title || '\uC81C\uBAA9 \uC5C6\uC74C',
+          currentTitle: currentValue || (fieldLabel + ' \uC5C6\uC74C'),
           videoTitle: project?.videoTitle || '',
+          field: field || 'title',
+          fieldHint,
         }),
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || '\uC11C\uBC84 \uC624\uB958'); setLoading(false); return; }
@@ -3876,7 +3878,6 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
   };
 
   return React.createElement("div", { style: { marginTop: 4, marginBottom: 4 } },
-    // Button row
     !suggestions && React.createElement("button", {
       onClick: doRewrite, disabled: loading,
       style: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: T.radiusPill, border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontSize: 12, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: loading ? 0.7 : 1 },
@@ -3886,12 +3887,10 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
         : React.createElement("span", null, "\u2728"),
       'AI \uC81C\uC548\uBC1B\uAE30',
     ),
-    // Error
     error && React.createElement("p", { style: { fontSize: 11, color: T.danger, margin: '4px 0 0' } }, error),
-    // Suggestions
     suggestions && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 } },
       suggestions.map((s, i) => React.createElement("button", {
-        key: i, onClick: () => { onTitleChange(s); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
+        key: i, onClick: () => { onChange(s); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
         style: { padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', color: T.text, fontSize: 12, lineHeight: 1.4, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', whiteSpace: 'pre-line' },
         onMouseEnter: (e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = 'rgba(16,185,129,0.06)'; },
         onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
@@ -3901,7 +3900,6 @@ function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
         style: { padding: '4px 8px', background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-start' },
       }, "\uB2EB\uAE30"),
     ),
-    // Applied feedback
     applied && React.createElement("div", {
       style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, padding: '4px 10px', borderRadius: T.radiusPill, background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: 11, fontWeight: 600, animation: 'modeStepIn 0.3s ease' },
     }, "\u2713 \uC801\uC6A9\uB428"),
@@ -4097,7 +4095,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(Section, { title: "텍스트 내용" },
             // 제목
             React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
-            React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -4122,6 +4120,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             ),
             // 부제목
             React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => update("subtitle", v) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -4146,6 +4145,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
             ),
             // 본문
             React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => update("body", v) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', paddingLeft: 28 },
             },
@@ -6182,7 +6182,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       // 제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6207,6 +6207,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false), presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => update("subtitle", v) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6231,6 +6232,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       // 본문 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false), presets: [18, 24, 32, 40] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => update("body", v) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6697,7 +6699,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // 제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6722,6 +6724,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false), presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => update("subtitle", v) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6746,6 +6749,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // 본문 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false), presets: [18, 24, 32, 40] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => update("body", v) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
