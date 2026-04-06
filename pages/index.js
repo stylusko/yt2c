@@ -246,7 +246,6 @@ function parseTime(str) {
 const COPY_TONES = [
   { id: 'hooking', label: '\uD6C4\uD0B9\uD615', desc: '\uD638\uAE30\uC2EC\uACFC \uCDA9\uACA9\uC744 \uC720\uBC1C\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC774\uAC8C 85\uB9CC\uC6D0??\n\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 \uB300\uD63C\uB780' },
   { id: 'summary', label: '\uC694\uC57D\uD615', desc: '\uB0B4\uC6A9\uC744 \uAE54\uB054\uD558\uAC8C \uC694\uC57D\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 2\n\uB2EC\uB77C\uC9C4 \uC810 \uC138 \uAC00\uC9C0' },
-  { id: 'factual', label: '\uC815\uBCF4\uD615', desc: '\uD329\uD2B8\uC640 \uC218\uCE58 \uC911\uC2EC\uC758 \uC2A4\uD0C0\uC77C', example: '\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 2\n849,000\uC6D0 \xB7 H2 \uCE69' },
 ];
 
 function extractSegmentTranscript(transcript, startStr, endStr) {
