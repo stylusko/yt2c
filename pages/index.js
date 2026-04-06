@@ -5313,9 +5313,36 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, 
 /* ── Wizard Screen ── */
 function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, aiMode }) {
   const [presetHover, setPresetHover] = useState(null);
+  const [durationLoading, setDurationLoading] = useState(false);
+  const [durationError, setDurationError] = useState('');
   const update = (k, v) => onDataChange({ ...data, [k]: v });
 
   // stepIndicator is built dynamically below based on aiMode maxStep
+
+  const fmtDuration = (s) => {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return m > 0 ? `${m}\uBD84 ${sec}\uCD08` : `${sec}\uCD08`;
+  };
+  const maxCardsByDuration = data.videoDuration ? Math.floor(data.videoDuration / 30) : 20;
+  const maxCardsAllowed = Math.min(20, Math.max(1, maxCardsByDuration));
+
+  const handleStep1Next = async () => {
+    const v = validateYouTubeUrl(data.url);
+    if (!v.ok) { setDurationError(YT_VALIDATION_MSGS[v.code] || '\uC798\uBABB\uB41C URL\uC785\uB2C8\uB2E4.'); return; }
+    setDurationLoading(true);
+    setDurationError('');
+    try {
+      const res = await fetch('/api/video-duration?url=' + encodeURIComponent(data.url));
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || '\uC601\uC0C1 \uC815\uBCF4\uB97C \uAC00\uC838\uC62C \uC218 \uC5C6\uC5B4\uC694'); }
+      const info = await res.json();
+      if (!info.duration || info.duration < 30) { setDurationError('\uC601\uC0C1\uC774 30\uCD08 \uBBF8\uB9CC\uC774\uB77C \uCE74\uB4DC\uB97C \uB9CC\uB4E4 \uC218 \uC5C6\uC5B4\uC694.'); setDurationLoading(false); return; }
+      const maxCards = Math.min(20, Math.max(1, Math.floor(info.duration / 30)));
+      onDataChange({ ...data, videoDuration: info.duration, videoTitle: info.title || '', cardCount: Math.min(data.cardCount || 3, maxCards) });
+      onNext();
+    } catch (e) { setDurationError(e.message || '\uC601\uC0C1 \uC815\uBCF4\uB97C \uAC00\uC838\uC62C \uC218 \uC5C6\uC5B4\uC694'); }
+    setDurationLoading(false);
+  };
 
   const step1 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
     // Step title
@@ -5327,11 +5354,12 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "YouTube URL"),
       React.createElement("input", {
         type: "text", placeholder: "\uB9C1\uD06C\uB97C \uBD99\uC5EC\uB123\uC73C\uC138\uC694",
-        value: data.url || '', onChange: (e) => update('url', e.target.value),
+        value: data.url || '', onChange: (e) => { update('url', e.target.value); setDurationError(''); },
         style: { ...inputBase, fontSize: 15, padding: '14px 16px' },
         onFocus: (e) => e.target.style.borderColor = T.accent,
         onBlur: (e) => e.target.style.borderColor = T.border,
       }),
+      durationError && React.createElement("p", { style: { fontSize: 13, color: '#ef4444', margin: 0, marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line' } }, durationError),
     ),
     React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
@@ -5399,6 +5427,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     // Card count stepper (hide in aiMode)
     !aiMode && React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB9CC\uB4E4 \uCE74\uB4DC \uC7A5\uC218"),
+      data.videoDuration && React.createElement("p", { style: { fontSize: 13, color: T.accent, margin: 0, marginBottom: 12 } }, `\uC601\uC0C1 \uAE38\uC774: ${fmtDuration(data.videoDuration)} \xB7 \uCD5C\uB300 ${maxCardsAllowed}\uC7A5`),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
         React.createElement("button", {
           onClick: () => update('cardCount', Math.max(1, (data.cardCount || 3) - 1)),
@@ -5406,8 +5435,8 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         }, "\u2212"),
         React.createElement("span", { style: { fontSize: 28, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center' } }, data.cardCount || 3),
         React.createElement("button", {
-          onClick: () => { if ((data.cardCount || 3) < 20) update('cardCount', (data.cardCount || 3) + 1); },
-          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 20 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 20 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          onClick: () => { if ((data.cardCount || 3) < maxCardsAllowed) update('cardCount', (data.cardCount || 3) + 1); },
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= maxCardsAllowed ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= maxCardsAllowed ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         }, "+"),
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\xB7\uC0AD\uC81C\uD560 \uC218 \uC788\uC5B4\uC694"),
@@ -5514,7 +5543,11 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         ? React.createElement("button", { onClick: onBack, style: { padding: '12px 24px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 14, cursor: 'pointer' } }, "\u2190 \uC774\uC804")
         : React.createElement("div"),
       step < maxStep
-        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
+        ? React.createElement("button", {
+            onClick: (step === 1 && !aiMode) ? handleStep1Next : onNext,
+            disabled: !canProceed || (step === 1 && durationLoading),
+            style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: (canProceed && !(step === 1 && durationLoading)) ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: (canProceed && !(step === 1 && durationLoading)) ? 'pointer' : 'default', opacity: (canProceed && !(step === 1 && durationLoading)) ? 1 : 0.5, transition: 'all 0.15s' },
+          }, (step === 1 && durationLoading) ? "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..." : "\uB2E4\uC74C \u2192")
         : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
     ),
   );
@@ -7586,7 +7619,7 @@ export default function App() {
       if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
       if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
       const startSec = i * 30;
-      const endSec = (i + 1) * 30;
+      const endSec = d.videoDuration ? Math.min((i + 1) * 30, Math.floor(d.videoDuration)) : (i + 1) * 30;
       card.start = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
       card.end = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
       card.title = `\uCE74\uB4DC ${i + 1} \uC81C\uBAA9`;
