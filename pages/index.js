@@ -5305,25 +5305,33 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uC778\uC2A4\uD0C0 \uD53C\uB4DC\uB294 1:1, \uB9B4\uC2A4\xB7\uC20F\uCE20\uB294 3:4\uAC00 \uC798 \uB9DE\uC544\uC694"),
     ),
-    // Tone selector (AI mode only)
-    aiMode && React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uD53C \uD1A4"),
-      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-        COPY_TONES.map(tone => React.createElement("button", {
-          key: tone.id, onClick: () => update('copyTone', tone.id),
-          style: {
-            padding: '12px 14px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
-            border: `1.5px solid ${data.copyTone === tone.id ? '#10b981' : T.border}`,
-            background: data.copyTone === tone.id ? 'rgba(16,185,129,0.1)' : 'transparent',
-          },
+  );
+
+  // AI wizard step 2: Copy tone selector
+  const aiStep2 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uCE74\uD53C \uD1A4\uC744 \uACE8\uB77C\uC8FC\uC138\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uCE74\uB4DC\uC5D0 \uB4E4\uC5B4\uAC08 \uD14D\uC2A4\uD2B8\uC758 \uBD84\uC704\uAE30\uB97C \uC815\uD574\uC694"),
+    ),
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      COPY_TONES.map(tone => React.createElement("button", {
+        key: tone.id, onClick: () => update('copyTone', tone.id),
+        style: {
+          padding: '14px 16px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
+          border: `1.5px solid ${data.copyTone === tone.id ? '#10b981' : T.border}`,
+          background: data.copyTone === tone.id ? 'rgba(16,185,129,0.1)' : 'transparent',
         },
-          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } },
-            React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: data.copyTone === tone.id ? '#10b981' : T.text } }, tone.label),
-            React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, tone.desc),
-          ),
-          React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
-        )),
-      ),
+      },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } },
+          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: data.copyTone === tone.id ? '#10b981' : T.text } }, tone.label),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, tone.desc),
+        ),
+        React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
+      )),
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' } },
+      React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\uD83D\uDCA1"),
+      React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uD1A4\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
     ),
   );
 
@@ -5420,7 +5428,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
   );
 
-  const maxStep = aiMode ? 1 : 3;
+  const maxStep = aiMode ? 2 : 3;
   const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : true;
 
   const stepIndicatorEl = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
@@ -5442,7 +5450,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
       React.createElement("div", { style: { width: '100%', maxWidth: 480 } },
         stepIndicatorEl,
-        step === 1 ? step1 : step === 2 ? step2 : step3,
+        step === 1 ? step1 : step === 2 ? (aiMode ? aiStep2 : step2) : step3,
       ),
     ),
     // Bottom bar
@@ -7738,7 +7746,7 @@ export default function App() {
     editorMode === 'ai-wizard' && React.createElement(WizardScreen, {
       mob, step: wizardStep, data: wizardData, aiMode: true,
       onDataChange: setWizardData,
-      onNext: () => setWizardStep(s => Math.min(s + 1, 1)),
+      onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
