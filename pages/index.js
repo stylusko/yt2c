@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0406';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -69,9 +69,11 @@ const YT_VALIDATION_MSGS = {
 };
 
 const LAYOUT_OPTIONS = [
+  { id: "video_only", label: "\uC5C6\uC74C" },
   { id: "photo_top", label: "\uD14D\uC2A4\uD2B8\n\uD558\uB2E8" },
   { id: "photo_bottom", label: "\uD14D\uC2A4\uD2B8\n\uC0C1\uB2E8" },
-  { id: "gradient_fade", label: "\uADF8\uB77C\uB370\n\uC774\uC158" },
+  { id: "gradient_bottom", label: "\uADF8\uB77C\uB370\uC774\uC158\n\uD558\uB2E8" },
+  { id: "gradient_top", label: "\uADF8\uB77C\uB370\uC774\uC158\n\uC0C1\uB2E8" },
   { id: "full_bg", label: "\uC804\uCCB4\n\uBC30\uACBD" },
   { id: "text_box", label: "\uD14D\uC2A4\uD2B8\n\uBC15\uC2A4" },
   { id: "none", label: "\uD14D\uC2A4\uD2B8\uB9CC" },
@@ -239,6 +241,30 @@ function parseTime(str) {
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return parts[0];
 }
+/* ── Copy Tone Constants ── */
+const COPY_TONES = [
+  { id: 'hooking', label: '\uD6C4\uD0B9\uD615', desc: '\uD638\uAE30\uC2EC\uACFC \uCDA9\uACA9\uC744 \uC720\uBC1C\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC774\uAC8C 85\uB9CC\uC6D0??\n\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 \uB300\uD63C\uB780' },
+  { id: 'summary', label: '\uC694\uC57D\uD615', desc: '\uB0B4\uC6A9\uC744 \uAE54\uB054\uD558\uAC8C \uC694\uC57D\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 2\n\uB2EC\uB77C\uC9C4 \uC810 \uC138 \uAC00\uC9C0' },
+  { id: 'factual', label: '\uC815\uBCF4\uD615', desc: '\uD329\uD2B8\uC640 \uC218\uCE58 \uC911\uC2EC\uC758 \uC2A4\uD0C0\uC77C', example: '\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 2\n849,000\uC6D0 \xB7 H2 \uCE69' },
+];
+
+function extractSegmentTranscript(transcript, startStr, endStr) {
+  if (!transcript) return '';
+  const startSec = parseTime(startStr);
+  const endSec = parseTime(endStr);
+  if (startSec == null || endSec == null) return '';
+  const lines = transcript.split('\n');
+  const filtered = [];
+  for (const line of lines) {
+    const match = line.match(/^\[?(\d+:\d+(?::\d+)?(?:\.\d+)?)\]?\s+(.*)$/);
+    if (!match) continue;
+    const t = parseTime(match[1]);
+    if (t == null) continue;
+    if (t >= startSec && t < endSec) filtered.push(match[2]);
+  }
+  return filtered.join(' ');
+}
+
 function formatSec(s) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
@@ -499,6 +525,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   // Draw below-layout overlays
   await drawOverlays(false);
 
+  if (layout === "video_only") {
+    // 영상만: 텍스트/배경 없이 오버레이만
+    await drawOverlays(true);
+    if (!skipBorder) drawBorder();
+    return canvas.toDataURL('image/png');
+  }
+
   if (layout === "none" || layout === "full_bg") {
     // 전체: solid bg covers entire card (텍스트만은 배경색 투명)
     if (layout !== "none" && useBg) {
@@ -649,7 +682,10 @@ function LayoutThumb({ type, label, active, onClick }) {
   );
 
   let layout;
-  if (type === "photo_top") {
+  if (type === "video_only") {
+    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: h, width: w, background: imgColor } },
+      React.createElement("span", { style: { fontSize: 14, opacity: 0.5 } }, "\u25B6"));
+  } else if (type === "photo_top") {
     layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0 } },
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
       React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
@@ -659,11 +695,17 @@ function LayoutThumb({ type, label, active, onClick }) {
       React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
     );
-  } else if (type === "gradient_fade") {
+  } else if (type === "gradient_bottom") {
     layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0, position: 'relative' } },
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
       React.createElement("div", { style: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.7))' } }),
       React.createElement("div", { style: { position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', alignItems: 'center' } }, textLines),
+    );
+  } else if (type === "gradient_top") {
+    layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0, position: 'relative' } },
+      React.createElement("div", { style: { flex: 1, background: imgColor } }),
+      React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(to top, transparent, rgba(0,0,0,0.7))' } }),
+      React.createElement("div", { style: { position: 'absolute', top: 4, left: 0, right: 0, display: 'flex', alignItems: 'center' } }, textLines),
     );
   } else if (type === "full_bg") {
     layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: 'rgba(255,255,255,0.25)', position: 'relative' } },
@@ -849,7 +891,7 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
         className: 'yt2c-slider',
         onChange: (e) => {
           const v = parseFloat(e.target.value);
-          const snap = Math.max(Math.abs(sliderMax - sliderMin) * 0.02, step * 2);
+          const snap = Math.max(Math.abs(sliderMax - sliderMin) * 0.014, step * 1.4);
           onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v));
         },
         style: { height: 20, position: 'relative', zIndex: 2 },
@@ -3165,7 +3207,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const previewW = previewWidth || 320;
   const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textH = (card.layout === "full_bg" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
   const sc = previewW / 1080;
@@ -3180,6 +3222,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
   const setVpMuted = onMuteToggle || setVpMutedLocal;
   const [imgDims, setImgDims] = useState(null);
+  const [vpReady, setVpReady] = useState(false);
+  const prevVideoKey = useRef(null);
 
   useEffect(() => {
     if (!card.uploadedImage) { setImgDims(null); return; }
@@ -3192,7 +3236,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [overlayUrl, setOverlayUrl] = useState(null);
   const overlayTimer = useRef(null);
 
+  const [thumbLoaded, setThumbLoaded] = useState(false);
   useEffect(() => {
+    setThumbLoaded(false);
     if (card.clipThumbnail) { setThumbSrc(card.clipThumbnail); setTried(-1); }
     else if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
     else setThumbSrc(null);
@@ -3277,14 +3323,29 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   const brightFilter = (card.videoBrightness) ? `brightness(${1 + (card.videoBrightness || 0) / 100})` : undefined;
   // BgImage: crop-offset positioning for thumbnails (matches backend FFmpeg crop logic)
-  // YouTube thumbnails are 16:9 (1920x1080)
+  // YouTube 썸네일은 16:9지만, 2:1 등 비표준 영상은 letterbox 포함.
+  // nativeDims가 있으면 실제 비율 기준으로 cover-fit (VideoPreview와 동일 원리)
   const thumbW = 1920, thumbH = 1080;
-  const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
+  const thumbNativeAspect = (nativeDims?.w && nativeDims?.h) ? nativeDims.w / nativeDims.h : thumbW / thumbH;
+  const thumbIframeAspect = thumbW / thumbH;
+  let thumbContentW, thumbContentH, thumbContentOffX, thumbContentOffY;
+  if (thumbNativeAspect >= thumbIframeAspect) {
+    thumbContentW = thumbW; thumbContentH = thumbW / thumbNativeAspect;
+  } else {
+    thumbContentH = thumbH; thumbContentW = thumbH * thumbNativeAspect;
+  }
+  thumbContentOffX = (thumbW - thumbContentW) / 2;
+  thumbContentOffY = (thumbH - thumbContentH) / 2;
+  const thumbCoverScale = Math.max(previewW / thumbContentW, previewH / thumbContentH);
   const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
-  const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
-  const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
+  const thumbScaledContentW = thumbContentW * thumbTotalScale;
+  const thumbScaledContentH = thumbContentH * thumbTotalScale;
+  const thumbScaledCenterX = (thumbContentOffX + thumbContentW / 2) * thumbTotalScale;
+  const thumbScaledCenterY = (thumbContentOffY + thumbContentH / 2) * thumbTotalScale;
+  const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
+  const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
   // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
   const uploadImgStyle = (() => {
     if (!card.uploadedImage || !imgDims) return null;
@@ -3303,9 +3364,15 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
   const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  const thumbSpinner = (baseImage && isBaseThumb && !thumbLoaded)
+    ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' } },
+        React.createElement("div", { style: { width: 22, height: 22, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.7)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
+    : null;
   const BgImage = () => baseImage
     ? (isBaseThumb
-      ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
+      ? React.createElement(React.Fragment, null,
+          React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
+          thumbSpinner)
       : uploadImgStyle
         ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
@@ -3632,8 +3699,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
   const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video' && mountVideo;
+  const videoKey = thumbnailId + '|' + card.appliedStart + '|' + card.appliedEnd;
+  if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
+  const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: onVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
   // Mute toggle button (bottom-right corner)
@@ -3644,13 +3714,20 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
     : null;
 
+  // Video loading spinner (카드 위에 인라인 표시)
+  const videoSpinner = (hasVideoPreview && !vpReady)
+    ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.8)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
+    : null;
+
   // Split mode: constrain video to video area
-  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none") {
+  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none") {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
         videoPreview,
       ),
+      videoSpinner,
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
       canvasOverlay,
@@ -3668,6 +3745,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
     videoPreview,
+    videoSpinner,
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -3744,8 +3822,83 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
   );
 }
 
+/* ── AI Rewrite Button ── */
+function AiRewriteBtn({ card, globalUrl, project, onTitleChange }) {
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+  const [error, setError] = useState(null);
+  const hasClip = card.appliedStart && card.appliedEnd;
+  const hasTitle = !!(card.title && card.title.trim());
+
+  if (!hasClip) return null;
+
+  const doRewrite = async () => {
+    setLoading(true);
+    setError(null);
+    setSuggestions(null);
+    try {
+      let transcript = project?.transcript || '';
+      // If no transcript cached, fetch from subtitle API
+      if (!transcript) {
+        const videoUrl = card.url || globalUrl;
+        if (!videoUrl) { setError('\uC601\uC0C1 URL\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+        const subRes = await fetch('/api/subtitle?url=' + encodeURIComponent(videoUrl));
+        if (!subRes.ok) { setError('\uC790\uB9C9\uC744 \uAC00\uC838\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+        const subData = await subRes.json();
+        transcript = subData.transcript || '';
+      }
+      const segText = extractSegmentTranscript(transcript, card.appliedStart, card.appliedEnd);
+      if (!segText) { setError('\uD574\uB2F9 \uAD6C\uAC04\uC758 \uC790\uB9C9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+      const res = await fetch('/api/ai-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: segText,
+          tone: project?.copyTone || 'hooking',
+          currentTitle: card.title || '\uC81C\uBAA9 \uC5C6\uC74C',
+          videoTitle: project?.videoTitle || '',
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || '\uC11C\uBC84 \uC624\uB958'); setLoading(false); return; }
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+    } catch (e) {
+      setError(e.message || '\uC624\uB958 \uBC1C\uC0DD');
+    }
+    setLoading(false);
+  };
+
+  return React.createElement("div", { style: { marginTop: 4, marginBottom: 4 } },
+    // Button row
+    !suggestions && React.createElement("button", {
+      onClick: doRewrite, disabled: loading,
+      style: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: T.radiusPill, border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontSize: 12, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: loading ? 0.7 : 1 },
+    },
+      loading
+        ? React.createElement("span", { style: { width: 12, height: 12, border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } })
+        : React.createElement("span", null, "\u2728"),
+      'AI \uC81C\uC548\uBC1B\uAE30',
+    ),
+    // Error
+    error && React.createElement("p", { style: { fontSize: 11, color: T.danger, margin: '4px 0 0' } }, error),
+    // Suggestions
+    suggestions && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 } },
+      suggestions.map((s, i) => React.createElement("button", {
+        key: i, onClick: () => { onTitleChange(s); setSuggestions(null); },
+        style: { padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', color: T.text, fontSize: 12, lineHeight: 1.4, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', whiteSpace: 'pre-line' },
+        onMouseEnter: (e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = 'rgba(16,185,129,0.06)'; },
+        onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
+      }, s)),
+      React.createElement("button", {
+        onClick: () => setSuggestions(null),
+        style: { padding: '4px 8px', background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-start' },
+      }, "\uB2EB\uAE30"),
+    ),
+  );
+}
+
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, project }) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -3872,14 +4025,14 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           // 레이아웃
           React.createElement(Section, { title: "레이아웃" },
             React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
             ),
             // 카드 비율
             onAspectRatioChange && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
-            card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
             // 텍스트 박스 설정
             card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -3905,7 +4058,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 영상 채우기
-            card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 8 } },
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 8 } },
               React.createElement("label", { style: labelBase }, "영상 채우기"),
               React.createElement("div", { style: { display: 'flex', gap: 6 } },
                 VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -3933,6 +4086,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(Section, { title: "텍스트 내용" },
             // 제목
             React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -4565,7 +4719,7 @@ function restoreDefaults(obj) {
   return { ...DEFAULT_CARD(), ...expanded };
 }
 
-const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail' };
+const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking' };
 
 function encodeProject(project) {
   const s = { n: project.name, u: project.globalUrl };
@@ -4573,6 +4727,7 @@ function encodeProject(project) {
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
+  if (project.copyTone && project.copyTone !== PROJ_DEFAULTS.copyTone) s.ct = project.copyTone;
   s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
@@ -4589,6 +4744,7 @@ function decodeProject(encoded) {
     outputSize: s.s || PROJ_DEFAULTS.outputSize,
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
+    copyTone: s.ct || PROJ_DEFAULTS.copyTone,
     globalBgImage: null,
     cards: (s.c || []).map(c => restoreDefaults(c)),
   };
@@ -4751,7 +4907,7 @@ function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, on
 }
 
 /* ── Global Settings Modal (mobile) ── */
-function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRatio, outputFormat, setOutputFormat, outputSize, setOutputSize, globalBgImage, setGlobalBgImage, onDismiss }) {
+function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRatio, outputFormat, setOutputFormat, outputSize, setOutputSize, globalBgImage, setGlobalBgImage, onDismiss, copyTone, setCopyTone, onBulkRewrite }) {
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onDismiss(); },
     style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }
@@ -4802,6 +4958,23 @@ function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRa
                 React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "\uC0AD\uC81C"),
               )
             : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+        ),
+        // Copy Tone
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uCE74\uD53C \uD1A4"),
+          React.createElement("div", { style: { display: 'flex', gap: 6 } },
+            COPY_TONES.map(tone => React.createElement(PillBtn, {
+              key: tone.id,
+              active: (copyTone || 'hooking') === tone.id,
+              onClick: () => {
+                if ((copyTone || 'hooking') !== tone.id) {
+                  onBulkRewrite(tone.id);
+                }
+              },
+              style: { fontSize: 11, padding: '6px 10px' },
+            }, tone.label)),
+          ),
+          React.createElement("p", { style: { fontSize: 11, color: T.textMuted, margin: 0, marginTop: 6 } }, "\uD1A4 \uBCC0\uACBD \uC2DC \uBAA8\uB4E0 \uCE74\uB4DC \uC81C\uBAA9\uC774 \uC0C8 \uD1A4\uC73C\uB85C \uC7AC\uC0DD\uC131\uB429\uB2C8\uB2E4"),
         ),
       ),
       // Done button
@@ -5131,6 +5304,26 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         }, opt.label)),
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uC778\uC2A4\uD0C0 \uD53C\uB4DC\uB294 1:1, \uB9B4\uC2A4\xB7\uC20F\uCE20\uB294 3:4\uAC00 \uC798 \uB9DE\uC544\uC694"),
+    ),
+    // Tone selector (AI mode only)
+    aiMode && React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uD53C \uD1A4"),
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+        COPY_TONES.map(tone => React.createElement("button", {
+          key: tone.id, onClick: () => update('copyTone', tone.id),
+          style: {
+            padding: '12px 14px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
+            border: `1.5px solid ${data.copyTone === tone.id ? '#10b981' : T.border}`,
+            background: data.copyTone === tone.id ? 'rgba(16,185,129,0.1)' : 'transparent',
+          },
+        },
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } },
+            React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: data.copyTone === tone.id ? '#10b981' : T.text } }, tone.label),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, tone.desc),
+          ),
+          React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
+        )),
+      ),
     ),
   );
 
@@ -5545,126 +5738,104 @@ function InfoPanel({ onClose, mob }) {
   );
 }
 
-/* ── Project Tabs (Dropdown) ── */
+/* ── Project Tabs (Tab Bar) ���─ */
 function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename }) {
-  const [open, setOpen] = useState(false);
+  const MAX_VISIBLE = 5;
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
-  const ref = useRef(null);
+  const [showMore, setShowMore] = useState(false);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const moreRef = useRef(null);
 
   useEffect(() => { if (editingId && inputRef.current) inputRef.current.focus(); }, [editingId]);
+  useEffect(() => {
+    if (!showMore) return;
+    const handler = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setShowMore(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMore]);
 
-  const activeProj = projects.find(p => p.id === activeId) || projects[0];
   const startRename = (proj) => { setEditingId(proj.id); setEditName(proj.name); };
   const commitRename = () => {
     if (editingId && editName.trim()) onRename(editingId, editName.trim());
     setEditingId(null);
   };
 
-  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 } },
-    React.createElement("div", { ref, style: { position: 'relative' } },
-      // Trigger button
+  const visibleProjects = projects.slice(0, MAX_VISIBLE);
+  const overflowProjects = projects.slice(MAX_VISIBLE);
+  const tabW = 140;
+
+  const renderTab = (proj, opts = {}) => {
+    const isActive = proj.id === activeId;
+    const isEditing = proj.id === editingId;
+    return React.createElement("div", {
+      key: proj.id,
+      style: {
+        display: 'flex', alignItems: 'center', gap: 4, width: tabW, minWidth: 0,
+        padding: '5px 8px 5px 12px', cursor: 'pointer', flexShrink: 0,
+        background: isActive ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.03)',
+        border: isActive ? `1px solid rgba(99,102,241,0.3)` : `1px solid ${T.border}`,
+        borderRadius: 8, transition: 'all 0.15s', ...opts.style,
+      },
+      onClick: () => { if (!isEditing) { onSwitch(proj.id); if (opts.onClickExtra) opts.onClickExtra(); } },
+      onMouseEnter: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; },
+      onMouseLeave: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
+      onDoubleClick: (e) => { e.stopPropagation(); startRename(proj); },
+      title: proj.name,
+    },
+      isEditing
+        ? React.createElement("input", {
+            ref: inputRef, value: editName,
+            onChange: (e) => setEditName(e.target.value),
+            onBlur: commitRename,
+            onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
+            onClick: (e) => e.stopPropagation(),
+            style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
+          })
+        : React.createElement("span", {
+            style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
+          }, proj.name),
+      !isEditing && projects.length > 1 && React.createElement("button", {
+        onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+        onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
+        onMouseLeave: (e) => e.currentTarget.style.opacity = 0,
+      }, "\u00D7"),
+    );
+  };
+
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 } },
+    // Visible tabs
+    visibleProjects.map(proj => renderTab(proj)),
+    // "더보기" button for overflow
+    overflowProjects.length > 0 && React.createElement("div", { ref: moreRef, style: { position: 'relative', flexShrink: 0 } },
       React.createElement("button", {
-        onClick: () => setOpen(!open),
+        onClick: () => setShowMore(!showMore),
         style: {
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '5px 12px', borderRadius: T.radiusPill, cursor: 'pointer',
-          background: 'rgba(99,102,241,0.10)', border: `1px solid rgba(99,102,241,0.25)`,
-          color: T.accent, fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-          maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 500,
+          background: showMore ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+          border: `1px solid ${showMore ? 'rgba(99,102,241,0.3)' : T.border}`,
+          color: showMore ? T.accent : T.textMuted, transition: 'all 0.15s', whiteSpace: 'nowrap',
         },
-        onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; },
-        onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.10)'; },
-      },
-        React.createElement("span", { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, activeProj ? activeProj.name : ''),
-        React.createElement("span", { style: { fontSize: 8, flexShrink: 0, opacity: 0.7 } }, "\u25BE"),
-      ),
-      // Dropdown panel
-      open && React.createElement("div", {
+      }, '+' + overflowProjects.length + '\uAC1C \uB354'),
+      showMore && React.createElement("div", {
         style: {
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 1000,
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 1000,
           background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
-          maxHeight: 320, overflowY: 'auto', minWidth: 220,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-        }
+          maxHeight: 280, overflowY: 'auto', minWidth: 200, padding: '4px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: 2,
+        },
       },
-        projects.map(proj => {
-          const isActive = proj.id === activeId;
-          const isEditing = proj.id === editingId;
-          return React.createElement("div", {
-            key: proj.id,
-            style: {
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 12px', cursor: 'pointer',
-              background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
-              transition: 'background 0.12s',
-            },
-            onClick: () => { if (!isEditing) { onSwitch(proj.id); setOpen(false); } },
-            onMouseEnter: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.06)'; },
-            onMouseLeave: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.12)' : 'transparent'; },
-          },
-            // Active indicator
-            React.createElement("span", {
-              style: { fontSize: 8, color: isActive ? T.accent : 'transparent', flexShrink: 0, width: 10, textAlign: 'center' },
-            }, "\u25CF"),
-            // Name or edit input
-            isEditing
-              ? React.createElement("input", {
-                  ref: inputRef, value: editName,
-                  onChange: (e) => setEditName(e.target.value),
-                  onBlur: commitRename,
-                  onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
-                  onClick: (e) => e.stopPropagation(),
-                  style: { background: 'transparent', border: 'none', color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
-                })
-              : React.createElement("span", {
-                  style: { fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
-                }, proj.name),
-            // Rename button
-            !isEditing && React.createElement("button", {
-              onClick: (e) => { e.stopPropagation(); startRename(proj); },
-              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
-              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
-              title: '\uC774\uB984 \uC218\uC815',
-            }, "\u270E"),
-            // Close button
-            !isEditing && projects.length > 1 && React.createElement("button", {
-              onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
-              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
-              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
-            }, "\u00D7"),
-          );
-        }),
-        // Divider + Add button
-        React.createElement("div", { style: { borderTop: `1px solid ${T.border}` } },
-          React.createElement("div", {
-            onClick: () => { onAdd(); setOpen(false); },
-            style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', cursor: 'pointer', color: T.textMuted, fontSize: 13, transition: 'background 0.12s' },
-            onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.accent; },
-            onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.textMuted; },
-          },
-            React.createElement("span", { style: { fontSize: 14, width: 10, textAlign: 'center', flexShrink: 0 } }, "+"),
-            React.createElement("span", null, "\uC0C8 \uD504\uB85C\uC81D\uD2B8"),
-          ),
-        ),
+        overflowProjects.map(proj => renderTab(proj, { style: { width: '100%' }, onClickExtra: () => setShowMore(false) })),
       ),
     ),
-    // External + button
+    // + button
     React.createElement("button", {
       onClick: onAdd,
-      style: { width: 26, height: 26, borderRadius: T.radiusPill, background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
+      style: { width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = T.textMuted; },
+      title: '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     }, "+"),
   );
 }
@@ -5720,7 +5891,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -5875,7 +6046,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
       )
     ),
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -5909,7 +6080,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -5960,6 +6131,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       // 제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6172,7 +6344,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -6389,7 +6561,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
       ),
     ),
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -6423,7 +6595,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\ud14c\ub450\ub9ac \ub450\uaed8", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -6474,6 +6646,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // 제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, onTitleChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -6852,7 +7025,7 @@ export default function App() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
+  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' });
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
   const [aiEditStatus, setAiEditStatus] = useState(null);
@@ -7341,7 +7514,7 @@ export default function App() {
     const aspectRatio = wizardData.aspectRatio;
 
     // Save wizard data for background completion
-    aiWizardDataRef.current = { url, presetId, aspectRatio };
+    aiWizardDataRef.current = { url, presetId, aspectRatio, copyTone: wizardData.copyTone || 'hooking' };
 
     // Go back to main screen, run in background
     setEditorMode(null);
@@ -7353,7 +7526,7 @@ export default function App() {
     // Close any previous SSE connection
     if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
 
-    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url));
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking'));
     aiEventSourceRef.current = es;
 
     es.addEventListener('status', (e) => {
@@ -7374,7 +7547,7 @@ export default function App() {
       es.close();
       aiEventSourceRef.current = null;
       try {
-        const { highlights, videoInfo } = JSON.parse(e.data);
+        const { highlights, videoInfo, transcript: _transcript } = JSON.parse(e.data);
         const wd = aiWizardDataRef.current || {};
         const _url = wd.url || url;
         const _presetId = wd.presetId || presetId;
@@ -7420,7 +7593,7 @@ export default function App() {
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
           if (p.id !== targetId) return p;
-          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards };
+          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '' };
         }));
         setActiveProjectId(targetId);
         setAiEditRunning(false);
@@ -7461,6 +7634,64 @@ export default function App() {
     }, 4800);
   };
 
+  const [bulkRewriting, setBulkRewriting] = useState(false);
+  const [bulkRewriteProgress, setBulkRewriteProgress] = useState('');
+
+  const handleBulkRewrite = async (newTone) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const cardsWithClip = (proj.cards || []).filter(c => c.appliedStart && c.appliedEnd);
+    if (cardsWithClip.length === 0) { updateProject({ copyTone: newTone }); return; }
+    const ok = window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uC81C\uBAA9\uC744 \uC0C8 \uD1A4\uC73C\uB85C \uAD50\uCCB4\uD569\uB2C8\uB2E4. \uC9C4\uD589\uD560\uAE4C\uC694?');
+    if (!ok) return;
+    setBulkRewriting(true);
+    updateProject({ copyTone: newTone });
+    let transcript = proj.transcript || '';
+    if (!transcript && proj.globalUrl) {
+      try {
+        setBulkRewriteProgress('\uC790\uB9C9 \uAC00\uC838\uC624\uB294 \uC911...');
+        const subRes = await fetch('/api/subtitle?url=' + encodeURIComponent(proj.globalUrl));
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          transcript = subData.transcript || '';
+          updateProject({ transcript, videoTitle: subData.title || proj.videoTitle || '' });
+        }
+      } catch (e) {
+        setBulkRewriting(false);
+        setBulkRewriteProgress('');
+        window.alert('\uC790\uB9C9\uC744 \uAC00\uC838\uC62C \uC218 \uC5C6\uC5B4 \uD1A4 \uBCC0\uACBD\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
+        return;
+      }
+    }
+    const allCards = proj.cards || [];
+    let failCount = 0;
+    for (let i = 0; i < allCards.length; i++) {
+      const c = allCards[i];
+      if (!c.appliedStart || !c.appliedEnd) continue;
+      setBulkRewriteProgress(`\uCE74\uD53C \uBCC0\uD658 \uC911... (${i + 1}/${allCards.length})`);
+      const segText = extractSegmentTranscript(transcript, c.appliedStart, c.appliedEnd);
+      if (!segText) continue;
+      const cardId = c.id;
+      try {
+        const res = await fetch('/api/ai-rewrite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: segText, tone: newTone, currentTitle: c.title || '\uC81C\uBAA9 \uC5C6\uC74C', videoTitle: proj.videoTitle || '' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.suggestions && data.suggestions[0]) {
+            const newTitle = data.suggestions[0];
+            setCards(prev => prev.map(card => card.id === cardId ? { ...card, title: newTitle, name: newTitle.replace(/\n/g, ' ') } : card));
+          }
+        } else { failCount++; }
+      } catch { failCount++; }
+    }
+    setBulkRewriting(false);
+    setBulkRewriteProgress('');
+    if (failCount > 0) window.alert(`${failCount}\uAC1C \uCE74\uB4DC\uC758 \uCE74\uD53C \uBCC0\uD658\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.`);
+  };
+
   return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
     React.createElement(Head, null,
       React.createElement("title", null, "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
@@ -7490,9 +7721,9 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob,
-      onSelectEasy: () => { setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+      onSelectEasy: () => { setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
-      onSelectAiEdit: () => { setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+      onSelectAiEdit: () => { setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
@@ -7554,6 +7785,16 @@ export default function App() {
       ),
     ),
 
+    // Bulk rewrite progress banner
+    bulkRewriting && React.createElement("div", {
+      style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(16,185,129,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
+    },
+      React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("div", { style: { width: 20, height: 20, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+        React.createElement("span", { style: { fontSize: 14, color: '#fff', fontWeight: 600 } }, bulkRewriteProgress || '\uCE74\uD53C \uBCC0\uD658 \uC911...'),
+      ),
+    ),
+
     wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
 
     // ── Editor ──
@@ -7563,7 +7804,7 @@ export default function App() {
 
         // Home button
         React.createElement("button", {
-          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
           title: "\uD648",
           style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
           onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.text; },
@@ -7714,6 +7955,10 @@ export default function App() {
               React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
               React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
             ),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uD53C \uD1A4"),
+              COPY_TONES.map(tone => React.createElement(PillBtn, { key: tone.id, active: (activeProject?.copyTone || 'hooking') === tone.id, onClick: () => { if ((activeProject?.copyTone || 'hooking') !== tone.id) handleBulkRewrite(tone.id); } }, tone.label)),
+            ),
           ),
 
           // Global fallback image (only when output format is image, desktop only inline)
@@ -7752,6 +7997,7 @@ export default function App() {
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
+          project: activeProject,
         }),
       ) : React.createElement("div", { 'data-tour': 'card-panel' },
         React.createElement(DesktopCardPanel, {
@@ -7772,6 +8018,7 @@ export default function App() {
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
+          project: activeProject,
         }),
       ),
     ),
@@ -7826,6 +8073,9 @@ export default function App() {
       globalUrl, setGlobalUrl, aspectRatio, setAspectRatio,
       outputFormat, setOutputFormat, outputSize, setOutputSize,
       globalBgImage, setGlobalBgImage,
+      copyTone: activeProject?.copyTone || 'hooking',
+      setCopyTone: (v) => updateProject({ copyTone: v }),
+      onBulkRewrite: handleBulkRewrite,
       onDismiss: () => setShowGlobalSettings(false),
     }),
     showTutorial && tutorialSteps[tutorialStep] && React.createElement(TutorialOverlay, {
