@@ -5770,7 +5770,7 @@ function InfoPanel({ onClose, mob }) {
 }
 
 /* ── Project Tabs (Tab Bar) ���─ */
-function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename }) {
+function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, aiEditTargetId }) {
   const MAX_VISIBLE = 5;
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
@@ -5824,8 +5824,11 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
             style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
           })
         : React.createElement("span", {
-            style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
-          }, proj.name),
+            style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none', display: 'flex', alignItems: 'center', gap: 5 },
+          },
+            proj.name,
+            aiEditTargetId === proj.id && React.createElement("span", { style: { width: 10, height: 10, border: '1.5px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+          ),
       !isEditing && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); startRename(proj); },
         className: 'tab-action-btn',
@@ -7067,6 +7070,7 @@ export default function App() {
   const [aiEditError, setAiEditError] = useState(null);
   const [aiMode, setAiMode] = useState(false);
   const [aiEditRunning, setAiEditRunning] = useState(false);
+  const [aiEditTargetId, setAiEditTargetId] = useState(null);
   const aiEventSourceRef = useRef(null);
   const aiWizardDataRef = useRef(null);
   const infoRef = useRef(null);
@@ -7555,6 +7559,7 @@ export default function App() {
     setEditorMode(null);
     setAiMode(false);
     setAiEditRunning(true);
+    setAiEditTargetId(pendingProjectId || activeProjectId);
     setAiEditStatus({ step: 'info', message: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778 \uC911...' });
     setAiEditError(null);
 
@@ -7575,7 +7580,7 @@ export default function App() {
       } catch { setAiEditError({ message: '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958' }); }
       es.close();
       aiEventSourceRef.current = null;
-      setAiEditRunning(false);
+      setAiEditRunning(false); setAiEditTargetId(null);
     });
 
     es.addEventListener('result', (e) => {
@@ -7631,12 +7636,12 @@ export default function App() {
           return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '' };
         }));
         setActiveProjectId(targetId);
-        setAiEditRunning(false);
+        setAiEditRunning(false); setAiEditTargetId(null);
         setAiMode(false);
         setEditorMode('editor');
       } catch (err) {
         setAiEditError({ message: '\uACB0\uACFC \uCC98\uB9AC \uC911 \uC624\uB958: ' + (err.message || '') });
-        setAiEditRunning(false);
+        setAiEditRunning(false); setAiEditTargetId(null);
       }
     });
 
@@ -7644,7 +7649,7 @@ export default function App() {
       es.close();
       aiEventSourceRef.current = null;
       setAiEditError({ message: '\uC11C\uBC84 \uC5F0\uACB0\uC774 \uB04A\uC5B4\uC84C\uC2B5\uB2C8\uB2E4.' });
-      setAiEditRunning(false);
+      setAiEditRunning(false); setAiEditTargetId(null);
     };
   };
 
@@ -7756,9 +7761,9 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob,
-      onSelectEasy: () => { setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectEasy: () => { if (aiEditRunning) { setAlertMsg('AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C \uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694. \uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
-      onSelectAiEdit: () => { setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectAiEdit: () => { if (aiEditRunning) { setAlertMsg('AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C \uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694. \uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
@@ -7778,6 +7783,42 @@ export default function App() {
       onComplete: handleWizardComplete,
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
     }),
+
+    // AI edit overlay — shown when viewing the project being AI-edited
+    aiEditRunning && editorMode === 'editor' && activeProjectId === aiEditTargetId && (() => {
+      const stepMap = { info: 0, subtitle: 1, analyze: 2 };
+      const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
+      const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
+      const steps = [
+        { key: 'info', label: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778' },
+        { key: 'subtitle', label: '\uC790\uB9C9 \uCD94\uCD9C' },
+        { key: 'analyze', label: 'AI \uD575\uC2EC \uAD6C\uAC04 \uBD84\uC11D' },
+      ];
+      return React.createElement("div", {
+        style: { position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(9,9,11,0.75)', backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 },
+      },
+        React.createElement("div", { style: { width: 48, height: 48, border: '3px solid rgba(16,185,129,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.9s linear infinite' } }),
+        React.createElement("div", { style: { textAlign: 'center' } },
+          React.createElement("h3", { style: { fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 6px' } }, "AI \uD3B8\uC9D1 \uC900\uBE44 \uC911..."),
+          React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0 } }, pct + '% \uC644\uB8CC'),
+        ),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, minWidth: 220 } },
+          steps.map((s, i) => {
+            const done = stepIdx > i;
+            const active = stepIdx === i;
+            return React.createElement("div", { key: s.key, style: { display: 'flex', alignItems: 'center', gap: 10, opacity: active || done ? 1 : 0.35 } },
+              done
+                ? React.createElement("span", { style: { fontSize: 16, color: '#10b981', width: 20, textAlign: 'center' } }, "\u2713")
+                : active
+                  ? React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+                  : React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.15)' } }),
+              React.createElement("span", { style: { fontSize: 14, color: done ? '#10b981' : active ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: active ? 600 : 400 } }, s.label),
+            );
+          }),
+        ),
+        aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, maxWidth: 300, textAlign: 'center' } }, aiEditStatus.message),
+      );
+    })(),
 
     // AI background floating banner (shown on any screen while running)
     aiEditRunning && (() => {
@@ -7801,7 +7842,7 @@ export default function App() {
             aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.7)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, aiEditStatus.message),
           ),
           React.createElement("button", {
-            onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditStatus(null); },
+            onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditTargetId(null); setAiEditStatus(null); },
             style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
           }, "\uCDE8\uC18C"),
         ),
@@ -7866,7 +7907,7 @@ export default function App() {
 
         // Project Tabs
         !mob && projects.length > 0 && React.createElement(ProjectTabs, {
-          projects, activeId: activeProjectId,
+          projects, activeId: activeProjectId, aiEditTargetId: aiEditRunning ? aiEditTargetId : null,
           onSwitch: switchProject, onAdd: addProject,
           onClose: closeProject, onRename: renameProject,
         }),
