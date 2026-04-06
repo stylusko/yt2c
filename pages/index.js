@@ -80,8 +80,9 @@ const LAYOUT_OPTIONS = [
 ];
 
 const ASPECT_OPTIONS = [
-  { id: "1:1", label: "1:1", w: 1, h: 1 },
-  { id: "3:4", label: "3:4", w: 3, h: 4 },
+  { id: "1:1", label: "1:1", w: 1, h: 1, desc: "\uC778\uC2A4\uD0C0 \uD53C\uB4DC" },
+  { id: "3:4", label: "3:4", w: 3, h: 4, desc: "\uB9B4\uC2A4\xB7\uC20F\uCE20" },
+  { id: "4:3", label: "4:3", w: 4, h: 3, desc: "\uAC00\uB85C\uD615 \uCE74\uB4DC" },
 ];
 
 const FILL_SOURCE_OPTIONS = [
@@ -378,7 +379,8 @@ function SectionTitleWithReset({ title, onReset }) {
 /* ── Overlay Canvas ── */
 async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipOverlays = false, skipBorder = false } = {}) {
   const w = outputSize;
-  const h = aspectRatio === '3:4' ? Math.round(outputSize * 4 / 3) : outputSize;
+  const [aw, ah] = (aspectRatio || '1:1').split(':').map(Number);
+  const h = (aw && ah) ? Math.round(outputSize * ah / aw) : outputSize;
   const canvas = document.createElement("canvas");
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d");
@@ -1368,7 +1370,8 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     videoOffsetY = (pH - videoDisplayH) / 2;
   }
   const zoom = Math.max(videoScale ?? 100, 1) / 100;
-  const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+  const [_aw, _ah] = (aspectRatio || '1:1').split(':').map(Number);
+  const outAspect = (_aw && _ah) ? _aw / _ah : 1;
   const pr = photoRatio ?? 0.55;
   const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
     ? outAspect / pr : outAspect;
@@ -1984,7 +1987,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           videoOffsetY = (pH - videoDisplayH) / 2;
         }
         const zoom = Math.max(videoScale ?? 100, 1) / 100;
-        const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+        const [__aw, __ah] = (aspectRatio || '1:1').split(':').map(Number);
+        const outAspect = (__aw && __ah) ? __aw / __ah : 1;
         const pr = photoRatio ?? 0.55;
         const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
           ? outAspect / pr : outAspect;
@@ -3205,7 +3209,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 /* ── CardPreview ── */
 function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
   const previewW = previewWidth || 320;
-  const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
+  const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
+  const previewH = (_pw && _ph) ? Math.round(previewW * _ph / _pw) : previewW;
   const pRatio = (card.photoRatio ?? 50) / 100;
   const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
@@ -5293,17 +5298,29 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
       React.createElement("div", { style: { display: 'flex', gap: 10 } },
-        ASPECT_OPTIONS.map(opt => React.createElement("button", {
-          key: opt.id, onClick: () => update('aspectRatio', opt.id),
-          style: {
-            flex: 1, padding: '12px 0', borderRadius: T.radiusPill, border: `1.5px solid ${data.aspectRatio === opt.id ? T.accent : T.border}`,
-            background: data.aspectRatio === opt.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-            color: data.aspectRatio === opt.id ? T.accentHover : T.textSecondary,
-            fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+        ASPECT_OPTIONS.map(opt => {
+          const active = data.aspectRatio === opt.id;
+          const iconW = Math.round(28 * (opt.w / Math.max(opt.w, opt.h)));
+          const iconH = Math.round(28 * (opt.h / Math.max(opt.w, opt.h)));
+          return React.createElement("button", {
+            key: opt.id, onClick: () => update('aspectRatio', opt.id),
+            style: {
+              flex: 1, padding: '14px 8px', borderRadius: 12, border: `1.5px solid ${active ? T.accent : T.border}`,
+              background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+            },
           },
-        }, opt.label)),
+            React.createElement("div", { style: {
+              width: iconW, height: iconH, borderRadius: 4,
+              border: `2px solid ${active ? T.accentHover : T.textMuted}`,
+              transition: 'all 0.15s',
+            } }),
+            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: active ? T.accentHover : T.text } }, opt.label),
+            React.createElement("span", { style: { fontSize: 11, color: active ? T.accentHover : T.textMuted } }, opt.desc),
+          );
+        }),
       ),
-      React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uC778\uC2A4\uD0C0 \uD53C\uB4DC\uB294 1:1, \uB9B4\uC2A4\xB7\uC20F\uCE20\uB294 3:4\uAC00 \uC798 \uB9DE\uC544\uC694"),
     ),
   );
 
@@ -6843,7 +6860,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               onPointerDown: (e) => handleCardPointerDown(e, i),
               onDragStart: (e) => e.preventDefault(),
               style: {
-                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
+                width: 38, height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); return (_tw&&_th) ? Math.round(38*_th/_tw) : 38; })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
                 boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
                 opacity: i === activeIndex || (dragState && dragState.idx === i) ? 1 : 0.55,
                 transition: dragState && dragState.idx === i ? 'box-shadow 0.15s, opacity 0.15s' : 'all 0.2s ease',
@@ -7923,7 +7940,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); return aspectRatio === '3:4' ? Math.round(w * 3 / 4) : w; })(), showVideo: !(showPreview || editorSilenced) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); var _p = (aspectRatio||'1:1').split(':').map(Number); return (_p[0]>_p[1]) ? Math.round(w * _p[0] / _p[1]) : w; })(), showVideo: !(showPreview || editorSilenced) }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
