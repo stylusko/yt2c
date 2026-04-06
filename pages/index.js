@@ -7940,7 +7940,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); var _p = (aspectRatio||'1:1').split(':').map(Number); return (_p[0]>_p[1]) ? Math.round(w * _p[0] / _p[1]) : w; })(), showVideo: !(showPreview || editorSilenced) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: (() => { var w = mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32); var _p = (aspectRatio||'1:1').split(':').map(Number); return (_p[1]>_p[0]) ? Math.round(w * _p[0] / _p[1]) : w; })(), showVideo: !(showPreview || editorSilenced) }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
