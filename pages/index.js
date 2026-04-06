@@ -5097,6 +5097,7 @@ function StylePresetThumb({ preset }) {
 /* ── Mode Selection Screen ── */
 function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, aiEditRunning }) {
   const [hovered, setHovered] = useState(null);
+  const [showAiBlock, setShowAiBlock] = useState(false);
   const [siteStats, setSiteStats] = useState(null);
   const [animatedStats, setAnimatedStats] = useState({ visitors: 0, cards: 0 });
   useEffect(() => {
@@ -5180,7 +5181,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, 
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // 1) AI auto-edit card
       React.createElement("div", {
-        onClick: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } onSelectAiEdit(); },
+        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectAiEdit(); },
         onMouseEnter: () => setHovered('ai'), onMouseLeave: () => setHovered(null),
         style: {
           ...cardBase,
@@ -5219,7 +5220,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, 
       ),
       // 2) Easy mode card
       React.createElement("div", {
-        onClick: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } onSelectEasy(); },
+        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectEasy(); },
         onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
         style: {
           ...cardBase,
@@ -5275,6 +5276,16 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, 
                 React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
               ),
             ),
+      ),
+    ),
+    // AI 편집 중 차단 모달 (ModeSelectionScreen 내부)
+    showAiBlock && React.createElement("div", {
+      onClick: () => setShowAiBlock(false),
+      style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    },
+      React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+        React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, 'AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C\n\uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694.\n\n\uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'),
+        React.createElement("button", { onClick: () => setShowAiBlock(false), style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
       ),
     ),
   );
