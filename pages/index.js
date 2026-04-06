@@ -6,19 +6,50 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0318';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_DATE = '2026.0406';
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  'AI \uC704\uC800\uB4DC \uCE74\uD53C\uD1A4 \uC120\uD0DD \uB2E8\uACC4 \uBD84\uB9AC',
+  '\uC26C\uC6B4\uD3B8\uC9D1 30\uCD08 \uB2E8\uC704 \uAD6C\uAC04 + \uCD5C\uB300 20\uC7A5',
+  'AI \uCE74\uD53C \uD1A4 \uC2DC\uC2A4\uD15C (4\uB2E8\uACC4 \uC804\uCCB4 \uAD6C\uD604)',
+  '\uC601\uC0C1 \uC2E4\uC81C \uBE44\uC728 \uAC10\uC9C0\uB85C \uD504\uB9AC\uBDF0-\uB80C\uB354\uB9C1 \uC815\uB82C',
+  'AI \uC790\uB3D9\uD3B8\uC9D1 \uBAA8\uB4DC \uCD94\uAC00',
+  '\uBAA8\uBC14\uC77C \uC2AC\uB77C\uC774\uB354 \uD130\uCE58 \uD0C0\uAC9F \uD655\uB300',
   '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
-  '\uB370\uC2A4\uD06C\uD1B1 \uD06C\uB86D \uBBF8\uB9AC\uBCF4\uAE30+\uC2AC\uB77C\uC774\uB354 \uAC00\uB85C \uBC30\uCE58',
-  '\uD06C\uB86D \uAC00\uC774\uB4DC \uBBF8\uB9AC\uBCF4\uAE30\uC5D0 \uCEA1\uCDB0 \uD504\uB808\uC784 \uBC30\uACBD \uC801\uC6A9',
-  '\uAD6C\uAC04 \uC124\uC815 \uC2DC \uC2DC\uC791 \uD504\uB808\uC784 \uC378\uB124\uC77C \uD45C\uC2DC (\uD504\uB9AC\uD398\uCE58)',
-  '\uAD6C\uAC04 \uBBF8\uC120\uD0DD \uCE74\uB4DC \uC0DD\uC131 \uC81C\uD55C + \uC548\uB0B4 \uBC30\uC9C0',
-  '\uAD6C\uAC04 \uC120\uD0DD \uD6C4 \uC120\uD0DD \uAD6C\uAC04 \uD45C\uC2DC + \uB2E4\uC2DC \uC120\uD0DD UI',
+];
+
+/* ── Icons ── */
+const ICON_SPEAKER = "M163.51,24.81a8,8,0,0,0-8.42.88L85.25,80H40A16,16,0,0,0,24,96v64a16,16,0,0,0,16,16H85.25l69.84,54.31A8,8,0,0,0,168,224V32A8,8,0,0,0,163.51,24.81ZM152,207.64,92.91,161.69A7.94,7.94,0,0,0,88,160H40V96H88a7.94,7.94,0,0,0,4.91-1.69L152,48.36ZM208,104v48a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm32-16v80a8,8,0,0,1-16,0V88a8,8,0,0,1,16,0Z";
+const ICON_SPEAKER_MUTE = "M53.92,34.62A8,8,0,1,0,42.08,45.38L73.55,80H32A16,16,0,0,0,16,96v64a16,16,0,0,0,16,16H77.25l69.84,54.31A8,8,0,0,0,160,224V175.09l42.08,46.29a8,8,0,1,0,11.84-10.76ZM32,96H72v64H32ZM144,207.64,88,164.09V95.89l56,61.6Zm42-63.77a24,24,0,0,0,0-31.72,8,8,0,1,1,12-10.57,40,40,0,0,1,0,52.88,8,8,0,0,1-12-10.59Zm-80.16-76a8,8,0,0,1,1.4-11.23l39.85-31A8,8,0,0,1,160,32v74.83a8,8,0,0,1-16,0V48.36l-26.94,21A8,8,0,0,1,105.84,67.91ZM248,128a79.9,79.9,0,0,1-20.37,53.34,8,8,0,0,1-11.92-10.67,64,64,0,0,0,0-85.33,8,8,0,1,1,11.92-10.67A79.83,79.83,0,0,1,248,128Z";
+const ICON_PLAY = "M232.4,114.49,88.32,26.35a16,16,0,0,0-16.2-.3A15.86,15.86,0,0,0,64,39.87V216.13A15.94,15.94,0,0,0,80,232a16.07,16.07,0,0,0,8.36-2.35L232.4,141.51a15.81,15.81,0,0,0,0-27ZM80,215.94V40l143.83,88Z";
+const ICON_PAUSE = "M200,32H160a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16h40a16,16,0,0,0,16-16V48A16,16,0,0,0,200,32Zm0,176H160V48h40ZM96,32H56A16,16,0,0,0,40,48V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V48A16,16,0,0,0,96,32Zm0,176H56V48H96Z";
+const ICON_CHECK = "M243.28,68.24l-24-23.56a16,16,0,0,0-22.59,0L104,136.23l-36.69-35.6a16,16,0,0,0-22.58.05l-24,24a16,16,0,0,0,0,22.61l71.62,72a16,16,0,0,0,22.63,0L243.33,90.91A16,16,0,0,0,243.28,68.24ZM103.62,208,32,136l24-24a.6.6,0,0,1,.08.08l42.35,41.09a8,8,0,0,0,11.19,0L208.06,56,232,79.6Z";
+function SvgIcon({ path, size }) { return React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size || 16, height: size || 16, fill: "currentColor", viewBox: "0 0 256 256" }, React.createElement("path", { d: path })); }
+
+/* ── Tutorial ── */
+const TUTORIAL_STORAGE_KEY = 'yt2c_tutorial_done';
+const TUTORIAL_STEPS_MOBILE = [
+  { target: '[data-tour="preview"]', title: '\uBBF8\uB9AC\uBCF4\uAE30', desc: '\uCE74\uB4DC\uC758 \uC2E4\uC2DC\uAC04 \uBBF8\uB9AC\uBCF4\uAE30\uC785\uB2C8\uB2E4. \uC0C1\uB2E8 \u2699 \uC124\uC815\uC5D0\uC11C \uACF5\uD1B5 URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB418\uACE0, \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
+  { target: '[data-tour="card-nav"]', title: '\uCE74\uB4DC \uD0D0\uC0C9', desc: '\uD654\uC0B4\uD45C\uC640 \uC810\uC73C\uB85C \uCE74\uB4DC\uB97C \uC804\uD658\uD558\uACE0, + \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uACE0 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-clip-adjust"]', title: '\uD074\uB9BD \uC870\uC815', desc: '\uC601\uC0C1\uC758 \uC704\uCE58, \uD655\uB300, \uBC1D\uAE30\uB97C \uC870\uC808\uD558\uACE0 \uCE74\uB4DC \uBE44\uC728\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-overlay"]', title: '\uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
+  { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
+];
+const TUTORIAL_STEPS_DESKTOP = [
+  { target: '[data-tour="global-settings"]', title: '\uAE30\uBCF8 \uC124\uC815', desc: '\uACF5\uD1B5 YouTube URL\uC744 \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB429\uB2C8\uB2E4. \uCE74\uB4DC\uBCC4\uB85C \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F0\uB824\uBA74 \uAC1C\uBCC4 URL\uC744 \uC785\uB825\uD558\uC138\uC694.' },
+  { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uD3B8\uC9D1\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
+  { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-overlay"]', title: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
+  { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 
 /* ── YouTube URL helpers ── */
@@ -39,17 +70,20 @@ const YT_VALIDATION_MSGS = {
 };
 
 const LAYOUT_OPTIONS = [
+  { id: "video_only", label: "\uC5C6\uC74C" },
   { id: "photo_top", label: "\uD14D\uC2A4\uD2B8\n\uD558\uB2E8" },
   { id: "photo_bottom", label: "\uD14D\uC2A4\uD2B8\n\uC0C1\uB2E8" },
-  { id: "gradient_fade", label: "\uADF8\uB77C\uB370\n\uC774\uC158" },
+  { id: "gradient_bottom", label: "\uADF8\uB77C\uB370\uC774\uC158\n\uD558\uB2E8" },
+  { id: "gradient_top", label: "\uADF8\uB77C\uB370\uC774\uC158\n\uC0C1\uB2E8" },
   { id: "full_bg", label: "\uC804\uCCB4\n\uBC30\uACBD" },
   { id: "text_box", label: "\uD14D\uC2A4\uD2B8\n\uBC15\uC2A4" },
   { id: "none", label: "\uD14D\uC2A4\uD2B8\uB9CC" },
 ];
 
 const ASPECT_OPTIONS = [
-  { id: "1:1", label: "1:1", w: 1, h: 1 },
-  { id: "3:4", label: "3:4", w: 3, h: 4 },
+  { id: "1:1", label: "1:1", w: 1, h: 1, desc: "\uC778\uC2A4\uD0C0 \uD53C\uB4DC" },
+  { id: "3:4", label: "3:4", w: 3, h: 4, desc: "\uB9B4\uC2A4\xB7\uC20F\uCE20" },
+  { id: "4:3", label: "4:3", w: 4, h: 3, desc: "\uAC00\uB85C\uD615 \uCE74\uB4DC" },
 ];
 
 const FILL_SOURCE_OPTIONS = [
@@ -118,12 +152,12 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
-  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 56, subtitleSize: 44, bodySize: 36, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const MAX_CARDS = 10;
@@ -136,9 +170,9 @@ const DEFAULT_CARD = () => ({
   fillSource: "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
-  title: "제목을 입력하세요", titleSize: 56, titleFont: "Pretendard-Bold.otf",
-  subtitle: "부제목을 입력하세요", subtitleSize: 44, subtitleFont: "Pretendard-Regular.otf",
-  body: "본문 내용을 입력하세요", bodySize: 36, bodyFont: "Pretendard-Regular.otf",
+  title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
+  subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
+  body: "본문 내용을 입력하세요", bodySize: 40, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
@@ -164,6 +198,42 @@ function useIsMobile(breakpoint = 768) {
   return mob;
 }
 
+/* ── Video aspect cache (YouTube native dimensions) ── */
+const __videoAspectCache = new Map(); // videoId → { w, h } or 'pending' or 'failed'
+function useVideoAspect(videoId) {
+  const [dims, setDims] = useState(() => {
+    if (!videoId) return null;
+    const cached = __videoAspectCache.get(videoId);
+    return (cached && typeof cached === 'object') ? cached : null;
+  });
+  useEffect(() => {
+    if (!videoId) { setDims(null); return; }
+    const cached = __videoAspectCache.get(videoId);
+    if (cached && typeof cached === 'object') { setDims(cached); return; }
+    if (cached === 'pending' || cached === 'failed') return;
+    __videoAspectCache.set(videoId, 'pending');
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch('/api/video-info?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId));
+        if (!r.ok) throw new Error('video-info failed');
+        const j = await r.json();
+        if (j.width && j.height) {
+          const v = { w: j.width, h: j.height };
+          __videoAspectCache.set(videoId, v);
+          if (!cancelled) setDims(v);
+        } else {
+          __videoAspectCache.set(videoId, 'failed');
+        }
+      } catch {
+        __videoAspectCache.set(videoId, 'failed');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [videoId]);
+  return dims;
+}
+
 /* ── Helpers ── */
 function parseTime(str) {
   if (!str) return null;
@@ -173,6 +243,39 @@ function parseTime(str) {
   if (parts.length === 2) return parts[0] * 60 + parts[1];
   return parts[0];
 }
+/* ── Copy Tone Constants ── */
+const COPY_TONES = [
+  { id: 'hooking', label: '\uD6C4\uD0B9\uD615', desc: '\uD638\uAE30\uC2EC\uACFC \uCDA9\uACA9\uC744 \uC720\uBC1C\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC774\uAC8C 85\uB9CC\uC6D0??\n\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 \uB300\uD63C\uB780' },
+  { id: 'summary', label: '\uC694\uC57D\uD615', desc: '\uB0B4\uC6A9\uC744 \uAE54\uB054\uD558\uAC8C \uC694\uC57D\uD558\uB294 \uC2A4\uD0C0\uC77C', example: '\uC5D0\uC5B4\uD31F \uB9E5\uC2A4 2\n\uB2EC\uB77C\uC9C4 \uC810 \uC138 \uAC00\uC9C0' },
+];
+
+// 텍스트 필드 활성 수에 따라 적절한 photoRatio 반환 (배경/그라데이션 레이아웃용)
+function calcAutoPhotoRatio(card, overrides = {}) {
+  const useSub = overrides.useSubtitle !== undefined ? overrides.useSubtitle : (card.useSubtitle !== false);
+  const useBody = overrides.useBody !== undefined ? overrides.useBody : (card.useBody !== false);
+  const count = 1 + (useSub ? 1 : 0) + (useBody ? 1 : 0); // title always on
+  if (count >= 3) return 45;
+  if (count === 2) return 55;
+  return 70; // title only
+}
+
+function extractSegmentTranscript(transcript, startStr, endStr) {
+  if (!transcript) return '';
+  const startSec = parseTime(startStr);
+  const endSec = parseTime(endStr);
+  if (startSec == null || endSec == null) return '';
+  const lines = transcript.split('\n');
+  const filtered = [];
+  for (const line of lines) {
+    const match = line.match(/^\[?(\d+:\d+(?::\d+)?(?:\.\d+)?)\]?\s+(.*)$/);
+    if (!match) continue;
+    const t = parseTime(match[1]);
+    if (t == null) continue;
+    if (t >= startSec && t < endSec) filtered.push(match[2]);
+  }
+  return filtered.join(' ');
+}
+
 function formatSec(s) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
@@ -183,6 +286,13 @@ function fmtMM(s) {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
+}
+// Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
+function fmtPrecise(s) {
+  if (s == null || isNaN(s)) return '--:--';
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m + ':' + sec.toFixed(1).padStart(4, '0');
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
@@ -278,8 +388,9 @@ function SectionTitleWithReset({ title, onReset }) {
 
 /* ── Overlay Canvas ── */
 async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipOverlays = false, skipBorder = false } = {}) {
-  const w = outputSize;
-  const h = aspectRatio === '3:4' ? Math.round(outputSize * 4 / 3) : outputSize;
+  const [aw, ah] = (aspectRatio || '1:1').split(':').map(Number);
+  const w = (aw && ah && aw > ah) ? Math.round(outputSize * aw / ah) : outputSize;
+  const h = (aw && ah && ah > aw) ? Math.round(outputSize * ah / aw) : outputSize;
   const canvas = document.createElement("canvas");
   canvas.width = w; canvas.height = h;
   const ctx = canvas.getContext("2d");
@@ -425,6 +536,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
 
   // Draw below-layout overlays
   await drawOverlays(false);
+
+  if (layout === "video_only") {
+    // 영상만: 텍스트/배경 없이 오버레이만
+    await drawOverlays(true);
+    if (!skipBorder) drawBorder();
+    return canvas.toDataURL('image/png');
+  }
 
   if (layout === "none" || layout === "full_bg") {
     // 전체: solid bg covers entire card (텍스트만은 배경색 투명)
@@ -576,7 +694,10 @@ function LayoutThumb({ type, label, active, onClick }) {
   );
 
   let layout;
-  if (type === "photo_top") {
+  if (type === "video_only") {
+    layout = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: h, width: w, background: imgColor } },
+      React.createElement("span", { style: { fontSize: 14, opacity: 0.5 } }, "\u25B6"));
+  } else if (type === "photo_top") {
     layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0 } },
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
       React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
@@ -586,11 +707,17 @@ function LayoutThumb({ type, label, active, onClick }) {
       React.createElement("div", { style: { flex: 0.6, background: textColor, display: 'flex', alignItems: 'center' } }, textLines),
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
     );
-  } else if (type === "gradient_fade") {
+  } else if (type === "gradient_bottom") {
     layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0, position: 'relative' } },
       React.createElement("div", { style: { flex: 1, background: imgColor } }),
       React.createElement("div", { style: { position: 'absolute', bottom: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.7))' } }),
       React.createElement("div", { style: { position: 'absolute', bottom: 0, left: 0, right: 0, display: 'flex', alignItems: 'center' } }, textLines),
+    );
+  } else if (type === "gradient_top") {
+    layout = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', height: h, width: w, background: textColor, gap: 0, position: 'relative' } },
+      React.createElement("div", { style: { flex: 1, background: imgColor } }),
+      React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: '60%', background: 'linear-gradient(to top, transparent, rgba(0,0,0,0.7))' } }),
+      React.createElement("div", { style: { position: 'absolute', top: 4, left: 0, right: 0, display: 'flex', alignItems: 'center' } }, textLines),
     );
   } else if (type === "full_bg") {
     layout = React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: h, width: w, background: 'rgba(255,255,255,0.25)', position: 'relative' } },
@@ -620,11 +747,100 @@ function LayoutThumb({ type, label, active, onClick }) {
 /* ── Slider Row ── */
 const zoomToSlider = (v) => v <= 100 ? v * 2 : 200 + (v - 100) * 2 / 3;
 const zoomFromSlider = (s) => Math.round(s <= 200 ? s / 2 : 100 + (s - 200) * 1.5);
+
+/* Inject custom slider styles once */
+let _sliderStyleInjected = false;
+function injectSliderStyle() {
+  if (_sliderStyleInjected || typeof document === 'undefined') return;
+  _sliderStyleInjected = true;
+  const css = `
+.yt2c-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
+}
+.yt2c-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
+}
+.yt2c-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+}
+.yt2c-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  margin-top: -6px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider::-moz-range-thumb {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: grab;
+}
+.yt2c-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:hover::-moz-range-thumb {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgba(99,102,241,0.22), 0 1px 4px rgba(0,0,0,0.6);
+}
+.yt2c-slider:active::-webkit-slider-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:active::-moz-range-thumb {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 6px rgba(99,102,241,0.3), 0 1px 4px rgba(0,0,0,0.6);
+  cursor: grabbing;
+}
+.yt2c-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.5), 0 1px 4px rgba(0,0,0,0.6);
+}
+`;
+  const el = document.createElement('style');
+  el.setAttribute('data-yt2c-slider', '1');
+  el.textContent = css;
+  document.head.appendChild(el);
+}
+
 function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defaultValue, toSlider, fromSlider }) {
   const defVal = defaultValue !== undefined ? defaultValue : (min + max) / 2;
   const displayVal = suffix === '%' && typeof value === 'number' && value <= 1 && max <= 1 ? Math.round(value * 100) : (typeof value === 'number' && value % 1 !== 0 ? value.toFixed(1) : value);
   const sliderVal = toSlider ? toSlider(value) : value;
   const sliderDef = toSlider ? toSlider(defVal) : defVal;
+  const sliderMin = min;
+  const sliderMax = max;
+  const defPct = ((sliderDef - sliderMin) / (sliderMax - sliderMin)) * 100;
+  const fillPct = ((sliderVal - sliderMin) / (sliderMax - sliderMin)) * 100;
+
+  useEffect(() => { injectSliderStyle(); }, []);
+
   return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
@@ -633,7 +849,66 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, label),
-    React.createElement("input", { type: "range", min, max, step, value: sliderVal, onChange: (e) => { const v = parseFloat(e.target.value); const snap = Math.max(Math.abs(max - min) * 0.007, step); onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v)); }, style: { flex: 1, accentColor: T.accent } }),
+    React.createElement("div", { style: { flex: 1, position: 'relative', display: 'flex', alignItems: 'center' } },
+      /* filled track layer */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: '100%',
+          height: 3,
+          borderRadius: 999,
+          background: 'rgba(255,255,255,0.15)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }
+      }),
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 0,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: Math.min(100, Math.max(0, fillPct)) + '%',
+          height: 3,
+          borderRadius: 999,
+          background: 'linear-gradient(90deg, rgba(99,102,241,0.7), #6366f1)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }
+      }),
+      /* default value tick */
+      React.createElement("div", {
+        style: {
+          position: 'absolute',
+          left: 'calc(' + defPct + '% - 0.5px)',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 1,
+          height: 8,
+          background: 'rgba(255,255,255,0.35)',
+          pointerEvents: 'none',
+          zIndex: 3,
+          borderRadius: 1,
+        }
+      }),
+      React.createElement("input", {
+        type: "range",
+        min: sliderMin,
+        max: sliderMax,
+        step,
+        value: sliderVal,
+        className: 'yt2c-slider',
+        onChange: (e) => {
+          const v = parseFloat(e.target.value);
+          const snap = Math.max(Math.abs(sliderMax - sliderMin) * 0.014, step * 1.4);
+          onChange(Math.abs(v - sliderDef) <= snap ? defVal : (fromSlider ? fromSlider(v) : v));
+        },
+        style: { height: 20, position: 'relative', zIndex: 2 },
+      }),
+    ),
     React.createElement("span", {
       onDoubleClick: () => onChange(defVal),
       style: { fontSize: 11, color: T.textMuted, minWidth: 36, textAlign: 'right', cursor: 'pointer', userSelect: 'none', borderRadius: 3, padding: '1px 2px', transition: 'background 0.15s' },
@@ -645,11 +920,40 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
 }
 
 /* ── Text Field Row (checkbox + input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId }) {
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets }) {
   const disabled = enabled === false;
   const input = rows
-    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, maxWidth: 360, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
-    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, maxWidth: 360, opacity: disabled ? 0.35 : 1 } });
+    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
+
+  const PRESET_LABELS = ['S', 'M', 'L', 'XL'];
+
+  const sizeControls = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, opacity: disabled ? 0.35 : 1, flexShrink: 0 } },
+    presets && React.createElement("div", { style: { display: 'flex', gap: 3 } },
+      presets.map((pv, pi) => React.createElement("button", {
+        key: pv,
+        disabled,
+        onClick: () => onSizeChange(pv),
+        style: {
+          padding: '2px 6px', fontSize: 10, borderRadius: 4, cursor: disabled ? 'default' : 'pointer',
+          border: `1px solid ${size === pv ? T.accent : T.border}`,
+          background: size === pv ? T.accent : 'rgba(255,255,255,0.04)',
+          color: size === pv ? '#fff' : T.textMuted,
+          fontWeight: size === pv ? 600 : 400, lineHeight: 1.4, transition: 'all 0.12s',
+        }
+      }, PRESET_LABELS[pi]))
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
+        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "\uD06C\uAE30"),
+        React.createElement("input", { type: "number", value: size, disabled, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 44, height: 28, padding: '0 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none', boxSizing: 'border-box' } }),
+      ),
+      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
+        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: color, disabled, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: disabled ? 'default' : 'pointer', background: 'transparent', boxSizing: 'border-box' } }),
+      ),
+    )
+  );
 
   return React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: rows ? 'start' : 'center' } },
     React.createElement("div", {
@@ -659,16 +963,7 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
       React.createElement("div", { style: { position: 'absolute', inset: -10 } }),
       enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
     input,
-    React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center', opacity: disabled ? 0.35 : 1 } },
-      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
-        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "크기"),
-        React.createElement("input", { type: "number", value: size, disabled, onChange: (e) => onSizeChange(parseInt(e.target.value) || 0), style: { width: 44, padding: '7px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 12, color: T.textMuted, textAlign: 'center', outline: 'none' } }),
-      ),
-      React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } },
-        React.createElement("span", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1 } }, "색상"),
-        React.createElement("input", { type: "color", value: color, disabled, onChange: (e) => onColorChange(e.target.value), style: { width: 36, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: disabled ? 'default' : 'pointer', background: 'transparent' } }),
-      ),
-    )
+    sizeControls,
   );
 }
 
@@ -1003,7 +1298,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
     React.createElement("div", {
       ref: zoomRef,
       onPointerDown: handleZDown,
-      style: { position: 'relative', height: 28, cursor: 'pointer', userSelect: 'none', touchAction: 'none' },
+      style: { position: 'relative', height: 28, cursor: (zDrag || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none' },
     },
       // Track
       React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
@@ -1085,7 +1380,8 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     videoOffsetY = (pH - videoDisplayH) / 2;
   }
   const zoom = Math.max(videoScale ?? 100, 1) / 100;
-  const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+  const [_aw, _ah] = (aspectRatio || '1:1').split(':').map(Number);
+  const outAspect = (_aw && _ah) ? _aw / _ah : 1;
   const pr = photoRatio ?? 0.55;
   const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
     ? outAspect / pr : outAspect;
@@ -1118,7 +1414,7 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
 }
 
 /* ── ClipSelector: visual start/end picker ── */
-function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio }) {
+function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, clipMuted, onClipUnmute, onClipConfirmed, aspectRatio, videoX, videoY, videoScale, videoFill, layout, photoRatio, onTitleFetch }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1141,6 +1437,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const [rangeDragActive, setRangeDragActive] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
+  const panAnimRef = useRef(null);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
+  const onTitleFetchRef = useRef(onTitleFetch);
+  onTitleFetchRef.current = onTitleFetch;
 
   // Sync muted state with external prop
   useEffect(() => { if (clipMuted !== undefined) setMuted(clipMuted); }, [clipMuted]);
@@ -1198,9 +1498,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
             if (cancelled) return;
             setReady(true);
             setDuration(e.target.getDuration() || 0);
-            // If start is set, seek there
-            const ss = parseTime(start);
-            if (ss != null) e.target.seekTo(ss, true);
+            try { var vd = e.target.getVideoData(); if (vd && vd.title && onTitleFetchRef.current) onTitleFetchRef.current(vd.title); } catch(ex) {}
           },
           onStateChange: (e) => {
             setPlaying(e.data === window.YT.PlayerState.PLAYING);
@@ -1220,6 +1518,41 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; } };
   }, [videoId]);
+
+  // Auto-set 0-15s clip when new video loads (fresh callbacks, no stale closure)
+  const prevVideoIdRef = useRef(null);
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    // On initial mount, preserve saved start/end from localStorage
+    var mz = Math.max(2, Math.round(duration / 75));
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (parseTime(start) != null) {
+        // Saved values exist — just set appropriate zoom
+        var zz = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+        if (zz > 1) {
+          setZoomLevel(zz);
+          var ss = parseTime(start);
+          setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
+        }
+        return;
+      }
+    }
+    var autoEnd = Math.min(15, duration);
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop within clip range (uses refs for always-current values)
   useEffect(() => {
@@ -1289,10 +1622,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 
   // Zoom helpers
   const visibleDuration = duration / zoomLevel;
-  const visibleStart = Math.max(0, zoomCenter * duration - visibleDuration / 2);
-  const visibleEnd = Math.min(duration, visibleStart + visibleDuration);
-  const actualVisibleStart = visibleEnd - visibleDuration < 0 ? 0 : visibleStart;
-  const actualVisibleEnd = actualVisibleStart + visibleDuration;
+  const actualVisibleStart = Math.max(0, Math.min(duration - visibleDuration, zoomCenter * duration - visibleDuration / 2));
+  const actualVisibleEnd = Math.min(duration, actualVisibleStart + visibleDuration);
   const toVisualPct = (sec) => {
     const p = ((sec - actualVisibleStart) / visibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
@@ -1312,7 +1643,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = actualVisibleStart + mouseX * visibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
@@ -1333,10 +1664,35 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       let longPressTriggered = false;
       let longPressTimer = null;
 
+      let deskAutoPanId = null;
+      let deskLastCx = startClientX;
+      let deskAutoPanTimeOffset = 0;
+      const stopDeskAutoPan = () => { if (deskAutoPanId) { cancelAnimationFrame(deskAutoPanId); deskAutoPanId = null; } };
+      const startDeskAutoPan = () => {
+        if (deskAutoPanId || zoomLevel <= 1 || !seekRef.current) return;
+        const panRect = seekRef.current.getBoundingClientRect();
+        const panStep = () => {
+          const edgeZone = 30;
+          const leftDist = deskLastCx - panRect.left;
+          const rightDist = panRect.right - deskLastCx;
+          let panDir = 0;
+          if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+          else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+          if (panDir !== 0) {
+            const speed = 0.003 * panDir;
+            deskAutoPanTimeOffset += speed * duration;
+            setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+          }
+          deskAutoPanId = requestAnimationFrame(panStep);
+        };
+        deskAutoPanId = requestAnimationFrame(panStep);
+      };
       const doRangeMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
+        deskLastCx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        if (zoomLevel > 1) startDeskAutoPan();
         const { time: t, x: mx } = calcSeekTime(ev);
-        const delta = t - time;
+        const delta = t - time + deskAutoPanTimeOffset;
         let newStart = snapStart + delta;
         let newEnd = snapEnd + delta;
         if (newStart < 0) { newStart = 0; newEnd = clipDur; }
@@ -1380,6 +1736,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         };
         var onUp = () => {
           clearTimeout(longPressTimer);
+          stopDeskAutoPan();
           if (!longPressTriggered && !isDragging) seekTo(time);
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -1394,6 +1751,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           if (isDragging) doRangeMove(ev);
         };
         const onUp = () => {
+          stopDeskAutoPan();
           if (!isDragging) { manualSeekOutside.current = false; seekTo(time); }
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
@@ -1401,37 +1759,76 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       }
     } else if (zoomLevel > 1) {
-      // Panning mode when zoomed — but delegate to playhead/marker if near
-      const rect = seekRef.current.getBoundingClientRect();
-      const cx = isTouch ? e.touches[0].clientX : e.clientX;
-      const playheadX = rect.left + (vPct / 100) * rect.width;
-      const startMarkerX = vStartPct != null ? rect.left + (vStartPct / 100) * rect.width : null;
-      const endMarkerX = vEndPct != null ? rect.left + (vEndPct / 100) * rect.width : null;
-      if (Math.abs(cx - playheadX) <= 10) { startPlayheadDrag(e); return; }
-      if (startMarkerX != null && Math.abs(cx - startMarkerX) <= 5) { startSeekMarkerDrag('start', e); return; }
-      if (endMarkerX != null && Math.abs(cx - endMarkerX) <= 5) { startSeekMarkerDrag('end', e); return; }
+      // Zoomed + outside range: click = seek, drag = pan with momentum & bounce
+      if (panAnimRef.current) { cancelAnimationFrame(panAnimRef.current); panAnimRef.current = null; }
+      const startPanX = isTouch ? e.touches[0].clientX : e.clientX;
       const startPanCenter = zoomCenter;
-      const startPanX = cx;
-      let panned = false;
+      const panRect = seekRef.current.getBoundingClientRect();
+      const clickTime = time;
+      let panning = false;
+      let currentCenter = zoomCenter;
+      let lastX = startPanX;
+      let lastTime = Date.now();
+      let velocity = 0;
+      const panSpeed = 1.5;
       const onMove = (ev) => {
         if (ev.cancelable) ev.preventDefault();
         const mcx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(mcx - startPanX) > 5) panned = true;
-        if (panned) {
-          const deltaPx = mcx - startPanX;
-          const deltaRatio = -deltaPx / rect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        if (!panning && Math.abs(mcx - startPanX) > 3) panning = true;
+        if (panning) {
+          var now = Date.now(); var dt = now - lastTime;
+          if (dt > 0) velocity = (mcx - lastX) / dt;
+          lastX = mcx; lastTime = now;
+          var deltaPx = mcx - startPanX;
+          var deltaRatio = -deltaPx / panRect.width / zoomLevel * panSpeed;
+          var raw = startPanCenter + deltaRatio;
+          // Rubber-band at edges
+          if (raw < 0) { currentCenter = raw * 0.25; }
+          else if (raw > 1) { currentCenter = 1 + (raw - 1) * 0.25; }
+          else { currentCenter = raw; }
+          setZoomCenter(currentCenter);
         }
       };
       const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
         window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
+        if (!panning) {
+          // Click without drag → seek
+          manualSeekOutside.current = true;
+          seekTo(clickTime);
+          return;
+        }
+        // Momentum + spring-back animation
+        var center = currentCenter;
+        var vel = -velocity / panRect.width / zoomLevel * panSpeed * 16;
+        var animate = function() {
+          if (center < 0 || center > 1) {
+            var target = center < 0 ? 0 : 1;
+            center += (target - center) * 0.18;
+            vel *= 0.4;
+            if (Math.abs(center - target) < 0.0005 && Math.abs(vel) < 0.0001) {
+              setZoomCenter(target); panAnimRef.current = null; return;
+            }
+          } else {
+            vel *= 0.92;
+            center += vel;
+            if (Math.abs(vel) < 0.0001) {
+              setZoomCenter(Math.max(0, Math.min(1, center))); panAnimRef.current = null; return;
+            }
+          }
+          setZoomCenter(center);
+          panAnimRef.current = requestAnimationFrame(animate);
+        };
+        if (Math.abs(vel) > 0.0005 || center < 0 || center > 1) {
+          panAnimRef.current = requestAnimationFrame(animate);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, currentCenter)));
+        }
       };
       window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
       window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
     } else {
-      // Outside range: normal seek
+      // Not zoomed + outside range: seek + drag to scrub
       manualSeekOutside.current = !inRange;
       seekTo(time);
       setDragging(true); setDragTime(time); setDragX(x);
@@ -1581,18 +1978,6 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
   const dangerC = '#ef4444';
   const markersClose = vStartPct != null && vEndPct != null && seekRef.current && (vEndPct - vStartPct) / 100 * seekRef.current.offsetWidth < 10;
 
-  const handleMinimapDown = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const setPos = (cx) => { const r = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); setZoomCenter(r); };
-    setPos(e.clientX);
-    const onMove = (ev) => { setPos(ev.clientX); };
-    const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-    window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-  };
-
-  const mmStartPct = duration > 0 ? (actualVisibleStart / duration * 100) : 0;
-  const mmWidthPct = duration > 0 ? (visibleDuration / duration * 100) : 100;
-
   return React.createElement("div", { style: { borderRadius: 8, overflow: 'visible', border: '1px solid ' + T.border, background: '#000', minWidth: 0, position: 'relative' } },
     // Player area
     React.createElement("div", { ref: playerWrapRef, style: { position: 'relative', width: '100%', height: 200, background: '#000', overflow: 'hidden' } },
@@ -1612,7 +1997,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           videoOffsetY = (pH - videoDisplayH) / 2;
         }
         const zoom = Math.max(videoScale ?? 100, 1) / 100;
-        const outAspect = aspectRatio === '3:4' ? 3 / 4 : 1;
+        const [__aw, __ah] = (aspectRatio || '1:1').split(':').map(Number);
+        const outAspect = (__aw && __ah) ? __aw / __ah : 1;
         const pr = photoRatio ?? 0.55;
         const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
           ? outAspect / pr : outAspect;
@@ -1654,81 +2040,134 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           React.createElement("span", { style: { color: '#fff', fontSize: 18, marginLeft: 3 } }, "\u25B6")
         )
       ),
-      // Current time badge
-      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+      // Current time badge + zoom slider
+      ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 } },
+        React.createElement("div", { style: { background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.7)', borderRadius: 4, padding: '2px 5px' } },
+          React.createElement("button", {
+            onClick: () => { var nz = Math.max(1, Math.ceil(zoomLevel) - 1); if (nz <= 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+          }, '\u2212'),
+          React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 600, minWidth: 24, textAlign: 'center' } }, '\u00D7' + Math.round(zoomLevel)),
+          React.createElement("button", {
+            onClick: () => { var nz = Math.min(maxZoom, Math.floor(zoomLevel) + 1); setZoomLevel(nz); if (zoomLevel <= 1) { var ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 16, height: 16, border: 'none', background: 'none', color: zoomLevel < maxZoom ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
+          }, '+'),
+        ),
+      ),
     ),
-    // Seekbar
+    // Seekbar (CapCut-style timeline)
     React.createElement("div", {
       ref: seekRef,
       onMouseDown: handleSeekDown,
       onTouchStart: handleSeekDown,
-      onWheel: handleWheel,
-      style: { position: 'relative', height: 28, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : (rangeDragActive ? 'grabbing' : 'pointer'), userSelect: 'none', touchAction: 'none', marginTop: 16, marginBottom: 20, overflow: 'visible' },
+      style: { position: 'relative', height: 54, background: T.surface, cursor: (dragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 8, marginBottom: 2, overflow: 'visible' },
     },
-      // Track bg
-      React.createElement("div", { style: { position: 'absolute', top: 12, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-      // Selected range highlight
-      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 10 : 12, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: rangeDragActive ? 8 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.5, cursor: rangeDragActive ? 'grabbing' : 'grab', pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 8px ' + accentC : 'none' } }),
-      // Start marker (visible line + label + hit area)
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 1px)', pointerEvents: 'none' } },
-        React.createElement("div", { style: { width: 3, height: 28, background: accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
+      // ── Time ruler (top 18px) ──
+      React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
+        (function() {
+          if (duration <= 0) return null;
+          var ticks = [];
+          var majorInterval, minorInterval;
+          var ns = [1, 2, 5, 10, 15, 30, 60, 120, 300];
+          var best = 30, bd = 999;
+          for (var ni = 0; ni < ns.length; ni++) {
+            var c = visibleDuration / ns[ni];
+            if (c < 3) continue;
+            var dd = Math.abs(c - 7);
+            if (dd < bd) { bd = dd; best = ns[ni]; }
+          }
+          majorInterval = best;
+          minorInterval = majorInterval >= 60 ? 15 : majorInterval >= 10 ? 5 : majorInterval >= 5 ? 1 : 0.5;
+          var tickStart = Math.floor(actualVisibleStart / minorInterval) * minorInterval;
+          var tickEnd = Math.ceil(actualVisibleEnd / minorInterval) * minorInterval;
+          for (var t = tickStart; t <= tickEnd; t += minorInterval) {
+            var tt = Math.round(t * 100) / 100;
+            if (tt < 0 || tt > duration) continue;
+            var pct = ((tt - actualVisibleStart) / visibleDuration) * 100;
+            if (pct < -1 || pct > 101) continue;
+            var isMajor = Math.abs(tt % majorInterval) < 0.01 || Math.abs(tt % majorInterval - majorInterval) < 0.01;
+            ticks.push(React.createElement("div", { key: 'tick-' + tt, style: { position: 'absolute', left: pct + '%', bottom: 0, width: 1, height: isMajor ? 8 : 4, background: isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)' } }));
+            if (isMajor) {
+              ticks.push(React.createElement("div", { key: 'lbl-' + tt, style: { position: 'absolute', left: pct + '%', top: 1, transform: 'translateX(-50%)', fontSize: 9, color: T.textMuted, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' } }, fmtMM(tt)));
+            }
+          }
+          return ticks;
+        })()
       ),
-      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vStartPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
-      // End marker (visible line + label + hit area)
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + vEndPct + '% - 1px)', pointerEvents: 'none' } },
-        React.createElement("div", { style: { width: 3, height: 28, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
-        React.createElement("div", { style: { position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
+      // ── Track area (18px..54px = 36px height) ──
+      React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 36, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
+      // Dimming outside selection (left)
+      vStartPct != null && vStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: vStartPct + '%', height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+      // Dimming outside selection (right)
+      vEndPct != null && vEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+      // Selected range fill
+      vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
       ),
-      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 10, height: 28, left: 'calc(' + vEndPct + '% - 5px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // ── Start bracket handle ──
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
+        React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '4px 0 0 4px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+        ),
+      ),
+      vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vStartPct + '% - 10px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+      // ── End bracket handle ──
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
+        React.createElement("div", { style: { width: 8, height: 36, background: overLimit ? dangerC : accentC, borderRadius: '0 4px 4px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 } },
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+          React.createElement("div", { style: { width: 3, height: 1, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+        ),
+      ),
+      vEndPct != null && vEndPct >= -2 && vEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 18, width: 14, height: 36, left: 'calc(' + vEndPct + '% - 4px)', cursor: 'ew-resize', zIndex: 5, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
       // Unified hit area when markers are close
-      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + vStartPct + '% - 5px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 10px)', height: 28, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
-      // Playhead hit area + visual element
-      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
-        React.createElement("div", { style: { position: 'absolute', top: 8, left: 5, width: 10, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
+      markersClose && React.createElement("div", { onMouseDown: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const { time } = calcSeekTime(e); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', width: 'calc(' + (vEndPct - vStartPct) + '% + 16px)', height: 36, cursor: 'ew-resize', zIndex: 6, touchAction: 'none' } }),
+      // ── Playhead (vertical line + triangle) ──
+      vPct >= 0 && vPct <= 100 && React.createElement("div", { onMouseDown: startPlayheadDrag, onTouchStart: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + vPct + '% - 10px)', width: 20, height: 54, cursor: 'grab', zIndex: 4, touchAction: 'none', transition: (dragging || playing) ? 'none' : 'left 0.05s linear' } },
+        // Triangle indicator at top
+        React.createElement("div", { style: { position: 'absolute', top: 12, left: 7, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
+        // Vertical line spanning track
+        React.createElement("div", { style: { position: 'absolute', top: 17, left: 9, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
       ),
-      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 24, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
       // Drag tooltip
-      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 24, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(dragTime)),
+      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
     ),
-    // Minimap (visible when zoomed)
+    // Horizontal scrollbar (visible when zoomed)
     zoomLevel > 1 && duration > 0 && React.createElement("div", {
-      onMouseDown: handleMinimapDown,
-      style: { position: 'relative', height: 14, margin: '2px 8px 0', background: 'rgba(255,255,255,0.06)', borderRadius: 3, cursor: 'pointer', overflow: 'hidden' },
+      onMouseDown: (e) => {
+        e.preventDefault(); e.stopPropagation();
+        var rect = e.currentTarget.getBoundingClientRect();
+        var thumbW = (visibleDuration / duration) * rect.width;
+        var thumbLeft = (actualVisibleStart / duration) * rect.width;
+        var cx = e.clientX - rect.left;
+        var onThumb = cx >= thumbLeft && cx <= thumbLeft + thumbW;
+        if (onThumb) {
+          var startX = e.clientX; var startCenter = zoomCenter;
+          var onMove = function(ev) { var delta = ev.clientX - startX; var deltaRatio = delta / rect.width; setZoomCenter(Math.max(0, Math.min(1, startCenter + deltaRatio))); };
+          var onUp = function() { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+          window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
+        } else {
+          setZoomCenter(Math.max(0, Math.min(1, cx / rect.width)));
+        }
+      },
+      style: { position: 'relative', height: 8, margin: '0 0 2px', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer' },
     },
-      // Visible window indicator
-      React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mmStartPct + '%', width: Math.max(mmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 3, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-      // Selected range
-      startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 4, height: 6, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-      // Playhead
-      React.createElement("div", { style: { position: 'absolute', top: 2, width: 2, height: 10, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
-    ),
-    // Zoom control bar (always visible)
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '4px 8px', background: T.surface } },
-      React.createElement("button", {
-        onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
-        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-      }, '\u2212'),
-      React.createElement("span", { style: { fontSize: 11, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 32, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
-      React.createElement("button", {
-        onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-        style: { width: 24, height: 24, borderRadius: 4, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
-      }, '+'),
-      React.createElement("button", {
-        onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-        style: { fontSize: 10, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', visibility: zoomLevel > 1 ? 'visible' : 'hidden' },
-      }, '\uB9AC\uC14B'),
+      React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: (actualVisibleStart / duration * 100) + '%', width: Math.max(visibleDuration / duration * 100, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
     ),
     // Controls row: play + start/end capture+input
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '6px 8px', background: T.surface, borderTop: '1px solid ' + T.border } },
       React.createElement("button", {
         onClick: togglePlay,
         style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-      }, playing ? '\u23F8' : '\u25B6'),
+      }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 14 })),
       React.createElement("button", {
         onClick: toggleMute,
-        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-      }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+        style: { width: 28, height: 28, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+      }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 14 })),
       // Start: capture btn + input
       React.createElement("div", { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 3 } },
         React.createElement("button", {
@@ -1765,8 +2204,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       ),
     ),
     // Zoomed region seekbar (shows +-30s around start point)
-    startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
-    // Warning toast (prominent for mobile)
+    // Warning toast
     warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
       '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
     ),
@@ -1774,7 +2212,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
 }
 
 /* ── MobileClipSelector: compact clip picker for mobile ── */
-function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply }) {
+function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClipChange, onExpandChange, onApply, onTitleFetch, initialOpen }) {
   const containerRef = useRef(null);
   const playerRef = useRef(null);
   const seekRef = useRef(null);
@@ -1788,9 +2226,11 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const warnTimer = useRef(null);
   const manualSeekOutside = useRef(false);
   const lastStartRef = useRef(null);
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(!initialOpen);
   const [closing, setClosing] = useState(false);
   const [rangeDragActive, setRangeDragActive] = useState(false);
+  const [rangeTouched, setRangeTouched] = useState(false);
+  const [rangeDragLabel, setRangeDragLabel] = useState(null);
   const [showRangeTip, setShowRangeTip] = useState(false);
   const rangeTipTimer = useRef(null);
   const [mDragging, setMDragging] = useState(false);
@@ -1798,6 +2238,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [mDragTime, setMDragTime] = useState(null);
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
+  // Auto-set 0-15s immediately when opening with no selection
+  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } }, []);
   const handleClose = () => {
     if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} }
     setClosing(true);
@@ -1807,13 +2249,16 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [zoomCenter, setZoomCenter] = useState(0.5);
   const pinchRef = useRef(null);
+  const panInertiaRef = useRef(null); // rAF id for pan inertia — cancel on new touch
+  const isInitialMountRef = useRef(true);
+  const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
 
   const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
   const startSec = parseTime(start);
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
   const MAX_CLIP = 30;
-  const overLimit = clipLen != null && clipLen > MAX_CLIP;
+  const overLimit = clipLen != null && clipLen > MAX_CLIP + 0.5;
   const accentC = '#6366f1';
   const dangerC = '#ef4444';
 
@@ -1855,12 +2300,13 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       playerRef.current = new window.YT.Player(cid, {
         width: '100%', height: 220,
         videoId: videoId,
-        playerVars: { autoplay: 0, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
+        playerVars: { autoplay: 1, mute: 1, controls: 0, modestbranding: 1, rel: 0, showinfo: 0, fs: 0, playsinline: 1, disablekb: 1, iv_load_policy: 3 },
         events: {
           onReady: (e) => {
             if (cancelled) return;
             setReady(true);
             setDuration(e.target.getDuration() || 0);
+            try { var vd = e.target.getVideoData(); if (vd && vd.title && onTitleFetch) onTitleFetch(vd.title); } catch(ex) {}
             const ss = parseTime(start);
             if (ss != null) e.target.seekTo(ss, true);
           },
@@ -1880,6 +2326,39 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }, 80);
     return () => { cancelled = true; clearTimeout(initDelay); if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; setReady(false); setPlaying(false); } };
   }, [videoId, collapsed]);
+
+  // Auto-set 0-15s clip when new video loads
+  const prevVideoIdRef = useRef(null);
+  useEffect(() => {
+    if (!videoId || duration <= 0) return;
+    if (prevVideoIdRef.current === videoId) return;
+    prevVideoIdRef.current = videoId;
+    var mz = Math.max(2, Math.round(duration / 75));
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      if (parseTime(start) != null) {
+        var zz = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+        if (zz > 1) {
+          setZoomLevel(zz);
+          var ss = parseTime(start);
+          setZoomCenter(Math.max(0, Math.min(1, ss / duration)));
+        }
+        return;
+      }
+    }
+    if (parseTime(start) != null) return;
+    var autoEnd = Math.min(15, duration);
+    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
+    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
+    if (z > 1) {
+      setZoomLevel(z);
+      setZoomCenter(1 / (2 * z));
+    } else {
+      setZoomLevel(1);
+      setZoomCenter(0.5);
+    }
+  }, [videoId, duration]);
 
   // Poll current time + auto-loop
   useEffect(() => {
@@ -1942,10 +2421,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Zoom helpers
   const mVisibleDuration = duration / zoomLevel;
-  const mVisibleStart = Math.max(0, zoomCenter * duration - mVisibleDuration / 2);
-  const mVisibleEnd = Math.min(duration, mVisibleStart + mVisibleDuration);
-  const mActualVisibleStart = mVisibleEnd - mVisibleDuration < 0 ? 0 : mVisibleStart;
-  const mActualVisibleEnd = mActualVisibleStart + mVisibleDuration;
+  const mActualVisibleStart = Math.max(0, Math.min(duration - mVisibleDuration, zoomCenter * duration - mVisibleDuration / 2));
+  const mActualVisibleEnd = Math.min(duration, mActualVisibleStart + mVisibleDuration);
   const mToVisualPct = (sec) => {
     const p = ((sec - mActualVisibleStart) / mVisibleDuration) * 100;
     return Math.max(-5, Math.min(105, p));
@@ -1968,7 +2445,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
       return;
     }
     const scale = d / pinchRef.current.startDist;
-    const newZoom = Math.max(1, Math.min(20, pinchRef.current.startZoom * scale));
+    const newZoom = Math.max(1, Math.min(maxZoom, pinchRef.current.startZoom * scale));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(newZoom); }
   };
 
@@ -1980,178 +2457,261 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     const mouseX = (e.clientX - rect.left) / rect.width;
     const mouseTime = mActualVisibleStart + mouseX * mVisibleDuration;
     const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-    const newZoom = Math.max(1, Math.min(20, zoomLevel * factor));
+    const newZoom = Math.max(1, Math.min(maxZoom, zoomLevel * factor));
     if (newZoom === 1) { setZoomLevel(1); setZoomCenter(0.5); return; }
     setZoomLevel(newZoom);
     setZoomCenter(Math.max(0, Math.min(1, mouseTime / duration)));
   };
 
+  // Unified pointer-capture based drag handler for seekbar
+  // Uses setPointerCapture to guarantee all move/up events reach this element,
+  // even when inside iOS scrollable containers that steal touch events.
   const handleSeekDown = (e) => {
-    // Check for pinch (2+ touches)
-    if (e.touches && e.touches.length >= 2) { handlePinch(e); return; }
+    // Only handle pointer events (not touch/mouse — we switched to onPointerDown)
+    if (e.pointerId == null) return;
+    // Cancel any ongoing pan inertia when a new touch starts
+    if (panInertiaRef.current != null) { cancelAnimationFrame(panInertiaRef.current); panInertiaRef.current = null; }
     e.preventDefault();
-    const isTouch = e.type === 'touchstart';
-    const startClientX = isTouch ? e.touches[0].clientX : e.clientX;
+    e.stopPropagation();
+    const el = seekRef.current;
+    if (!el) return;
+    el.setPointerCapture(e.pointerId);
+    const startClientX = e.clientX;
     const { time, x } = calcSeekTime(startClientX);
+    const rect = el.getBoundingClientRect();
+
+    // Calculate distances to bracket handles
+    const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
+    const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
+    const dStart = startMarkerX != null ? Math.abs(startClientX - startMarkerX) : Infinity;
+    const dEnd = endMarkerX != null ? Math.abs(startClientX - endMarkerX) : Infinity;
     const inRange = startSec != null && endSec != null && endSec > startSec && time >= startSec && time <= endSec;
 
-    if (inRange) {
-      const snapStart = startSec;
-      const snapEnd = endSec;
-      const clipDur = snapEnd - snapStart;
-      let isDragging = false;
-      let longPressTriggered = false;
+    // Determine drag mode
+    // PRIORITY 1: Bracket handle (within 35px of bracket edge)
+    const bracketThreshold = 35;
+    const nearStart = dStart <= bracketThreshold;
+    const nearEnd = dEnd <= bracketThreshold;
+    let mode = 'seek'; // default
+    let bracketType = null;
+    if (startSec != null && endSec != null && (nearStart || nearEnd)) {
+      mode = 'bracket';
+      bracketType = (nearStart && nearEnd) ? (dStart <= dEnd ? 'start' : 'end') : (nearStart ? 'start' : 'end');
+    }
+    // PRIORITY 2: Range drag (inside selected area, not near bracket)
+    else if (inRange) {
+      mode = 'range';
+    }
+    // PRIORITY 3: Pan when zoomed
+    else if (zoomLevel > 1) {
+      mode = 'pan';
+    }
 
-      // Show first-time tooltip
-      if (isTouch) {
-        try {
-          if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
-            localStorage.setItem('yt2c_rangeDragTipShown', '1');
-            setShowRangeTip(true);
-            if (rangeTipTimer.current) clearTimeout(rangeTipTimer.current);
-            rangeTipTimer.current = setTimeout(() => setShowRangeTip(false), 3000);
-          }
-        } catch(ex) {}
-      }
+    // State for drag
+    const snapStartSec = startSec;
+    const snapEndSec = endSec;
+    const clipDur = (snapStartSec != null && snapEndSec != null) ? snapEndSec - snapStartSec : 0;
+    let rangeDragStarted = false;
+    let panned = false;
+    const startPanCenter = zoomCenter;
 
-      const doRangeMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const { time: t } = calcSeekTime(cx);
-        const delta = t - time;
-        let newStart = snapStart + delta;
-        let newEnd = snapEnd + delta;
-        if (newStart < 0) { newStart = 0; newEnd = clipDur; }
-        if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
-        manualSeekOutside.current = false;
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
-      };
-
-      const startRangeDrag = () => {
-        isDragging = true;
-        setRangeDragActive(true);
-      };
-
-      // Long press mode (mobile-primary component)
-      const longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        startRangeDrag();
-      }, 300);
-
-      const onMove = (ev) => {
-        if (!longPressTriggered) {
-          const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-          if (Math.abs(cx - startClientX) > 10) {
-            clearTimeout(longPressTimer);
-            // Fall back to seek with drag tooltip
-            manualSeekOutside.current = false;
-            seekTo(time);
-            mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
-            const seekMove = (sev) => { const scx = sev.type === 'touchmove' ? sev.touches[0].clientX : sev.clientX; const r = calcSeekTime(scx); seekTo(r.time); setMDragTime(r.time); setMDragX(r.x); };
-            const seekUp = () => { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); window.removeEventListener('touchmove', seekMove); window.removeEventListener('touchend', seekUp); window.removeEventListener('mousemove', seekMove); window.removeEventListener('mouseup', seekUp); };
-            window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-            window.addEventListener('touchmove', seekMove, { passive: false }); window.addEventListener('touchend', seekUp);
-            window.addEventListener('mousemove', seekMove); window.addEventListener('mouseup', seekUp);
-            return;
-          }
-          return;
+    // Range touch: immediate visual feedback
+    if (mode === 'range') {
+      setRangeTouched(true);
+      setRangeDragLabel({ start: snapStartSec, end: snapEndSec });
+      try {
+        if (!localStorage.getItem('yt2c_rangeDragTipShown')) {
+          localStorage.setItem('yt2c_rangeDragTipShown', '1');
+          setShowRangeTip(true);
+          if (rangeTipTimer.current) clearTimeout(rangeTipTimer.current);
+          rangeTipTimer.current = setTimeout(() => setShowRangeTip(false), 3000);
         }
-        doRangeMove(ev);
-      };
-      var onUp = () => {
-        clearTimeout(longPressTimer);
-        if (!longPressTriggered && !isDragging) seekTo(time);
-        setRangeDragActive(false);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-    } else if (zoomLevel > 1) {
-      // Panning mode when zoomed — but delegate to playhead/marker if near
-      const rect = seekRef.current.getBoundingClientRect();
-      const playheadX = rect.left + (mvPct / 100) * rect.width;
-      const startMarkerX = mvStartPct != null ? rect.left + (mvStartPct / 100) * rect.width : null;
-      const endMarkerX = mvEndPct != null ? rect.left + (mvEndPct / 100) * rect.width : null;
-      if (Math.abs(startClientX - playheadX) <= 14) { startPlayheadDrag(e); return; }
-      if (startMarkerX != null && Math.abs(startClientX - startMarkerX) <= 12) { startSeekMarkerDrag('start', e); return; }
-      if (endMarkerX != null && Math.abs(startClientX - endMarkerX) <= 12) { startSeekMarkerDrag('end', e); return; }
-      const startPanCenter = zoomCenter;
-      const startPanX = startClientX;
-      let panned = false;
-      const onMove = (ev) => {
-        if (ev.cancelable) ev.preventDefault();
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        if (!panned && Math.abs(cx - startPanX) > 10) panned = true;
-        if (panned) {
-          const deltaPx = cx - startPanX;
-          const deltaRatio = -deltaPx / rect.width / zoomLevel;
-          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
-        }
-      };
-      const onUp = () => {
-        if (!panned) { manualSeekOutside.current = true; seekTo(time); }
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-    } else {
-      // Outside range: normal seek with drag tooltip
+      } catch(ex) {}
+    }
+
+    // For seek mode, apply immediately
+    if (mode === 'seek') {
       manualSeekOutside.current = true;
       seekTo(time);
       mDraggingRef.current = true; setMDragging(true); setMDragTime(time); setMDragX(x);
-      const onMove = (ev) => {
-        const cx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-        const r = calcSeekTime(cx);
-        const inR = startSec != null && endSec != null && r.time >= startSec && r.time <= endSec;
+    }
+
+    let rafPending = false;
+    let lastCx = startClientX;
+    let autoPanId = null;
+    let autoPanTimeOffset = 0; // accumulated time shift from auto-pan
+
+    // Auto-pan: when dragging range/bracket near seekbar edge while zoomed, scroll timeline
+    // Compensates drag position so the range stays pinned under the finger
+    const startAutoPan = () => {
+      if (autoPanId || zoomLevel <= 1) return;
+      const panStep = () => {
+        const edgeZone = 30;
+        const leftDist = lastCx - rect.left;
+        const rightDist = rect.right - lastCx;
+        let panDir = 0;
+        if (leftDist < edgeZone) panDir = -1 * (1 - leftDist / edgeZone);
+        else if (rightDist < edgeZone) panDir = 1 * (1 - rightDist / edgeZone);
+        if (panDir !== 0) {
+          const speed = 0.003 * panDir;
+          // Accumulate the time offset so drag position stays pinned
+          autoPanTimeOffset += speed * duration;
+          setZoomCenter(prev => Math.max(0, Math.min(1, prev + speed)));
+        }
+        autoPanId = requestAnimationFrame(panStep);
+      };
+      autoPanId = requestAnimationFrame(panStep);
+    };
+    const stopAutoPan = () => { if (autoPanId) { cancelAnimationFrame(autoPanId); autoPanId = null; } };
+
+    const onMove = (ev) => {
+      lastCx = ev.clientX;
+      // Start/maintain auto-pan for range and bracket drags when zoomed
+      if ((mode === 'range' && rangeDragStarted) || mode === 'bracket') {
+        if (zoomLevel > 1) startAutoPan();
+      }
+      if (mode === 'bracket') {
+        if (rafPending) return;
+        rafPending = true;
+        requestAnimationFrame(() => {
+          rafPending = false;
+          const r = calcSeekTime(lastCx);
+          let t = Math.max(0, Math.min(duration, r.time));
+          if (bracketType === 'start') {
+            if (snapEndSec != null && t >= snapEndSec - 0.5) return;
+            if (snapEndSec != null && snapEndSec - t > 30) { t = snapEndSec - 30; showWarn(); }
+            onStartChange(fmtPrecise(t));
+          } else {
+            if (t <= snapStartSec + 0.5) return;
+            if (t - snapStartSec > 30) { t = snapStartSec + 30; showWarn(); }
+            onEndChange(fmtPrecise(t));
+          }
+        });
+      } else if (mode === 'range') {
+        if (!rangeDragStarted && Math.abs(lastCx - startClientX) > 3) {
+          rangeDragStarted = true;
+          setRangeDragActive(true);
+        }
+        if (rangeDragStarted) {
+          if (rafPending) return;
+          rafPending = true;
+          requestAnimationFrame(() => {
+            rafPending = false;
+            const { time: t } = calcSeekTime(lastCx);
+            const delta = t - time + autoPanTimeOffset;
+            let ns = snapStartSec + delta, ne = snapEndSec + delta;
+            if (ns < 0) { ns = 0; ne = clipDur; }
+            if (ne > duration) { ne = duration; ns = duration - clipDur; }
+            manualSeekOutside.current = false;
+            setRangeDragLabel({ start: ns, end: ne });
+            if (onClipChange) onClipChange(fmtPrecise(ns), fmtPrecise(ne));
+            else { onStartChange(fmtPrecise(ns)); onEndChange(fmtPrecise(ne)); }
+          });
+        }
+      } else if (mode === 'pan') {
+        if (!panned && Math.abs(lastCx - startClientX) > 4) panned = true;
+        if (panned) {
+          const deltaPx = lastCx - startClientX;
+          const deltaRatio = -deltaPx / rect.width / zoomLevel;
+          setZoomCenter(Math.max(0, Math.min(1, startPanCenter + deltaRatio)));
+        }
+      } else {
+        // seek
+        const r = calcSeekTime(lastCx);
+        const inR = snapStartSec != null && snapEndSec != null && r.time >= snapStartSec && r.time <= snapEndSec;
         manualSeekOutside.current = !inR;
         seekTo(r.time); setMDragTime(r.time); setMDragX(r.x);
-      };
-      const onUp = () => {
-        mDraggingRef.current = false; setMDragging(false); setMDragTime(null);
-        window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
-        window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp);
-      };
-      window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp);
-      window.addEventListener('touchmove', onMove, { passive: false }); window.addEventListener('touchend', onUp);
-    }
-  };
-
-  const startSeekMarkerDrag = (type, e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const snapEndSec = endSec;
-    const snapStartSec = startSec;
-    const isTouch = e.type === 'touchstart';
-    const cx = isTouch ? e.touches[0].clientX : e.clientX;
-    const { time } = calcSeekTime(cx);
-    const onMove = (ev) => {
-      if (ev.cancelable) ev.preventDefault();
-      const mcx = ev.type === 'touchmove' ? ev.touches[0].clientX : ev.clientX;
-      const r = calcSeekTime(mcx);
-      const t = Math.max(0, Math.min(duration, r.time));
-      if (type === 'start') {
-        if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); showWarn(); return; }
-        onStartChange(fmtMM(t));
-      } else {
-        if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); showWarn(); return; }
-        onEndChange(fmtMM(t));
       }
     };
-    const onUp = () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend', onUp);
+
+    // Track velocity for inertia (range drag)
+    let prevCx = startClientX;
+    let prevTime = performance.now();
+    let velocity = 0;
+
+    const updateVelocity = (cx) => {
+      const now = performance.now();
+      const dt = now - prevTime;
+      if (dt > 0 && dt < 100) {
+        const v = (cx - prevCx) / dt; // px/ms
+        velocity = velocity * 0.3 + v * 0.7; // smooth
+      }
+      prevCx = cx;
+      prevTime = now;
     };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    window.addEventListener('touchmove', onMove, { passive: false });
-    window.addEventListener('touchend', onUp);
+
+    // Wrap original onMove to also track velocity
+    const origOnMove = onMove;
+    const wrappedOnMove = (ev) => {
+      if (mode === 'range' || mode === 'pan') updateVelocity(ev.clientX);
+      origOnMove(ev);
+    };
+
+    const onUp = (ev) => {
+      stopAutoPan();
+      if (ev.pointerId != null) { try { el.releasePointerCapture(ev.pointerId); } catch(ex) {} }
+      el.removeEventListener('pointermove', wrappedOnMove);
+      el.removeEventListener('pointerup', onUp);
+      el.removeEventListener('pointercancel', onUp);
+
+      // Commit final values as clean integer-second format with 30s enforcement
+      if (mode === 'bracket') {
+        const r = calcSeekTime(lastCx);
+        let t = Math.max(0, Math.min(duration, r.time));
+        if (bracketType === 'start') {
+          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - 1;
+          if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
+          onStartChange(fmtMM(Math.max(0, t)));
+        } else {
+          if (t <= snapStartSec) t = snapStartSec + 1;
+          if (t - snapStartSec > 30) t = snapStartSec + 30;
+          onEndChange(fmtMM(Math.min(duration, t)));
+        }
+      }
+
+      if (mode === 'range' && rangeDragStarted) {
+        // No inertia for range drag — commit final position immediately
+        const { time: t } = calcSeekTime(lastCx);
+        const delta = t - time + autoPanTimeOffset;
+        let ns = snapStartSec + delta, ne = snapEndSec + delta;
+        if (ns < 0) { ns = 0; ne = clipDur; }
+        if (ne > duration) { ne = duration; ns = duration - clipDur; }
+        if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
+        else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+      }
+
+      if (mode === 'range' && !rangeDragStarted) {
+        seekTo(time);
+        manualSeekOutside.current = false;
+      }
+      if (mode === 'range') { setRangeDragActive(false); setRangeTouched(false); setRangeDragLabel(null); }
+      if (mode === 'pan' && !panned) { manualSeekOutside.current = true; seekTo(time); }
+      if (mode === 'pan' && panned) {
+        // Inertia animation for pan
+        const pxPerMs = velocity;
+        if (Math.abs(pxPerMs) > 0.15) {
+          let vx = pxPerMs * 16; // px per frame (~16ms)
+          const friction = 0.92;
+          const inertiaFrame = () => {
+            vx *= friction;
+            if (Math.abs(vx) < 0.3) { panInertiaRef.current = null; return; }
+            const deltaRatio = -vx / rect.width / zoomLevel;
+            setZoomCenter((prev) => {
+              const next = prev + deltaRatio;
+              if (next <= 0 || next >= 1) { vx = 0; return Math.max(0, Math.min(1, next)); }
+              return next;
+            });
+            panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+          };
+          panInertiaRef.current = requestAnimationFrame(inertiaFrame);
+        }
+      }
+      if (mode === 'seek') { mDraggingRef.current = false; setMDragging(false); setMDragTime(null); }
+    };
+
+    el.addEventListener('pointermove', wrappedOnMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
   };
 
   const startPlayheadDrag = (e) => {
@@ -2258,7 +2818,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", {
-    onClick: () => setCollapsedAndNotify(false),
+    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } setCollapsedAndNotify(false); },
     style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
   },
     React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
@@ -2289,85 +2849,129 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             )
           ),
           // Time badge
-          ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+          ready && React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 8, zIndex: 3 } },
+            React.createElement("div", { style: { background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4 } }, fmtMM(currentTime) + ' / ' + fmtMM(duration)),
+          ),
         ),
         // Seekbar (touch-friendly, 44px hit area)
         React.createElement("div", {
           ref: seekRef,
-          onMouseDown: handleSeekDown, onTouchStart: handleSeekDown,
+          onPointerDown: handleSeekDown,
+          onTouchStart: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchMove: (e) => { if (e.touches.length >= 2) handlePinch(e); },
           onTouchEnd: handlePinchEnd,
           onWheel: handleWheel,
-          style: { position: 'relative', height: 44, background: T.surface, cursor: zoomLevel > 1 ? 'grab' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 18, overflow: 'visible' },
+          style: { position: 'relative', height: 80, background: T.surface, cursor: (mDragging || rangeDragActive) ? 'grabbing' : 'pointer', userSelect: 'none', touchAction: 'none', marginTop: 14, marginBottom: 2, overflow: 'visible' },
         },
-          // Track bg
-          React.createElement("div", { style: { position: 'absolute', top: 20, left: 0, right: 0, height: 4, background: T.border, borderRadius: 2 } }),
-          // Selected range
-          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: rangeDragActive ? 17 : 20, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: rangeDragActive ? 10 : 4, background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: rangeDragActive ? 0.8 : 0.6, pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'opacity 0.15s, height 0.15s, top 0.15s', boxShadow: rangeDragActive ? '0 0 10px ' + accentC : 'none' } }),
+          // Time ruler (top 18px)
+          React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 18, borderBottom: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden', pointerEvents: 'none' } },
+            (function() {
+              if (duration <= 0) return null;
+              var ticks = [];
+              var ns = [1, 2, 5, 10, 15, 30, 60, 120, 300];
+              var best = 30, bd = 999;
+              for (var ni = 0; ni < ns.length; ni++) {
+                var c = mVisibleDuration / ns[ni];
+                if (c < 3) continue;
+                var dd = Math.abs(c - 7);
+                if (dd < bd) { bd = dd; best = ns[ni]; }
+              }
+              var majorInterval = best;
+              var minorInterval = majorInterval >= 60 ? 15 : majorInterval >= 10 ? 5 : majorInterval >= 5 ? 1 : 0.5;
+              var tickStart = Math.floor(mActualVisibleStart / minorInterval) * minorInterval;
+              var tickEnd = Math.ceil(mActualVisibleEnd / minorInterval) * minorInterval;
+              for (var t = tickStart; t <= tickEnd; t += minorInterval) {
+                var tt = Math.round(t * 100) / 100;
+                if (tt < 0 || tt > duration) continue;
+                var pct = ((tt - mActualVisibleStart) / mVisibleDuration) * 100;
+                if (pct < -1 || pct > 101) continue;
+                var isMajor = Math.abs(tt % majorInterval) < 0.01 || Math.abs(tt % majorInterval - majorInterval) < 0.01;
+                ticks.push(React.createElement("div", { key: 'mtick-' + tt, style: { position: 'absolute', left: pct + '%', bottom: 0, width: 1, height: isMajor ? 8 : 4, background: isMajor ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.12)' } }));
+                if (isMajor) {
+                  ticks.push(React.createElement("div", { key: 'mlbl-' + tt, style: { position: 'absolute', left: pct + '%', top: 1, transform: 'translateX(-50%)', fontSize: 9, color: T.textMuted, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' } }, fmtMM(tt)));
+                }
+              }
+              return ticks;
+            })()
+          ),
+          // Track area
+          React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, right: 0, height: 62, background: 'rgba(255,255,255,0.03)', borderRadius: 2 } }),
+          // Dimming outside selection (left)
+          mvStartPct != null && mvStartPct > 0 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 0, width: mvStartPct + '%', height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          // Dimming outside selection (right)
+          mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
+          // Selected range fill
+          mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : rangeTouched ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
+            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtMM(rangeDragLabel.start) + ' ~ ' + fmtMM(rangeDragLabel.end))
+            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+          ),
           // First-time range drag tooltip
-          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
+          showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
             React.createElement("div", { style: { background: 'rgba(99,102,241,0.95)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', position: 'relative' } },
               '\uAE38\uAC8C \uB20C\uB7EC \uAD6C\uAC04\uC744 \uC774\uB3D9\uD558\uC138\uC694',
               React.createElement("div", { style: { position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid rgba(99,102,241,0.95)' } })
             )
           ),
-          // Start marker (visible line + label + hit area)
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvStartPct + '% - 1px)', pointerEvents: 'none' } },
-            React.createElement("div", { style: { width: 3, height: 24, background: accentC, borderRadius: 1 } }),
-            React.createElement("div", { style: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(startSec))
+          // Start bracket handle
+          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + mvStartPct + '% - 10px)', pointerEvents: 'none', zIndex: 3 } },
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '5px 0 0 5px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+            ),
           ),
-          mvStartPct != null && mvStartPct >= -2 && mvStartPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('start', e), onTouchStart: (e) => startSeekMarkerDrag('start', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvStartPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
-          // End marker (visible line + label + hit area)
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 10, left: 'calc(' + mvEndPct + '% - 1px)', pointerEvents: 'none' } },
-            React.createElement("div", { style: { width: 3, height: 24, background: overLimit ? dangerC : accentC, borderRadius: 1 } }),
-            React.createElement("div", { style: { position: 'absolute', top: 26, left: '50%', transform: 'translateX(-50%)', background: overLimit ? dangerC : accentC, color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap' } }, fmtMM(endSec))
+          /* Start bracket hit area — handled by unified handleSeekDown, no individual handler */
+          // End bracket handle
+          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', pointerEvents: 'none', zIndex: 3 } },
+            React.createElement("div", { style: { width: 10, height: 62, background: overLimit ? dangerC : accentC, borderRadius: '0 5px 5px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3 } },
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } }),
+              React.createElement("div", { style: { width: 3, height: 2, background: 'rgba(255,255,255,0.6)', borderRadius: 1 } })
+            ),
           ),
-          mvEndPct != null && mvEndPct >= -2 && mvEndPct <= 102 && React.createElement("div", { onMouseDown: (e) => startSeekMarkerDrag('end', e), onTouchStart: (e) => startSeekMarkerDrag('end', e), style: { position: 'absolute', top: 0, width: 24, height: 44, left: 'calc(' + mvEndPct + '% - 12px)', cursor: 'ew-resize', zIndex: 3, touchAction: 'none', pointerEvents: markersClose ? 'none' : 'auto' } }),
+          /* End bracket hit area — handled by unified handleSeekDown, no individual handler */
           // Unified hit area when markers are close
-          markersClose && React.createElement("div", { onMouseDown: (e) => { const cx = e.clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, onTouchStart: (e) => { const cx = e.touches[0].clientX; const { time } = calcSeekTime(cx); const type = Math.abs(time - startSec) <= Math.abs(time - endSec) ? 'start' : 'end'; startSeekMarkerDrag(type, e); }, style: { position: 'absolute', top: 0, left: 'calc(' + mvStartPct + '% - 12px)', width: 'calc(' + (mvEndPct - mvStartPct) + '% + 24px)', height: 44, cursor: 'ew-resize', zIndex: 4, touchAction: 'none' } }),
-          // Playhead hit area + visual element
-          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 44, cursor: 'grab', zIndex: 5, touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
-            React.createElement("div", { style: { position: 'absolute', top: 14, left: 6, width: 12, height: 16, background: '#fff', borderRadius: 3, boxShadow: '0 1px 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
+          /* Unified close-markers hit area — handled by unified handleSeekDown */
+          // Playhead (vertical line + triangle)
+          mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 0, left: 'calc(' + mvPct + '% - 12px)', width: 24, height: 80, cursor: 'grab', zIndex: 5, pointerEvents: 'none', touchAction: 'none', transition: (playing || mDragging) ? 'none' : 'left 0.05s linear' } },
+            React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
+            React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          (playing && !mDragging) && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 32, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(currentTime)),
           // Playhead drag tooltip
-          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: 34, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(mDragTime)),
+          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
         ),
-        // Minimap (visible when zoomed)
+        // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
           ref: minimapRef,
           onPointerDown: handleMobileMinimapDown,
-          style: { position: 'relative', height: 28, margin: '2px 0 0', background: 'rgba(255,255,255,0.06)', borderRadius: 6, cursor: 'pointer', overflow: 'hidden', touchAction: 'none' },
+          style: { position: 'relative', height: 8, margin: '4px 0 0', background: 'rgba(255,255,255,0.04)', borderRadius: 4, cursor: 'pointer', touchAction: 'none' },
         },
-          // Visible window indicator
-          React.createElement("div", { style: { position: 'absolute', top: 0, bottom: 0, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 2) + '%', background: 'rgba(99,102,241,0.25)', borderRadius: 6, border: '1px solid rgba(99,102,241,0.5)', boxSizing: 'border-box' } }),
-          // Selected range
-          startSec != null && endSec != null && React.createElement("div", { style: { position: 'absolute', top: 9, height: 10, left: (startSec / duration * 100) + '%', width: Math.max((endSec - startSec) / duration * 100, 0.5) + '%', background: overLimit ? dangerC : accentC, borderRadius: 2, opacity: 0.7, pointerEvents: 'none' } }),
-          // Playhead
-          React.createElement("div", { style: { position: 'absolute', top: 4, width: 2, height: 20, left: (currentTime / duration * 100) + '%', background: '#fff', borderRadius: 1, pointerEvents: 'none' } }),
+          React.createElement("div", { style: { position: 'absolute', top: 1, height: 6, left: mMmStartPct + '%', width: Math.max(mMmWidthPct, 3) + '%', background: 'rgba(255,255,255,0.2)', borderRadius: 3, cursor: 'grab' } })
         ),
-        // Zoom control bar (always visible)
-        React.createElement("div", { style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '5px 0', background: T.surface } },
+        // Zoom slider row (right-aligned, below timeline)
+        duration > 0 && React.createElement("div", { style: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 3, padding: '4px 0 2px' } },
           React.createElement("button", {
             onClick: () => { const nz = Math.max(1, zoomLevel / 1.5); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(nz); } },
-            style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: zoomLevel > 1 ? 'rgba(99,102,241,0.1)' : 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+            style: { width: 18, height: 18, border: 'none', background: 'none', color: zoomLevel > 1 ? '#fff' : 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '\u2212'),
-          React.createElement("span", { style: { fontSize: 12, color: zoomLevel > 1 ? T.accent : T.textMuted, fontWeight: 600, minWidth: 36, textAlign: 'center' } }, '\u00D7' + zoomLevel.toFixed(1)),
+          React.createElement("input", {
+            type: 'range', min: 0, max: 100, value: Math.round(Math.log(Math.max(1, zoomLevel)) / Math.log(Math.max(2, maxZoom)) * 100),
+            onChange: (e) => { const nz = Math.pow(Math.max(2, maxZoom), e.target.value / 100); if (nz <= 1.05) { setZoomLevel(1); setZoomCenter(0.5); } else { setZoomLevel(Math.min(maxZoom, nz)); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } } },
+            style: { width: 60, height: 3, accentColor: T.accent, cursor: 'pointer' },
+          }),
           React.createElement("button", {
-            onClick: () => { const nz = Math.min(20, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
-            style: { width: 28, height: 28, borderRadius: 6, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 16, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 },
+            onClick: () => { const nz = Math.min(maxZoom, zoomLevel * 1.5); setZoomLevel(nz); if (zoomLevel === 1) { const ct = duration > 0 ? currentTime / duration : 0.5; setZoomCenter(Math.max(0, Math.min(1, ct))); } },
+            style: { width: 18, height: 18, border: 'none', background: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 },
           }, '+'),
-          zoomLevel > 1 && React.createElement("button", {
-            onClick: () => { setZoomLevel(1); setZoomCenter(0.5); },
-            style: { position: 'absolute', right: 0, fontSize: 11, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' },
-          }, '\uB9AC\uC14B'),
+          zoomLevel > 1 && React.createElement("span", { style: { fontSize: 9, color: T.accent, fontWeight: 600, marginLeft: 1 } }, '\u00D7' + zoomLevel.toFixed(1)),
         ),
         // Controls row
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 5, padding: '8px 0', background: T.surface, borderTop: '1px solid ' + T.border } },
           // Play/Pause
-          React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, playing ? '\u23F8' : '\u25B6'),
+          React.createElement("button", { onClick: togglePlay, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: playing ? ICON_PAUSE : ICON_PLAY, size: 16 })),
           // Mute
-          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + T.borderHover, background: muted ? 'rgba(255,255,255,0.05)' : 'rgba(99,102,241,0.15)', color: muted ? T.textMuted : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'),
+          React.createElement("button", { onClick: toggleMute, style: { width: 34, height: 34, borderRadius: '50%', border: '1px solid ' + (muted ? 'rgba(239,68,68,0.4)' : T.borderHover), background: muted ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.15)', color: muted ? '#ef4444' : '#fff', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 } }, React.createElement(SvgIcon, { path: muted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
           // Spacer
           React.createElement("div", { style: { flex: 1 } }),
           // Start: capture btn + input
@@ -2380,11 +2984,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
             React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
-          // Clip duration badge
-          clipLen > 0 && React.createElement("span", { style: { padding: '3px 8px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC, whiteSpace: 'nowrap', flexShrink: 0 } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428'),
         ),
-        // Zoomed seekbar for precision
-        startSec != null && duration > 0 && React.createElement(ZoomedSeekbar, { startSec: startSec, endSec: endSec, currentTime: currentTime, duration: duration, overLimit: overLimit, onSeek: seekTo, onStartChange: onStartChange, onEndChange: onEndChange, onClipChange: onClipChange, onWarn: showWarn, clipLen: clipLen, onRangeDragEnd: handleRangeDragEnd }),
         // Warning toast
         warnToast && React.createElement("div", { style: { padding: '10px 14px', margin: '6px 8px', background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: dangerC, textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
           '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
@@ -2400,23 +3000,48 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, onReady }) {
+let __vpIdCounter = 0;
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady, videoW, videoH }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
   const timerRef = useRef(null);
   const loopRef = useRef(null);
   const [ready, setReady] = useState(false);
-  const mountId = useRef(Date.now());
+  const mountId = useRef(++__vpIdCounter);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
   const startSec = parseTime(start) ?? 0;
   const endSec = parseTime(end);
   const hasRange = endSec != null && endSec > startSec;
+  const startSecRef = useRef(startSec);
+  const endSecRef = useRef(endSec);
+  const pausedRef = useRef(paused);
+  startSecRef.current = startSec;
+  endSecRef.current = endSec;
+  pausedRef.current = paused;
 
   const iW = 1920;
   const iH = 1080;
-  const coverScale = Math.max(width / iW, height / iH);
+  // YouTube iframe은 1920x1080 고정, 그 안에 실제 영상이 native aspect로 letter/pillarbox 됨.
+  // 검은 바를 제외한 실제 콘텐츠 영역(contentW/H)을 기준으로 cover-fit 해야 백엔드 렌더링과 일치.
+  const nativeAspect = (videoW && videoH) ? (videoW / videoH) : (iW / iH);
+  const iframeAspect = iW / iH;
+  let contentW, contentH;
+  if (nativeAspect >= iframeAspect) {
+    // 영상이 iframe보다 가로가 김 → 가로 꽉, 위아래 letterbox
+    contentW = iW;
+    contentH = iW / nativeAspect;
+  } else {
+    // 영상이 iframe보다 세로가 김 → 세로 꽉, 좌우 pillarbox
+    contentH = iH;
+    contentW = iH * nativeAspect;
+  }
+  const contentOffsetX = (iW - contentW) / 2;
+  const contentOffsetY = (iH - contentH) / 2;
+  const coverScale = Math.max(width / contentW, height / contentH);
 
   useEffect(() => {
     if (window.YT && window.YT.Player) return;
@@ -2431,18 +3056,42 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
   useEffect(() => {
     const p = playerRef.current;
     if (!p || typeof p.mute !== 'function') return;
-    if (muted) p.mute(); else p.unMute();
+    if (muted) p.mute(); else { p.unMute(); p.setVolume(100); }
   }, [muted]);
 
+  // Play/pause without recreating player
   useEffect(() => {
-    if (!videoId || !hasRange) return;
+    const p = playerRef.current;
+    if (!p || typeof p.playVideo !== 'function') return;
+    try {
+      if (paused) p.pauseVideo();
+      else p.playVideo();
+    } catch {}
+  }, [paused]);
+
+  // Switch video without destroying player (preserves user gesture / mute state)
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!p || typeof p.loadVideoById !== 'function' || !videoId || !hasRange) return;
+    if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
+    setReady(false);
+    try {
+      p.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+    } catch {}
+  }, [videoId, startSec, endSec, hasRange]);
+
+  const videoIdRef = useRef(videoId);
+  videoIdRef.current = videoId;
+  useEffect(() => {
+    // Only create player once per component instance
+    if (playerRef.current) return;
     let cancelled = false;
 
     const createPlayer = () => {
-      if (cancelled) return;
-      if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
+      if (cancelled || playerRef.current) return;
+      if (!videoIdRef.current || !(endSecRef.current != null && endSecRef.current > startSecRef.current)) return;
       if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
-      const containerId = 'yt-pv-' + mountId.current + '-' + videoId + '-' + startSec;
+      const containerId = 'yt-pv-' + mountId.current;
       const el = iframeRef.current;
       if (!el) return;
       el.id = containerId;
@@ -2458,30 +3107,55 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
           onReady: (e) => {
             if (!cancelled) {
               e.target.mute();
-              e.target.loadVideoById({ videoId: videoId, startSeconds: startSec, endSeconds: endSec });
+              // Force iframe to fill 100% of parent (override YT's width/height attrs)
+              try {
+                const ifr = e.target.getIframe && e.target.getIframe();
+                if (ifr) {
+                  ifr.style.width = '100%';
+                  ifr.style.height = '100%';
+                  ifr.style.display = 'block';
+                  ifr.removeAttribute('width');
+                  ifr.removeAttribute('height');
+                }
+              } catch {}
+              e.target.loadVideoById({ videoId: videoIdRef.current, startSeconds: startSecRef.current, endSeconds: endSecRef.current });
             }
           },
           onStateChange: (e) => {
             if (cancelled) return;
             if (e.data === window.YT.PlayerState.PLAYING && !ready) {
               setReady(true);
+              // Re-apply mute state multiple times after playback starts (mobile autoplay policy workaround)
+              const applyMute = () => {
+                if (cancelled) return;
+                try {
+                  if (mutedRef.current) e.target.mute();
+                  else { e.target.unMute(); e.target.setVolume(100); }
+                } catch {}
+              };
+              applyMute();
+              setTimeout(applyMute, 100);
+              setTimeout(applyMute, 400);
+              setTimeout(applyMute, 1000);
               if (onReadyRef.current) onReadyRef.current();
-              // Start loop checker
+              // Start loop checker — use closure over current endSec via ref
               if (!loopRef.current) {
                 loopRef.current = setInterval(() => {
                   const p = playerRef.current;
                   if (!p || typeof p.getCurrentTime !== 'function') return;
                   const ct = p.getCurrentTime();
-                  if (ct >= endSec - 0.3 || ct < startSec - 0.5) {
-                    p.seekTo(startSec, true);
+                  const curStart = startSecRef.current;
+                  const curEnd = endSecRef.current;
+                  if (ct >= curEnd - 0.3 || ct < curStart - 0.5) {
+                    p.seekTo(curStart, true);
                   }
                 }, 250);
               }
             }
-            // When video ends or pauses at endSec, restart
+            // When video ends or pauses at endSec, restart — unless intentionally paused
             if (e.data === window.YT.PlayerState.ENDED || e.data === window.YT.PlayerState.PAUSED) {
-              if (!cancelled) {
-                e.target.seekTo(startSec, true);
+              if (!cancelled && !pausedRef.current) {
+                e.target.seekTo(startSecRef.current, true);
                 e.target.playVideo();
               }
             }
@@ -2510,16 +3184,20 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
       if (loopRef.current) { clearInterval(loopRef.current); loopRef.current = null; }
       if (playerRef.current) { try { playerRef.current.destroy(); } catch(e){} playerRef.current = null; }
     };
-  }, [videoId, startSec, endSec, hasRange]);
+  }, []);
 
   if (!videoId || !hasRange) return null;
 
   const vsc = (videoScale ?? 100) / 100;
   const totalScale = coverScale * vsc;
-  const scaledW = iW * totalScale;
-  const scaledH = iH * totalScale;
-  const offX = scaledW * (videoX ?? 0) / 400 + (scaledW - width) / 2;
-  const offY = scaledH * (videoY ?? 0) / 400 + (scaledH - height) / 2;
+  // 컨텐츠 중심을 카드 중심에 맞추고 videoX/Y(-400~400) 만큼 비례 이동
+  // 기존 공식과 동일한 부호 규칙: 양수 videoX → 영상이 왼쪽으로 이동(오른쪽 부분이 보임)
+  const scaledContentW = contentW * totalScale;
+  const scaledContentH = contentH * totalScale;
+  const scaledContentCenterX = (contentOffsetX + contentW / 2) * totalScale;
+  const scaledContentCenterY = (contentOffsetY + contentH / 2) * totalScale;
+  const offX = scaledContentCenterX - width / 2 + scaledContentW * (videoX ?? 0) / 400;
+  const offY = scaledContentCenterY - height / 2 + scaledContentH * (videoY ?? 0) / 400;
 
   return React.createElement("div", {
     style: { position: 'absolute', inset: 0, zIndex: 1, overflow: 'hidden', background: '#000', opacity: ready ? 1 : 0, transition: 'opacity 0.5s', filter: videoBrightness ? 'brightness(' + (1 + (videoBrightness || 0) / 100) + ')' : undefined },
@@ -2531,18 +3209,22 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
         transformOrigin: '0 0',
       },
     },
-      React.createElement("div", { ref: iframeRef, style: { width: '100%', height: '100%' } })
+      React.createElement("div", { ref: iframeRef, style: { width: iW + 'px', height: iH + 'px', display: 'block' } })
     ),
+    React.createElement("style", null, `[id^="yt-pv-"] { width: 1920px !important; height: 1080px !important; display: block !important; border: 0 !important; }`),
     React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'auto', cursor: 'default' } })
   );
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady }) {
-  const previewW = previewWidth || 320;
-  const previewH = aspectRatio === '3:4' ? Math.round(previewW * 4 / 3) : previewW;
+function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
+  const _base = previewWidth || 320;
+  const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
+  const _arW = _pw || 1, _arH = _ph || 1;
+  const previewW = (_arW >= _arH) ? _base : Math.round(_base * _arW / _arH);
+  const previewH = (_arH >= _arW) ? _base : Math.round(_base * _arH / _arW);
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textH = (card.layout === "full_bg" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
   const sc = previewW / 1080;
@@ -2550,10 +3232,15 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
   const videoUrl = card.url || globalUrl || "";
   const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  const nativeDims = useVideoAspect(thumbnailId);
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
-  const [vpMuted, setVpMuted] = useState(true);
+  const [vpMutedLocal, setVpMutedLocal] = useState(true);
+  const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
+  const setVpMuted = onMuteToggle || setVpMutedLocal;
   const [imgDims, setImgDims] = useState(null);
+  const [vpReady, setVpReady] = useState(false);
+  const prevVideoKey = useRef(null);
 
   useEffect(() => {
     if (!card.uploadedImage) { setImgDims(null); return; }
@@ -2566,10 +3253,13 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [overlayUrl, setOverlayUrl] = useState(null);
   const overlayTimer = useRef(null);
 
+  const [thumbLoaded, setThumbLoaded] = useState(false);
   useEffect(() => {
-    if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
+    setThumbLoaded(false);
+    if (card.clipThumbnail) { setThumbSrc(card.clipThumbnail); setTried(-1); }
+    else if (thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
     else setThumbSrc(null);
-  }, [thumbnailId]);
+  }, [thumbnailId, card.clipThumbnail]);
 
   // Generate canvas overlay (debounced) — same engine as final render
   const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
@@ -2613,7 +3303,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   }, [titleOX, titleOY, subOX, subOY, bodyOXv, bodyOYv]);
 
   const handleThumbError = () => {
-    if (tried === 0) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`); setTried(1); }
+    if (tried === -1 && thumbnailId) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/maxresdefault.jpg`); setTried(0); }
+    else if (tried === 0) { setThumbSrc(`https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`); setTried(1); }
     else setThumbSrc(null);
   };
 
@@ -2649,14 +3340,29 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
 
   const brightFilter = (card.videoBrightness) ? `brightness(${1 + (card.videoBrightness || 0) / 100})` : undefined;
   // BgImage: crop-offset positioning for thumbnails (matches backend FFmpeg crop logic)
-  // YouTube thumbnails are 16:9 (1920x1080)
+  // YouTube 썸네일은 16:9지만, 2:1 등 비표준 영상은 letterbox 포함.
+  // nativeDims가 있으면 실제 비율 기준으로 cover-fit (VideoPreview와 동일 원리)
   const thumbW = 1920, thumbH = 1080;
-  const thumbCoverScale = Math.max(previewW / thumbW, previewH / thumbH);
+  const thumbNativeAspect = (nativeDims?.w && nativeDims?.h) ? nativeDims.w / nativeDims.h : thumbW / thumbH;
+  const thumbIframeAspect = thumbW / thumbH;
+  let thumbContentW, thumbContentH, thumbContentOffX, thumbContentOffY;
+  if (thumbNativeAspect >= thumbIframeAspect) {
+    thumbContentW = thumbW; thumbContentH = thumbW / thumbNativeAspect;
+  } else {
+    thumbContentH = thumbH; thumbContentW = thumbH * thumbNativeAspect;
+  }
+  thumbContentOffX = (thumbW - thumbContentW) / 2;
+  thumbContentOffY = (thumbH - thumbContentH) / 2;
+  const thumbCoverScale = Math.max(previewW / thumbContentW, previewH / thumbContentH);
   const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
-  const thumbOffX = thumbScaledW * (card.videoX ?? 0) / 400 + (thumbScaledW - previewW) / 2;
-  const thumbOffY = thumbScaledH * (card.videoY ?? 0) / 400 + (thumbScaledH - previewH) / 2;
+  const thumbScaledContentW = thumbContentW * thumbTotalScale;
+  const thumbScaledContentH = thumbContentH * thumbTotalScale;
+  const thumbScaledCenterX = (thumbContentOffX + thumbContentW / 2) * thumbTotalScale;
+  const thumbScaledCenterY = (thumbContentOffY + thumbContentH / 2) * thumbTotalScale;
+  const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
+  const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
   // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
   const uploadImgStyle = (() => {
     if (!card.uploadedImage || !imgDims) return null;
@@ -2675,9 +3381,15 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
   const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  const thumbSpinner = (baseImage && isBaseThumb && !thumbLoaded)
+    ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' } },
+        React.createElement("div", { style: { width: 22, height: 22, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.7)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
+    : null;
   const BgImage = () => baseImage
     ? (isBaseThumb
-      ? React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter } })
+      ? React.createElement(React.Fragment, null,
+          React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
+          thumbSpinner)
       : uploadImgStyle
         ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
@@ -3003,26 +3715,36 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const videoAreaH = previewH - textH;
 
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
-  const hasVideoPreview = showVideo && card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video';
+  const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video' && mountVideo;
+  const videoKey = thumbnailId + '|' + card.appliedStart + '|' + card.appliedEnd;
+  if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
+  const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, onReady: onVideoReady })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
   // Mute toggle button (bottom-right corner)
   const muteToggle = hasVideoPreview
     ? React.createElement("button", {
-        onClick: (e) => { e.stopPropagation(); setVpMuted(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, vpMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A')
+        onClick: (e) => { e.stopPropagation(); if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m); },
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
+    : null;
+
+  // Video loading spinner (카드 위에 인라인 표시)
+  const videoSpinner = (hasVideoPreview && !vpReady)
+    ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' } },
+        React.createElement("div", { style: { width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.8)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
     : null;
 
   // Split mode: constrain video to video area
-  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none") {
+  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none") {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
         videoPreview,
       ),
+      videoSpinner,
       React.createElement(OverlayImgsBelow),
       React.createElement(CenterGuides),
       canvasOverlay,
@@ -3040,6 +3762,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   return React.createElement("div", { style: wrapper },
     React.createElement(BgImage),
     videoPreview,
+    videoSpinner,
     React.createElement(OverlayImgsBelow),
     React.createElement(CenterGuides),
     canvasOverlay,
@@ -3116,8 +3839,86 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
   );
 }
 
+/* ── AI Rewrite Button ── */
+function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange }) {
+  const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+  const [error, setError] = useState(null);
+  const [applied, setApplied] = useState(false);
+  const hasClip = card.appliedStart && card.appliedEnd;
+  const fieldLabel = field === 'subtitle' ? '\uBD80\uC81C\uBAA9' : field === 'body' ? '\uBCF8\uBB38' : '\uC81C\uBAA9';
+  const fieldHint = field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
+
+  if (!hasClip) return null;
+
+  const doRewrite = async () => {
+    setLoading(true);
+    setError(null);
+    setSuggestions(null);
+    try {
+      let transcript = project?.transcript || '';
+      if (!transcript) {
+        const videoUrl = card.url || globalUrl;
+        if (!videoUrl) { setError('\uC601\uC0C1 URL\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+        const subRes = await fetch('/api/subtitle?url=' + encodeURIComponent(videoUrl));
+        if (!subRes.ok) { setError('\uC790\uB9C9\uC744 \uAC00\uC838\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+        const subData = await subRes.json();
+        transcript = subData.transcript || '';
+      }
+      const segText = extractSegmentTranscript(transcript, card.appliedStart, card.appliedEnd);
+      if (!segText) { setError('\uD574\uB2F9 \uAD6C\uAC04\uC758 \uC790\uB9C9\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.'); setLoading(false); return; }
+      const res = await fetch('/api/ai-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript: segText,
+          tone: project?.copyTone || 'hooking',
+          currentTitle: currentValue || (fieldLabel + ' \uC5C6\uC74C'),
+          videoTitle: project?.videoTitle || '',
+          field: field || 'title',
+          fieldHint,
+        }),
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || '\uC11C\uBC84 \uC624\uB958'); setLoading(false); return; }
+      const data = await res.json();
+      setSuggestions(data.suggestions || []);
+    } catch (e) {
+      setError(e.message || '\uC624\uB958 \uBC1C\uC0DD');
+    }
+    setLoading(false);
+  };
+
+  return React.createElement("div", { style: { marginTop: 4, marginBottom: 4 } },
+    !suggestions && React.createElement("button", {
+      onClick: doRewrite, disabled: loading,
+      style: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: T.radiusPill, border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.08)', color: '#10b981', fontSize: 12, fontWeight: 500, cursor: loading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: loading ? 0.7 : 1 },
+    },
+      loading
+        ? React.createElement("span", { style: { width: 12, height: 12, border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } })
+        : React.createElement("span", null, "\u2728"),
+      'AI \uC81C\uC548\uBC1B\uAE30',
+    ),
+    error && React.createElement("p", { style: { fontSize: 11, color: T.danger, margin: '4px 0 0' } }, error),
+    suggestions && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 } },
+      suggestions.map((s, i) => React.createElement("button", {
+        key: i, onClick: () => { onChange(s); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
+        style: { padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', color: T.text, fontSize: 12, lineHeight: 1.4, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', whiteSpace: 'pre-line' },
+        onMouseEnter: (e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = 'rgba(16,185,129,0.06)'; },
+        onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
+      }, s)),
+      React.createElement("button", {
+        onClick: () => setSuggestions(null),
+        style: { padding: '4px 8px', background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', alignSelf: 'flex-start' },
+      }, "\uB2EB\uAE30"),
+    ),
+    applied && React.createElement("div", {
+      style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, padding: '4px 10px', borderRadius: T.radiusPill, background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: 11, fontWeight: 600, animation: 'modeStepIn 0.3s ease' },
+    }, "\u2713 \uC801\uC6A9\uB428"),
+  );
+}
+
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, project }) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -3125,11 +3926,17 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [pendingImg, setPendingImg] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
   const nameRef = useRef(null);
+  const urlInputRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
+  useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
+  const videoUrl = card.url || globalUrl || '';
+  const hasVideo = videoUrl && YOUTUBE_HOST_RE.test(videoUrl);
+  const truncUrl = videoUrl.length > 50 ? videoUrl.slice(0, 50) + '...' : videoUrl;
 
   const displayName = card.name || card.title || card.subtitle || `카드 ${index + 1}`;
   const startEditName = () => { setEditingName(true); setNameValue(card.name || ''); };
@@ -3168,7 +3975,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 style: { background: 'transparent', border: `1px solid ${T.accent}`, color: T.text, fontSize: 14, fontWeight: 500, outline: 'none', padding: '2px 8px', borderRadius: 4, width: Math.max(80, nameValue.length * 10) },
               })
             : React.createElement("span", {
-                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none' },
+                onClick: (e) => { e.stopPropagation(); startEditName(); },
+                style: { color: T.text, fontWeight: 500, fontSize: mob ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: mob ? 120 : 'none', cursor: 'pointer' },
               }, displayName),
           !editingName && React.createElement("button", {
             onClick: (e) => { e.stopPropagation(); startEditName(); },
@@ -3193,7 +4001,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 
           // 클립 편집
           React.createElement(Section, { title: "클립 편집" },
-            React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
+            !hasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 8 } },
               FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
             ),
             (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -3203,8 +4011,23 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
                   )
                 : React.createElement(React.Fragment, null,
-                    React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
-                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }) }),
+                    hasVideo && !urlEditing
+                      ? React.createElement("div", {
+                          onClick: () => setUrlEditing(true),
+                          style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 4 },
+                          onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                          onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                        },
+                          React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                          React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? truncUrl : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                          React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                        )
+                      : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                          hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                          card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                        ),
+                    React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   ),
             ),
             (card.fillSource || 'video') === 'image' && React.createElement(React.Fragment, null,
@@ -3222,14 +4045,14 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           // 레이아웃
           React.createElement(Section, { title: "레이아웃" },
             React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
             ),
             // 카드 비율
             onAspectRatioChange && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
-            card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
             // 텍스트 박스 설정
             card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -3255,7 +4078,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 영상 채우기
-            card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 8 } },
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 8 } },
               React.createElement("label", { style: labelBase }, "영상 채우기"),
               React.createElement("div", { style: { display: 'flex', gap: 6 } },
                 VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
@@ -3283,6 +4106,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           React.createElement(Section, { title: "텍스트 내용" },
             // 제목
             React.createElement(TextFieldRow, { value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -3306,7 +4130,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 부제목
-            React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
+            React.createElement(TextFieldRow, { value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); } }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 6, paddingLeft: 28 },
             },
@@ -3330,7 +4155,8 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 본문
-            React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
+            React.createElement(TextFieldRow, { value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); } }),
+            React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
             React.createElement("div", {
               style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', paddingLeft: 28 },
             },
@@ -3393,7 +4219,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               )),
             ),
             React.createElement("button", {
-              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
               style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -3421,6 +4247,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [videoReady, setVideoReady] = useState({});
+  const [previewMuted, setPreviewMuted] = useState(false);
   const prevIdx = useRef(currentIdx);
   useEffect(() => { if (prevIdx.current !== currentIdx) { setVideoReady(prev => ({ ...prev, [currentIdx]: false })); prevIdx.current = currentIdx; } }, [currentIdx]);
   const isMob = typeof window !== 'undefined' && window.innerWidth < 768;
@@ -3492,7 +4319,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })) }),
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
@@ -3671,6 +4498,7 @@ function getTrafficUi(queueStatus) {
     speed: '1.3s',
   };
 }
+
 
 function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
@@ -3902,7 +4730,7 @@ function restoreDefaults(obj) {
   return { ...DEFAULT_CARD(), ...expanded };
 }
 
-const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail' };
+const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking' };
 
 function encodeProject(project) {
   const s = { n: project.name, u: project.globalUrl };
@@ -3910,6 +4738,7 @@ function encodeProject(project) {
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
+  if (project.copyTone && project.copyTone !== PROJ_DEFAULTS.copyTone) s.ct = project.copyTone;
   s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
@@ -3926,6 +4755,7 @@ function decodeProject(encoded) {
     outputSize: s.s || PROJ_DEFAULTS.outputSize,
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
+    copyTone: s.ct || PROJ_DEFAULTS.copyTone,
     globalBgImage: null,
     cards: (s.c || []).map(c => restoreDefaults(c)),
   };
@@ -3972,7 +4802,7 @@ function ConfirmDialog({ message, onConfirm, onCancel, confirmText = "\uB2EB\uAE
 function AlertModal({ message, onClose }) {
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
-    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }
   },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
       React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
@@ -3984,7 +4814,7 @@ function AlertModal({ message, onClose }) {
 function ConfirmModal({ message, onConfirm, onCancel }) {
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onCancel(); },
-    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }
   },
     React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
       React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, message),
@@ -4107,7 +4937,7 @@ function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, on
 }
 
 /* ── Global Settings Modal (mobile) ── */
-function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRatio, outputFormat, setOutputFormat, outputSize, setOutputSize, globalBgImage, setGlobalBgImage, onDismiss }) {
+function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRatio, outputFormat, setOutputFormat, outputSize, setOutputSize, globalBgImage, setGlobalBgImage, onDismiss, copyTone, setCopyTone, onBulkRewrite }) {
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onDismiss(); },
     style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 100 }
@@ -4158,6 +4988,23 @@ function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRa
                 React.createElement("button", { onClick: () => setGlobalBgImage(null), style: { background: 'none', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', textDecoration: 'underline' } }, "\uC0AD\uC81C"),
               )
             : React.createElement(ImageUploadField, { value: globalBgImage, onChange: setGlobalBgImage, maxMb: 5 }),
+        ),
+        // Copy Tone
+        React.createElement("div", null,
+          React.createElement("label", { style: labelBase }, "\uCE74\uD53C \uD1A4"),
+          React.createElement("div", { style: { display: 'flex', gap: 6 } },
+            COPY_TONES.map(tone => React.createElement(PillBtn, {
+              key: tone.id,
+              active: (copyTone || 'hooking') === tone.id,
+              onClick: () => {
+                if ((copyTone || 'hooking') !== tone.id) {
+                  onBulkRewrite(tone.id);
+                }
+              },
+              style: { fontSize: 11, padding: '6px 10px' },
+            }, tone.label)),
+          ),
+          React.createElement("p", { style: { fontSize: 11, color: T.textMuted, margin: 0, marginTop: 6 } }, "\uD1A4 \uBCC0\uACBD \uC2DC \uBAA8\uB4E0 \uCE74\uB4DC \uC81C\uBAA9\uC774 \uC0C8 \uD1A4\uC73C\uB85C \uC7AC\uC0DD\uC131\uB429\uB2C8\uB2E4"),
         ),
       ),
       // Done button
@@ -4267,8 +5114,9 @@ function StylePresetThumb({ preset }) {
 }
 
 /* ── Mode Selection Screen ── */
-function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
+function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, aiEditRunning }) {
   const [hovered, setHovered] = useState(null);
+  const [showAiBlock, setShowAiBlock] = useState(false);
   const [siteStats, setSiteStats] = useState(null);
   const [animatedStats, setAnimatedStats] = useState({ visitors: 0, cards: 0 });
   useEffect(() => {
@@ -4296,9 +5144,9 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
   }, [siteStats]);
   const cardBase = {
     flex: 1, minWidth: mob ? 'auto' : 280, maxWidth: mob ? 'none' : 420,
-    background: T.surface, borderRadius: mob ? 12 : 16, padding: mob ? 16 : 32,
+    background: T.surface, borderRadius: mob ? 10 : 16, padding: mob ? '14px 16px' : 32,
     border: `1.5px solid ${T.border}`, cursor: 'pointer',
-    transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', gap: mob ? 8 : 16,
+    transition: 'all 0.2s ease', display: 'flex', flexDirection: mob ? 'row' : 'column', alignItems: mob ? 'center' : 'stretch', gap: mob ? 12 : 16,
   };
   const flowSteps = [
     { icon: "\uD83D\uDD17", label: "\uB9C1\uD06C \uC785\uB825" },
@@ -4336,21 +5184,62 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
         }, "\u203A"),
       )),
     ),
-    // Stats (below workflow)
-    siteStats && React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', animation: 'modeStepIn 0.5s ease 0.3s both' } },
-      "\uC9C0\uAE08\uAE4C\uC9C0 ",
-      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.visitors.toLocaleString() + "\uBA85"),
-      "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
-      React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.cards.toLocaleString() + "\uAC1C"),
-      "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+    // Stats (below workflow) — 영역 미리 확보하여 레이아웃 시프트 방지
+    React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textMuted, margin: 0, marginTop: mob ? 12 : 16, textAlign: 'center', minHeight: mob ? 17 : 20, opacity: siteStats ? 1 : 0, transition: 'opacity 0.4s ease' } },
+      siteStats ? React.createElement(React.Fragment, null,
+        "\uC9C0\uAE08\uAE4C\uC9C0 ",
+        React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.visitors.toLocaleString() + "\uBA85"),
+        "\uC758 \uC0AC\uB78C\uB4E4\uC774 ",
+        React.createElement("span", { style: { color: T.accent, fontWeight: 600 } }, animatedStats.cards.toLocaleString() + "\uAC1C"),
+        "\uC758 \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4E4\uC5C8\uC5B4\uC694"
+      ) : '\u00A0'
     ),
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
-    // Section 3: Cards
-    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 10 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
-      // Easy mode card
+    // Section 3: Cards — AI자동편집 → 쉬운편집 → 자유편집
+    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
+      // 1) AI auto-edit card
       React.createElement("div", {
-        onClick: onSelectEasy,
+        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectAiEdit(); },
+        onMouseEnter: () => setHovered('ai'), onMouseLeave: () => setHovered(null),
+        style: {
+          ...cardBase,
+          background: hovered === 'ai'
+            ? 'linear-gradient(135deg, #065f46 0%, #059669 40%, #10b981 100%)'
+            : 'linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%)',
+          borderColor: hovered === 'ai' ? '#6ee7b7' : 'rgba(16,185,129,0.3)',
+          boxShadow: hovered === 'ai' ? '0 8px 32px rgba(5,150,105,0.4)' : '0 4px 20px rgba(5,150,105,0.2)',
+        },
+      },
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83E\uDD16"),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                  React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                  React.createElement("span", { style: { fontSize: 9, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '1px 6px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+                ),
+                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544 \uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9 \uC0DD\uC131"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                React.createElement("span", { style: { fontSize: 32 } }, "\uD83E\uDD16"),
+                React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+              ),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#a7f3d0' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
+      ),
+      // 2) Easy mode card
+      React.createElement("div", {
+        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectEasy(); },
         onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
         style: {
           ...cardBase,
@@ -4361,47 +5250,72 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree }) {
           boxShadow: hovered === 'easy' ? '0 8px 32px rgba(109,40,217,0.4)' : '0 4px 20px rgba(109,40,217,0.2)',
         },
       },
-        React.createElement("div", { style: { fontSize: mob ? 24 : 32 } }, "\u2728"),
-        React.createElement("div", null,
-          React.createElement("h2", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: mob ? 4 : 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
-        ),
-        React.createElement("div", { style: { marginTop: 'auto', paddingTop: mob ? 4 : 8 } },
-          React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
-        ),
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\u2728"),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#e9d5ff', flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
       ),
-      // Free mode card
+      // 3) Free mode card
       React.createElement("div", {
         onClick: onSelectFree,
         onMouseEnter: () => setHovered('free'), onMouseLeave: () => setHovered(null),
         style: { ...cardBase, borderColor: hovered === 'free' ? T.accent : T.border, background: hovered === 'free' ? 'rgba(99,102,241,0.06)' : T.surface },
       },
-        React.createElement("div", { style: { fontSize: mob ? 24 : 32 } }, "\uD83C\uDFA8"),
-        React.createElement("div", null,
-          React.createElement("h2", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: mob ? 4 : 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
-          React.createElement("p", { style: { fontSize: mob ? 12 : 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uB808\uC774\uC544\uC6C3\uACFC \uD14D\uC2A4\uD2B8 \uB4F1", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
-        ),
-        React.createElement("div", { style: { marginTop: 'auto', paddingTop: mob ? 4 : 8 } },
-          React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
-        ),
+        mob
+          ? React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83C\uDFA8"),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: T.text, margin: 0, marginBottom: 2 } }, "\uC790\uC720\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 11, color: T.textSecondary, lineHeight: 1.4, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694"),
+              ),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: T.accent, flexShrink: 0 } }, "\u2192"),
+            )
+          : React.createElement(React.Fragment, null,
+              React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFA8"),
+              React.createElement("div", null,
+                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
+                React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
+              ),
+              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+              ),
+            ),
+      ),
+    ),
+    // AI 편집 중 차단 모달 (ModeSelectionScreen 내부)
+    showAiBlock && React.createElement("div", {
+      onClick: () => setShowAiBlock(false),
+      style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    },
+      React.createElement("div", { onClick: (e) => e.stopPropagation(), style: { background: T.surface, borderRadius: T.radius, padding: 28, maxWidth: 380, width: '90%', boxShadow: T.shadowLg, textAlign: 'center' } },
+        React.createElement("p", { style: { color: T.text, fontSize: 15, lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' } }, 'AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C\n\uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694.\n\n\uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'),
+        React.createElement("button", { onClick: () => setShowAiBlock(false), style: { padding: '9px 24px', background: T.accent, color: '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer' } }, "\uD655\uC778"),
       ),
     ),
   );
 }
 
 /* ── Wizard Screen ── */
-function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel }) {
+function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, aiMode }) {
   const [presetHover, setPresetHover] = useState(null);
   const update = (k, v) => onDataChange({ ...data, [k]: v });
 
-  const stepIndicator = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
-    [1, 2, 3].map(s => React.createElement("div", { key: s, style: {
-      width: s === step ? 32 : 10, height: 10, borderRadius: 5,
-      background: s === step ? T.accent : s < step ? T.accent : 'rgba(255,255,255,0.15)',
-      opacity: s < step ? 0.4 : 1,
-      transition: 'all 0.3s ease',
-    } })),
-  );
+  // stepIndicator is built dynamically below based on aiMode maxStep
 
   const step1 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
     // Step title
@@ -4422,17 +5336,57 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
       React.createElement("div", { style: { display: 'flex', gap: 10 } },
-        ASPECT_OPTIONS.map(opt => React.createElement("button", {
-          key: opt.id, onClick: () => update('aspectRatio', opt.id),
-          style: {
-            flex: 1, padding: '12px 0', borderRadius: T.radiusPill, border: `1.5px solid ${data.aspectRatio === opt.id ? T.accent : T.border}`,
-            background: data.aspectRatio === opt.id ? 'rgba(99,102,241,0.15)' : 'transparent',
-            color: data.aspectRatio === opt.id ? T.accentHover : T.textSecondary,
-            fontSize: 15, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
+        ASPECT_OPTIONS.map(opt => {
+          const active = data.aspectRatio === opt.id;
+          const iconW = Math.round(28 * (opt.w / Math.max(opt.w, opt.h)));
+          const iconH = Math.round(28 * (opt.h / Math.max(opt.w, opt.h)));
+          return React.createElement("button", {
+            key: opt.id, onClick: () => update('aspectRatio', opt.id),
+            style: {
+              flex: 1, padding: '14px 8px', borderRadius: 12, border: `1.5px solid ${active ? T.accent : T.border}`,
+              background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+            },
           },
-        }, opt.label)),
+            React.createElement("div", { style: {
+              width: iconW, height: iconH, borderRadius: 4,
+              border: `2px solid ${active ? T.accentHover : T.textMuted}`,
+              transition: 'all 0.15s',
+            } }),
+            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: active ? T.accentHover : T.text } }, opt.label),
+            React.createElement("span", { style: { fontSize: 11, color: active ? T.accentHover : T.textMuted } }, opt.desc),
+          );
+        }),
       ),
-      React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uC778\uC2A4\uD0C0 \uD53C\uB4DC\uB294 1:1, \uB9B4\uC2A4\xB7\uC20F\uCE20\uB294 3:4\uAC00 \uC798 \uB9DE\uC544\uC694"),
+    ),
+  );
+
+  // AI wizard step 2: Copy tone selector
+  const aiStep2 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
+    React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
+      React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uCE74\uD53C \uD1A4\uC744 \uACE8\uB77C\uC8FC\uC138\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uCE74\uB4DC\uC5D0 \uB4E4\uC5B4\uAC08 \uD14D\uC2A4\uD2B8\uC758 \uBD84\uC704\uAE30\uB97C \uC815\uD574\uC694"),
+    ),
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      COPY_TONES.map(tone => React.createElement("button", {
+        key: tone.id, onClick: () => update('copyTone', tone.id),
+        style: {
+          padding: '14px 16px', borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left',
+          border: `1.5px solid ${data.copyTone === tone.id ? '#10b981' : T.border}`,
+          background: data.copyTone === tone.id ? 'rgba(16,185,129,0.1)' : 'transparent',
+        },
+      },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 } },
+          React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: data.copyTone === tone.id ? '#10b981' : T.text } }, tone.label),
+          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, tone.desc),
+        ),
+        React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
+      )),
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' } },
+      React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\uD83D\uDCA1"),
+      React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uD1A4\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
     ),
   );
 
@@ -4442,8 +5396,8 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC2A4\uD0C0\uC77C\uC744 \uACE8\uB77C\uC8FC\uC138\uC694"),
       React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uB098\uC911\uC5D0 \uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
     ),
-    // Card count stepper
-    React.createElement("div", null,
+    // Card count stepper (hide in aiMode)
+    !aiMode && React.createElement("div", null,
       React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB9CC\uB4E4 \uCE74\uB4DC \uC7A5\uC218"),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 16 } },
         React.createElement("button", {
@@ -4452,11 +5406,19 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         }, "\u2212"),
         React.createElement("span", { style: { fontSize: 28, fontWeight: 700, color: T.text, minWidth: 40, textAlign: 'center' } }, data.cardCount || 3),
         React.createElement("button", {
-          onClick: () => { if ((data.cardCount || 3) < 8) update('cardCount', (data.cardCount || 3) + 1); },
-          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 8 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 8 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+          onClick: () => { if ((data.cardCount || 3) < 20) update('cardCount', (data.cardCount || 3) + 1); },
+          style: { width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${T.border}`, background: 'transparent', color: (data.cardCount || 3) >= 20 ? T.textMuted : T.text, fontSize: 20, cursor: (data.cardCount || 3) >= 20 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
         }, "+"),
       ),
       React.createElement("p", { style: { fontSize: 12, color: T.textMuted, margin: 0, marginTop: 8 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uCD94\uAC00\xB7\uC0AD\uC81C\uD560 \uC218 \uC788\uC5B4\uC694"),
+    ),
+    // AI mode info
+    aiMode && React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' } },
+      React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\uD83E\uDD16"),
+      React.createElement("div", null,
+        React.createElement("span", { style: { fontSize: 14, color: T.text, fontWeight: 600 } }, "AI\uAC00 \uCE74\uB4DC\uB97C \uC790\uB3D9 \uC0DD\uC131\uD569\uB2C8\uB2E4"),
+        React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, marginTop: 4 } }, "\uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 AI\uAC00 \uBD84\uC11D\uD558\uC5EC \uCE74\uB4DC\uB97C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694. \uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC790\uC720\uB86D\uAC8C \uC218\uC815\uD560 \uC218 \uC788\uC5B4\uC694."),
+      ),
     ),
     // Style presets
     React.createElement("div", null,
@@ -4483,14 +5445,14 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
 
   const cardCount = data.cardCount || 3;
   const segments = Array.from({ length: cardCount }, (_, i) => ({
-    start: i * 10, end: (i + 1) * 10,
+    start: i * 30, end: (i + 1) * 30,
   }));
-  const totalDuration = cardCount * 10;
+  const totalDuration = cardCount * 30;
 
   const step3 = React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 24 } },
     React.createElement("div", { style: { textAlign: 'center', marginBottom: 4 } },
       React.createElement("h2", { style: { fontSize: mob ? 20 : 24, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uAD6C\uAC04\uC774 \uC790\uB3D9\uC73C\uB85C \uB098\uB258\uC5C8\uC5B4\uC694"),
-      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uAC01 \uCE74\uB4DC\uC5D0 10\uCD08\uC529 \uADE0\uB4F1\uD558\uAC8C \uBC30\uBD84\uD588\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, margin: 0 } }, "\uAC01 \uCE74\uB4DC\uC5D0 30\uCD08\uC529 \uADE0\uB4F1\uD558\uAC8C \uBC30\uBD84\uD588\uC5B4\uC694"),
     ),
     // Timeline bar
     React.createElement("div", { style: { background: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 16 } },
@@ -4509,7 +5471,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
           return React.createElement("div", { key: i, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.03)' } },
             React.createElement("div", { style: { width: 28, height: 28, borderRadius: '50%', background: `hsl(${240 + i * (60 / Math.max(cardCount - 1, 1))}, 60%, 35%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 } }, i + 1),
             React.createElement("span", { style: { fontSize: 14, color: T.text } }, `${fmtTime(seg.start)} ~ ${fmtTime(seg.end)}`),
-            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, marginLeft: 'auto' } }, "10\uCD08"),
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, marginLeft: 'auto' } }, "30\uCD08"),
           );
         }),
       ),
@@ -4521,19 +5483,29 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
   );
 
+  const maxStep = aiMode ? 2 : 3;
   const canProceed = step === 1 ? (data.url && data.url.trim().length > 0) : true;
+
+  const stepIndicatorEl = React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 24 : 32 } },
+    Array.from({ length: maxStep }, (_, i) => i + 1).map(s => React.createElement("div", { key: s, style: {
+      width: s === step ? 32 : 10, height: 10, borderRadius: 5,
+      background: s === step ? (aiMode ? '#10b981' : T.accent) : s < step ? (aiMode ? '#10b981' : T.accent) : 'rgba(255,255,255,0.15)',
+      opacity: s < step ? 0.4 : 1,
+      transition: 'all 0.3s ease',
+    } })),
+  );
 
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', overflow: 'auto' } },
     // Top bar
     React.createElement("div", { style: { padding: mob ? '12px 16px' : '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${T.border}` } },
-      React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+      React.createElement("span", { style: { fontSize: 15, fontWeight: 600, color: T.text } }, aiMode ? "AI \uC790\uB3D9\uD3B8\uC9D1" : "\uC26C\uC6B4\uD3B8\uC9D1"),
       React.createElement("button", { onClick: onCancel, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
     ),
     // Content
     React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: mob ? 20 : 40 } },
       React.createElement("div", { style: { width: '100%', maxWidth: 480 } },
-        stepIndicator,
-        step === 1 ? step1 : step === 2 ? step2 : step3,
+        stepIndicatorEl,
+        step === 1 ? step1 : step === 2 ? (aiMode ? aiStep2 : step2) : step3,
       ),
     ),
     // Bottom bar
@@ -4541,9 +5513,9 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       step > 1
         ? React.createElement("button", { onClick: onBack, style: { padding: '12px 24px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 14, cursor: 'pointer' } }, "\u2190 \uC774\uC804")
         : React.createElement("div"),
-      step < 3
-        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? T.accent : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
-        : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, "\uB9CC\uB4E4\uAE30 \u2728"),
+      step < maxStep
+        ? React.createElement("button", { onClick: onNext, disabled: !canProceed, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: canProceed ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: canProceed ? 'pointer' : 'default', opacity: canProceed ? 1 : 0.5, transition: 'all 0.15s' } }, "\uB2E4\uC74C \u2192")
+        : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
     ),
   );
 }
@@ -4601,6 +5573,62 @@ function WizardLoadingScreen({ mob }) {
       @keyframes wizardGradient { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
       @keyframes wizardPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
       @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    `),
+  );
+}
+
+/* ── AI Edit Loading Screen ── */
+function AiEditLoadingScreen({ mob, status, error, onCancel, onRetry }) {
+  const steps = [
+    { key: 'info', label: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778' },
+    { key: 'subtitle', label: '\uC790\uB9C9 \uCD94\uCD9C' },
+    { key: 'analyze', label: 'AI \uD575\uC2EC \uAD6C\uAC04 \uBD84\uC11D' },
+  ];
+  const currentStep = status?.step || 'info';
+  const currentIdx = steps.findIndex(s => s.key === currentStep);
+
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%)', backgroundSize: '400% 400%', animation: 'wizardGradient 6s ease infinite', overflow: 'hidden' } },
+    // Shimmer
+    React.createElement("div", { style: { position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease-in-out infinite' } }),
+    // AI icon
+    React.createElement("div", { style: { fontSize: 56, marginBottom: 32, animation: 'wizardPulse 2s ease-in-out infinite' } }, "\uD83E\uDD16"),
+    // Error state
+    error ? React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, maxWidth: 360, textAlign: 'center' } },
+      React.createElement("div", { style: { fontSize: 18, color: '#fca5a5', fontWeight: 600 } }, "\uC624\uB958\uAC00 \uBC1C\uC0DD\uD588\uC5B4\uC694"),
+      React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.7)', margin: 0, lineHeight: 1.6 } }, error.message || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958'),
+      React.createElement("div", { style: { display: 'flex', gap: 12, marginTop: 8 } },
+        React.createElement("button", { onClick: onCancel, style: { padding: '10px 24px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.2)', background: 'transparent', color: '#fff', fontSize: 14, cursor: 'pointer' } }, "\uB3CC\uC544\uAC00\uAE30"),
+        onRetry && React.createElement("button", { onClick: onRetry, style: { padding: '10px 24px', borderRadius: 999, border: 'none', background: '#059669', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' } }, "\uB2E4\uC2DC \uC2DC\uB3C4"),
+      ),
+    )
+    // Normal loading state
+    : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' } },
+      steps.map((s, i) => {
+        const isDone = i < currentIdx;
+        const isCurrent = i === currentIdx;
+        const isPending = i > currentIdx;
+        return React.createElement("div", { key: s.key, style: {
+          display: 'flex', alignItems: 'center', gap: 12,
+          opacity: isPending ? 0.3 : 1,
+          transform: isPending ? 'translateY(6px)' : 'translateY(0)',
+          transition: 'all 0.4s ease',
+        } },
+          isDone
+            ? React.createElement("span", { style: { fontSize: 20, color: '#6ee7b7' } }, "\u2713")
+            : isCurrent
+              ? React.createElement("div", { style: { width: 18, height: 18, border: '2.5px solid rgba(255,255,255,0.2)', borderTopColor: '#6ee7b7', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+              : React.createElement("div", { style: { width: 18, height: 18 } }),
+          React.createElement("span", { style: { fontSize: mob ? 15 : 17, color: isDone ? '#d1fae5' : isCurrent ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: isCurrent ? 600 : 400 } }, s.label),
+        );
+      }),
+      // Status message
+      status?.message && React.createElement("p", { style: { fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, marginTop: 8, textAlign: 'center', maxWidth: 320 } }, status.message),
+      // Cancel button
+      React.createElement("button", { onClick: onCancel, style: { marginTop: 16, padding: '8px 20px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.15)', background: 'transparent', color: 'rgba(255,255,255,0.5)', fontSize: 13, cursor: 'pointer' } }, "\uCDE8\uC18C"),
+    ),
+    // Keyframes reuse
+    React.createElement("style", null, `
+      @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
     `),
   );
 }
@@ -4773,134 +5801,120 @@ function InfoPanel({ onClose, mob }) {
   );
 }
 
-/* ── Project Tabs (Dropdown) ── */
-function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename }) {
-  const [open, setOpen] = useState(false);
+/* ── Project Tabs (Tab Bar) ���─ */
+function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, aiEditTargetId }) {
+  const MAX_VISIBLE = 5;
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
-  const ref = useRef(null);
+  const [showMore, setShowMore] = useState(false);
   const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  const moreRef = useRef(null);
 
   useEffect(() => { if (editingId && inputRef.current) inputRef.current.focus(); }, [editingId]);
+  useEffect(() => {
+    if (!showMore) return;
+    const handler = (e) => { if (moreRef.current && !moreRef.current.contains(e.target)) setShowMore(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMore]);
 
-  const activeProj = projects.find(p => p.id === activeId) || projects[0];
   const startRename = (proj) => { setEditingId(proj.id); setEditName(proj.name); };
   const commitRename = () => {
     if (editingId && editName.trim()) onRename(editingId, editName.trim());
     setEditingId(null);
   };
 
-  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 } },
-    React.createElement("div", { ref, style: { position: 'relative' } },
-      // Trigger button
-      React.createElement("button", {
-        onClick: () => setOpen(!open),
-        style: {
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '5px 12px', borderRadius: T.radiusPill, cursor: 'pointer',
-          background: 'rgba(99,102,241,0.10)', border: `1px solid rgba(99,102,241,0.25)`,
-          color: T.accent, fontSize: 12, fontWeight: 600, transition: 'all 0.15s',
-          maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        },
-        onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.18)'; },
-        onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.10)'; },
+  const visibleProjects = projects.slice(0, MAX_VISIBLE);
+  const overflowProjects = projects.slice(MAX_VISIBLE);
+  const tabW = 140;
+
+  const renderTab = (proj, opts = {}) => {
+    const isActive = proj.id === activeId;
+    const isEditing = proj.id === editingId;
+    return React.createElement("div", {
+      key: proj.id,
+      style: {
+        display: 'flex', alignItems: 'center', gap: 4, width: tabW, minWidth: 0,
+        padding: '5px 8px 5px 12px', cursor: 'pointer', flexShrink: 0,
+        background: isActive ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.03)',
+        border: isActive ? `1px solid rgba(99,102,241,0.3)` : `1px solid ${T.border}`,
+        borderRadius: 8, transition: 'all 0.15s', ...opts.style,
       },
-        React.createElement("span", { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, activeProj ? activeProj.name : ''),
-        React.createElement("span", { style: { fontSize: 8, flexShrink: 0, opacity: 0.7 } }, "\u25BE"),
-      ),
-      // Dropdown panel
-      open && React.createElement("div", {
-        style: {
-          position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 1000,
-          background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
-          maxHeight: 320, overflowY: 'auto', minWidth: 220,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-        }
-      },
-        projects.map(proj => {
-          const isActive = proj.id === activeId;
-          const isEditing = proj.id === editingId;
-          return React.createElement("div", {
-            key: proj.id,
-            style: {
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 12px', cursor: 'pointer',
-              background: isActive ? 'rgba(99,102,241,0.12)' : 'transparent',
-              transition: 'background 0.12s',
-            },
-            onClick: () => { if (!isEditing) { onSwitch(proj.id); setOpen(false); } },
-            onMouseEnter: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.06)'; },
-            onMouseLeave: (e) => { e.currentTarget.style.background = isActive ? 'rgba(99,102,241,0.12)' : 'transparent'; },
+      onClick: () => { if (!isEditing) { onSwitch(proj.id); if (opts.onClickExtra) opts.onClickExtra(); } },
+      onMouseEnter: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.querySelectorAll('.tab-action-btn').forEach(b => b.style.opacity = '1'); },
+      onMouseLeave: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.querySelectorAll('.tab-action-btn').forEach(b => b.style.opacity = '0'); },
+      onDoubleClick: (e) => { e.stopPropagation(); startRename(proj); },
+      title: proj.name,
+    },
+      isEditing
+        ? React.createElement("input", {
+            ref: inputRef, value: editName,
+            onChange: (e) => setEditName(e.target.value),
+            onBlur: commitRename,
+            onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
+            onClick: (e) => e.stopPropagation(),
+            style: { background: 'transparent', border: 'none', color: T.text, fontSize: 12, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
+          })
+        : React.createElement("span", {
+            style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none', display: 'flex', alignItems: 'center', gap: 5 },
           },
-            // Active indicator
-            React.createElement("span", {
-              style: { fontSize: 8, color: isActive ? T.accent : 'transparent', flexShrink: 0, width: 10, textAlign: 'center' },
-            }, "\u25CF"),
-            // Name or edit input
-            isEditing
-              ? React.createElement("input", {
-                  ref: inputRef, value: editName,
-                  onChange: (e) => setEditName(e.target.value),
-                  onBlur: commitRename,
-                  onKeyDown: (e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditingId(null); },
-                  onClick: (e) => e.stopPropagation(),
-                  style: { background: 'transparent', border: 'none', color: T.text, fontSize: 13, fontWeight: 500, outline: 'none', flex: 1, minWidth: 0, padding: 0 },
-                })
-              : React.createElement("span", {
-                  style: { fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
-                }, proj.name),
-            // Rename button
-            !isEditing && React.createElement("button", {
-              onClick: (e) => { e.stopPropagation(); startRename(proj); },
-              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
-              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
-              title: '\uC774\uB984 \uC218\uC815',
-            }, "\u270E"),
-            // Close button
-            !isEditing && projects.length > 1 && React.createElement("button", {
-              onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
-              style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0.4, flexShrink: 0 },
-              onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-              onMouseLeave: (e) => e.currentTarget.style.opacity = 0.4,
-            }, "\u00D7"),
-          );
-        }),
-        // Divider + Add button
-        React.createElement("div", { style: { borderTop: `1px solid ${T.border}` } },
-          React.createElement("div", {
-            onClick: () => { onAdd(); setOpen(false); },
-            style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', cursor: 'pointer', color: T.textMuted, fontSize: 13, transition: 'background 0.12s' },
-            onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.accent; },
-            onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.textMuted; },
-          },
-            React.createElement("span", { style: { fontSize: 14, width: 10, textAlign: 'center', flexShrink: 0 } }, "+"),
-            React.createElement("span", null, "\uC0C8 \uD504\uB85C\uC81D\uD2B8"),
+            proj.name,
+            aiEditTargetId === proj.id && React.createElement("span", { style: { width: 10, height: 10, border: '1.5px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
           ),
-        ),
+      !isEditing && React.createElement("button", {
+        onClick: (e) => { e.stopPropagation(); startRename(proj); },
+        className: 'tab-action-btn',
+        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+      }, "\u270E"),
+      !isEditing && projects.length > 1 && React.createElement("button", {
+        onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+        className: 'tab-action-btn',
+        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+      }, "\u00D7"),
+    );
+  };
+
+  return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flex: 1, minWidth: 0 } },
+    // Visible tabs
+    visibleProjects.map(proj => renderTab(proj)),
+    // "더보기" button for overflow
+    overflowProjects.length > 0 && React.createElement("div", { ref: moreRef, style: { position: 'relative', flexShrink: 0 } },
+      React.createElement("button", {
+        onClick: () => setShowMore(!showMore),
+        style: {
+          padding: '5px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 500,
+          background: showMore ? 'rgba(99,102,241,0.12)' : 'rgba(255,255,255,0.05)',
+          border: `1px solid ${showMore ? 'rgba(99,102,241,0.3)' : T.border}`,
+          color: showMore ? T.accent : T.textMuted, transition: 'all 0.15s', whiteSpace: 'nowrap',
+        },
+      }, '+' + overflowProjects.length + '\uAC1C \uB354'),
+      showMore && React.createElement("div", {
+        style: {
+          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 1000,
+          background: T.surface, border: `1px solid ${T.border}`, borderRadius: 8,
+          maxHeight: 280, overflowY: 'auto', minWidth: 200, padding: '4px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: 2,
+        },
+      },
+        overflowProjects.map(proj => renderTab(proj, { style: { width: '100%' }, onClickExtra: () => setShowMore(false) })),
       ),
     ),
-    // External + button
+    // + button
     React.createElement("button", {
       onClick: onAdd,
-      style: { width: 26, height: 26, borderRadius: T.radiusPill, background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
+      style: { width: 28, height: 28, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: `1px solid ${T.border}`, color: T.textMuted, fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = T.textMuted; },
+      title: '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     }, "+"),
   );
 }
 
 /* ── Mobile Tab Pill ── */
-function TabPill({ label, active, onClick }) {
+function TabPill({ label, active, onClick, dataTour }) {
   return React.createElement("button", {
     onClick,
+    'data-tour': dataTour || undefined,
     style: {
       padding: '8px 16px', borderRadius: T.radiusPill, fontSize: 13, fontWeight: active ? 600 : 400,
       border: active ? `1.5px solid ${T.accent}` : `1px solid ${T.border}`,
@@ -4913,13 +5927,41 @@ function TabPill({ label, active, onClick }) {
 
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
-  { id: 'fill', label: '클립 편집' },
-  { id: 'layout', label: '레이아웃' },
-  { id: 'text', label: '텍스트' },
-  { id: 'overlay', label: '\uC624\uBC84\uB808\uC774' },
+  { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'clip-adjust', label: '클립 조정', tour: 'tab-clip-adjust' },
+  { id: 'layout', label: '레이아웃', tour: 'tab-layout' },
+  { id: 'text', label: '텍스트', tour: 'tab-text' },
+  { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll }) {
+/* ── ApplyToAllBtn: apply current card's style keys to all other cards ── */
+function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt }) {
+  const [phase, setPhase] = useState('idle');
+  const timerRef = useRef(null);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  const singleCard = cards.length <= 1;
+  const handleApply = () => {
+    const stylesToCopy = {};
+    keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
+    cards.forEach((c, i) => { if (i !== activeIndex) onCardChange(i, { ...c, ...stylesToCopy }); });
+    setPhase('done');
+    timerRef.current = setTimeout(() => setPhase('idle'), 1500);
+  };
+  const marginTop = mt || 4;
+  if (phase === 'confirm') {
+    return React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: marginTop, flexWrap: 'nowrap' } },
+      React.createElement('span', { style: { fontSize: 12, color: T.textSecondary, whiteSpace: 'nowrap' } }, (cards.length - 1) + '\uC7A5 \uC801\uC6A9?'),
+      React.createElement('button', { onClick: () => setPhase('idle'), style: { padding: '5px 8px', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', flexShrink: 0 } }, '\uCDE8\uC18C'),
+      React.createElement('button', { onClick: handleApply, style: { padding: '5px 8px', background: T.accent, border: 'none', borderRadius: T.radiusSm, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 600, flexShrink: 0 } }, '\uC801\uC6A9'),
+    );
+  }
+  if (phase === 'done') {
+    return React.createElement('button', { style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.accent, fontSize: 12, cursor: 'default', width: '100%' } }, '\u2713 \uC801\uC6A9\uB428');
+  }
+  return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
+}
+
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -4932,6 +5974,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const [clipSelectorOpen, setClipSelectorOpen] = useState(false);
   const [videoLoading, setVideoLoading] = useState(false);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const [clipReopenFlag, setClipReopenFlag] = useState(0);
+  const urlInputRef = useRef(null);
   const clipWarnTimer = useRef(null);
   const showClipWarn = () => {
     setClipWarn(true);
@@ -4958,6 +6003,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const card = cards[activeIndex];
   const update = (key, val) => onCardChange(activeIndex, { ...card, [key]: val });
   const updateMulti = (obj) => onCardChange(activeIndex, { ...card, ...obj });
+
+  // ApplyToAllBtn uses the module-level component defined above
 
   // Name editing
   const [editingName, setEditingName] = useState(false);
@@ -5004,8 +6051,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   };
 
   // Tab content renderers
+  const mobVideoUrl = card.url || globalUrl || '';
+  const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5015,70 +6064,67 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, marginBottom: 8 } }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 40 ? vu.slice(0, 40) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 8 },
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
                     (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
                   ),
                   React.createElement("button", {
-                    onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
+                    onClick: () => { updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }); setClipReopenFlag(f => f + 1); },
                     style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); } }),
-            // Manual time inputs + duration bar (hidden when clip selector is open — info is already shown there)
-            !clipSelectorOpen && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 } },
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC2DC\uC791"), React.createElement("input", { type: "text", value: card.start, placeholder: "0:00", onChange: (e) => {
-                var ss = parseTime(e.target.value) ?? 0; var es = parseTime(card.end);
-                if (es != null && es > ss && es - ss > 30) { updateMulti({ start: e.target.value, end: fmtMM(ss + 30) }); showClipWarn(); }
-                else update("start", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-              React.createElement("div", null, React.createElement("label", { style: { ...labelBase, fontSize: 11 } }, "\uC885\uB8CC"), React.createElement("input", { type: "text", value: card.end, placeholder: "0:10", onChange: (e) => {
-                var ss = parseTime(card.start) ?? 0; var es = parseTime(e.target.value);
-                if (es != null && es - ss > 30) { update("end", fmtMM(ss + 30)); showClipWarn(); }
-                else update("end", e.target.value);
-              }, style: { ...inputBase, padding: '8px 10px', fontSize: 13 } })),
-            ),
-            !clipSelectorOpen && (() => { var ss = parseTime(card.start) ?? 0, es = parseTime(card.end); var cl = (es != null && es > ss) ? es - ss : null; var over = cl != null && cl > 30; return cl != null ? React.createElement("div", { style: { marginBottom: 8 } },
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 } },
-                React.createElement("span", { style: { fontSize: 11, color: over ? '#ef4444' : T.textMuted, fontWeight: 600 } }, '\uAD6C\uAC04 \uAE38\uC774 ' + Math.round(cl) + '\uCD08'),
-                React.createElement("span", { style: { fontSize: 10, color: over ? '#ef4444' : T.textMuted } }, Math.round(cl) + ' / 30\uCD08'),
-              ),
-              React.createElement("div", { style: { width: '100%', height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' } },
-                React.createElement("div", { style: { width: Math.min(100, (cl / 30) * 100) + '%', height: '100%', background: over ? '#ef4444' : cl / 30 > 0.8 ? '#f59e0b' : '#6366f1', borderRadius: 2, transition: 'width 0.2s, background 0.2s' } }),
-              ),
-            ) : null; })(),
-            !clipSelectorOpen && clipWarn && React.createElement("div", { style: { padding: '10px 14px', marginBottom: 8, background: 'rgba(239,68,68,0.15)', border: '1.5px solid rgba(239,68,68,0.4)', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'center', animation: 'clipWarnShake 0.4s ease-in-out' } },
-              '\u26A0\uFE0F \uD074\uB9BD\uC740 \uCD5C\uB300 30\uCD08\uAE4C\uC9C0 \uC120\uD0DD\uD560 \uC218 \uC788\uC5B4\uC694'
-            ),
+              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
-    React.createElement(SectionTitleWithReset, { title: "\uD074\uB9BD \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+  );
+
+  const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
+    React.createElement("button", {
+      onClick: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }),
+      style: { marginTop: 4, padding: '8px 0', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + T.border, borderRadius: 8, color: T.textSecondary, fontSize: 12, cursor: 'pointer', width: '100%' },
+    }, '\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654'),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", null,
-      React.createElement("label", { style: labelBase }, "레이아웃"),
-      React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
+      React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
       )
     ),
-    // 카드 비율
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
     card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
       React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -5089,43 +6135,41 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "안쪽 여백", value: card.textBoxPadding ?? 20, min: 5, max: 60, step: 1, onChange: (v) => update("textBoxPadding", v), suffix: 'px', defaultValue: 20 }),
       React.createElement(SliderRow, { label: "둥글기", value: card.textBoxRadius ?? 12, min: 0, max: 40, step: 1, onChange: (v) => update("textBoxRadius", v), suffix: 'px', defaultValue: 12 }),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "배경색"),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uBC30\uACBD\uC0C9"),
         React.createElement("input", { type: "color", value: card.textBoxBgColor ?? "#000000", onChange: (e) => update("textBoxBgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBgColor ?? "#000000"),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.textBoxBgColor ?? "#000000"),
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
         React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.textBoxBgOpacity ?? 0.6, min: 0, max: 1, step: 0.01, onChange: (v) => update("textBoxBgOpacity", v), defaultValue: 0.6 })),
       ),
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-        React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "테두리 색"),
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uD14C\uB450\uB9AC \uC0C9"),
         React.createElement("input", { type: "color", value: card.textBoxBorderColor ?? "#ffffff", onChange: (e) => update("textBoxBorderColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.textBoxBorderColor ?? "#ffffff"),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.textBoxBorderColor ?? "#ffffff"),
       ),
       React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 4 } },
-      React.createElement("label", { style: labelBase }, "영상 채우기"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-      )
-    ),
-    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement(SectionTitleWithReset, { title: "텍스트 배경 설정", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
-      React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-      card.useBg !== false && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "색상"),
-          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "투명도", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
-          React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
-        ),
       ),
     ),
+    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
+    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+      React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
+      React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
+      card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+    ),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
@@ -5136,97 +6180,102 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
     updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
   };
-  const renderTextTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    // 전체 정렬
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uC815\uB82C"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
-      ),
-    ),
-    // 전체 폰트
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement(FontDropdown, {
-        options: FONT_OPTIONS,
-        value: getFontFamily(card.titleFont),
-        onChange: (id) => setAllFont(id),
-      }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
-    ),
-    // 제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "제목", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
-    },
-      React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
-      ),
-      showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+  const renderTextTab = () => {
+    const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
+    const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      // 전체 정렬
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    // 부제목
-    React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "부제목", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', marginBottom: 4 },
-    },
-      React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+      // 전체 폰트
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+        React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFont(id) }),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
       ),
-      showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 8 } },
-      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+      // 제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    // 본문
-    React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "본문 내용", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
-    React.createElement("div", {
-      style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' },
-    },
-      React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
-        React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
-      ),
-      showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
-    ),
-    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+      // 부제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-  );
+      // 본문 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
+        ),
+      ),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange }),
+    );
+  };
 
   const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -5265,12 +6314,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
   );
 
-  const tabContent = { fill: renderFillTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -5328,7 +6378,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
-      React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false) }),
+      React.createElement("div", { key: 'mcp-' + previewResetKey, style: { display: 'flex', justifyContent: 'center' } },
+        React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle }),
+      ),
     ),
 
     // Video loading modal
@@ -5340,8 +6392,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
 
     // Tab pills
-    React.createElement("div", { style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0 } },
-      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
+    React.createElement("div", { className: 'hide-scrollbar', onTouchStart: (e) => e.stopPropagation(), onTouchMove: (e) => e.stopPropagation(), onTouchEnd: (e) => e.stopPropagation(), style: { display: 'flex', gap: 6, padding: '8px 0', overflowX: 'auto', flexShrink: 0, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+      tabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); if (onTabChange) onTabChange(t.id); } })),
     ),
 
     // Tab content
@@ -5358,13 +6410,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
 /* ── Desktop Card Panel (left preview + right tabs) ── */
 const DESKTOP_TABS = [
-  { id: 'fill', label: '클립 편집' },
-  { id: 'layout', label: '\ub808\uc774\uc544\uc6c3' },
-  { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9' },
-  { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774' },
+  { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
+  { id: 'layout', label: '\ub808\uc774\uc544\uc6c3', tour: 'tab-layout' },
+  { id: 'text', label: '\ud14d\uc2a4\ud2b8 \ub0b4\uc6a9', tour: 'tab-text' },
+  { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -5378,6 +6430,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const [videoLoading, setVideoLoading] = useState(false);
   const [clipError, setClipError] = useState(null);
   const [pendingImageUpload, setPendingImageUpload] = useState(null);
+  const [urlEditing, setUrlEditing] = useState(false);
+  const urlInputRef = useRef(null);
   const [dragState, setDragState] = useState(null); // { idx, offsetX }
   const wasDragging = useRef(false);
   const CARD_STEP = 43; // 38px width + 5px gap
@@ -5492,9 +6546,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const btnSm = { background: 'rgba(255,255,255,0.05)', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '5px 12px', borderRadius: T.radiusPill, transition: 'all 0.15s' };
   const navBtn = (dis) => ({ background: 'none', border: `1px solid ${dis ? T.border : T.borderHover}`, color: dis ? T.textMuted : T.textSecondary, fontSize: 11, cursor: dis ? 'default' : 'pointer', padding: '4px 8px', borderRadius: T.radiusSm, opacity: dis ? 0.4 : 1 });
 
+  // DeskApplyToAllBtn uses module-level ApplyToAllBtn
+
   // \u2500\u2500 Fill Tab \u2500\u2500
+  const deskVideoUrl = card.url || globalUrl || '';
+  const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
   const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
+    !deskHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
     ),
     (card.fillSource || 'video') === 'video' && React.createElement(React.Fragment, null,
@@ -5504,7 +6562,22 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            React.createElement("input", { type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: inputBase }),
+            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 50 ? vu.slice(0, 50) + '...' : vu; return hv && !urlEditing
+              ? React.createElement("div", {
+                  onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
+                  style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' },
+                  onMouseEnter: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.07)',
+                  onMouseLeave: (e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)',
+                },
+                  React.createElement("span", { style: { fontSize: 14 } }, "\uD83C\uDFA5"),
+                  React.createElement("span", { style: { flex: 1, fontSize: 12, color: T.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, card.url ? tu : '\uACF5\uD1B5 URL \uC0AC\uC6A9 \uC911'),
+                  React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
+                )
+              : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
+                  card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
+                ); })(),
             card.appliedStart
               ? React.createElement(React.Fragment, null,
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
@@ -5518,7 +6591,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   ),
                 )
               : React.createElement(React.Fragment, null,
-                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55 }),
+                  React.createElement(ClipSelector, { videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, onTitleFetch: (title) => { if (!card.name) update('name', title); } }),
                   (() => {
                     var s = parseTime(card.start), e = parseTime(card.end);
                     var hasUrl = !!(card.url || globalUrl);
@@ -5532,7 +6605,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     return React.createElement("button", {
                       onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
-                    }, valid ? '\u2705 \uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815' : '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
+                    }, valid && React.createElement(SvgIcon, { path: ICON_CHECK, size: 16 }), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
                 ),
           ),
@@ -5557,15 +6630,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Layout Tab \u2500\u2500
   const renderLayout = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
-    React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-      LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_fade' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti({ layout: opt.id === 'gradient_fade' ? 'photo_top' : opt.id, useGradient: opt.id === 'gradient_fade' }) }))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
+      React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
+      ),
     ),
-    // 카드 비율
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
-      ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
+        ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
+      ),
     ),
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "\ubc30\uacbd \uc601\uc5ed", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
     // 텍스트 박스 설정
     card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
       React.createElement("div", { style: { fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 } }, "\ubc15\uc2a4 \uc124\uc815"),
@@ -5591,28 +6667,26 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\ud14c\ub450\ub9ac \ub450\uaed8", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 4 } },
-      React.createElement("label", { style: labelBase }, "\uc601\uc0c1 \ucc44\uc6b0\uae30"),
-      React.createElement("div", { style: { display: 'flex', gap: 6 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+      React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
+      React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
-      )
-    ),
-    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 4 } },
-      React.createElement(SectionTitleWithReset, { title: "\ud14d\uc2a4\ud2b8 \ubc30\uacbd \uc124\uc815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
-      React.createElement(CheckboxRow, { label: "\ubc30\uacbd\uc0c9 \uc0ac\uc6a9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
-      card.useBg !== false && React.createElement(React.Fragment, null,
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 } },
-          React.createElement("label", { style: { fontSize: 12, color: T.textMuted } }, "\uc0c9\uc0c1"),
-          React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, cursor: 'pointer' } }),
-          React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, card.bgColor),
-        ),
-        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 } },
-          React.createElement("div", { style: { flex: 1 } }, React.createElement(SliderRow, { label: "\ud22c\uba85\ub3c4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 })),
-          React.createElement(CheckboxRow, { label: "\ud22c\uba85\ud558\uac8c", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
-        ),
       ),
     ),
+    // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
+    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+      React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
+      React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC0C9\uC0C1"),
+        React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
+      card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
+    ),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
@@ -5624,79 +6698,101 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
     updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
   };
-  const renderText = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-    // 전체 정렬
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uC815\uB82C"),
-      React.createElement("div", { style: { display: 'flex', gap: 3 } },
-        [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
-      ),
-    ),
-    // 전체 폰트
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', borderBottom: `1px solid ${T.border}`, marginBottom: 2 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
-      React.createElement(FontDropdown, {
-        options: FONT_OPTIONS,
-        value: getFontFamily(card.titleFont),
-        onChange: (id) => setAllFontDesk(id),
-      }),
-      (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uc81c\ubaa9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
-      React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
+  const renderText = () => {
+    const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
+    const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+      // 전체 정렬
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\ubd80\uc81c\ubaa9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => update("useSubtitle", card.useSubtitle === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 6 } },
-      React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+      // 전체 폰트
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
+        React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFontDesk(id) }),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+      ),
+      // 제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-    React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\ubcf8\ubb38 \ub0b4\uc6a9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => update("useBody", card.useBody === false ? true : false) }),
-    React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', padding: '2px 0' } },
-      React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uc138\ubd80\uc870\uc815"),
-    ),
-    showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}`, marginBottom: 4 } },
-      React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, minWidth: 36 } }, "\uC815\uB82C"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+      // 부제목 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(SliderRow, { label: "\uc790\uac04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc904\uac04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
-      React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
-      React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
-    ),
-  );
+      // 본문 카드
+      React.createElement("div", { style: cardStyle },
+        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
+            React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
+            React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
+          ),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+        ),
+        showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
+          React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
+          React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52 } }, "\uC815\uB82C"),
+            React.createElement("div", { style: { display: 'flex', gap: 3 } },
+              [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.bodyAlign || 'left') === v, onClick: () => update("bodyAlign", v) }, lb))
+            ),
+          ),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.bodyLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("bodyLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.bodyLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("bodyLineHeight", v), suffix: '', defaultValue: 1.4 }),
+          React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.bodyX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("bodyX", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
+        ),
+      ),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
+    );
+  };
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
   const updateOverlayDesk = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
@@ -5735,18 +6831,19 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 100, opacity: 1 }]),
+      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
     }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'] }),
   );
 
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
-    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; }"),
+    React.createElement("style", null, "@keyframes slideFromBelow { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } @keyframes slideFromAbove { from { transform: translateY(-30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } } #card-carousel::-webkit-scrollbar { display: none; } .hide-scrollbar::-webkit-scrollbar { display: none; }"),
     // Video loading modal
     videoLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' } },
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '28px 36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
@@ -5782,14 +6879,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Card preview area (reduced padding)
       React.createElement("div", { ref: desktopPreviewRef, style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '6px 14px', overflow: 'hidden' } },
         React.createElement("div", {
-          key: 'card-' + activeIndex,
+          key: 'card-' + activeIndex + '-' + previewResetKey,
           style: {
             animation: animDir ? (animDir === 'down' ? 'slideFromBelow 0.3s cubic-bezier(0.4,0,0.2,1)' : 'slideFromAbove 0.3s cubic-bezier(0.4,0,0.2,1)') : 'none',
             borderRadius: T.radius,
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false) })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle })
         ),
         React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -5798,8 +6895,9 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         // Carousel row
         React.createElement("div", { style: { padding: '4px 6px', display: 'flex', alignItems: 'center', gap: 3 } },
           React.createElement("button", {
-            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -120, behavior: 'smooth' }); },
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+            onClick: () => { if (activeIndex > 0) { goTo(activeIndex - 1); const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: -48, behavior: 'smooth' }); } },
+            disabled: activeIndex === 0,
+            style: { background: 'none', border: 'none', color: activeIndex === 0 ? 'rgba(255,255,255,0.15)' : T.textMuted, fontSize: 12, cursor: activeIndex === 0 ? 'default' : 'pointer', padding: '1px 3px', flexShrink: 0 },
           }, "\u25C0"),
           React.createElement("div", {
             id: 'card-carousel',
@@ -5811,7 +6909,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               onPointerDown: (e) => handleCardPointerDown(e, i),
               onDragStart: (e) => e.preventDefault(),
               style: {
-                width: 38, height: aspectRatio === '3:4' ? 51 : 38, flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
+                width: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); const w=_tw||1,h=_th||1; return (w>=h) ? 38 : Math.round(38*w/h); })(), height: (() => { const [_tw,_th] = (aspectRatio||'1:1').split(':').map(Number); const w=_tw||1,h=_th||1; return (h>=w) ? 38 : Math.round(38*h/w); })(), flexShrink: 0, borderRadius: 3, overflow: 'hidden', cursor: dragState && dragState.idx === i ? 'grabbing' : 'grab',
                 boxShadow: dragState && dragState.idx === i ? '0 4px 12px rgba(0,0,0,0.4)' : (i === activeIndex ? '0 0 0 2px ' + T.accent : '0 0 0 1px ' + T.border),
                 opacity: i === activeIndex || (dragState && dragState.idx === i) ? 1 : 0.55,
                 transition: dragState && dragState.idx === i ? 'box-shadow 0.15s, opacity 0.15s' : 'all 0.2s ease',
@@ -5823,13 +6921,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               },
             },
               React.createElement("div", { style: { pointerEvents: 'none', width: '100%', height: '100%' } },
-                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false })
+                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false })
               )
             ))
           ),
           React.createElement("button", {
-            onClick: () => { const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 120, behavior: 'smooth' }); },
-            style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 12, cursor: 'pointer', padding: '1px 3px', flexShrink: 0 },
+            onClick: () => { if (activeIndex < cards.length - 1) { goTo(activeIndex + 1); const el = document.getElementById('card-carousel'); if (el) el.scrollBy({ left: 48, behavior: 'smooth' }); } },
+            disabled: activeIndex >= cards.length - 1,
+            style: { background: 'none', border: 'none', color: activeIndex >= cards.length - 1 ? 'rgba(255,255,255,0.15)' : T.textMuted, fontSize: 12, cursor: activeIndex >= cards.length - 1 ? 'default' : 'pointer', padding: '1px 3px', flexShrink: 0 },
           }, "\u25B6"),
         ),
         // Actions row + video toggle
@@ -5846,12 +6945,20 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       // Card info header
       React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 20px 8px', borderBottom: '1px solid ' + T.border, flexShrink: 0, background: T.surface } },
         React.createElement("span", { style: { width: 28, height: 28, borderRadius: T.radiusPill, background: T.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#fff', flexShrink: 0 } }, activeIndex + 1),
-        React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 } }, displayName),
+        editingName
+          ? React.createElement("input", {
+              ref: nameRef, value: nameValue,
+              onChange: (e) => setNameValue(e.target.value),
+              onBlur: commitName,
+              onKeyDown: (e) => { if (e.key === 'Enter') commitName(); if (e.key === 'Escape') setEditingName(false); },
+              style: { background: 'transparent', border: '1px solid ' + T.accent, color: T.text, fontSize: 14, fontWeight: 600, outline: 'none', padding: '2px 8px', borderRadius: 4, flex: 1, minWidth: 0 },
+            })
+          : React.createElement("span", { onClick: startEditName, style: { fontSize: 14, fontWeight: 600, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, cursor: 'pointer' } }, displayName),
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0 } }, (activeIndex + 1) + ' / ' + cards.length + '\uc7a5'),
       ),
       // Tab bar
       React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
-        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
+        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
@@ -5865,6 +6972,89 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   );
 }
 
+
+/* ── Tutorial Overlay ── */
+function TutorialOverlay({ mob, step, totalSteps, stepData, onNext, onSkip }) {
+  const [rect, setRect] = useState(null);
+  useEffect(() => {
+    if (!stepData) return;
+    const update = () => {
+      const el = document.querySelector(stepData.target);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+      }
+    };
+    update();
+    const timer = setTimeout(update, 100);
+    window.addEventListener('resize', update);
+    window.addEventListener('scroll', update, true);
+    return () => { clearTimeout(timer); window.removeEventListener('resize', update); window.removeEventListener('scroll', update, true); };
+  }, [stepData, step]);
+  if (!rect || !stepData) return null;
+  const pad = 8;
+  const isLast = step === totalSteps - 1;
+  const spaceBelow = window.innerHeight - (rect.top + rect.height);
+  const spaceAbove = rect.top;
+  const tooltipH = 160;
+  const showBelow = spaceBelow > tooltipH + pad + 20 || spaceBelow >= spaceAbove;
+  var tooltipTop;
+  if (showBelow) {
+    tooltipTop = rect.top + rect.height + pad + 12;
+  } else {
+    tooltipTop = rect.top - pad - 12 - tooltipH;
+  }
+  tooltipTop = Math.max(16, Math.min(tooltipTop, window.innerHeight - tooltipH - 16));
+  return React.createElement(React.Fragment, null,
+    React.createElement("style", null, '@keyframes tourGlow{0%,100%{opacity:0.4}50%{opacity:1}}'),
+    React.createElement("div", { onClick: onSkip, style: { position: 'fixed', inset: 0, zIndex: 10000 } }),
+    React.createElement("div", { style: { position: 'fixed', top: rect.top - pad, left: rect.left - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: 12, boxShadow: '0 0 0 9999px rgba(0,0,0,0.75)', zIndex: 10001, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
+    React.createElement("div", { style: { position: 'fixed', top: rect.top - pad - 2, left: rect.left - pad - 2, width: rect.width + pad * 2 + 4, height: rect.height + pad * 2 + 4, borderRadius: 14, border: '2px solid rgba(99,102,241,0.8)', boxShadow: '0 0 16px 4px rgba(99,102,241,0.5), inset 0 0 16px 4px rgba(99,102,241,0.15)', animation: 'tourGlow 2s ease-in-out infinite', zIndex: 10002, pointerEvents: 'none', transition: 'all 0.3s ease' } }),
+    React.createElement("div", { style: { position: 'fixed', top: tooltipTop, left: mob ? 16 : Math.max(16, Math.min(rect.left, window.innerWidth - 320)), width: mob ? 'calc(100% - 32px)' : 300, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', background: T.surface, borderRadius: T.radius, padding: mob ? 16 : 20, boxShadow: T.shadowLg, border: '1px solid ' + T.border, zIndex: 10003, transition: 'all 0.3s ease' } },
+      React.createElement("div", { style: { fontWeight: 600, fontSize: 15, color: T.text, marginBottom: 6 } }, stepData.title),
+      React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.6 } }, stepData.desc),
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 } },
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, (step + 1) + ' / ' + totalSteps),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+          React.createElement("button", { onClick: onSkip, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer' } }, "\uAC74\uB108\uB6F0\uAE30"),
+          React.createElement("button", { onClick: onNext, style: { padding: '6px 14px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' } }, isLast ? "\uC644\uB8CC" : "\uB2E4\uC74C"),
+        ),
+      ),
+    ),
+  );
+}
+
+/* ── Help Modal ── */
+function HelpModal({ onClose, onStartTour, mob }) {
+  const sections = [
+    { title: '1. YouTube URL \uC785\uB825', desc: '\uACF5\uD1B5 URL: \uC0C1\uB2E8 \uC124\uC815\uC5D0\uC11C \uC785\uB825\uD558\uBA74 \uBAA8\uB4E0 \uCE74\uB4DC\uC5D0 \uC801\uC6A9\uB429\uB2C8\uB2E4.\n\uAC1C\uBCC4 URL: \uAC01 \uCE74\uB4DC\uC758 \uD074\uB9BD \uD3B8\uC9D1\uC5D0\uC11C \uB530\uB85C \uC785\uB825\uD558\uBA74 \uD574\uB2F9 \uCE74\uB4DC\uB9CC \uB2E4\uB978 \uC601\uC0C1\uC744 \uC4F8 \uC218 \uC788\uC5B4\uC694.' },
+    { title: '2. \uCE74\uB4DC \uCD94\uAC00 & \uC120\uD0DD', desc: '+ \uBC84\uD2BC\uC73C\uB85C \uCE74\uB4DC\uB97C \uCD94\uAC00\uD558\uACE0, \uAC01 \uCE74\uB4DC\uB97C \uC120\uD0DD\uD574 \uD3B8\uC9D1\uD558\uC138\uC694. \uCD5C\uB300 10\uAC1C\uAE4C\uC9C0.' },
+    { title: '3. \uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1\uC758 \uC2DC\uC791~\uB05D \uAD6C\uAC04\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD(\uC804\uCCB4/\uD06C\uB86D)\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
+    { title: '4. \uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58\uB97C \uC120\uD0DD\uD558\uC138\uC694.' },
+    { title: '5. \uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+    { title: '6. \uC624\uBC84\uB808\uC774', desc: '\uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD558\uC5EC \uCE74\uB4DC \uC704\uC5D0 \uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4\uB97C \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
+    { title: '7. \uC0DD\uC131\uD558\uAE30', desc: '\uBAA8\uB4E0 \uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC0DD\uC131 \uBC84\uD2BC\uC744 \uB20C\uB7EC \uCE74\uB4DC\uB274\uC2A4\uB97C \uB9CC\uB4DC\uC138\uC694!' },
+  ];
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 16 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: mob ? 20 : 28, maxWidth: 520, width: '100%', maxHeight: '80vh', overflowY: 'auto', boxShadow: T.shadowLg } },
+      React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 } },
+        React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: T.text, margin: 0 } }, "\uC0AC\uC6A9 \uAC00\uC774\uB4DC"),
+        React.createElement("button", { onClick: onClose, style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 20, cursor: 'pointer', padding: '4px 8px' } }, "\u2715"),
+      ),
+      sections.map((s, i) => React.createElement("div", { key: i, style: { padding: '12px 0', borderBottom: i < sections.length - 1 ? '1px solid ' + T.border : 'none' } },
+        React.createElement("div", { style: { fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 4 } }, s.title),
+        React.createElement("div", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, s.desc),
+      )),
+      React.createElement("button", {
+        onClick: () => { onClose(); onStartTour(); },
+        style: { marginTop: 20, width: '100%', padding: '12px 0', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.12)', border: '1px solid ' + T.accent, color: T.accent, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' },
+      }, "\uD29C\uD1A0\uB9AC\uC5BC \uB2E4\uC2DC \uBCF4\uAE30"),
+    ),
+  );
+}
 
 /* ── App ── */
 export default function App() {
@@ -5891,6 +7081,12 @@ export default function App() {
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [editorSilenced, setEditorSilenced] = useState(false);
+  const [editorPreviewMuted, setEditorPreviewMuted] = useState(true);
+  const [editorResetKey, setEditorResetKey] = useState(0);
+  // Reset editor silence when user switches cards
+  useEffect(() => { setEditorSilenced(false); }, [activeCardIdx]);
+  const closePreviewModal = () => { setShowPreview(false); setEditorSilenced(true); setEditorResetKey(k => k + 1); };
   const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [queueStatus, setQueueStatus] = useState(null);
@@ -5898,14 +7094,39 @@ export default function App() {
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' });
+  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' });
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
+  const [aiEditStatus, setAiEditStatus] = useState(null);
+  const [aiEditError, setAiEditError] = useState(null);
+  const [aiMode, setAiMode] = useState(false);
+  const [aiEditRunning, setAiEditRunning] = useState(false);
+  const [aiEditTargetId, setAiEditTargetId] = useState(null);
+  const aiEventSourceRef = useRef(null);
+  const aiWizardDataRef = useRef(null);
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
+
+  // Tutorial auto-start on first editor entry
+  useEffect(() => {
+    if (editorMode === 'editor' && typeof window !== 'undefined') {
+      const done = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+      if (!done) {
+        const timer = setTimeout(() => { setTutorialStep(0); setShowTutorial(true); }, 600);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [editorMode]);
+
+  const startTutorial = useCallback(() => { setTutorialStep(0); setShowTutorial(true); }, []);
+  const endTutorial = useCallback(() => { setShowTutorial(false); setTutorialStep(0); if (typeof window !== 'undefined') localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); }, []);
+  const tutorialSteps = mob ? TUTORIAL_STEPS_MOBILE : TUTORIAL_STEPS_DESKTOP;
 
   // Close info panel on outside click
   useEffect(() => {
@@ -5967,6 +7188,10 @@ export default function App() {
     } else if (path === '/easy') {
       setEditorMode('wizard');
       setWizardStep(1);
+    } else if (path === '/ai-edit') {
+      setEditorMode('ai-wizard');
+      setAiMode(true);
+      setWizardStep(1);
     } else if (path === '/edit') {
       setEditorMode('editor');
     } else {
@@ -5978,7 +7203,7 @@ export default function App() {
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
-    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'editor' ? '/edit' : '/';
+    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'ai-wizard' ? '/ai-edit' : editorMode === 'ai-loading' ? '/ai-edit' : editorMode === 'editor' ? '/edit' : '/';
     if (window.location.pathname !== targetPath) {
       router.push(targetPath, undefined, { shallow: true });
     }
@@ -5990,8 +7215,9 @@ export default function App() {
       if (wizardLoading) return;
       const p = url.split('?')[0];
       if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
+      else if (p === '/ai-edit' && editorMode !== 'ai-wizard') { setEditorMode('ai-wizard'); setWizardStep(1); setAiMode(true); }
       else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
-      else if (p === '/' && editorMode !== null) { setEditorMode(null); }
+      else if (p === '/' && editorMode !== null) { setEditorMode(null); setAiMode(false); }
     };
     router.events.on('routeChangeComplete', onRouteChange);
     return () => router.events.off('routeChangeComplete', onRouteChange);
@@ -6068,7 +7294,7 @@ export default function App() {
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
-      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 100, opacity: 1 });
+      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 80, opacity: 1 });
       ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
@@ -6345,8 +7571,8 @@ export default function App() {
       if (preset.textBoxRadius != null) card.textBoxRadius = preset.textBoxRadius;
       if (preset.textBoxBgColor != null) card.textBoxBgColor = preset.textBoxBgColor;
       if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
-      const startSec = i * 10;
-      const endSec = (i + 1) * 10;
+      const startSec = i * 30;
+      const endSec = (i + 1) * 30;
       card.start = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
       card.end = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
       card.title = `\uCE74\uB4DC ${i + 1} \uC81C\uBAA9`;
@@ -6357,7 +7583,117 @@ export default function App() {
     return newCards;
   };
 
+  const handleAiEditComplete = () => {
+    const url = wizardData.url;
+    const presetId = wizardData.presetId;
+    const aspectRatio = wizardData.aspectRatio;
+
+    // Save wizard data for background completion
+    aiWizardDataRef.current = { url, presetId, aspectRatio, copyTone: wizardData.copyTone || 'hooking' };
+
+    // Go back to main screen, run in background
+    setEditorMode(null);
+    setAiMode(false);
+    setAiEditRunning(true);
+    setAiEditTargetId(pendingProjectId || activeProjectId);
+    setAiEditStatus({ step: 'info', message: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778 \uC911...' });
+    setAiEditError(null);
+
+    // Close any previous SSE connection
+    if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
+
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking'));
+    aiEventSourceRef.current = es;
+
+    es.addEventListener('status', (e) => {
+      try { setAiEditStatus(JSON.parse(e.data)); } catch {}
+    });
+
+    es.addEventListener('error_event', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setAiEditError(data);
+      } catch { setAiEditError({ message: '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958' }); }
+      es.close();
+      aiEventSourceRef.current = null;
+      setAiEditRunning(false); setAiEditTargetId(null);
+    });
+
+    es.addEventListener('result', (e) => {
+      es.close();
+      aiEventSourceRef.current = null;
+      try {
+        const { highlights, videoInfo, transcript: _transcript } = JSON.parse(e.data);
+        const wd = aiWizardDataRef.current || {};
+        const _url = wd.url || url;
+        const _presetId = wd.presetId || presetId;
+        const _aspectRatio = wd.aspectRatio || aspectRatio;
+        const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
+        const newCards = highlights.map((h, idx) => {
+          const card = DEFAULT_CARD();
+          card.url = _url;
+          card.start = h.start || '0:00';
+          card.end = h.end || '0:10';
+          card.appliedStart = h.start || '0:00';
+          card.appliedEnd = h.end || '0:10';
+          // Generate clipThumbnail for the start frame
+          const _startSec = parseTime(h.start || '0:00');
+          if (_startSec != null && _url) {
+            card.clipThumbnail = `/api/frame?url=${encodeURIComponent(_url)}&t=${_startSec}`;
+          }
+          card.title = h.title || '';
+          card.subtitle = '';
+          card.useSubtitle = false;
+          card.body = '';
+          card.useBody = false;
+          card.name = (h.title || '').replace(/\n/g, ' ');
+
+          // All cards: gradient 레이아웃 (photo_top + useGradient), 텍스트 배경 영역 40% (photoRatio 60), 투명도 55%
+          card.layout = 'photo_top';
+          card.useGradient = true;
+          card.photoRatio = 60;
+          card.bgColor = '#000000';
+          card.bgOpacity = 0.55;
+          card.titleColor = '#ffffff';
+          card.subtitleColor = '#aaaaaa';
+          card.bodyColor = '#d2d2d2';
+          card.titleSize = 72;
+          card.subtitleSize = 44;
+          card.bodySize = 40;
+          card.titleAlign = 'left';
+          card.subtitleAlign = 'left';
+          card.bodyAlign = 'left';
+          return card;
+        });
+
+        const targetId = pendingProjectId || activeProjectId;
+        setProjects(prev => prev.map(p => {
+          if (p.id !== targetId) return p;
+          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '' };
+        }));
+        setActiveProjectId(targetId);
+        setAiEditRunning(false); setAiEditTargetId(null);
+        setAiMode(false);
+        setEditorMode('editor');
+      } catch (err) {
+        setAiEditError({ message: '\uACB0\uACFC \uCC98\uB9AC \uC911 \uC624\uB958: ' + (err.message || '') });
+        setAiEditRunning(false); setAiEditTargetId(null);
+      }
+    });
+
+    es.onerror = () => {
+      es.close();
+      aiEventSourceRef.current = null;
+      setAiEditError({ message: '\uC11C\uBC84 \uC5F0\uACB0\uC774 \uB04A\uC5B4\uC84C\uC2B5\uB2C8\uB2E4.' });
+      setAiEditRunning(false); setAiEditTargetId(null);
+    };
+  };
+
   const handleWizardComplete = () => {
+    if (aiMode) {
+      handleAiEditComplete();
+      return;
+    }
     setWizardLoading(true);
     setTimeout(() => {
       const newCards = generateWizardCards(wizardData);
@@ -6372,6 +7708,64 @@ export default function App() {
         setEditorMode('editor');
       }, 700);
     }, 4800);
+  };
+
+  const [bulkRewriting, setBulkRewriting] = useState(false);
+  const [bulkRewriteProgress, setBulkRewriteProgress] = useState('');
+
+  const handleBulkRewrite = async (newTone) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const cardsWithClip = (proj.cards || []).filter(c => c.appliedStart && c.appliedEnd);
+    if (cardsWithClip.length === 0) { updateProject({ copyTone: newTone }); return; }
+    const ok = window.confirm('\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uC81C\uBAA9\uC744 \uC0C8 \uD1A4\uC73C\uB85C \uAD50\uCCB4\uD569\uB2C8\uB2E4. \uC9C4\uD589\uD560\uAE4C\uC694?');
+    if (!ok) return;
+    setBulkRewriting(true);
+    updateProject({ copyTone: newTone });
+    let transcript = proj.transcript || '';
+    if (!transcript && proj.globalUrl) {
+      try {
+        setBulkRewriteProgress('\uC790\uB9C9 \uAC00\uC838\uC624\uB294 \uC911...');
+        const subRes = await fetch('/api/subtitle?url=' + encodeURIComponent(proj.globalUrl));
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          transcript = subData.transcript || '';
+          updateProject({ transcript, videoTitle: subData.title || proj.videoTitle || '' });
+        }
+      } catch (e) {
+        setBulkRewriting(false);
+        setBulkRewriteProgress('');
+        window.alert('\uC790\uB9C9\uC744 \uAC00\uC838\uC62C \uC218 \uC5C6\uC5B4 \uD1A4 \uBCC0\uACBD\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.');
+        return;
+      }
+    }
+    const allCards = proj.cards || [];
+    let failCount = 0;
+    for (let i = 0; i < allCards.length; i++) {
+      const c = allCards[i];
+      if (!c.appliedStart || !c.appliedEnd) continue;
+      setBulkRewriteProgress(`\uCE74\uD53C \uBCC0\uD658 \uC911... (${i + 1}/${allCards.length})`);
+      const segText = extractSegmentTranscript(transcript, c.appliedStart, c.appliedEnd);
+      if (!segText) continue;
+      const cardId = c.id;
+      try {
+        const res = await fetch('/api/ai-rewrite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transcript: segText, tone: newTone, currentTitle: c.title || '\uC81C\uBAA9 \uC5C6\uC74C', videoTitle: proj.videoTitle || '' }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.suggestions && data.suggestions[0]) {
+            const newTitle = data.suggestions[0];
+            setCards(prev => prev.map(card => card.id === cardId ? { ...card, title: newTitle, name: newTitle.replace(/\n/g, ' ') } : card));
+          }
+        } else { failCount++; }
+      } catch { failCount++; }
+    }
+    setBulkRewriting(false);
+    setBulkRewriteProgress('');
+    if (failCount > 0) window.alert(`${failCount}\uAC1C \uCE74\uB4DC\uC758 \uCE74\uD53C \uBCC0\uD658\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.`);
   };
 
   return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
@@ -6403,9 +7797,10 @@ export default function App() {
     ),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
-      mob,
-      onSelectEasy: () => { setEditorMode('wizard'); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+      mob, aiEditRunning,
+      onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
+      onSelectAiEdit: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
@@ -6414,8 +7809,104 @@ export default function App() {
       onNext: () => setWizardStep(s => Math.min(s + 1, 3)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
-      onCancel: () => { setEditorMode(null); setWizardStep(1); },
+      onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); },
     }),
+
+    editorMode === 'ai-wizard' && React.createElement(WizardScreen, {
+      mob, step: wizardStep, data: wizardData, aiMode: true,
+      onDataChange: setWizardData,
+      onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
+      onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
+      onComplete: handleWizardComplete,
+      onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
+    }),
+
+    // AI edit overlay — 자유편집 모드에서 AI 진행 중일 때 블러 + 진행률 표시
+    aiEditRunning && editorMode === 'editor' && (() => {
+      const stepMap = { info: 0, subtitle: 1, analyze: 2 };
+      const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
+      const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
+      const steps = [
+        { key: 'info', label: '\uC601\uC0C1 \uC815\uBCF4 \uD655\uC778' },
+        { key: 'subtitle', label: '\uC790\uB9C9 \uCD94\uCD9C' },
+        { key: 'analyze', label: 'AI \uD575\uC2EC \uAD6C\uAC04 \uBD84\uC11D' },
+      ];
+      return React.createElement("div", {
+        style: { position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(9,9,11,0.75)', backdropFilter: 'blur(6px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24 },
+      },
+        React.createElement("div", { style: { width: 48, height: 48, border: '3px solid rgba(16,185,129,0.2)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.9s linear infinite' } }),
+        React.createElement("div", { style: { textAlign: 'center' } },
+          React.createElement("h3", { style: { fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 6px' } }, "AI \uD3B8\uC9D1 \uC900\uBE44 \uC911..."),
+          React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.6)', margin: 0 } }, pct + '% \uC644\uB8CC'),
+        ),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 10, minWidth: 220 } },
+          steps.map((s, i) => {
+            const done = stepIdx > i;
+            const active = stepIdx === i;
+            return React.createElement("div", { key: s.key, style: { display: 'flex', alignItems: 'center', gap: 10, opacity: active || done ? 1 : 0.35 } },
+              done
+                ? React.createElement("span", { style: { fontSize: 16, color: '#10b981', width: 20, textAlign: 'center' } }, "\u2713")
+                : active
+                  ? React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', border: '2px solid rgba(16,185,129,0.3)', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+                  : React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.15)' } }),
+              React.createElement("span", { style: { fontSize: 14, color: done ? '#10b981' : active ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: active ? 600 : 400 } }, s.label),
+            );
+          }),
+        ),
+        aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 4, maxWidth: 300, textAlign: 'center' } }, aiEditStatus.message),
+      );
+    })(),
+
+    // AI background floating banner (shown on any screen while running)
+    aiEditRunning && (() => {
+      const stepMap = { info: 0, subtitle: 1, analyze: 2 };
+      const stepIdx = stepMap[aiEditStatus?.step] ?? 0;
+      const pct = Math.min(Math.round(((stepIdx + 0.5) / 3) * 100), 99);
+      return React.createElement("div", {
+        style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(5,150,105,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
+      },
+        // Progress bar
+        React.createElement("div", { style: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,0.15)' } },
+          React.createElement("div", { style: { height: '100%', width: pct + '%', background: '#6ee7b7', transition: 'width 0.6s ease', borderRadius: '0 2px 2px 0' } }),
+        ),
+        React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+          React.createElement("div", { style: { width: 20, height: 20, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+          React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 } },
+              React.createElement("span", { style: { fontSize: 14, color: '#fff', fontWeight: 600 } }, "AI \uBD84\uC11D \uC911"),
+              React.createElement("span", { style: { fontSize: 12, color: '#a7f3d0', fontWeight: 500 } }, pct + "%"),
+            ),
+            aiEditStatus?.message && React.createElement("p", { style: { fontSize: 12, color: 'rgba(255,255,255,0.7)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, aiEditStatus.message),
+          ),
+          React.createElement("button", {
+            onClick: () => { if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } setAiEditRunning(false); setAiEditTargetId(null); setAiEditStatus(null); },
+            style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+          }, "\uCDE8\uC18C"),
+        ),
+      );
+    })(),
+    // AI error floating banner
+    !aiEditRunning && aiEditError && React.createElement("div", {
+      style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(220,38,38,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
+    },
+      React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("span", { style: { flex: 1, fontSize: 13, color: '#fff', lineHeight: 1.4 } }, aiEditError.message || 'AI \uBD84\uC11D \uC2E4\uD328'),
+        React.createElement("button", {
+          onClick: () => setAiEditError(null),
+          style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+        }, "\uB2EB\uAE30"),
+      ),
+    ),
+
+    // Bulk rewrite progress banner
+    bulkRewriting && React.createElement("div", {
+      style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 300, background: 'rgba(16,185,129,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px', animation: 'modeStepIn 0.4s ease' },
+    },
+      React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("div", { style: { width: 20, height: 20, border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } }),
+        React.createElement("span", { style: { fontSize: 14, color: '#fff', fontWeight: 600 } }, bulkRewriteProgress || '\uCE74\uD53C \uBCC0\uD658 \uC911...'),
+      ),
+    ),
 
     wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
 
@@ -6426,7 +7917,7 @@ export default function App() {
 
         // Home button
         React.createElement("button", {
-          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top' }); },
+          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
           title: "\uD648",
           style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
           onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.text; },
@@ -6453,7 +7944,7 @@ export default function App() {
 
         // Project Tabs
         !mob && projects.length > 0 && React.createElement(ProjectTabs, {
-          projects, activeId: activeProjectId,
+          projects, activeId: activeProjectId, aiEditTargetId: aiEditRunning ? aiEditTargetId : null,
           onSwitch: switchProject, onAdd: addProject,
           onClose: closeProject, onRename: renameProject,
         }),
@@ -6463,17 +7954,19 @@ export default function App() {
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
-              React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '6px 10px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+              null,
               React.createElement("button", {
+                'data-tour': 'generate',
                 onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
-              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uBCF4\uB0B4\uAE30"),
-              React.createElement("button", { onClick: () => setShowPreview(true), style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer', transition: 'all 0.15s' } }, "\uBBF8\uB9AC\uBCF4\uAE30"),
+              React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uACF5\uC720\uD558\uAE30"),
+              null,
               React.createElement("button", {
+                'data-tour': 'generate',
                 onClick: () => setShowCardSelect(true), disabled: generating,
                 style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "생성하기"),
@@ -6482,30 +7975,32 @@ export default function App() {
     ),
 
     // ── Fixed Card Preview (mobile only) ──
-    mob && React.createElement("div", { style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
+    mob && React.createElement("div", { 'data-tour': 'preview', style: { flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}`, zIndex: 15, display: 'flex', flexDirection: 'column', gap: 0, overflowX: 'hidden' } },
       // Carousel indicator (dots + arrows)
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '10px 0' } },
-        React.createElement("span", { style: { fontSize: 11, color: T.textMuted, fontWeight: 500, minWidth: 28, textAlign: 'center' } }, (activeCardIdx + 1) + "/" + cards.length),
+      React.createElement("div", { 'data-tour': 'card-nav', style: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 12px' } },
+        React.createElement("span", { style: { position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: T.text, fontWeight: 700, background: 'rgba(99,102,241,0.12)', padding: '3px 8px', borderRadius: T.radiusPill, border: `1px solid ${T.border}`, letterSpacing: 0.2 } }, React.createElement("span", { style: { color: T.accent } }, activeCardIdx + 1), React.createElement("span", { style: { color: T.textMuted, margin: '0 2px' } }, "/"), React.createElement("span", { style: { color: T.textSecondary } }, cards.length)),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx > 0) setActiveCardIdx(activeCardIdx - 1); },
           disabled: activeCardIdx === 0,
-          style: { background: 'none', border: 'none', color: activeCardIdx === 0 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx === 0 ? 'default' : 'pointer', padding: '6px 10px', opacity: activeCardIdx === 0 ? 0.3 : 1 },
+          style: { width: 30, height: 30, borderRadius: '50%', background: activeCardIdx === 0 ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${activeCardIdx === 0 ? T.border : 'rgba(99,102,241,0.45)'}`, color: activeCardIdx === 0 ? T.textMuted : T.accent, fontSize: 13, cursor: activeCardIdx === 0 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: activeCardIdx === 0 ? 0.4 : 1, transition: 'all 0.15s', flexShrink: 0 },
         }, "◀"),
-        cards.map((_, i) => React.createElement("div", {
-          key: i,
-          onClick: () => setActiveCardIdx(i),
-          style: { width: i === activeCardIdx ? 24 : 12, height: 12, borderRadius: 6, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
-        })),
-        React.createElement("button", {
-          onClick: addCard,
-          disabled: cards.length >= MAX_CARDS,
-          style: { height: 22, padding: '0 8px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
-        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          cards.map((_, i) => React.createElement("div", {
+            key: i,
+            onClick: () => setActiveCardIdx(i),
+            style: { width: i === activeCardIdx ? 24 : 10, height: 10, borderRadius: 5, background: i === activeCardIdx ? T.accent : T.border, cursor: 'pointer', transition: 'all 0.2s' },
+          })),
+        ),
         React.createElement("button", {
           onClick: () => { if (activeCardIdx < cards.length) setActiveCardIdx(activeCardIdx + 1); },
           disabled: activeCardIdx >= cards.length - 1,
-          style: { background: 'none', border: 'none', color: activeCardIdx >= cards.length - 1 ? T.textMuted : T.accent, fontSize: 18, cursor: activeCardIdx >= cards.length - 1 ? 'default' : 'pointer', padding: '6px 10px', opacity: activeCardIdx >= cards.length - 1 ? 0.3 : 1 },
+          style: { width: 30, height: 30, borderRadius: '50%', background: activeCardIdx >= cards.length - 1 ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${activeCardIdx >= cards.length - 1 ? T.border : 'rgba(99,102,241,0.45)'}`, color: activeCardIdx >= cards.length - 1 ? T.textMuted : T.accent, fontSize: 13, cursor: activeCardIdx >= cards.length - 1 ? 'default' : 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: activeCardIdx >= cards.length - 1 ? 0.4 : 1, transition: 'all 0.15s', flexShrink: 0 },
         }, "▶"),
+        React.createElement("button", {
+          onClick: addCard,
+          disabled: cards.length >= MAX_CARDS,
+          style: { position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', height: 24, padding: '0 10px', borderRadius: T.radiusPill, background: cards.length >= MAX_CARDS ? 'rgba(255,255,255,0.04)' : 'rgba(99,102,241,0.15)', border: `1px solid ${cards.length >= MAX_CARDS ? T.border : T.accent}`, color: cards.length >= MAX_CARDS ? T.textMuted : T.accent, fontSize: 11, fontWeight: 600, cursor: cards.length >= MAX_CARDS ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, lineHeight: 1, transition: 'all 0.15s', opacity: cards.length >= MAX_CARDS ? 0.5 : 1 },
+        }, cards.length >= MAX_CARDS ? `최대 ${MAX_CARDS}개` : "+ \uCD94\uAC00"),
       ),
       
       // Card header (name, actions)
@@ -6532,8 +8027,8 @@ export default function App() {
             }, '\uBBF8\uB9AC\uBCF4\uAE30 \uC5F4\uAE30'),
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
-            React.createElement("div", { style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32) }),
+            React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced) }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
@@ -6554,7 +8049,7 @@ export default function App() {
 
       // Global Settings (desktop only — mobile uses header icon)
       !mob && React.createElement(React.Fragment, null,
-          React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
+          React.createElement("div", { 'data-tour': 'global-settings', style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow, display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
             React.createElement("div", { style: { flex: 1, minWidth: 200, display: 'flex', alignItems: 'center', gap: 8 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap', flexShrink: 0 } }, "URL"),
               React.createElement("input", { type: "text", value: globalUrl, placeholder: "https://youtube.com/watch?v=...", onChange: (e) => setGlobalUrl(e.target.value), style: { ...inputBase, padding: '6px 10px', fontSize: 13 } })
@@ -6572,6 +8067,10 @@ export default function App() {
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uD574\uC0C1\uB3C4"),
               React.createElement(PillBtn, { active: outputSize === 720, onClick: () => setOutputSize(720) }, "720p"),
               React.createElement(PillBtn, { active: outputSize === 1080, onClick: () => setOutputSize(1080) }, "1080p"),
+            ),
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+              React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uD53C \uD1A4"),
+              COPY_TONES.map(tone => React.createElement(PillBtn, { key: tone.id, active: (activeProject?.copyTone || 'hooking') === tone.id, onClick: () => { if ((activeProject?.copyTone || 'hooking') !== tone.id) handleBulkRewrite(tone.id); } }, tone.label)),
             ),
           ),
 
@@ -6591,7 +8090,7 @@ export default function App() {
         ),
 
       // Cards — mobile carousel vs desktop list
-      mob ? React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
+      mob ? React.createElement("div", { 'data-tour': 'edit-area', style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
         React.createElement(MobileCardCarousel, {
           cards, activeIndex: Math.min(activeCardIdx, cards.length - 1),
           onActiveChange: setActiveCardIdx,
@@ -6602,31 +8101,43 @@ export default function App() {
           globalUrl, aspectRatio, outputFormat, globalBgImage,
           onReorder: () => setShowReorder(true),
           hidePreview: true,
+          pausePreview: showPreview || editorSilenced,
+          previewResetKey: editorResetKey,
+          externalMuted: editorPreviewMuted,
+          onMuteToggle: () => setEditorPreviewMuted(m => !m),
           onClipExpandChange: (open) => setMobilePreviewHidden(h => open ? 'auto' : (h === 'auto' ? false : h)),
           onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
+          project: activeProject,
         }),
-      ) : React.createElement(DesktopCardPanel, {
-        cards,
-        activeIndex: Math.min(activeCardIdx, cards.length - 1),
-        onActiveChange: setActiveCardIdx,
-        onCardChange: updateCard,
-        onRemove: (i) => removeCard(i),
-        onDuplicate: (i) => duplicateCard(i),
-        onAdd: addCard,
-        globalUrl, aspectRatio, outputFormat, globalBgImage,
-        onReorder: () => setShowReorder(true),
-        onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
-        onApplyOverlayToAll: applyOverlayToAll,
-        onRemoveOverlayFromAll: removeOverlayFromAll,
-        onMoveCard: moveCard,
-      }),
+      ) : React.createElement("div", { 'data-tour': 'card-panel' },
+        React.createElement(DesktopCardPanel, {
+          cards,
+          activeIndex: Math.min(activeCardIdx, cards.length - 1),
+          onActiveChange: setActiveCardIdx,
+          onCardChange: updateCard,
+          onRemove: (i) => removeCard(i),
+          onDuplicate: (i) => duplicateCard(i),
+          onAdd: addCard,
+          globalUrl, aspectRatio, outputFormat, globalBgImage,
+          onReorder: () => setShowReorder(true),
+          pausePreview: showPreview || editorSilenced,
+          previewResetKey: editorResetKey,
+          externalMuted: editorPreviewMuted,
+          onMuteToggle: () => setEditorPreviewMuted(m => !m),
+          onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+          onApplyOverlayToAll: applyOverlayToAll,
+          onRemoveOverlayFromAll: removeOverlayFromAll,
+          onMoveCard: moveCard,
+          project: activeProject,
+        }),
+      ),
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowPreview(false), onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
@@ -6675,8 +8186,25 @@ export default function App() {
       globalUrl, setGlobalUrl, aspectRatio, setAspectRatio,
       outputFormat, setOutputFormat, outputSize, setOutputSize,
       globalBgImage, setGlobalBgImage,
+      copyTone: activeProject?.copyTone || 'hooking',
+      setCopyTone: (v) => updateProject({ copyTone: v }),
+      onBulkRewrite: handleBulkRewrite,
       onDismiss: () => setShowGlobalSettings(false),
     }),
+    showTutorial && tutorialSteps[tutorialStep] && React.createElement(TutorialOverlay, {
+      mob, step: tutorialStep, totalSteps: tutorialSteps.length,
+      stepData: tutorialSteps[tutorialStep],
+      onNext: () => { if (tutorialStep < tutorialSteps.length - 1) setTutorialStep(s => s + 1); else endTutorial(); },
+      onSkip: endTutorial,
+    }),
+    showHelpModal && React.createElement(HelpModal, { mob, onClose: () => setShowHelpModal(false), onStartTour: startTutorial }),
+    // Floating help button
+    !showHelpModal && !showTutorial && React.createElement("button", {
+      onClick: () => setShowHelpModal(true),
+      style: { position: 'fixed', bottom: mob ? 48 : 52, right: mob ? 16 : 24, width: mob ? 40 : 44, height: mob ? 40 : 44, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: T.accent, fontSize: mob ? 16 : 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, transition: 'all 0.2s ease', boxShadow: '0 2px 12px rgba(99,102,241,0.2)', backdropFilter: 'blur(8px)' },
+      onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.3)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.35)'; },
+      onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(99,102,241,0.2)'; },
+    }, "?"),
     ), // end editor Fragment
 
     shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
@@ -6709,9 +8237,11 @@ export default function App() {
 
     React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
-  input[type=range] { height: 32px; }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
-  input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: ${T.accent}; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  input[type=range] { height: 44px; padding: 0; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #ffffff 10px, rgba(255,255,255,0.9) 11px, transparent 12px); border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: transform 0.15s ease, box-shadow 0.15s ease; margin-top: -21px; }
+  input[type=range]::-moz-range-thumb { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #ffffff 10px, rgba(255,255,255,0.9) 11px, transparent 12px); border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  input[type=range]:active::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.4); }
+  input[type=range]:active::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(99,102,241,0.25), 0 1px 4px rgba(0,0,0,0.4); }
 }`)
   );
 }
