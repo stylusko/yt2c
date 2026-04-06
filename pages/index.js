@@ -7,18 +7,18 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0406';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const RECENT_FEATURES = [
+  'AI \uC704\uC800\uB4DC \uCE74\uD53C\uD1A4 \uC120\uD0DD \uB2E8\uACC4 \uBD84\uB9AC',
+  '\uC26C\uC6B4\uD3B8\uC9D1 30\uCD08 \uB2E8\uC704 \uAD6C\uAC04 + \uCD5C\uB300 20\uC7A5',
+  'AI \uCE74\uD53C \uD1A4 \uC2DC\uC2A4\uD15C (4\uB2E8\uACC4 \uC804\uCCB4 \uAD6C\uD604)',
   '\uC601\uC0C1 \uC2E4\uC81C \uBE44\uC728 \uAC10\uC9C0\uB85C \uD504\uB9AC\uBDF0-\uB80C\uB354\uB9C1 \uC815\uB82C',
   'AI \uC790\uB3D9\uD3B8\uC9D1 \uBAA8\uB4DC \uCD94\uAC00',
   '\uBAA8\uBC14\uC77C \uC2AC\uB77C\uC774\uB354 \uD130\uCE58 \uD0C0\uAC9F \uD655\uB300',
-  '\uBAA8\uBC14\uC77C \uAD6C\uAC04\uD0D0\uC0C9\uAE30 \uAC1C\uC120',
-  '\uD29C\uD1A0\uB9AC\uC5BC & \uB3C4\uC6C0\uB9D0 \uAE30\uB2A5 \uCD94\uAC00',
   '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
-  '\uB370\uC2A4\uD06C\uD1B1 \uD06C\uB86D \uBBF8\uB9AC\uBCF4\uAE30+\uC2AC\uB77C\uC774\uB354 \uAC00\uB85C \uBC30\uCE58',
 ];
 
 /* ── Icons ── */
