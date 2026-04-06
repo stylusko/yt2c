@@ -7620,8 +7620,14 @@ export default function App() {
       if (preset.textBoxBgOpacity != null) card.textBoxBgOpacity = preset.textBoxBgOpacity;
       const startSec = i * 30;
       const endSec = d.videoDuration ? Math.min((i + 1) * 30, Math.floor(d.videoDuration)) : (i + 1) * 30;
-      card.start = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
-      card.end = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
+      const startStr = Math.floor(startSec / 60) + ':' + String(startSec % 60).padStart(2, '0');
+      const endStr = Math.floor(endSec / 60) + ':' + String(endSec % 60).padStart(2, '0');
+      card.start = startStr;
+      card.end = endStr;
+      card.appliedStart = startStr;
+      card.appliedEnd = endStr;
+      const videoUrl = d.url || '';
+      if (videoUrl) card.clipThumbnail = `/api/frame?url=${encodeURIComponent(videoUrl)}&t=${startSec}`;
       card.title = `\uCE74\uB4DC ${i + 1} \uC81C\uBAA9`;
       card.subtitle = `\uCE74\uB4DC ${i + 1} \uBD80\uC81C\uBAA9`;
       card.body = '\uBCF8\uBB38 \uB0B4\uC6A9\uC744 \uC785\uB825\uD558\uC138\uC694';
