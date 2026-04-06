@@ -5809,8 +5809,8 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
         borderRadius: 8, transition: 'all 0.15s', ...opts.style,
       },
       onClick: () => { if (!isEditing) { onSwitch(proj.id); if (opts.onClickExtra) opts.onClickExtra(); } },
-      onMouseEnter: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; },
-      onMouseLeave: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
+      onMouseEnter: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.querySelectorAll('.tab-action-btn').forEach(b => b.style.opacity = '1'); },
+      onMouseLeave: (e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.querySelectorAll('.tab-action-btn').forEach(b => b.style.opacity = '0'); },
       onDoubleClick: (e) => { e.stopPropagation(); startRename(proj); },
       title: proj.name,
     },
@@ -5826,11 +5826,15 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename })
         : React.createElement("span", {
             style: { fontSize: 12, fontWeight: isActive ? 600 : 400, color: isActive ? T.accent : T.textSecondary, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', userSelect: 'none' },
           }, proj.name),
+      !isEditing && React.createElement("button", {
+        onClick: (e) => { e.stopPropagation(); startRename(proj); },
+        className: 'tab-action-btn',
+        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+      }, "\u270E"),
       !isEditing && projects.length > 1 && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
+        className: 'tab-action-btn',
         style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 13, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
-        onMouseEnter: (e) => e.currentTarget.style.opacity = 1,
-        onMouseLeave: (e) => e.currentTarget.style.opacity = 0,
       }, "\u00D7"),
     );
   };
