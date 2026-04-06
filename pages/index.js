@@ -7763,9 +7763,9 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob,
-      onSelectEasy: () => { if (aiEditRunning) { setAlertMsg('AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C\n\uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694.\n\n\uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
-      onSelectAiEdit: () => { if (aiEditRunning) { setAlertMsg('AI\uD3B8\uC9D1\uC774 \uC9C4\uD589 \uC911\uC774\uB77C\n\uB05D\uB098\uC57C \uC0C8\uB85C \uC2DC\uC791\uD560 \uC218 \uC788\uC5B4\uC694.\n\n\uC790\uC720\uD3B8\uC9D1\uC740 \uAC00\uB2A5\uD569\uB2C8\uB2E4.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectAiEdit: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
