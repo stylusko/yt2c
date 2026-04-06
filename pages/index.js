@@ -5095,7 +5095,7 @@ function StylePresetThumb({ preset }) {
 }
 
 /* ── Mode Selection Screen ── */
-function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }) {
+function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, aiEditRunning }) {
   const [hovered, setHovered] = useState(null);
   const [siteStats, setSiteStats] = useState(null);
   const [animatedStats, setAnimatedStats] = useState({ visitors: 0, cards: 0 });
@@ -5180,7 +5180,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
     React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
       // 1) AI auto-edit card
       React.createElement("div", {
-        onClick: onSelectAiEdit,
+        onClick: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } onSelectAiEdit(); },
         onMouseEnter: () => setHovered('ai'), onMouseLeave: () => setHovered(null),
         style: {
           ...cardBase,
@@ -5219,7 +5219,7 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit }
       ),
       // 2) Easy mode card
       React.createElement("div", {
-        onClick: onSelectEasy,
+        onClick: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } onSelectEasy(); },
         onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
         style: {
           ...cardBase,
@@ -7762,7 +7762,7 @@ export default function App() {
     ),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
-      mob,
+      mob, aiEditRunning,
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
       onSelectAiEdit: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
