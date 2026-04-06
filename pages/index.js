@@ -6198,6 +6198,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFont(id) }),
         (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
       ),
+      // 카피 톤 (AI)
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uCE74\uD53C \uD1A4"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          COPY_TONES.map(tone => React.createElement(PillBtn, { key: tone.id, active: (project?.copyTone || 'hooking') === tone.id, onClick: () => { if ((project?.copyTone || 'hooking') !== tone.id) handleBulkRewrite(tone.id); } }, tone.label)),
+        ),
+      ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
         React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
@@ -6714,6 +6721,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFontDesk(id) }),
         (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+      ),
+      // 카피 톤 (AI)
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uCE74\uD53C \uD1A4"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          COPY_TONES.map(tone => React.createElement(PillBtn, { key: tone.id, active: (project?.copyTone || 'hooking') === tone.id, onClick: () => { if ((project?.copyTone || 'hooking') !== tone.id) handleBulkRewrite(tone.id); } }, tone.label)),
+        ),
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
