@@ -283,6 +283,31 @@ function formatSec(s) {
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
 }
+function clientCardHash(card, globalConfig) {
+  const data = JSON.stringify({
+    ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
+    url: card.url || globalConfig.globalUrl || '',
+    start: card.appliedStart || card.start || '', end: card.appliedEnd || card.end || '',
+    vx: card.videoX ?? 0, vy: card.videoY ?? 0, vs: card.videoScale ?? 100, vb: card.videoBrightness ?? 0,
+    layout: card.layout || 'photo_top', ug: card.useGradient || false, pr: card.photoRatio ?? 50,
+    vf: card.videoFill || 'full', fs: card.fillSource || 'video',
+    title: card.title || '', ut: card.useTitle !== false,
+    sub: card.subtitle || '', us: card.useSubtitle !== false,
+    body: card.body || '', ub: card.useBody !== false,
+    ts: card.titleSize || 64, tc: card.titleColor || '#fff', tf: card.titleFont || '',
+    ss: card.subtitleSize || 48, sc: card.subtitleColor || '#aaa',
+    bs: card.bodySize || 40, bc: card.bodyColor || '#d2d2d2',
+    bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
+    ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
+    ui: card.uploadedImage ? 'y' : 'n',
+    tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
+    tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
+    ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
+  });
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) { hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0; }
+  return (hash >>> 0).toString(36);
+}
 function fmtMM(s) {
   if (s == null || isNaN(s)) return '--:--';
   const m = Math.floor(s / 60);
@@ -4401,7 +4426,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   );
 }
 
-function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate }) {
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat }) {
   const url = globalUrl || cards[0]?.url || '';
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
@@ -4449,6 +4474,9 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
+            const isCached = card.lastGenHash && card.lastGenHash === currentHash && card.lastGenKey;
+            const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
             return React.createElement("div", {
               key: i,
               onClick: () => toggle(i),
@@ -4463,6 +4491,9 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               !disabled && React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
+              // Cache status badge
+              !disabled && isCached && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, background:'rgba(34,197,94,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\u2713 \uC0DD\uC131\uB428"),
+              !disabled && isModified && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, background:'rgba(245,158,11,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\uC218\uC815\uB428"),
               // Card number
               React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
             );
@@ -4470,13 +4501,32 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         )
       ),
       // Footer: generate button
-      React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
-        React.createElement("button", {
-          onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
-          disabled: noneSelected,
-          style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
-        }, noneSelected ? "\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694" : `\u2728 ${selectedCount}\uAC1C \uC0DD\uC131\uD558\uAE30`),
-      ),
+      (() => {
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+        let cachedCount = 0, modifiedCount = 0, newCount = 0;
+        selected.forEach((s, i) => {
+          if (!s) return;
+          const c = cards[i];
+          const ch = clientCardHash(c, hashCfg);
+          if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedCount++;
+          else if (c.lastGenHash && c.lastGenHash !== ch) modifiedCount++;
+          else newCount++;
+        });
+        const regenCount = modifiedCount + newCount;
+        let btnLabel = '\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694';
+        if (!noneSelected) {
+          if (regenCount === 0 && cachedCount > 0) btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC`;
+          else if (cachedCount === 0) btnLabel = `\u2728 ${regenCount}\uAC1C \uC0DD\uC131\uD558\uAE30`;
+          else btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC + \uD83D\uDD04 ${regenCount}\uAC1C \uC7AC\uC0DD\uC131`;
+        }
+        return React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
+          React.createElement("button", {
+            onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+            disabled: noneSelected,
+            style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
+          }, btnLabel),
+        );
+      })(),
     ),
   );
 }
@@ -7373,8 +7423,8 @@ export default function App() {
   };
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
-  const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const removeCard = (i) => { const c = cards[i]; if (c && c.lastGenKey) { fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`, { method: 'DELETE' }).catch(() => {}); } setCards(p => p.filter((_, j) => j !== i)); };
+  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
@@ -7551,13 +7601,56 @@ export default function App() {
       }
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
+
+    // 캐시된 카드 vs 새로 생성할 카드 분리
+    const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+    const cachedIndices = [];
+    const newIndices = [];
+    for (const i of indices) {
+      const c = cards[i];
+      const ch = clientCardHash(c, hashCfg);
+      if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedIndices.push(i);
+      else newIndices.push(i);
+    }
+
     const targetCards = indices.map(i => cards[i]);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
+      // 캐시된 카드: presigned URL 즉시 획득
+      const cachedResults = [];
+      if (cachedIndices.length > 0) {
+        setGenProgress(`캐시된 카드 ${cachedIndices.length}개 다운로드 준비 중...`);
+        for (const ci of cachedIndices) {
+          const c = cards[ci];
+          try {
+            const dlRes = await fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`);
+            if (dlRes.ok) {
+              const { url: presignedUrl } = await dlRes.json();
+              cachedResults.push({ url: presignedUrl, cardIdx: ci, bucketKey: c.lastGenKey });
+            } else {
+              // 캐시 파일이 없으면 새로 생성 대상으로 이동
+              newIndices.push(ci);
+            }
+          } catch (_) {
+            newIndices.push(ci);
+          }
+        }
+      }
+
+      // 모두 캐시에서 해결된 경우
+      if (newIndices.length === 0) {
+        setResults(cachedResults);
+        setGenProgress(`완료! ${cachedResults.length}/${indices.length}개 다운로드 준비됨`);
+        setGenerating(false);
+        return;
+      }
+
+      // 새로 생성할 카드만 오버레이 생성
+      const newTargetCards = newIndices.map(i => cards[i]);
       const overlays = [];
-      for (let j = 0; j < targetCards.length; j++) {
-        setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
+      for (let j = 0; j < newTargetCards.length; j++) {
+        setGenProgress(`카드 ${newIndices[j] + 1}/${cards.length} 오버레이 생성 중...`);
+        overlays.push(await generateOverlayPng(effectiveCard(newTargetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
@@ -7570,7 +7663,7 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
           backgroundData: card.uploadedImage
@@ -7584,6 +7677,7 @@ export default function App() {
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
+      const totalCount = indices.length;
       activeJobIdRef.current = jobId;
       fetchQueueStatus(jobId);
       const pollInterval = setInterval(async () => {
@@ -7596,14 +7690,28 @@ export default function App() {
           const downloadUrls = [];
           let statusMsg = "";
           for (const c of (status.cards || [])) {
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx, bucketKey: c.bucketKey || '' }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else { totalProgress += (c.progress || 0); if (c.statusMessage) statusMsg = c.statusMessage; }
           }
           setGenStatusMsg(statusMsg);
-          setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
+          const cachedDone = cachedResults.length;
+          setGenProgress(`${completedCards + cachedDone}/${totalCount}개 완료 (${Math.round((totalProgress + cachedDone * 100) / totalCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
+            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null;
+            const allResults = [...cachedResults, ...downloadUrls];
+            setResults(allResults);
+            // 생성 완료된 카드에 해시/키 저장
+            setCards(prev => {
+              const next = [...prev];
+              for (const dl of downloadUrls) {
+                const ci = dl.cardIdx;
+                if (ci != null && next[ci]) {
+                  next[ci] = { ...next[ci], lastGenHash: clientCardHash(next[ci], hashCfg), lastGenKey: dl.bucketKey || '' };
+                }
+              }
+              return next;
+            });
             const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
             const failedLines = failedCards2.map(c => {
               const um = c.userMessage;
@@ -7611,7 +7719,8 @@ export default function App() {
             });
             const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenStatusMsg("");
-            setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
+            const totalCompleted = completedCards + cachedDone;
+            setGenProgress(`완료! ${totalCompleted}/${totalCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}${cachedDone > 0 ? ` (${cachedDone}개 캐시)` : ""}`);
             if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
             fetchQueueStatus();
@@ -8231,7 +8340,7 @@ export default function App() {
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
-    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,

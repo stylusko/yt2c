@@ -134,7 +134,7 @@ const worker = new Worker('video-generation', async (job) => {
     await job.updateProgress(100);
     console.log(`[${jobId}] Card ${cardIdx} completed`);
 
-    return { cardIdx, status: 'completed', authInfo: result?.authInfo || null };
+    return { cardIdx, status: 'completed', authInfo: result?.authInfo || null, bucketKey: result?.bucketKey || null };
   } catch (error) {
     console.error(`[${jobId}] Error processing card ${cardIdx}:`, error.message);
     throw error;
