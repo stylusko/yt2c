@@ -5836,7 +5836,7 @@ function InfoPanel({ onClose, mob }) {
 
 /* ── Project Tabs (Tab Bar) ���─ */
 function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, aiEditTargetId }) {
-  const MAX_VISIBLE = 5;
+  const MAX_VISIBLE = 3;
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const [showMore, setShowMore] = useState(false);
