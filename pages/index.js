@@ -7644,8 +7644,8 @@ export default function App() {
     // Save wizard data for background completion
     aiWizardDataRef.current = { url, presetId, aspectRatio, copyTone: wizardData.copyTone || 'hooking' };
 
-    // Go back to main screen, run in background
-    setEditorMode(null);
+    // Switch to editor immediately so the AI overlay renders on top
+    setEditorMode('editor');
     setAiMode(false);
     setAiEditRunning(true);
     setAiEditTargetId(pendingProjectId || activeProjectId);
