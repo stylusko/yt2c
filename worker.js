@@ -304,6 +304,11 @@ function scheduleDailyReport() {
   }, msUntilMidnight);
 }
 
-scheduleDailyReport();
+// Production 환경에서만 일일 리포트 발송 (프리뷰 환경 중복 방지)
+if (!process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT === 'production') {
+  scheduleDailyReport();
+} else {
+  console.log(`[telegram] Daily report skipped (env: ${process.env.RAILWAY_ENVIRONMENT})`);
+}
 
 console.log(`Video generation worker started (concurrency: ${workerConcurrency})`);
