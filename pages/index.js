@@ -6,8 +6,8 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0406';
-const BUILD_NUM = 10; // same-day deploy count
+const BUILD_DATE = '2026.0407';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -4377,6 +4377,8 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
   const [selected, setSelected] = useState(() => cards.map((c) => !cardDisabled(c)));
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 200); return () => clearTimeout(t); }, []);
   const allSelected = selected.every((s, i) => s || cardDisabled(cards[i]));
   const noneSelected = selected.every(s => !s);
   const selectedCount = selected.filter(Boolean).length;
@@ -4389,7 +4391,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
   const pvW = 150;
 
   return React.createElement("div", {
-    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    onClick: (e) => { if (ready && e.target === e.currentTarget) onClose(); },
     style: { position:'fixed', inset:0, zIndex:9999, background:'rgba(0,0,0,0.85)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', backdropFilter:'blur(6px)', padding:16 }
   },
     React.createElement("div", { style: { maxWidth:560, width:'100%', maxHeight:'80vh', display:'flex', flexDirection:'column', background:T.surface, borderRadius:T.radius, overflow:'hidden' } },
