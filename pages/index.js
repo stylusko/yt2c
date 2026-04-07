@@ -152,9 +152,11 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
+  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
@@ -5453,7 +5455,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
     // Style presets
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uBD84\uC704\uAE30"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12 } },
         STYLE_PRESETS.map(p => React.createElement("div", {
           key: p.id,
@@ -5551,6 +5553,15 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
             style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: (canProceed && !(step === 1 && durationLoading)) ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: (canProceed && !(step === 1 && durationLoading)) ? 'pointer' : 'default', opacity: (canProceed && !(step === 1 && durationLoading)) ? 1 : 0.5, transition: 'all 0.15s' },
           }, (step === 1 && durationLoading) ? "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..." : "\uB2E4\uC74C \u2192")
         : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
+    ),
+    // Duration loading modal
+    durationLoading && React.createElement("div", {
+      style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
+        React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..."),
+      ),
     ),
   );
 }
