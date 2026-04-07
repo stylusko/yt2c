@@ -3003,7 +3003,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
 let __vpIdCounter = 0;
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady, videoW, videoH }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, volume, paused, onReady, videoW, videoH }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const mutedRef = useRef(muted);
@@ -3054,12 +3054,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     document.head.appendChild(tag);
   }, []);
 
-  // Mute/unmute without recreating player
+  // Mute/unmute + volume without recreating player
   useEffect(() => {
     const p = playerRef.current;
     if (!p || typeof p.mute !== 'function') return;
-    if (muted) p.mute(); else { p.unMute(); p.setVolume(100); }
-  }, [muted]);
+    if (muted) p.mute(); else { p.unMute(); p.setVolume(volume ?? 100); }
+  }, [muted, volume]);
 
   // Play/pause without recreating player
   useEffect(() => {
@@ -3240,6 +3240,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [vpMutedLocal, setVpMutedLocal] = useState(true);
   const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
   const setVpMuted = onMuteToggle || setVpMutedLocal;
+  const [vpVolume, setVpVolume] = useState(80);
+  const [showVolSlider, setShowVolSlider] = useState(false);
+  const volTimerRef = useRef(null);
   const [imgDims, setImgDims] = useState(null);
   const [vpReady, setVpReady] = useState(false);
   const prevVideoKey = useRef(null);
@@ -3722,15 +3725,39 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
   const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
-  // Mute toggle button (bottom-right corner)
+  // Mute toggle + volume slider (bottom-right corner)
   const muteToggle = hasVideoPreview
-    ? React.createElement("button", {
-        onClick: (e) => { e.stopPropagation(); if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
+    ? React.createElement("div", {
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6 },
+        onMouseEnter: () => { if (!vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); } },
+        onMouseLeave: () => { volTimerRef.current = setTimeout(() => setShowVolSlider(false), 1200); },
+      },
+        // Volume slider (shows when unmuted + hover)
+        showVolSlider && !vpMuted && React.createElement("div", {
+          onClick: (e) => e.stopPropagation(),
+          style: { display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', borderRadius: 16, padding: '4px 10px', gap: 6 },
+        },
+          React.createElement("input", {
+            type: 'range', min: 0, max: 100, value: vpVolume,
+            onChange: (e) => setVpVolume(parseInt(e.target.value, 10)),
+            style: { width: 60, height: 4, accentColor: '#6366f1', cursor: 'pointer' },
+          }),
+          React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.7)', minWidth: 22, textAlign: 'right' } }, vpVolume),
+        ),
+        // Mute button
+        React.createElement("button", {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); volTimerRef.current = setTimeout(() => setShowVolSlider(false), 3000); }
+            else { setShowVolSlider(false); }
+            if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m);
+          },
+          style: { width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+        }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
+      )
     : null;
 
   // Video loading spinner (카드 위에 인라인 표시)
