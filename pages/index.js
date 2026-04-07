@@ -5899,7 +5899,7 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, a
       !isEditing && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); startRename(proj); },
         className: 'tab-action-btn',
-        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+        style: { background: 'none', border: 'none', color: isActive ? T.accent : 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 1, flexShrink: 0, transition: 'color 0.15s' },
       }, "\u270E"),
       !isEditing && projects.length > 1 && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
