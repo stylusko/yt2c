@@ -19,5 +19,12 @@ export default async function handler(req, res) {
     }
   }
 
-  res.json({ env, testResult });
+  // 모든 BUCKET/RAILWAY/S3/AWS 관련 환경변수 찾기
+  const allBucketVars = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (/bucket|s3|aws|storage|object/i.test(k)) {
+      allBucketVars[k] = v ? (v.length > 20 ? v.slice(0, 10) + '...' : v) : '(empty)';
+    }
+  }
+  res.json({ env, testResult, allBucketVars });
 }
