@@ -4489,8 +4489,8 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
               ),
               // Checkbox overlay
-              !disabled && React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
-                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
+              !disabled && React.createElement("div", { style: { position:'absolute', top:6, right:6, zIndex:20, width:24, height:24, borderRadius:6, background: selected[i] ? '#22c55e' : 'rgba(0,0,0,0.5)', border: selected[i] ? '2px solid #fff' : '2px solid rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', boxShadow: selected[i] ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' } },
+                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:14, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
               // Cache status badge
               !disabled && isCached && hasFile && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(34,197,94,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\u2B07 \uB2E4\uC6B4\uB85C\uB4DC \uAC00\uB2A5"),
