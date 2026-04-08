@@ -2,15 +2,19 @@
 import { fileExists } from '../../lib/bucket.js';
 
 export default async function handler(req, res) {
+  const endpoint = process.env.BUCKET_ENDPOINT || process.env.AWS_ENDPOINT_URL;
+  const accessKey = process.env.BUCKET_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+  const secretKey = process.env.BUCKET_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+  const bucketName = process.env.BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || '(not set)';
   const env = {
-    BUCKET_ENDPOINT: process.env.BUCKET_ENDPOINT ? '✓ set' : '✗ missing',
-    BUCKET_ACCESS_KEY_ID: process.env.BUCKET_ACCESS_KEY_ID ? '✓ set' : '✗ missing',
-    BUCKET_SECRET_ACCESS_KEY: process.env.BUCKET_SECRET_ACCESS_KEY ? '✓ set' : '✗ missing',
-    BUCKET_NAME: process.env.BUCKET_NAME || '(not set)',
+    endpoint: endpoint ? '✓ set' : '✗ missing',
+    accessKey: accessKey ? '✓ set' : '✗ missing',
+    secretKey: secretKey ? '✓ set' : '✗ missing',
+    bucketName,
   };
 
   let testResult = 'skipped';
-  if (process.env.BUCKET_ENDPOINT && process.env.BUCKET_ACCESS_KEY_ID) {
+  if (endpoint && accessKey) {
     try {
       const exists = await fileExists('__test__');
       testResult = 'connected (test key not found = normal)';
