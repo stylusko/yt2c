@@ -4493,7 +4493,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
                 selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
               // Cache status badge
-              !disabled && isCached && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(34,197,94,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\u2713 \uC0DD\uC131\uB428"),
+              !disabled && isCached && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background: hasFile ? 'rgba(34,197,94,0.85)' : 'rgba(34,197,94,0.5)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, hasFile ? "\u2713 \uCE90\uC2DC\uB428" : "\u2713 \uC0DD\uC131\uB428 (\uD30C\uC77C\uC5C6\uC74C)"),
               !disabled && isModified && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(245,158,11,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\uC218\uC815\uB428"),
               // Card number
               React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
