@@ -4475,7 +4475,8 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
             const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
-            const isCached = card.lastGenHash && card.lastGenHash === currentHash && card.lastGenKey;
+            const isCached = card.lastGenHash && card.lastGenHash === currentHash;
+            const hasFile = isCached && !!card.lastGenKey;
             const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
             return React.createElement("div", {
               key: i,
