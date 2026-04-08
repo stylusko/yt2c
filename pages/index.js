@@ -38,7 +38,7 @@ const TUTORIAL_STEPS_MOBILE = [
   { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uACE0 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-clip-adjust"]', title: '\uD074\uB9BD \uC870\uC815', desc: '\uC601\uC0C1\uC758 \uC704\uCE58, \uD655\uB300, \uBC1D\uAE30\uB97C \uC870\uC808\uD558\uACE0 \uCE74\uB4DC \uBE44\uC728\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
-  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0, \uCE74\uD53C \uD1A4\uC73C\uB85C \uD6C4\uD0B9/\uC694\uC57D \uC2A4\uD0C0\uC77C\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694. \u2728 AI \uC81C\uC548\uBC1B\uAE30\uB85C \uC790\uB3D9 \uCE74\uD53C\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-overlay"]', title: '\uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
@@ -47,7 +47,7 @@ const TUTORIAL_STEPS_DESKTOP = [
   { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uD3B8\uC9D1\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
-  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0, \uCE74\uD53C \uD1A4\uC73C\uB85C \uD6C4\uD0B9/\uC694\uC57D \uC2A4\uD0C0\uC77C\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694. \u2728 AI \uC81C\uC548\uBC1B\uAE30\uB85C \uC790\uB3D9 \uCE74\uD53C\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-overlay"]', title: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
@@ -152,9 +152,11 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
+  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
@@ -280,6 +282,31 @@ function formatSec(s) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
+}
+function clientCardHash(card, globalConfig) {
+  const data = JSON.stringify({
+    ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
+    url: card.url || globalConfig.globalUrl || '',
+    start: card.appliedStart || card.start || '', end: card.appliedEnd || card.end || '',
+    vx: card.videoX ?? 0, vy: card.videoY ?? 0, vs: card.videoScale ?? 100, vb: card.videoBrightness ?? 0,
+    layout: card.layout || 'photo_top', ug: card.useGradient || false, pr: card.photoRatio ?? 50,
+    vf: card.videoFill || 'full', fs: card.fillSource || 'video',
+    title: card.title || '', ut: card.useTitle !== false,
+    sub: card.subtitle || '', us: card.useSubtitle !== false,
+    body: card.body || '', ub: card.useBody !== false,
+    ts: card.titleSize || 64, tc: card.titleColor || '#fff', tf: card.titleFont || '',
+    ss: card.subtitleSize || 48, sc: card.subtitleColor || '#aaa',
+    bs: card.bodySize || 40, bc: card.bodyColor || '#d2d2d2',
+    bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
+    ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
+    ui: card.uploadedImage ? 'y' : 'n',
+    tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
+    tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
+    ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
+  });
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) { hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0; }
+  return (hash >>> 0).toString(36);
 }
 function fmtMM(s) {
   if (s == null || isNaN(s)) return '--:--';
@@ -3001,7 +3028,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
 let __vpIdCounter = 0;
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady, videoW, videoH }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, volume, paused, onReady, videoW, videoH }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const mutedRef = useRef(muted);
@@ -3052,12 +3079,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     document.head.appendChild(tag);
   }, []);
 
-  // Mute/unmute without recreating player
+  // Mute/unmute + volume without recreating player
   useEffect(() => {
     const p = playerRef.current;
     if (!p || typeof p.mute !== 'function') return;
-    if (muted) p.mute(); else { p.unMute(); p.setVolume(100); }
-  }, [muted]);
+    if (muted) p.mute(); else { p.unMute(); p.setVolume(volume ?? 100); }
+  }, [muted, volume]);
 
   // Play/pause without recreating player
   useEffect(() => {
@@ -3238,6 +3265,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [vpMutedLocal, setVpMutedLocal] = useState(true);
   const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
   const setVpMuted = onMuteToggle || setVpMutedLocal;
+  const [vpVolume, setVpVolume] = useState(80);
+  const [showVolSlider, setShowVolSlider] = useState(false);
+  const volTimerRef = useRef(null);
   const [imgDims, setImgDims] = useState(null);
   const [vpReady, setVpReady] = useState(false);
   const prevVideoKey = useRef(null);
@@ -3720,15 +3750,39 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
   const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
-  // Mute toggle button (bottom-right corner)
+  // Mute toggle + volume slider (bottom-right corner)
   const muteToggle = hasVideoPreview
-    ? React.createElement("button", {
-        onClick: (e) => { e.stopPropagation(); if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
+    ? React.createElement("div", {
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6 },
+        onMouseEnter: () => { if (!vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); } },
+        onMouseLeave: () => { volTimerRef.current = setTimeout(() => setShowVolSlider(false), 1200); },
+      },
+        // Volume slider (shows when unmuted + hover)
+        showVolSlider && !vpMuted && React.createElement("div", {
+          onClick: (e) => e.stopPropagation(),
+          style: { display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', borderRadius: 16, padding: '4px 10px', gap: 6 },
+        },
+          React.createElement("input", {
+            type: 'range', min: 0, max: 100, value: vpVolume,
+            onChange: (e) => setVpVolume(parseInt(e.target.value, 10)),
+            style: { width: 60, height: 4, accentColor: '#6366f1', cursor: 'pointer' },
+          }),
+          React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.7)', minWidth: 22, textAlign: 'right' } }, vpVolume),
+        ),
+        // Mute button
+        React.createElement("button", {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); volTimerRef.current = setTimeout(() => setShowVolSlider(false), 3000); }
+            else { setShowVolSlider(false); }
+            if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m);
+          },
+          style: { width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+        }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
+      )
     : null;
 
   // Video loading spinner (카드 위에 인라인 표시)
@@ -4372,7 +4426,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   );
 }
 
-function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate }) {
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat }) {
   const url = globalUrl || cards[0]?.url || '';
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
@@ -4420,6 +4474,10 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
+            const isCached = card.lastGenHash && card.lastGenHash === currentHash;
+            const hasFile = isCached && !!card.lastGenKey;
+            const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
             return React.createElement("div", {
               key: i,
               onClick: () => toggle(i),
@@ -4431,9 +4489,12 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
               ),
               // Checkbox overlay
-              !disabled && React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
-                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
+              !disabled && React.createElement("div", { style: { position:'absolute', top:6, right:6, zIndex:20, width:24, height:24, borderRadius:6, background: selected[i] ? '#22c55e' : 'rgba(0,0,0,0.5)', border: selected[i] ? '2px solid #fff' : '2px solid rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', boxShadow: selected[i] ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' } },
+                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:14, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
+              // Cache status badge
+              !disabled && isCached && hasFile && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(34,197,94,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\u2B07 \uB2E4\uC6B4\uB85C\uB4DC \uAC00\uB2A5"),
+              !disabled && isModified && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(245,158,11,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\uC218\uC815\uB428"),
               // Card number
               React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
             );
@@ -4441,13 +4502,32 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         )
       ),
       // Footer: generate button
-      React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
-        React.createElement("button", {
-          onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
-          disabled: noneSelected,
-          style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
-        }, noneSelected ? "\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694" : `\u2728 ${selectedCount}\uAC1C \uC0DD\uC131\uD558\uAE30`),
-      ),
+      (() => {
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+        let cachedCount = 0, modifiedCount = 0, newCount = 0;
+        selected.forEach((s, i) => {
+          if (!s) return;
+          const c = cards[i];
+          const ch = clientCardHash(c, hashCfg);
+          if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedCount++;
+          else if (c.lastGenHash && c.lastGenHash !== ch) modifiedCount++;
+          else newCount++;
+        });
+        const regenCount = modifiedCount + newCount;
+        let btnLabel = '\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694';
+        if (!noneSelected) {
+          if (regenCount === 0 && cachedCount > 0) btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC`;
+          else if (cachedCount === 0) btnLabel = `\u2728 ${regenCount}\uAC1C \uC0DD\uC131\uD558\uAE30`;
+          else btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC + \uD83D\uDD04 ${regenCount}\uAC1C \uC7AC\uC0DD\uC131`;
+        }
+        return React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
+          React.createElement("button", {
+            onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+            disabled: noneSelected,
+            style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
+          }, btnLabel),
+        );
+      })(),
     ),
   );
 }
@@ -5453,7 +5533,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
     // Style presets
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uBD84\uC704\uAE30"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12 } },
         STYLE_PRESETS.map(p => React.createElement("div", {
           key: p.id,
@@ -5551,6 +5631,15 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
             style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: (canProceed && !(step === 1 && durationLoading)) ? (aiMode ? '#059669' : T.accent) : T.textMuted, color: '#fff', fontSize: 14, fontWeight: 600, cursor: (canProceed && !(step === 1 && durationLoading)) ? 'pointer' : 'default', opacity: (canProceed && !(step === 1 && durationLoading)) ? 1 : 0.5, transition: 'all 0.15s' },
           }, (step === 1 && durationLoading) ? "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..." : "\uB2E4\uC74C \u2192")
         : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
+    ),
+    // Duration loading modal
+    durationLoading && React.createElement("div", {
+      style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
+        React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..."),
+      ),
     ),
   );
 }
@@ -5899,7 +5988,7 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, a
       !isEditing && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); startRename(proj); },
         className: 'tab-action-btn',
-        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+        style: { background: 'none', border: 'none', color: isActive ? T.accent : 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 1, flexShrink: 0, transition: 'color 0.15s' },
       }, "\u270E"),
       !isEditing && projects.length > 1 && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
@@ -7335,8 +7424,8 @@ export default function App() {
   };
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
-  const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const removeCard = (i) => { const c = cards[i]; if (c && c.lastGenKey) { fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`, { method: 'DELETE' }).catch(() => {}); } setCards(p => p.filter((_, j) => j !== i)); };
+  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
@@ -7513,13 +7602,56 @@ export default function App() {
       }
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
+
+    // 캐시된 카드 vs 새로 생성할 카드 분리
+    const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+    const cachedIndices = [];
+    const newIndices = [];
+    for (const i of indices) {
+      const c = cards[i];
+      const ch = clientCardHash(c, hashCfg);
+      if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedIndices.push(i);
+      else newIndices.push(i);
+    }
+
     const targetCards = indices.map(i => cards[i]);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
+      // 캐시된 카드: presigned URL 즉시 획득
+      const cachedResults = [];
+      if (cachedIndices.length > 0) {
+        setGenProgress(`캐시된 카드 ${cachedIndices.length}개 다운로드 준비 중...`);
+        for (const ci of cachedIndices) {
+          const c = cards[ci];
+          try {
+            const dlRes = await fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`);
+            if (dlRes.ok) {
+              const { url: presignedUrl } = await dlRes.json();
+              cachedResults.push({ url: presignedUrl, cardIdx: ci, bucketKey: c.lastGenKey });
+            } else {
+              // 캐시 파일이 없으면 새로 생성 대상으로 이동
+              newIndices.push(ci);
+            }
+          } catch (_) {
+            newIndices.push(ci);
+          }
+        }
+      }
+
+      // 모두 캐시에서 해결된 경우
+      if (newIndices.length === 0) {
+        setResults(cachedResults);
+        setGenProgress(`완료! ${cachedResults.length}/${indices.length}개 다운로드 준비됨`);
+        setGenerating(false);
+        return;
+      }
+
+      // 새로 생성할 카드만 오버레이 생성
+      const newTargetCards = newIndices.map(i => cards[i]);
       const overlays = [];
-      for (let j = 0; j < targetCards.length; j++) {
-        setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
+      for (let j = 0; j < newTargetCards.length; j++) {
+        setGenProgress(`카드 ${newIndices[j] + 1}/${cards.length} 오버레이 생성 중...`);
+        overlays.push(await generateOverlayPng(effectiveCard(newTargetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
@@ -7532,7 +7664,7 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
           backgroundData: card.uploadedImage
@@ -7546,6 +7678,7 @@ export default function App() {
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
+      const totalCount = indices.length;
       activeJobIdRef.current = jobId;
       fetchQueueStatus(jobId);
       const pollInterval = setInterval(async () => {
@@ -7558,14 +7691,28 @@ export default function App() {
           const downloadUrls = [];
           let statusMsg = "";
           for (const c of (status.cards || [])) {
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx, bucketKey: c.bucketKey || '' }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else { totalProgress += (c.progress || 0); if (c.statusMessage) statusMsg = c.statusMessage; }
           }
           setGenStatusMsg(statusMsg);
-          setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
+          const cachedDone = cachedResults.length;
+          setGenProgress(`${completedCards + cachedDone}/${totalCount}개 완료 (${Math.round((totalProgress + cachedDone * 100) / totalCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
+            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null;
+            const allResults = [...cachedResults, ...downloadUrls];
+            setResults(allResults);
+            // 생성 완료된 카드에 해시/키 저장
+            setCards(prev => {
+              const next = [...prev];
+              for (const dl of downloadUrls) {
+                const ci = dl.cardIdx;
+                if (ci != null && next[ci]) {
+                  next[ci] = { ...next[ci], lastGenHash: clientCardHash(next[ci], hashCfg), lastGenKey: dl.bucketKey || '' };
+                }
+              }
+              return next;
+            });
             const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
             const failedLines = failedCards2.map(c => {
               const um = c.userMessage;
@@ -7573,7 +7720,8 @@ export default function App() {
             });
             const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenStatusMsg("");
-            setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
+            const totalCompleted = completedCards + cachedDone;
+            setGenProgress(`완료! ${totalCompleted}/${totalCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}${cachedDone > 0 ? ` (${cachedDone}개 캐시)` : ""}`);
             if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
             fetchQueueStatus();
@@ -8012,7 +8160,7 @@ export default function App() {
               null,
               React.createElement("button", {
                 'data-tour': 'generate',
-                onClick: () => setShowCardSelect(true), disabled: generating,
+                onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
                 style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
@@ -8022,7 +8170,7 @@ export default function App() {
               null,
               React.createElement("button", {
                 'data-tour': 'generate',
-                onClick: () => setShowCardSelect(true), disabled: generating,
+                onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
                 style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "생성하기"),
             )
@@ -8192,8 +8340,8 @@ export default function App() {
     ),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
-    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,
