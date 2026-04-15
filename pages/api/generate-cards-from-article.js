@@ -206,8 +206,10 @@ function buildCard(claudeCard, ctx) {
   const subtitle = isCover ? (claudeCard.subtext || '') : '';
   const body = isCover ? '' : (claudeCard.body || claudeCard.headline || claudeCard.subtext || '');
 
-  // 모든 article 카드는 full_bg 레이아웃 (이미지가 카드 전체 덮음)
-  // full_bg 프리셋 (STYLE_PRESETS line 160) 표준값을 그대로 적용해 검증된 렌더 경로를 탐.
+  // 기본 레이아웃 = gradient_bottom 프리셋 (STYLE_PRESETS line 158)
+  //   layout: photo_top  (이미지 상단, 텍스트 하단)
+  //   useGradient: true  (이미지-텍스트 경계에 그라데이션)
+  //   photoRatio: 55     (이미지 55%, 텍스트 45%)
   return {
     id: genId(),
     sourceType,                       // 'article'
@@ -228,26 +230,24 @@ function buildCard(claudeCard, ctx) {
     // 배경 이미지
     uploadedImage: bgImage,
     fillSource: bgImage ? 'image' : 'color',
-    // full_bg 프리셋 표준값: bgColor #0a0a0a + bgOpacity 0.75 + useGradient false + useBg true
+    // gradient_bottom 프리셋 표준값
     useBg: true,
-    bgColor: '#0a0a0a',
+    bgColor: '#121212',
     bgOpacity: 0.75,
-    useGradient: false,
-    // photoRatio는 full_bg에서는 무시되지만, 유저가 레이아웃 탭에서
-    // photo_top/photo_bottom/gradient_*로 전환할 때 sensible default가 필요.
-    // (레이아웃 탭 클릭 핸들러는 photoRatio를 업데이트하지 않음 — line 6704 참조)
+    useGradient: true,
     photoRatio: 55,
     // text_box 레이아웃 전환 대비 기본값 (영상 카드와 동일)
     textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
-    // 색상 (프리셋 값)
+    textBoxBgColor: '#000000', textBoxBgOpacity: 0.6,
+    // 색상 (gradient_bottom 프리셋 값)
     titleColor: '#ffffff',
-    subtitleColor: '#e0e0e0',
-    bodyColor: '#f0f0f0',
+    subtitleColor: '#c0c0c0',
+    bodyColor: '#e0e0e0',
     // 정렬
     titleAlign: 'left',
     subtitleAlign: 'left',
     bodyAlign: 'left',
-    // 위치 (full_bg는 기본 0, 에디터에서 조정 가능)
+    // 위치 (photo_top은 기본 0, 에디터에서 조정 가능)
     titleY: 0, subtitleY: 0, bodyY: 0,
     // article 전용 메타 (CARD_KEY_MAP '8')
     articleMeta: {
@@ -259,6 +259,6 @@ function buildCard(claudeCard, ctx) {
       aiImageError: aiMeta?.errorMessage || null,
       stylePresetId,
     },
-    layout: 'full_bg',
+    layout: 'photo_top',
   };
 }
