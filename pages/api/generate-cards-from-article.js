@@ -233,7 +233,12 @@ function buildCard(claudeCard, ctx) {
     bgColor: '#0a0a0a',
     bgOpacity: 0.75,
     useGradient: false,
-    photoRatio: 100,  // full_bg에서는 무시되지만 명시
+    // photoRatio는 full_bg에서는 무시되지만, 유저가 레이아웃 탭에서
+    // photo_top/photo_bottom/gradient_*로 전환할 때 sensible default가 필요.
+    // (레이아웃 탭 클릭 핸들러는 photoRatio를 업데이트하지 않음 — line 6704 참조)
+    photoRatio: 55,
+    // text_box 레이아웃 전환 대비 기본값 (영상 카드와 동일)
+    textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
     // 색상 (프리셋 값)
     titleColor: '#ffffff',
     subtitleColor: '#e0e0e0',
