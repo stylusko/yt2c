@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 12; // same-day deploy count
+const BUILD_NUM = 13; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5749,10 +5749,10 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
 
 /* ── Article Wizard Screen (텍스트로 만들기) ── */
 const ARTICLE_STYLE_PRESETS = [
-  { id: 'warm_illust', label: '따뜻한 일러스트', desc: '파스텔 톤 플랫 일러스트' },
-  { id: 'news_tone',   label: '뉴스 톤',         desc: '정돈된 에디토리얼 느낌' },
-  { id: 'minimal',     label: '미니멀',          desc: '여백 많은 간결한 스타일' },
-  { id: 'photo',       label: '사진 스타일',      desc: '시네마틱 실사 느낌' },
+  { id: 'stock_photo',     label: '📷 스톡 포토',      desc: '게티이미지 스타일 깔끔 프로 사진' },
+  { id: 'cinematic_photo', label: '📸 시네마틱 포토',   desc: '필름 감성의 편집 매거진 사진' },
+  { id: 'char_3d',         label: '🎭 3D 캐릭터',      desc: '픽사 스타일 클레이 캐릭터' },
+  { id: 'minimal_graphic', label: '📐 미니멀 그래픽',   desc: '도형·여백 중심 그래픽' },
 ];
 const ARTICLE_TONE_OPTIONS = [
   { id: 'hooking',   label: '후킹',   desc: '호기심 유발' },
@@ -5768,7 +5768,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
 
   // ── 파생 값 (hooks 규칙 준수: 조건부 리턴 전에 선언) ──
   const article = data.articleData || {};
-  const currentPreset = data.presetId || 'warm_illust';
+  const currentPreset = data.presetId || 'stock_photo';
   const currentTone = data.copyTone || 'hooking';
   const currentCardCount = data.cardCount || 'auto';
   const currentAr = data.aspectRatio || '1:1';
@@ -8612,7 +8612,7 @@ export default function App() {
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
       onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
-      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'warm_illust', copyTone: 'hooking', imageMode: 'reuse' }); },
+      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
