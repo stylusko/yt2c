@@ -196,28 +196,22 @@ export default async function handler(req, res) {
 // 여기서는 기존 yt2c의 기본 카드 구조(title/subtitle/body/...)와 최대한 호환되는 생성 결과 반환.
 function buildCard(claudeCard, ctx) {
   const { bgImage, sourceType, aiImageSource, aspectRatio, stylePresetId, aiMeta } = ctx;
-  const type = claudeCard.type || 'content';
-  // 커버는 첫 카드만. outro 포함 나머지는 전부 body 중심 (유저 요구: "처음 커버만 타이틀")
-  const isCover = type === 'cover';
+  // 첫 카드(index===0)만 cover, 나머지 전부 content로 강제
+  const isCover = claudeCard.index === 0;
+  const normalizedType = isCover ? 'cover' : 'content';
 
-  // 카드 타입별 텍스트 매핑
-  //  cover       → title(headline) + subtitle(subtext) 중심, body 숨김
-  //  content/outro → body 중심, title/subtitle 숨김
+  // cover  → title + subtitle, body 숨김
+  // content → body, title/subtitle 숨김
   const title = isCover ? (claudeCard.headline || '') : '';
   const subtitle = isCover ? (claudeCard.subtext || '') : '';
-  const body = isCover ? '' : (claudeCard.body || claudeCard.headline || '');
+  const body = isCover ? '' : (claudeCard.body || claudeCard.headline || claudeCard.subtext || '');
 
-  // 모든 카드를 full_bg 레이아웃으로 통일:
-  // - 이미지가 카드 전체(선택한 비율, 예: 1:1)를 덮음
-  // - 텍스트는 하단 그라데이션 위에 오버레이
-  // 이렇게 해야 유저가 고른 비율이 그대로 보이고, photoRatio 때문에 이미지가 잘려 보이지 않음.
-  const layout = 'full_bg';
-  const useGradient = true;
-
+  // 모든 article 카드는 full_bg 레이아웃 (이미지가 카드 전체 덮음)
+  // full_bg 프리셋 (STYLE_PRESETS line 160) 표준값을 그대로 적용해 검증된 렌더 경로를 탐.
   return {
     id: genId(),
     sourceType,                       // 'article'
-    articleType: type,                // 'cover' | 'content' | 'outro'
+    articleType: normalizedType,      // 'cover' | 'content'
     // 에디터 호환 필드 (DEFAULT_CARD 키 재사용)
     title,
     subtitle,
@@ -225,27 +219,31 @@ function buildCard(claudeCard, ctx) {
     useTitle: !!title,
     useSubtitle: !!subtitle,
     useBody: !!body,
-    // 카드 타입별 폰트 크기
-    titleSize: isCover ? 84 : 44,
-    subtitleSize: isCover ? 38 : 32,
-    bodySize: 42,
+    // 폰트 크기 (cover는 제목 강조, content는 본문 중심)
+    titleSize: isCover ? 72 : 56,
+    subtitleSize: isCover ? 44 : 40,
+    bodySize: 40,
     bodyLineHeight: 1.55,
-    titleLineHeight: 1.2,
-    // 배경 이미지 (article 모드에서는 video 대신 image 고정)
+    titleLineHeight: 1.25,
+    // 배경 이미지
     uploadedImage: bgImage,
     fillSource: bgImage ? 'image' : 'color',
-    bgColor: '#0b0b0b',
-    bgOpacity: isCover ? 0.55 : 0.7,
-    photoRatio: 100,   // full_bg에서는 무시되지만 명시
-    useGradient,
-    // 색상
+    // full_bg 프리셋 표준값: bgColor #0a0a0a + bgOpacity 0.75 + useGradient false + useBg true
+    useBg: true,
+    bgColor: '#0a0a0a',
+    bgOpacity: 0.75,
+    useGradient: false,
+    photoRatio: 100,  // full_bg에서는 무시되지만 명시
+    // 색상 (프리셋 값)
     titleColor: '#ffffff',
-    subtitleColor: '#e5e5e5',
-    bodyColor: '#f2f2f2',
+    subtitleColor: '#e0e0e0',
+    bodyColor: '#f0f0f0',
     // 정렬
     titleAlign: 'left',
     subtitleAlign: 'left',
     bodyAlign: 'left',
+    // 위치 (full_bg는 기본 0, 에디터에서 조정 가능)
+    titleY: 0, subtitleY: 0, bodyY: 0,
     // article 전용 메타 (CARD_KEY_MAP '8')
     articleMeta: {
       aiImageSource,                  // 'article' | 'ai' | 'fallback' | 'none'
@@ -256,6 +254,6 @@ function buildCard(claudeCard, ctx) {
       aiImageError: aiMeta?.errorMessage || null,
       stylePresetId,
     },
-    layout,
+    layout: 'full_bg',
   };
 }
