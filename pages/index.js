@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 19; // same-day deploy count
+const BUILD_NUM = 20; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6168,6 +6168,70 @@ function ArticleGenerationLoadingScreen({ mob, status, onCancel }) {
   );
 }
 
+/* ── Article Image Gallery Modal (본문 이미지 선택) ── */
+function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSelect, onClose }) {
+  const gridCols = mob ? 3 : 4;
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: T.shadowLg, overflow: 'hidden' } },
+      // 헤더
+      React.createElement("div", { style: { padding: '16px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 } },
+        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uC5D0\uC11C \uC120\uD0DD"),
+          sourceTitle && React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, sourceTitle),
+          React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, marginTop: 2 } }, "\uCD1D " + images.length + "\uC7A5"),
+        ),
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '6px 10px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 14, cursor: 'pointer' },
+        }, "\u2715"),
+      ),
+      // 그리드
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: 16 } },
+        images.length === 0
+          ? React.createElement("div", { style: { padding: 40, textAlign: 'center', color: T.textMuted, fontSize: 13 } }, "\uBCF8\uBB38\uC5D0\uC11C \uCD94\uCD9C\uB41C \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694")
+          : React.createElement("div", { style: { display: 'grid', gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 8 } },
+              images.map((src, i) => React.createElement("button", {
+                key: i,
+                onClick: () => onSelect(src, i),
+                style: {
+                  position: 'relative',
+                  aspectRatio: '1 / 1',
+                  padding: 0,
+                  background: T.bg,
+                  border: `2px solid ${src === currentImage ? T.accent : 'transparent'}`,
+                  borderRadius: T.radiusSm,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                },
+              },
+                React.createElement("img", {
+                  src,
+                  alt: "",
+                  referrerPolicy: "no-referrer",
+                  style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+                }),
+                // 현재 사용 중 배지
+                src === currentImage && React.createElement("div", { style: { position: 'absolute', top: 4, right: 4, background: T.accent, color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: T.radiusSm, fontWeight: 700 } }, "\uC0AC\uC6A9 \uC911"),
+                // 번호
+                React.createElement("div", { style: { position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '1px 6px', borderRadius: T.radiusSm, fontWeight: 600 } }, i + 1),
+              )),
+            ),
+      ),
+      // 푸터
+      React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end' } },
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '8px 16px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusPill, color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
+        }, "\uB2EB\uAE30"),
+      ),
+    ),
+  );
+}
+
 /* ── AI Edit Loading Screen ── */
 function AiEditLoadingScreen({ mob, status, error, onCancel, onRetry }) {
   const steps = [
@@ -6552,7 +6616,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -6685,6 +6749,24 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
+    // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성)
+    card.sourceType === 'article' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
+      React.createElement("button", {
+        onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
+        disabled: !(project?.sourceImages?.length > 0),
+        style: { padding: '8px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
+      }, "\uD83D\uDD04 \uB2E4\uC74C \uC774\uBBF8\uC9C0"),
+      React.createElement("button", {
+        onClick: () => onOpenArticleGallery && onOpenArticleGallery(activeIndex),
+        disabled: !(project?.sourceImages?.length > 0),
+        style: { padding: '8px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
+      }, "\uD83D\uDCCE \uAC24\uB7EC\uB9AC"),
+      React.createElement("button", {
+        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+        disabled: regeneratingCardIdx === activeIndex,
+        style: { padding: '8px 4px', background: regeneratingCardIdx === activeIndex ? T.surfaceHover : 'rgba(194,65,12,0.15)', border: `1px solid rgba(194,65,12,0.4)`, borderRadius: T.radiusSm, color: '#fdba74', fontSize: 11, cursor: regeneratingCardIdx === activeIndex ? 'wait' : 'pointer', lineHeight: 1.2 },
+      }, regeneratingCardIdx === activeIndex ? "\uC0DD\uC131 \uC911..." : "\u2728 AI \uC7AC\uC0DD\uC131"),
+    ),
   );
 
   const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -7016,7 +7098,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -7211,6 +7293,24 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+    // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성) — Desktop
+    card.sourceType === 'article' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
+      React.createElement("button", {
+        onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
+        disabled: !(project?.sourceImages?.length > 0),
+        style: { padding: '8px 6px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
+      }, "\uD83D\uDD04 \uB2E4\uC74C \uC774\uBBF8\uC9C0"),
+      React.createElement("button", {
+        onClick: () => onOpenArticleGallery && onOpenArticleGallery(activeIndex),
+        disabled: !(project?.sourceImages?.length > 0),
+        style: { padding: '8px 6px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
+      }, "\uD83D\uDCCE \uAC24\uB7EC\uB9AC"),
+      React.createElement("button", {
+        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+        disabled: regeneratingCardIdx === activeIndex,
+        style: { padding: '8px 6px', background: regeneratingCardIdx === activeIndex ? T.surfaceHover : 'rgba(194,65,12,0.15)', border: `1px solid rgba(194,65,12,0.4)`, borderRadius: T.radiusSm, color: '#fdba74', fontSize: 11, cursor: regeneratingCardIdx === activeIndex ? 'wait' : 'pointer', lineHeight: 1.2 },
+      }, regeneratingCardIdx === activeIndex ? "\uC0DD\uC131 \uC911..." : "\u2728 AI \uC7AC\uC0DD\uC131"),
+    ),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
@@ -7713,6 +7813,10 @@ export default function App() {
   const [articleGenStatus, setArticleGenStatus] = useState(null); // { step, current, total, cards:[], title? }
   const [articleGenError, setArticleGenError] = useState(null);
   const articleAbortRef = useRef(null);
+  // 본문 이미지 갤러리 모달 — 열려있을 때 galleryCardIdx에 카드 index 저장
+  const [galleryCardIdx, setGalleryCardIdx] = useState(null);
+  // 단건 AI 재생성 진행 중 카드 index (스피너 표시용)
+  const [regeneratingCardIdx, setRegeneratingCardIdx] = useState(null);
   const [aiEditStatus, setAiEditStatus] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
   const [aiMode, setAiMode] = useState(false);
@@ -8387,6 +8491,109 @@ export default function App() {
   };
 
   // 텍스트로 만들기: SSE로 카드 생성 스트리밍
+  // Article 카드: 다음 본문 이미지로 순환
+  const handleNextArticleImage = (cardIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const sourceImages = proj.sourceImages || [];
+    if (sourceImages.length === 0) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    const currentSrc = target.uploadedImage;
+    const currentIdx = sourceImages.indexOf(currentSrc);
+    const nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % sourceImages.length;
+    const nextSrc = sourceImages[nextIdx];
+    setProjects(prev => prev.map(p => {
+      if (p.id !== proj.id) return p;
+      const newCards = [...(p.cards || [])];
+      newCards[cardIdx] = {
+        ...target,
+        uploadedImage: nextSrc,
+        fillSource: 'image',
+        articleMeta: {
+          ...(target.articleMeta || {}),
+          aiImageSource: 'article',
+          sourceImageIndex: nextIdx,
+        },
+      };
+      return { ...p, cards: newCards };
+    }));
+  };
+
+  // Article 카드: 갤러리에서 이미지 선택
+  const handleSelectArticleImage = (cardIdx, imgSrc, imgIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    setProjects(prev => prev.map(p => {
+      if (p.id !== proj.id) return p;
+      const newCards = [...(p.cards || [])];
+      newCards[cardIdx] = {
+        ...target,
+        uploadedImage: imgSrc,
+        fillSource: 'image',
+        articleMeta: {
+          ...(target.articleMeta || {}),
+          aiImageSource: 'article',
+          sourceImageIndex: imgIdx,
+        },
+      };
+      return { ...p, cards: newCards };
+    }));
+    setGalleryCardIdx(null);
+  };
+
+  // Article 카드: AI로 이미지 재생성 (단건 Flux 호출)
+  const handleRegenerateArticleImage = async (cardIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    // 현재 프롬프트가 있으면 재사용, 없으면 body·title 기반 생성
+    const existingPrompt = target.articleMeta?.aiImagePrompt;
+    const fallbackHint = (target.body || target.title || target.subtitle || 'editorial scene').slice(0, 120);
+    const prompt = existingPrompt || `abstract editorial illustration evoking: ${fallbackHint}`;
+    const presetId = target.articleMeta?.stylePresetId || 'stock_photo';
+    const aspectRatio = proj.aspectRatio || '1:1';
+
+    setRegeneratingCardIdx(cardIdx);
+    try {
+      const res = await fetch('/api/regenerate-article-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, presetId, aspectRatio }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || '재생성 실패');
+
+      setProjects(prev => prev.map(p => {
+        if (p.id !== proj.id) return p;
+        const newCards = [...(p.cards || [])];
+        const prevCard = newCards[cardIdx];
+        newCards[cardIdx] = {
+          ...prevCard,
+          uploadedImage: json.url,
+          fillSource: 'image',
+          articleMeta: {
+            ...(prevCard.articleMeta || {}),
+            aiImageSource: 'ai',
+            sourceImageIndex: null,
+            aiImagePrompt: json.prompt || prompt,
+            aiImageSeed: json.seed ?? null,
+            aiImageStatus: 'ok',
+            aiImageError: null,
+          },
+        };
+        return { ...p, cards: newCards };
+      }));
+    } catch (e) {
+      window.alert('AI 재생성 실패: ' + (e.message || '알 수 없는 오류'));
+    } finally {
+      setRegeneratingCardIdx(null);
+    }
+  };
+
   const handleArticleWizardComplete = async () => {
     const article = wizardData.articleData;
     if (!article) { setArticleGenError('기사 데이터가 없습니다. 다시 시도해주세요.'); return; }
@@ -8961,6 +9168,10 @@ export default function App() {
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           project: activeProject,
+          onOpenArticleGallery: setGalleryCardIdx,
+          onNextArticleImage: handleNextArticleImage,
+          onRegenerateArticleImage: handleRegenerateArticleImage,
+          regeneratingCardIdx,
         }),
       ) : React.createElement("div", { 'data-tour': 'card-panel' },
         React.createElement(DesktopCardPanel, {
@@ -8982,9 +9193,23 @@ export default function App() {
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
           project: activeProject,
+          onOpenArticleGallery: setGalleryCardIdx,
+          onNextArticleImage: handleNextArticleImage,
+          onRegenerateArticleImage: handleRegenerateArticleImage,
+          regeneratingCardIdx,
         }),
       ),
     ),
+
+    // Article 본문 이미지 갤러리 모달
+    galleryCardIdx != null && activeProject && React.createElement(ArticleImageGalleryModal, {
+      mob,
+      images: activeProject.sourceImages || [],
+      currentImage: cards[galleryCardIdx]?.uploadedImage,
+      sourceTitle: activeProject.sourceTitle || '',
+      onSelect: (src, imgIdx) => handleSelectArticleImage(galleryCardIdx, src, imgIdx),
+      onClose: () => setGalleryCardIdx(null),
+    }),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
