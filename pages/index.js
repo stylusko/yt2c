@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -8302,9 +8302,33 @@ export default function App() {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
-      let currentEvent = '';
       let doneData = null;
       const streamingCards = new Map(); // index → card
+
+      const processMessage = (rawMsg) => {
+        // SSE spec: 여러 data 라인은 \n으로 조인. CRLF/LF 모두 수용.
+        let evt = '';
+        const dataLines = [];
+        for (const line of rawMsg.split(/\r?\n/)) {
+          if (!line) continue;
+          if (line.startsWith(':')) continue; // comment
+          const colon = line.indexOf(':');
+          if (colon < 0) continue;
+          const field = line.slice(0, colon);
+          let value = line.slice(colon + 1);
+          if (value.startsWith(' ')) value = value.slice(1);
+          if (field === 'event') evt = value.trim();
+          else if (field === 'data') dataLines.push(value);
+        }
+        if (!evt || dataLines.length === 0) return null;
+        const data = dataLines.join('\n');
+        try {
+          return { evt, parsed: JSON.parse(data) };
+        } catch (err) {
+          console.error('[SSE parse error]', err.message, 'event=', evt, 'data(first 300)=', data.slice(0, 300), 'data(last 100)=', data.slice(-100), 'length=', data.length);
+          return null;
+        }
+      };
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -8312,20 +8336,14 @@ export default function App() {
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
 
-        // SSE 메시지는 빈 줄로 구분됨 (\n\n)
-        let sepIdx;
-        while ((sepIdx = buffer.indexOf('\n\n')) >= 0) {
-          const raw = buffer.slice(0, sepIdx);
-          buffer = buffer.slice(sepIdx + 2);
-          let evt = '';
-          let data = '';
-          for (const line of raw.split('\n')) {
-            if (line.startsWith('event: ')) evt = line.slice(7).trim();
-            else if (line.startsWith('data: ')) data += line.slice(6);
-          }
-          if (!evt || !data) continue;
-          let parsed;
-          try { parsed = JSON.parse(data); } catch { continue; }
+        // 이벤트 경계: 빈 라인 (\n\n 또는 \r\n\r\n)
+        const parts = buffer.split(/\r?\n\r?\n/);
+        buffer = parts.pop() || ''; // 마지막은 미완성
+        for (const rawMsg of parts) {
+          if (!rawMsg.trim()) continue;
+          const msg = processMessage(rawMsg);
+          if (!msg) continue;
+          const { evt, parsed } = msg;
 
           if (evt === 'analyzing' || evt === 'dividing') {
             setArticleGenStatus(s => ({ ...(s || {}), step: evt, message: parsed.message || '' }));
