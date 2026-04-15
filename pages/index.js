@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -3279,7 +3279,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   useEffect(() => {
     if (!card.uploadedImage) { setImgDims(null); return; }
     const img = new Image();
+    img.referrerPolicy = 'no-referrer';
     img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => setImgDims(null);
     img.src = card.uploadedImage;
   }, [card.uploadedImage]);
 
@@ -3422,11 +3424,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement(React.Fragment, null,
-          React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
+          React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
           thumbSpinner)
       : uploadImgStyle
-        ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
-        : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
+        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: uploadImgStyle })
+        : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },

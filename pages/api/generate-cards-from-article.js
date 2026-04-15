@@ -184,21 +184,48 @@ export default async function handler(req, res) {
 // 여기서는 기존 yt2c의 기본 카드 구조(title/subtitle/body/...)와 최대한 호환되는 생성 결과 반환.
 function buildCard(claudeCard, ctx) {
   const { bgImage, sourceType, aiImageSource, aspectRatio, stylePresetId, aiMeta } = ctx;
+  const type = claudeCard.type || 'content';
+  const isCover = type === 'cover' || type === 'outro';
+
+  // 카드 타입별 텍스트 매핑
+  //  cover/outro → title(headline) + subtitle(subtext) 중심, body 숨김
+  //  content     → body 중심, title/subtitle 숨김
+  const title = isCover ? (claudeCard.headline || '') : '';
+  const subtitle = isCover ? (claudeCard.subtext || '') : '';
+  const body = isCover ? '' : (claudeCard.body || '');
+
+  // 커버는 photo_top(이미지 위 + 제목 아래), 본문 카드는 full_bg(이미지 전체 + 하단 텍스트박스)
+  const layout = isCover ? 'photo_top' : 'full_bg';
+  const useGradient = !isCover; // 본문 카드는 그라데이션으로 가독성 확보
+
   return {
     id: genId(),
     sourceType,                       // 'article'
-    articleType: claudeCard.type,     // 'cover' | 'content' | 'outro'
-    // 에디터 호환 필드 (기존 DEFAULT_CARD 키 재사용)
-    title: claudeCard.headline || '',
-    subtitle: claudeCard.subtext || '',
-    body: '',
-    useTitle: !!claudeCard.headline,
-    useSubtitle: !!claudeCard.subtext,
-    useBody: false,
+    articleType: type,                // 'cover' | 'content' | 'outro'
+    // 에디터 호환 필드 (DEFAULT_CARD 키 재사용)
+    title,
+    subtitle,
+    body,
+    useTitle: !!title,
+    useSubtitle: !!subtitle,
+    useBody: !!body,
+    // 카드 타입별 폰트 크기
+    titleSize: isCover ? 80 : 48,
+    subtitleSize: isCover ? 38 : 32,
+    bodySize: 40,
+    bodyLineHeight: 1.5,
+    titleLineHeight: 1.25,
     // 배경 이미지 (article 모드에서는 video 대신 image 고정)
     uploadedImage: bgImage,
     fillSource: bgImage ? 'image' : 'color',
     bgColor: '#1a1a1a',
+    bgOpacity: isCover ? 0.75 : 0.6,
+    photoRatio: isCover ? 55 : 50,
+    useGradient,
+    // 정렬
+    titleAlign: 'left',
+    subtitleAlign: 'left',
+    bodyAlign: 'left',
     // article 전용 메타 (CARD_KEY_MAP '8')
     articleMeta: {
       aiImageSource,                  // 'article' | 'ai' | 'fallback' | 'none'
@@ -209,7 +236,6 @@ function buildCard(claudeCard, ctx) {
       aiImageError: aiMeta?.errorMessage || null,
       stylePresetId,
     },
-    // 레이아웃 기본값
-    layout: 'photo_top',
+    layout,
   };
 }
