@@ -194,9 +194,12 @@ function buildCard(claudeCard, ctx) {
   const subtitle = isCover ? (claudeCard.subtext || '') : '';
   const body = isCover ? '' : (claudeCard.body || '');
 
-  // 커버는 photo_top(이미지 위 + 제목 아래), 본문 카드는 full_bg(이미지 전체 + 하단 텍스트박스)
-  const layout = isCover ? 'photo_top' : 'full_bg';
-  const useGradient = !isCover; // 본문 카드는 그라데이션으로 가독성 확보
+  // 모든 카드를 full_bg 레이아웃으로 통일:
+  // - 이미지가 카드 전체(선택한 비율, 예: 1:1)를 덮음
+  // - 텍스트는 하단 그라데이션 위에 오버레이
+  // 이렇게 해야 유저가 고른 비율이 그대로 보이고, photoRatio 때문에 이미지가 잘려 보이지 않음.
+  const layout = 'full_bg';
+  const useGradient = true;
 
   return {
     id: genId(),
@@ -210,18 +213,22 @@ function buildCard(claudeCard, ctx) {
     useSubtitle: !!subtitle,
     useBody: !!body,
     // 카드 타입별 폰트 크기
-    titleSize: isCover ? 80 : 48,
+    titleSize: isCover ? 84 : 44,
     subtitleSize: isCover ? 38 : 32,
-    bodySize: 40,
-    bodyLineHeight: 1.5,
-    titleLineHeight: 1.25,
+    bodySize: 42,
+    bodyLineHeight: 1.55,
+    titleLineHeight: 1.2,
     // 배경 이미지 (article 모드에서는 video 대신 image 고정)
     uploadedImage: bgImage,
     fillSource: bgImage ? 'image' : 'color',
-    bgColor: '#1a1a1a',
-    bgOpacity: isCover ? 0.75 : 0.6,
-    photoRatio: isCover ? 55 : 50,
+    bgColor: '#0b0b0b',
+    bgOpacity: isCover ? 0.55 : 0.7,
+    photoRatio: 100,   // full_bg에서는 무시되지만 명시
     useGradient,
+    // 색상
+    titleColor: '#ffffff',
+    subtitleColor: '#e5e5e5',
+    bodyColor: '#f2f2f2',
     // 정렬
     titleAlign: 'left',
     subtitleAlign: 'left',
