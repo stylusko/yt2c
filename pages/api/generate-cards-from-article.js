@@ -197,14 +197,15 @@ export default async function handler(req, res) {
 function buildCard(claudeCard, ctx) {
   const { bgImage, sourceType, aiImageSource, aspectRatio, stylePresetId, aiMeta } = ctx;
   const type = claudeCard.type || 'content';
-  const isCover = type === 'cover' || type === 'outro';
+  // 커버는 첫 카드만. outro 포함 나머지는 전부 body 중심 (유저 요구: "처음 커버만 타이틀")
+  const isCover = type === 'cover';
 
   // 카드 타입별 텍스트 매핑
-  //  cover/outro → title(headline) + subtitle(subtext) 중심, body 숨김
-  //  content     → body 중심, title/subtitle 숨김
+  //  cover       → title(headline) + subtitle(subtext) 중심, body 숨김
+  //  content/outro → body 중심, title/subtitle 숨김
   const title = isCover ? (claudeCard.headline || '') : '';
   const subtitle = isCover ? (claudeCard.subtext || '') : '';
-  const body = isCover ? '' : (claudeCard.body || '');
+  const body = isCover ? '' : (claudeCard.body || claudeCard.headline || '');
 
   // 모든 카드를 full_bg 레이아웃으로 통일:
   // - 이미지가 카드 전체(선택한 비율, 예: 1:1)를 덮음

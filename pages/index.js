@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -3400,13 +3400,27 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
   const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
   // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  // article 카드는 cover (카드 꽉 채우고 넘치는 부분 crop), 그 외는 기존 contain 유지.
   const uploadImgStyle = (() => {
     if (!card.uploadedImage || !imgDims) return null;
     const imgAspect = imgDims.w / imgDims.h;
     const containerAspect = previewW / previewH;
+    const useCover = card.sourceType === 'article';
     let containedW, containedH;
-    if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
-    else { containedH = previewH; containedW = previewH * imgAspect; }
+    if (useCover) {
+      // cover: 짧은 변을 컨테이너에 맞추고 긴 변은 컨테이너 밖으로
+      if (imgAspect >= containerAspect) {
+        containedH = previewH;
+        containedW = previewH * imgAspect;
+      } else {
+        containedW = previewW;
+        containedH = previewW / imgAspect;
+      }
+    } else {
+      // contain: 긴 변을 컨테이너에 맞추고 짧은 변은 letterbox
+      if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
+      else { containedH = previewH; containedW = previewH * imgAspect; }
+    }
     const scaledW = containedW * vScale;
     const scaledH = containedH * vScale;
     const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
