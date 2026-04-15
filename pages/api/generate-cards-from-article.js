@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     'X-Accel-Buffering': 'no',
   });
 
-  const { article, presetId, cardCount, aspectRatio, copyTone } = req.body || {};
+  const { article, presetId, cardCount, aspectRatio, copyTone, imageMode: rawMode } = req.body || {};
 
   if (!article || !article.body) {
     sseSend(res, 'error', { code: 'MISSING_ARTICLE', message: '기사 데이터가 없습니다.' });
@@ -43,6 +43,17 @@ export default async function handler(req, res) {
   const projectId = genId();
   const preset = getArticleStylePreset(presetId);
   const ar = aspectRatio || '1:1';
+  const imageMode = rawMode === 'generate' ? 'generate' : 'reuse';
+  const availableImages = Array.isArray(article.images) ? article.images.length : 0;
+
+  // reuse 모드인데 이미지가 0장이면 거부 (유저 쪽에서 막혀야 하지만 안전망)
+  if (imageMode === 'reuse' && availableImages === 0) {
+    sseSend(res, 'error', {
+      code: 'NO_IMAGES_TO_REUSE',
+      message: '본문 이미지 사용 모드는 원본 이미지가 필요합니다. 기사에서 이미지를 추출할 수 없었습니다.',
+    });
+    return res.end();
+  }
 
   try {
     // 1) Claude로 카드 분할
@@ -52,6 +63,7 @@ export default async function handler(req, res) {
       cardCount: cardCount === 'auto' || !cardCount ? 'auto' : Number(cardCount),
       tone: copyTone || 'hooking',
       presetId,
+      imageMode,
     });
 
     sseSend(res, 'dividing', { message: `${divided.cards.length}장으로 나눴어요` });

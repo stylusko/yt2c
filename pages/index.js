@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5821,6 +5821,20 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const currentTone = data.copyTone || 'hooking';
   const currentCardCount = data.cardCount || 'auto';
   const currentAr = data.aspectRatio || '1:1';
+  const articleImageCount = (data.articleData?.images || []).length;
+  // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
+  const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
+  // reuse 모드에서 선택 가능한 카드 수 후보를 이미지 수로 제한
+  const cardCountOptions = currentImageMode === 'reuse'
+    ? ['auto', ...[5,6,7,8,9,10,12].filter(n => n <= articleImageCount)]
+    : ['auto', 5, 6, 7, 8, 9, 10, 12];
+  // reuse 모드인데 현재 cardCount가 허용 범위를 벗어나면 auto로 보정
+  useEffect(() => {
+    if (currentImageMode === 'reuse' && typeof currentCardCount === 'number' && currentCardCount > articleImageCount) {
+      onDataChange({ ...data, cardCount: 'auto' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentImageMode, articleImageCount]);
 
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', padding: mob ? 16 : 40, overflowY: 'auto' } },
     // 헤더
@@ -5865,11 +5879,58 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           }, ar)),
         ),
       ),
+      // 이미지 소스 선택
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDDBC \uC774\uBBF8\uC9C0 \uC18C\uC2A4"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 8 } },
+          // 본문 이미지 사용
+          React.createElement("button", {
+            onClick: () => { if (articleImageCount > 0) onDataChange({ ...data, imageMode: 'reuse' }); },
+            disabled: articleImageCount === 0,
+            style: {
+              padding: '12px 14px', borderRadius: T.radiusSm,
+              border: `1px solid ${currentImageMode === 'reuse' ? T.accent : T.border}`,
+              background: articleImageCount === 0 ? 'rgba(255,255,255,0.02)' : (currentImageMode === 'reuse' ? 'rgba(99,102,241,0.12)' : T.surface),
+              opacity: articleImageCount === 0 ? 0.4 : 1,
+              cursor: articleImageCount === 0 ? 'not-allowed' : 'pointer',
+              textAlign: 'left',
+            },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+              React.createElement("span", { style: { fontSize: 15 } }, "\uD83D\uDCCE"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'reuse' ? T.accent : T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0 \uC0AC\uC6A9"),
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
+              articleImageCount === 0 ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694' : `\uAE30\uC0AC\uC5D0\uC11C ${articleImageCount}\uC7A5 \uCD94\uCD9C\uB428 \u00B7 \uBB34\uB8CC`
+            ),
+          ),
+          // AI 생성
+          React.createElement("button", {
+            onClick: () => onDataChange({ ...data, imageMode: 'generate' }),
+            style: {
+              padding: '12px 14px', borderRadius: T.radiusSm,
+              border: `1px solid ${currentImageMode === 'generate' ? T.accent : T.border}`,
+              background: currentImageMode === 'generate' ? 'rgba(99,102,241,0.12)' : T.surface,
+              cursor: 'pointer',
+              textAlign: 'left',
+            },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+              React.createElement("span", { style: { fontSize: 15 } }, "\u2728"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'generate' ? T.accent : T.text } }, "AI\uB85C \uC0DD\uC131"),
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "Flux \uAC00 \uC0C8\uB85C \uC0DD\uC131 \u00B7 \uC7A5\uB2F9 \uC57D 50\uC6D0"),
+          ),
+        ),
+      ),
       // 카드 수
       React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDD22 \uCE74\uB4DC \uC218"),
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
+          "\uD83D\uDD22 \uCE74\uB4DC \uC218",
+          currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(\uBCF8\uBB38 \uC774\uBBF8\uC9C0 " + articleImageCount + "\uC7A5 \uAE30\uC900 \uCD5C\uB300 " + articleImageCount + "\uC7A5)"),
+        ),
         React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-          ['auto', 5, 6, 7, 8, 9, 10, 12].map(n => React.createElement("button", {
+          cardCountOptions.map(n => React.createElement("button", {
             key: String(n),
             onClick: () => onDataChange({ ...data, cardCount: n }),
             style: {
@@ -5880,9 +5941,9 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
         ),
       ),
-      // 스타일 프리셋
-      React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83C\uDFA8 \uC2A4\uD0C0\uC77C"),
+      // 스타일 프리셋 (generate 모드에서만)
+      currentImageMode === 'generate' && React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C"),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 } },
           ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
             key: p.id,
@@ -8291,6 +8352,7 @@ export default function App() {
           cardCount: wizardData.cardCount,
           aspectRatio: wizardData.aspectRatio || '1:1',
           copyTone: wizardData.copyTone || 'hooking',
+          imageMode: wizardData.imageMode || 'reuse',
         }),
         signal: abort.signal,
       });
@@ -8502,7 +8564,7 @@ export default function App() {
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
       onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
-      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'warm_illust', copyTone: 'hooking' }); },
+      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'warm_illust', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
