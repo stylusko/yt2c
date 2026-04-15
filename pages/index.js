@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -4846,11 +4846,25 @@ function encodeProject(project) {
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
 
+// 네이버 pstatic.net 이미지 URL 정규화 (클라이언트용 헬퍼, lib/article-extractor.js와 동일 로직)
+// 기존에 저장된 공유 URL에 ?type=w1이 없어도 복원 시 자동 붙여 고화질로 로드.
+function normalizeNaverImageUrl(src) {
+  if (!src) return src;
+  let out = src;
+  out = out.replace(/mblogthumb-phinf\.pstatic\.net/, 'blogthumb.pstatic.net');
+  out = out.replace(/mblogfiles\.pstatic\.net/, 'blogfiles.pstatic.net');
+  out = out.replace(/\?type=[\w]+/, '');
+  if (/\.pstatic\.net\//.test(out)) {
+    out += (out.includes('?') ? '&' : '?') + 'type=w1';
+  }
+  return out;
+}
+
 function decodeProject(encoded) {
   const json = LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) return null;
   const s = JSON.parse(json);
-  return {
+  const proj = {
     id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     name: s.n || '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     globalUrl: s.u || '',
@@ -4865,8 +4879,23 @@ function decodeProject(encoded) {
     sourceType: s.t || PROJ_DEFAULTS.sourceType,
     sourceUrl: s.r || '',
     sourceTitle: s.h || '',
-    sourceImages: Array.isArray(s.m) ? s.m : [],
+    sourceImages: Array.isArray(s.m) ? s.m.map(normalizeNaverImageUrl) : [],
   };
+  // article 프로젝트: 각 카드의 uploadedImage를 sourceImages[sourceImageIndex]로 복원
+  // (SKIP_CARD_KEYS로 uploadedImage가 인코드에서 제외되기 때문에 공유 URL에서는 항상 비어있음)
+  if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
+    proj.cards = proj.cards.map(c => {
+      if (c.sourceType !== 'article') return c;
+      const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
+        ? c.articleMeta.sourceImageIndex
+        : null;
+      if (idx !== null && idx >= 0 && idx < proj.sourceImages.length) {
+        return { ...c, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
+      }
+      return c;
+    });
+  }
+  return proj;
 }
 
 /* ── Download All as ZIP ── */
