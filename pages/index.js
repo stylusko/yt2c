@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -3416,7 +3416,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
-  const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  // card.uploadedImage가 있으면 coverVScale의 101% 업스케일(edge artifact 방지용, video 전용)
+  // 을 제거해 1:1 매칭으로 렌더링 — 업스케일 blur 방지.
+  const imgScale = card.uploadedImage ? vScale : coverVScale;
+  const imgTransform = `scale(${imgScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const thumbSpinner = (baseImage && isBaseThumb && !thumbLoaded)
     ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' } },
         React.createElement("div", { style: { width: 22, height: 22, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.7)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
@@ -5720,6 +5723,28 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const [showRawInput, setShowRawInput] = useState(false);
   const [previewExpanded, setPreviewExpanded] = useState(false);
 
+  // ── 파생 값 (hooks 규칙 준수: 조건부 리턴 전에 선언) ──
+  const article = data.articleData || {};
+  const currentPreset = data.presetId || 'warm_illust';
+  const currentTone = data.copyTone || 'hooking';
+  const currentCardCount = data.cardCount || 'auto';
+  const currentAr = data.aspectRatio || '1:1';
+  const articleImageCount = (data.articleData?.images || []).length;
+  // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
+  const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
+  // reuse 모드에서 선택 가능한 카드 수 후보를 이미지 수로 제한
+  // (1, 2장 — 테스트/디버깅용 옵션 포함)
+  const cardCountOptions = currentImageMode === 'reuse'
+    ? ['auto', ...[1,2,3,5,6,7,8,9,10,12].filter(n => n <= articleImageCount)]
+    : ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
+  // reuse 모드인데 현재 cardCount가 허용 범위를 벗어나면 auto로 보정
+  useEffect(() => {
+    if (currentImageMode === 'reuse' && typeof currentCardCount === 'number' && currentCardCount > articleImageCount) {
+      onDataChange({ ...data, cardCount: 'auto' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentImageMode, articleImageCount]);
+
   const handleLoadArticle = async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -5815,27 +5840,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
     );
   }
 
-  // ── Step 2: 본문 확인 + 설정 ──
-  const article = data.articleData || {};
-  const currentPreset = data.presetId || 'warm_illust';
-  const currentTone = data.copyTone || 'hooking';
-  const currentCardCount = data.cardCount || 'auto';
-  const currentAr = data.aspectRatio || '1:1';
-  const articleImageCount = (data.articleData?.images || []).length;
-  // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
-  const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
-  // reuse 모드에서 선택 가능한 카드 수 후보를 이미지 수로 제한
-  const cardCountOptions = currentImageMode === 'reuse'
-    ? ['auto', ...[5,6,7,8,9,10,12].filter(n => n <= articleImageCount)]
-    : ['auto', 5, 6, 7, 8, 9, 10, 12];
-  // reuse 모드인데 현재 cardCount가 허용 범위를 벗어나면 auto로 보정
-  useEffect(() => {
-    if (currentImageMode === 'reuse' && typeof currentCardCount === 'number' && currentCardCount > articleImageCount) {
-      onDataChange({ ...data, cardCount: 'auto' });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentImageMode, articleImageCount]);
-
+  // ── Step 2: 본문 확인 + 설정 ── (파생값은 위에서 이미 선언)
   return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', padding: mob ? 16 : 40, overflowY: 'auto' } },
     // 헤더
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: mob ? 16 : 24 } },
