@@ -6,8 +6,8 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 21; // same-day deploy count
+const BUILD_DATE = '2026.0416';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6232,6 +6232,55 @@ function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSe
   );
 }
 
+/* ── Article Regenerate Style Picker Modal (AI 재생성 스타일 선택) ── */
+function ArticleRegenerateStyleModal({ mob, currentStyleId, regenerating, onPick, onClose }) {
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget && !regenerating) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 480, boxShadow: T.shadowLg, overflow: 'hidden' } },
+      // 헤더
+      React.createElement("div", { style: { padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 } }, "\u2728 AI\ub85c \uc0c8 \uc774\ubbf8\uc9c0 \uc0dd\uc131"),
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, "\uc0dd\uc131\ud560 \uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c\uc744 \uace0\ub974\uc138\uc694 (\uc7a5\ub2f9 \uc57d 50\uc6d0)"),
+      ),
+      // 스타일 버튼 2x2 그리드
+      React.createElement("div", { style: { padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
+        ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
+          key: p.id,
+          onClick: () => !regenerating && onPick(p.id),
+          disabled: regenerating,
+          style: {
+            padding: '14px 12px',
+            background: currentStyleId === p.id ? 'rgba(99,102,241,0.15)' : T.bg,
+            border: `1.5px solid ${currentStyleId === p.id ? T.accent : T.border}`,
+            borderRadius: T.radiusSm,
+            cursor: regenerating ? 'wait' : 'pointer',
+            textAlign: 'left',
+            transition: 'all 0.15s',
+            opacity: regenerating ? 0.5 : 1,
+          },
+        },
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: currentStyleId === p.id ? T.accent : T.text, marginBottom: 4 } }, p.label),
+          React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
+        )),
+      ),
+      // 진행 중 바
+      regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(194,65,12,0.08)' } },
+        React.createElement("div", { style: { width: 14, height: 14, border: '2px solid rgba(253,186,116,0.3)', borderTopColor: '#fdba74', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { fontSize: 12, color: '#fdba74', fontWeight: 600 } }, "\uc0dd\uc131\ud558\ub294 \uc911... 5~10\ucd08"),
+      ),
+      // 푸터
+      !regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end' } },
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '8px 16px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusPill, color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
+        }, "\ucde8\uc18c"),
+      ),
+    ),
+  );
+}
+
 /* ── AI Edit Loading Screen ── */
 function AiEditLoadingScreen({ mob, status, error, onCancel, onRetry }) {
   const steps = [
@@ -7817,6 +7866,8 @@ export default function App() {
   const articleAbortRef = useRef(null);
   // 본문 이미지 갤러리 모달 — 열려있을 때 galleryCardIdx에 카드 index 저장
   const [galleryCardIdx, setGalleryCardIdx] = useState(null);
+  // AI 재생성 스타일 선택 모달 — 열려있을 때 regenerateStyleCardIdx에 카드 index 저장
+  const [regenerateStyleCardIdx, setRegenerateStyleCardIdx] = useState(null);
   // 단건 AI 재생성 진행 중 카드 index (스피너 표시용)
   const [regeneratingCardIdx, setRegeneratingCardIdx] = useState(null);
   const [aiEditStatus, setAiEditStatus] = useState(null);
@@ -8546,17 +8597,29 @@ export default function App() {
     setGalleryCardIdx(null);
   };
 
-  // Article 카드: AI로 이미지 재생성 (단건 Flux 호출)
-  const handleRegenerateArticleImage = async (cardIdx) => {
+  // Article 카드: AI 재생성 버튼 클릭 시 → 스타일 선택 모달만 열기
+  const handleRegenerateArticleImage = (cardIdx) => {
     const proj = activeProject;
     if (!proj) return;
     const target = proj.cards?.[cardIdx];
     if (!target) return;
-    // 현재 프롬프트가 있으면 재사용, 없으면 body·title 기반 생성
+    setRegenerateStyleCardIdx(cardIdx);
+  };
+
+  // Article 카드: 스타일 선택 후 실제 Flux 호출
+  const handleRegenerateArticleImageWithStyle = async (cardIdx, presetId) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+
+    // 프롬프트 결정:
+    //   1) 이 카드에 이미 Claude가 만든 영어 프롬프트가 있으면 재사용
+    //   2) 없으면 body/title/subtitle 텍스트를 그대로 사용 (스타일 prefix가 지배)
+    //      ⚠️ "abstract editorial illustration evoking:" 같은 스타일 충돌 문구는 절대 넣지 말 것
     const existingPrompt = target.articleMeta?.aiImagePrompt;
-    const fallbackHint = (target.body || target.title || target.subtitle || 'editorial scene').slice(0, 120);
-    const prompt = existingPrompt || `abstract editorial illustration evoking: ${fallbackHint}`;
-    const presetId = target.articleMeta?.stylePresetId || 'stock_photo';
+    const fallbackHint = (target.body || target.title || target.subtitle || '').trim().slice(0, 160);
+    const prompt = existingPrompt || fallbackHint || 'editorial scene related to the article';
     const aspectRatio = proj.aspectRatio || '1:1';
 
     setRegeneratingCardIdx(cardIdx);
@@ -8585,10 +8648,13 @@ export default function App() {
             aiImageSeed: json.seed ?? null,
             aiImageStatus: 'ok',
             aiImageError: null,
+            stylePresetId: presetId,  // 선택한 스타일 저장 (다음 재생성 시 기본값)
           },
         };
         return { ...p, cards: newCards };
       }));
+      // 성공 시 모달 닫기
+      setRegenerateStyleCardIdx(null);
     } catch (e) {
       window.alert('AI 재생성 실패: ' + (e.message || '알 수 없는 오류'));
     } finally {
@@ -9211,6 +9277,14 @@ export default function App() {
       sourceTitle: activeProject.sourceTitle || '',
       onSelect: (src, imgIdx) => handleSelectArticleImage(galleryCardIdx, src, imgIdx),
       onClose: () => setGalleryCardIdx(null),
+    }),
+    // Article 재생성 스타일 선택 모달
+    regenerateStyleCardIdx != null && React.createElement(ArticleRegenerateStyleModal, {
+      mob,
+      currentStyleId: cards[regenerateStyleCardIdx]?.articleMeta?.stylePresetId,
+      regenerating: regeneratingCardIdx === regenerateStyleCardIdx,
+      onPick: (presetId) => handleRegenerateArticleImageWithStyle(regenerateStyleCardIdx, presetId),
+      onClose: () => setRegenerateStyleCardIdx(null),
     }),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
