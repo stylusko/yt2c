@@ -200,9 +200,14 @@ function buildCard(claudeCard, ctx) {
   const isCover = claudeCard.index === 0;
   const normalizedType = isCover ? 'cover' : 'content';
 
-  // cover  → title + subtitle, body 숨김
-  // content → body, title/subtitle 숨김
-  const title = isCover ? (claudeCard.headline || '') : '';
+  // cover  → title(headline) + subtitle(subtext), body 숨김
+  // content → body 기본, + (옵션) Claude가 리스트형으로 판단하면 headline도 표시 (소제목)
+  const optionalHeadline = !isCover && claudeCard.headline ? claudeCard.headline.slice(0, 30) : '';
+  const hasContentHeadline = Boolean(optionalHeadline);
+
+  const title = isCover
+    ? (claudeCard.headline || '')
+    : optionalHeadline;       // content 카드: Claude가 준 headline(소제목)이 있으면 사용, 없으면 빈 문자열
   const subtitle = isCover ? (claudeCard.subtext || '') : '';
   const body = isCover ? '' : (claudeCard.body || claudeCard.headline || claudeCard.subtext || '');
 
@@ -221,10 +226,13 @@ function buildCard(claudeCard, ctx) {
     useTitle: !!title,
     useSubtitle: !!subtitle,
     useBody: !!body,
-    // 폰트 크기 (cover는 제목 강조, content는 본문 중심)
-    titleSize: isCover ? 72 : 56,
+    // 폰트 크기:
+    //   cover            → 큰 제목 + 부제
+    //   content (소제목 없음) → body 중심
+    //   content (소제목 있음) → 작은 소제목 + body
+    titleSize: isCover ? 72 : 44,          // content 소제목은 44로 cover보다 작게
     subtitleSize: isCover ? 44 : 40,
-    bodySize: 40,
+    bodySize: hasContentHeadline ? 36 : 40,  // 소제목 있을 땐 body 살짝 축소해 계층감 유지
     bodyLineHeight: 1.55,
     titleLineHeight: 1.25,
     // 배경 이미지
