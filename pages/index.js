@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 20; // same-day deploy count
+const BUILD_NUM = 21; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6750,7 +6750,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
     // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성)
-    card.sourceType === 'article' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
+    // 카드 레벨과 프로젝트 레벨 모두 체크 — 이전 세션 호환성
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
       React.createElement("button", {
         onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
         disabled: !(project?.sourceImages?.length > 0),
@@ -7294,7 +7295,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
     // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성) — Desktop
-    card.sourceType === 'article' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
+    // 카드 레벨과 프로젝트 레벨 모두 체크 — 이전 세션 호환성
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
       React.createElement("button", {
         onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
         disabled: !(project?.sourceImages?.length > 0),
