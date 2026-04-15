@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0415';
-const BUILD_NUM = 17; // same-day deploy count
+const BUILD_NUM = 18; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5775,18 +5775,17 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const articleImageCount = (data.articleData?.images || []).length;
   // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
   const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
-  // reuse 모드에서 선택 가능한 카드 수 후보를 이미지 수로 제한
-  // (1, 2장 — 테스트/디버깅용 옵션 포함)
-  const cardCountOptions = currentImageMode === 'reuse'
-    ? ['auto', ...[1,2,3,5,6,7,8,9,10,12].filter(n => n <= articleImageCount)]
-    : ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
-  // reuse 모드인데 현재 cardCount가 허용 범위를 벗어나면 auto로 보정
-  useEffect(() => {
-    if (currentImageMode === 'reuse' && typeof currentCardCount === 'number' && currentCardCount > articleImageCount) {
-      onDataChange({ ...data, cardCount: 'auto' });
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentImageMode, articleImageCount]);
+  // 카드 수 선택지는 모드 무관 동일 (이전엔 reuse 모드에서 이미지 수로 제한했으나,
+  // 이제 부족분은 자동 AI 생성으로 보충하므로 제한 불필요)
+  const cardCountOptions = ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
+  // 혼합 모드 안내용: 현재 cardCount가 이미지 수를 초과하는지
+  const numericCardCount = typeof currentCardCount === 'number' ? currentCardCount : null;
+  const reuseCount = currentImageMode === 'reuse' && articleImageCount > 0 && numericCardCount != null
+    ? Math.min(numericCardCount, articleImageCount)
+    : null;
+  const generateCount = currentImageMode === 'reuse' && numericCardCount != null
+    ? Math.max(0, numericCardCount - articleImageCount)
+    : null;
 
   const handleLoadArticle = async () => {
     setLoading(true);
@@ -5931,25 +5930,25 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       React.createElement("div", null,
         React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDDBC \uC774\uBBF8\uC9C0 \uC18C\uC2A4"),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 8 } },
-          // 본문 이미지 사용
+          // 본문 이미지 우선 (부족 시 AI 자동 보충)
           React.createElement("button", {
-            onClick: () => { if (articleImageCount > 0) onDataChange({ ...data, imageMode: 'reuse' }); },
-            disabled: articleImageCount === 0,
+            onClick: () => onDataChange({ ...data, imageMode: 'reuse' }),
             style: {
               padding: '12px 14px', borderRadius: T.radiusSm,
               border: `1px solid ${currentImageMode === 'reuse' ? T.accent : T.border}`,
-              background: articleImageCount === 0 ? 'rgba(255,255,255,0.02)' : (currentImageMode === 'reuse' ? 'rgba(99,102,241,0.12)' : T.surface),
-              opacity: articleImageCount === 0 ? 0.4 : 1,
-              cursor: articleImageCount === 0 ? 'not-allowed' : 'pointer',
+              background: currentImageMode === 'reuse' ? 'rgba(99,102,241,0.12)' : T.surface,
+              cursor: 'pointer',
               textAlign: 'left',
             },
           },
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
               React.createElement("span", { style: { fontSize: 15 } }, "\uD83D\uDCCE"),
-              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'reuse' ? T.accent : T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0 \uC0AC\uC6A9"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'reuse' ? T.accent : T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0 \uC6B0\uC120"),
             ),
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
-              articleImageCount === 0 ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694' : `\uAE30\uC0AC\uC5D0\uC11C ${articleImageCount}\uC7A5 \uCD94\uCD9C\uB428 \u00B7 \uBB34\uB8CC`
+              articleImageCount === 0
+                ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0 \uC5C6\uC74C \u2192 \uC804\uBD80 AI \uC0DD\uC131'
+                : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \uBB34\uB8CC \uC0AC\uC6A9, \uBD80\uC871\uD55C \uC7A5\uC740 AI\uB85C \uC790\uB3D9 \uC0DD\uC131`
             ),
           ),
           // AI 생성
@@ -5975,7 +5974,13 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       React.createElement("div", null,
         React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
           "\uD83D\uDD22 \uCE74\uB4DC \uC218",
-          currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(\uBCF8\uBB38 \uC774\uBBF8\uC9C0 " + articleImageCount + "\uC7A5 \uAE30\uC900 \uCD5C\uB300 " + articleImageCount + "\uC7A5)"),
+          // 혼합 모드 실시간 분배 안내 (본문 우선 + AI 보충)
+          currentImageMode === 'reuse' && numericCardCount != null && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } },
+            generateCount > 0
+              ? `(\uBCF8\uBB38 ${reuseCount}\uC7A5 \uBB34\uB8CC + AI ${generateCount}\uC7A5)`
+              : `(\uBCF8\uBB38 ${reuseCount}\uC7A5 \uBB34\uB8CC)`
+          ),
+          currentImageMode === 'reuse' && numericCardCount == null && articleImageCount > 0 && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, `(\uBCF8\uBB38 ${articleImageCount}\uC7A5 \uC6B0\uC120 + \uD544\uC694 \uC2DC AI)`),
         ),
         React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
           cardCountOptions.map(n => React.createElement("button", {
@@ -5989,9 +5994,12 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
         ),
       ),
-      // 스타일 프리셋 (generate 모드에서만)
-      currentImageMode === 'generate' && React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C"),
+      // 스타일 프리셋 (AI가 한 장이라도 생성할 가능성이 있으면 노출 — reuse 모드도 부족분 AI 사용)
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
+          "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C",
+          currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(AI \uBCF4\uCDA9 \uC2DC \uC801\uC6A9)"),
+        ),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 } },
           ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
             key: p.id,

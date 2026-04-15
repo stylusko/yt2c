@@ -46,14 +46,8 @@ export default async function handler(req, res) {
   const imageMode = rawMode === 'generate' ? 'generate' : 'reuse';
   const availableImages = Array.isArray(article.images) ? article.images.length : 0;
 
-  // reuse 모드인데 이미지가 0장이면 거부 (유저 쪽에서 막혀야 하지만 안전망)
-  if (imageMode === 'reuse' && availableImages === 0) {
-    sseSend(res, 'error', {
-      code: 'NO_IMAGES_TO_REUSE',
-      message: '본문 이미지 사용 모드는 원본 이미지가 필요합니다. 기사에서 이미지를 추출할 수 없었습니다.',
-    });
-    return res.end();
-  }
+  // reuse 모드는 "본문 이미지 우선 + 부족분 AI 생성" 혼합 모드로 동작.
+  // 이미지 0장이어도 divideArticleToCards에서 전부 generate로 자동 전환됨.
 
   try {
     // 1) Claude로 카드 분할
