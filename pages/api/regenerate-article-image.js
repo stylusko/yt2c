@@ -6,39 +6,25 @@
 // generate-cards-from-article 는 Claude 분할까지 포함한 full 파이프라인이라 단건 재생성엔 과함.
 
 import { generateImage } from '../../lib/falai.js';
-import { getArticleStylePreset } from '../../lib/claude.js';
+import { getArticleStylePreset, listArticleStylePresets } from '../../lib/claude.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '64kb' } },
 };
 
 // 예전 버전에서 aiImagePrompt 에 stylePrefix 까지 통째로 저장된 경우를 위한 sanitizer.
-// 알려진 stylePrefix 시작 문구를 감지하면 해당 prefix 와 'no text...' 꼬리표를 제거해 순수 subject 만 남김.
-const KNOWN_STYLE_PREFIX_HEADS = [
-  'Professional commercial stock photograph',
-  'Cinematic photograph with',
-  'Stylized 3D character illustration',
-  'Minimalist geometric illustration',
-];
+// 알려진 모든 preset 의 stylePrefix 문자열을 "정확히" prefix-match 해서 제거한다.
+// 마커 기반 휴리스틱은 preset 추가/수정 시 깨지기 쉬워서 전체 prefix 매칭이 가장 견고함.
 function stripStylePrefix(p) {
   if (!p || typeof p !== 'string') return p;
   let s = p.trim();
   // 꼬리 제거
   s = s.replace(/,\s*no text[^,]*,\s*no letters[^,]*,\s*no typography\s*$/i, '').trim();
-  for (const head of KNOWN_STYLE_PREFIX_HEADS) {
-    if (s.startsWith(head)) {
-      // stylePrefix 끝은 'clean image' 또는 'flat design' 또는 쉼표 구분 리스트 끝으로 추정.
-      // 가장 안전한 heuristic: subject 앞에 오는 stylePrefix 는 보통 comma 로 구분된 6~15개 수식어 + 마지막에 'clean image' or 'flat design' + comma + subject.
-      // 'clean image' 토큰 찾아서 자르고, 없으면 'flat design' 토큰 찾기.
-      const endMarkers = [', clean image,', ', flat design,'];
-      for (const m of endMarkers) {
-        const idx = s.indexOf(m);
-        if (idx !== -1) {
-          return s.slice(idx + m.length).trim();
-        }
-      }
-      // 마커 못 찾으면 첫 번째 comma 이후 subject 라고 가정하고 50단어 이후 자르기는 과함 → 원문 유지
-      return s;
+  for (const { id } of listArticleStylePresets()) {
+    const prefix = getArticleStylePreset(id).stylePrefix;
+    if (!prefix) continue;
+    if (s.startsWith(prefix)) {
+      return s.slice(prefix.length).replace(/^,\s*/, '').trim();
     }
   }
   return s;
