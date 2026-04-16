@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 14; // same-day deploy count
+const BUILD_NUM = 15; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6358,37 +6358,96 @@ function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSe
 }
 
 /* ── Article Regenerate Style Picker Modal (AI 재생성 스타일 선택) ── */
-function ArticleRegenerateStyleModal({ mob, currentStyleId, regenerating, onPick, onClose }) {
+// 새 카드 기본 문구들(DEFAULT_CARD 에서 사용). 이 문구가 그대로 있으면 '비어있다' 로 간주.
+const CARD_DEFAULT_PLACEHOLDERS = ['제목을 입력하세요', '부제목을 입력하세요', '본문 내용을 입력하세요'];
+function isPlaceholderText(t) {
+  if (!t || typeof t !== 'string') return true;
+  const s = t.trim();
+  if (!s) return true;
+  return CARD_DEFAULT_PLACEHOLDERS.includes(s);
+}
+
+function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, onPick, onClose }) {
+  const fields = [
+    { label: '제목', value: card?.title },
+    { label: '부제목', value: card?.subtitle },
+    { label: '본문', value: card?.body },
+  ].filter(f => !isPlaceholderText(f.value));
+  const hasRealContent = fields.length > 0;
+  const [extraPrompt, setExtraPrompt] = useState('');
+  const canGenerate = hasRealContent || extraPrompt.trim().length >= 3;
+
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget && !regenerating) onClose(); },
     style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
   },
-    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 480, boxShadow: T.shadowLg, overflow: 'hidden' } },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 520, maxHeight: '90vh', boxShadow: T.shadowLg, overflow: 'hidden', display: 'flex', flexDirection: 'column' } },
       // 헤더
       React.createElement("div", { style: { padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
         React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 } }, "\u2728 AI\ub85c \uc0c8 \uc774\ubbf8\uc9c0 \uc0dd\uc131"),
-        React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, "\uc0dd\uc131\ud560 \uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c\uc744 \uace0\ub974\uc138\uc694 (\uc7a5\ub2f9 \uc57d 50\uc6d0)"),
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, "\uc544\ub798 \ub0b4\uc6a9\uc744 \ud655\uc778\ud558\uace0 \uc2a4\ud0c0\uc77c\uc744 \uace0\ub974\uc138\uc694"),
       ),
-      // 스타일 버튼 2x2 그리드
-      React.createElement("div", { style: { padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
-        ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
-          key: p.id,
-          onClick: () => !regenerating && onPick(p.id),
-          disabled: regenerating,
+      // 내용 확인 + 추가 입력 영역
+      React.createElement("div", { style: { padding: 16, borderBottom: `1px solid ${T.border}`, overflowY: 'auto' } },
+        // 프롬프트에 사용될 카드 내용
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } }, "\ud504\ub86c\ud504\ud2b8\uc5d0 \uc0ac\uc6a9\ub420 \ub0b4\uc6a9"),
+        hasRealContent
+          ? React.createElement("div", { style: { padding: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, display: 'flex', flexDirection: 'column', gap: 6 } },
+              fields.map((f, i) => React.createElement("div", { key: i, style: { fontSize: 12, color: T.text, lineHeight: 1.5 } },
+                React.createElement("span", { style: { color: T.textMuted, fontWeight: 600, marginRight: 6 } }, f.label + ':'),
+                f.value,
+              )),
+            )
+          : React.createElement("div", { style: { padding: 10, background: 'rgba(249,115,22,0.08)', border: `1px dashed rgba(249,115,22,0.4)`, borderRadius: T.radiusSm, fontSize: 11, color: '#fdba74', lineHeight: 1.5 } },
+              "\uce74\ub4dc \ub0b4\uc6a9\uc774 \uae30\ubcf8 \ubb38\uad6c\uc774\uac70\ub098 \ube44\uc5b4\uc788\uc5b4\uc694. \uc544\ub798\uc5d0 \uc6d0\ud558\ub294 \uc774\ubbf8\uc9c0 \uc124\uba85\uc744 \uc9c1\uc811 \uc791\uc131\ud574\uc8fc\uc138\uc694.",
+            ),
+        // 추가 입력
+        React.createElement("div", { style: { marginTop: 12, fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } },
+          "\uc9c1\uc811 \uc785\ub825",
+          React.createElement("span", { style: { color: T.textMuted, fontWeight: 400, marginLeft: 6 } }, hasRealContent ? "(\ucd94\uac00\ud558\uace0 \uc2f6\uc740 \ub0b4\uc6a9\uc774\ub098 \ubd84\uc704\uae30 \u2022 \uc120\ud0dd)" : "(\ud544\uc218)"),
+        ),
+        React.createElement("textarea", {
+          value: extraPrompt,
+          onChange: (e) => setExtraPrompt(e.target.value),
+          placeholder: hasRealContent ? "\uc608: \ub530\ub73b\ud55c \uc870\uba85, \uc5ec\uc790 2\uba85\uc774 \ub9c8\uc8fc\ubcf4\uba70 \uc6c3\uae30" : "\uc608: \uae40\ubc25\uc9d1 \uc678\uad00, \ub530\ub73b\ud55c \ubd84\uc704\uae30",
+          rows: 3,
           style: {
-            padding: '14px 12px',
-            background: currentStyleId === p.id ? 'rgba(99,102,241,0.15)' : T.bg,
-            border: `1.5px solid ${currentStyleId === p.id ? T.accent : T.border}`,
-            borderRadius: T.radiusSm,
-            cursor: regenerating ? 'wait' : 'pointer',
-            textAlign: 'left',
-            transition: 'all 0.15s',
-            opacity: regenerating ? 0.5 : 1,
+            width: '100%', padding: 10, background: T.bg, color: T.text,
+            border: `1px solid ${T.border}`, borderRadius: T.radiusSm,
+            fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical',
+            outline: 'none', boxSizing: 'border-box',
           },
-        },
-          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: currentStyleId === p.id ? T.accent : T.text, marginBottom: 4 } }, p.label),
-          React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
-        )),
+          onFocus: (e) => { e.target.style.borderColor = T.accent; },
+          onBlur: (e) => { e.target.style.borderColor = T.border; },
+        }),
+      ),
+      // 스타일 선택
+      React.createElement("div", { style: { padding: 16 } },
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 8, fontWeight: 600 } }, "\uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c \uc120\ud0dd"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
+          ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
+            key: p.id,
+            onClick: () => {
+              if (regenerating || !canGenerate) return;
+              onPick(p.id, extraPrompt.trim());
+            },
+            disabled: regenerating || !canGenerate,
+            style: {
+              padding: '14px 12px',
+              background: currentStyleId === p.id ? 'rgba(99,102,241,0.15)' : T.bg,
+              border: `1.5px solid ${currentStyleId === p.id ? T.accent : T.border}`,
+              borderRadius: T.radiusSm,
+              cursor: (regenerating || !canGenerate) ? 'not-allowed' : 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.15s',
+              opacity: (regenerating || !canGenerate) ? 0.4 : 1,
+            },
+          },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: currentStyleId === p.id ? T.accent : T.text, marginBottom: 4 } }, p.label),
+            React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
+          )),
+        ),
+        !canGenerate && !regenerating && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: T.textMuted, textAlign: 'center' } }, "\uc785\ub825\uce78\uc5d0 3\uae00\uc790 \uc774\uc0c1 \uc791\uc131\ud558\uba74 \uc2a4\ud0c0\uc77c\uc744 \ub204\ub97c \uc218 \uc788\uc5b4\uc694"),
       ),
       // 진행 중 바
       regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(194,65,12,0.08)' } },
@@ -8708,19 +8767,26 @@ export default function App() {
   };
 
   // Article 카드: 스타일 선택 후 실제 Flux 호출
-  const handleRegenerateArticleImageWithStyle = async (cardIdx, presetId) => {
+  // extraUserPrompt: 모달에서 유저가 직접 입력한 추가 설명 (optional)
+  const handleRegenerateArticleImageWithStyle = async (cardIdx, presetId, extraUserPrompt) => {
     const proj = activeProject;
     if (!proj) return;
     const target = proj.cards?.[cardIdx];
     if (!target) return;
 
-    // 프롬프트 결정:
-    //   1) 이 카드에 이미 Claude가 만든 영어 프롬프트가 있으면 재사용
-    //   2) 없으면 body/title/subtitle 텍스트를 그대로 사용 (스타일 prefix가 지배)
-    //      ⚠️ "abstract editorial illustration evoking:" 같은 스타일 충돌 문구는 절대 넣지 말 것
-    const existingPrompt = target.articleMeta?.aiImagePrompt;
-    const fallbackHint = (target.body || target.title || target.subtitle || '').trim().slice(0, 160);
-    const prompt = existingPrompt || fallbackHint || 'editorial scene related to the article';
+    // 프롬프트 구성:
+    //   카드 내용(title/subtitle/body) 중 기본 문구(placeholder)가 아닌 것만 사용
+    //   + 유저가 모달에서 입력한 extraUserPrompt
+    //   둘 다 없으면 기사 제목으로 폴백 (절대 random fallback 쓰지 않음)
+    const cardSubject = ['title', 'subtitle', 'body']
+      .map(k => target[k])
+      .filter(v => !isPlaceholderText(v))
+      .join(' · ')
+      .slice(0, 240);
+    const extra = (extraUserPrompt || '').trim().slice(0, 240);
+    const articleTitle = (proj.sourceTitle || '').trim().slice(0, 120);
+    let prompt = [cardSubject, extra].filter(Boolean).join(' — ');
+    if (!prompt) prompt = articleTitle || 'editorial scene related to the article';
     const aspectRatio = proj.aspectRatio || '1:1';
 
     setRegeneratingCardIdx(cardIdx);
@@ -9384,9 +9450,10 @@ export default function App() {
     // Article 재생성 스타일 선택 모달
     regenerateStyleCardIdx != null && React.createElement(ArticleRegenerateStyleModal, {
       mob,
+      card: cards[regenerateStyleCardIdx],
       currentStyleId: cards[regenerateStyleCardIdx]?.articleMeta?.stylePresetId,
       regenerating: regeneratingCardIdx === regenerateStyleCardIdx,
-      onPick: (presetId) => handleRegenerateArticleImageWithStyle(regenerateStyleCardIdx, presetId),
+      onPick: (presetId, extraPrompt) => handleRegenerateArticleImageWithStyle(regenerateStyleCardIdx, presetId, extraPrompt),
       onClose: () => setRegenerateStyleCardIdx(null),
     }),
 
