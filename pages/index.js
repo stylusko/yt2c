@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6018,12 +6018,9 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
         ),
       ),
-      // 스타일 프리셋 (AI가 한 장이라도 생성할 가능성이 있으면 노출 — reuse 모드도 부족분 AI 사용)
-      React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
-          "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C",
-          currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(AI \uBCF4\uCDA9 \uC2DC \uC801\uC6A9)"),
-        ),
+      // 스타일 프리셋 — 'generate' 모드에서만 노출. reuse 모드의 AI 보충분은 기본값(stock_photo)으로 조용히 처리
+      currentImageMode === 'generate' && React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C"),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 } },
           ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
             key: p.id,
