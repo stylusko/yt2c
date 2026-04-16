@@ -187,6 +187,26 @@ export default async function handler(req, res) {
 }
 
 // Claude 카드 데이터 → yt2c 카드 스키마로 변환
+// 본문 길이 기반 photoRatio 동적 계산.
+// 서사형(짧은 본문) 카드에서 그라데이션이 너무 높게 올라가는 문제 대응.
+// 규칙: 실제 렌더될 텍스트 블록 높이만큼만 텍스트 영역으로 잡고, 나머지를 이미지 영역(photoRatio)으로.
+// 카드 전체 높이 = 1080, 기본 패딩 = 상하 80px
+// 한글 기준 한 줄 ~22자 (bodySize 40 기준), 줄 높이 = fontSize * 1.55
+function computePhotoRatio({ isCover, hasContentHeadline, title, body }) {
+  if (isCover) return 55; // cover는 기존 유지 (title+subtitle 중심)
+  const H = 1080;
+  const padding = 80; // 상단 16 + 하단 64 대략
+  const bodySize = hasContentHeadline ? 36 : 40;
+  const bodyLineH = bodySize * 1.55;
+  const charsPerLine = 22; // 한글 bodySize 40 기준 대략
+  const bodyLines = Math.max(1, Math.ceil((body || '').length / charsPerLine));
+  const titleH = hasContentHeadline ? (44 * 1.25 * Math.max(1, Math.ceil((title || '').length / 20))) : 0;
+  const gap = hasContentHeadline ? 15 : 0;
+  const textPx = titleH + gap + bodyLineH * bodyLines + padding;
+  const textRatio = Math.min(0.5, Math.max(0.2, textPx / H)); // 20~50% 범위
+  return Math.round((1 - textRatio) * 100); // 50~80
+}
+
 // 실제 필드명은 M2에서 CARD_KEY_MAP 확장 후 최종 확정.
 // 여기서는 기존 yt2c의 기본 카드 구조(title/subtitle/body/...)와 최대한 호환되는 생성 결과 반환.
 function buildCard(claudeCard, ctx) {
@@ -238,7 +258,7 @@ function buildCard(claudeCard, ctx) {
     bgColor: '#121212',
     bgOpacity: 0.75,
     useGradient: true,
-    photoRatio: 55,
+    photoRatio: computePhotoRatio({ isCover, hasContentHeadline, title, body }),
     // text_box 레이아웃 전환 대비 기본값 (영상 카드와 동일)
     textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
     textBoxBgColor: '#000000', textBoxBgOpacity: 0.6,
