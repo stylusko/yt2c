@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5972,7 +5972,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
               articleImageCount === 0
                 ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0 \uC5C6\uC74C \u2192 \uC804\uBD80 AI \uC0DD\uC131'
-                : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \uBB34\uB8CC \uC0AC\uC6A9 \u00B7 \uBD80\uC871\ubd84 AI \uBCF4\uCDA9`
+                : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \ud65c\uc6a9 \u00B7 \uBD80\uC871\ubd84 AI \uBCF4\uCDA9`
             ),
           ),
           // AI 생성
@@ -5990,7 +5990,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
               React.createElement("span", { style: { fontSize: 15 } }, "\u2728"),
               React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'generate' ? T.accent : T.text } }, "AI\uB85C \uC0DD\uC131"),
             ),
-            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "Flux \uAC00 \uC0C8\uB85C \uC0DD\uC131 \u00B7 \uC7A5\uB2F9 \uC57D 55\uC6D0"),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "Flux AI\uAC00 \uC0C8\ub85c \uc0dd\uc131"),
           ),
         ),
       ),
@@ -6017,7 +6017,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           msg = '\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694 \u2192 \uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
         } else if (currentImageMode === 'generate') {
           msg = numericCardCount != null
-            ? `\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 (\uCD1D ${numericCardCount}\uC7A5 \u00B7 \u2248 \uC57D ${numericCardCount * 55}\uC6D0)`
+            ? `\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 (\uCD1D ${numericCardCount}\uC7A5)`
             : '\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
         } else if (numericCardCount == null) {
           msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${articleImageCount}\uC7A5 \uC6B0\uC120 \uC0AC\uC6A9 \u00B7 \uBD80\uC871\ubd84\uc740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131`;
@@ -6025,7 +6025,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5\uC73C\ub85c \uCDA9\uBD84 \u00B7 AI \uC0DD\uC131 \uC5C6\uC74C`;
           variant = 'ok';
         } else {
-          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5 \uC0AC\uC6A9 + \uC794\uC5EC ${generateCount}\uC7A5\uC740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 \u00B7 \u2248 \uC57D ${generateCount * 55}\uC6D0`;
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5 \uC0AC\uC6A9 + \uC794\uC5EC ${generateCount}\uC7A5\uC740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131`;
         }
         const bg = variant === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(99,102,241,0.1)';
         const borderColor = variant === 'ok' ? 'rgba(34,197,94,0.35)' : 'rgba(99,102,241,0.35)';
