@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 13; // same-day deploy count
+const BUILD_NUM = 14; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -708,6 +708,89 @@ function PillBtn({ active, children, onClick, style }) {
       ...style,
     }
   }, children);
+}
+
+/* ── Article Image Carousel ── (본문 썸네일 + AI 재생성 타일 통합 UI) */
+function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, regenerating }) {
+  const images = project?.sourceImages || [];
+  const meta = card?.articleMeta || {};
+  const isAI = meta.aiImageSource === 'ai';
+  const selectedIdx = typeof meta.sourceImageIndex === 'number' ? meta.sourceImageIndex : -1;
+
+  const thumbSize = 52;
+  const baseThumbStyle = {
+    flexShrink: 0,
+    width: thumbSize,
+    height: thumbSize,
+    borderRadius: T.radiusSm,
+    padding: 0,
+    background: T.surface,
+    overflow: 'hidden',
+    position: 'relative',
+    cursor: 'pointer',
+  };
+
+  return React.createElement("div", {
+    className: 'hide-scrollbar',
+    style: {
+      display: 'flex',
+      gap: 6,
+      overflowX: 'auto',
+      marginTop: 4,
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      paddingBottom: 2,
+    },
+  },
+    images.map((src, i) => {
+      const active = !isAI && selectedIdx === i;
+      return React.createElement("button", {
+        key: i,
+        onClick: () => onSelectImage && onSelectImage(src, i),
+        title: `본문 이미지 ${i+1}`,
+        style: {
+          ...baseThumbStyle,
+          border: active ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+          boxShadow: active ? `0 0 0 2px rgba(99,102,241,0.15)` : 'none',
+        },
+      },
+        React.createElement("img", {
+          src,
+          alt: '',
+          style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+          onError: (e) => { e.currentTarget.style.opacity = '0.3'; },
+        }),
+      );
+    }),
+    React.createElement("button", {
+      onClick: onRegenerateAI,
+      disabled: regenerating,
+      title: 'AI 재생성',
+      style: {
+        ...baseThumbStyle,
+        border: isAI ? `2px solid #f97316` : `1px solid rgba(194,65,12,0.4)`,
+        background: regenerating ? T.surfaceHover : 'rgba(194,65,12,0.15)',
+        color: '#fdba74',
+        cursor: regenerating ? 'wait' : 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1,
+        fontSize: 9,
+        fontWeight: 700,
+        boxShadow: isAI ? `0 0 0 2px rgba(249,115,22,0.15)` : 'none',
+      },
+    },
+      regenerating
+        ? React.createElement("span", { style: { fontSize: 11 } }, "...")
+        : React.createElement(React.Fragment, null,
+            React.createElement("span", { style: { fontSize: 16, lineHeight: 1 } }, "\u2728"),
+            React.createElement("span", null, "AI"),
+          ),
+    ),
+    // 빈 상태 안내 (이미지도 없고 AI도 안 썼을 때는 아예 안 쓸 일 없음 — skip)
+  );
 }
 
 /* ── Layout Thumbnail ── */
@@ -6707,7 +6790,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, regeneratingCardIdx }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -6840,25 +6923,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
-    // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성)
-    // 카드 레벨과 프로젝트 레벨 모두 체크 — 이전 세션 호환성
-    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
-      React.createElement("button", {
-        onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
-        disabled: !(project?.sourceImages?.length > 0),
-        style: { padding: '8px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
-      }, "\uD83D\uDD04 \uB2E4\uC74C \uC774\uBBF8\uC9C0"),
-      React.createElement("button", {
-        onClick: () => onOpenArticleGallery && onOpenArticleGallery(activeIndex),
-        disabled: !(project?.sourceImages?.length > 0),
-        style: { padding: '8px 4px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
-      }, "\uD83D\uDCCE \uAC24\uB7EC\uB9AC"),
-      React.createElement("button", {
-        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
-        disabled: regeneratingCardIdx === activeIndex,
-        style: { padding: '8px 4px', background: regeneratingCardIdx === activeIndex ? T.surfaceHover : 'rgba(194,65,12,0.15)', border: `1px solid rgba(194,65,12,0.4)`, borderRadius: T.radiusSm, color: '#fdba74', fontSize: 11, cursor: regeneratingCardIdx === activeIndex ? 'wait' : 'pointer', lineHeight: 1.2 },
-      }, regeneratingCardIdx === activeIndex ? "\uC0DD\uC131 \uC911..." : "\u2728 AI \uC7AC\uC0DD\uC131"),
-    ),
+    // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합)
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
+      card, project,
+      onSelectImage: (src, idx) => onSelectArticleImage && onSelectArticleImage(activeIndex, src, idx),
+      onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+      regenerating: regeneratingCardIdx === activeIndex,
+    }),
   );
 
   const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -7190,7 +7261,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, regeneratingCardIdx }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -7385,25 +7456,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
-    // Article 카드 전용 이미지 툴바 (다른 이미지·갤러리·AI 재생성) — Desktop
-    // 카드 레벨과 프로젝트 레벨 모두 체크 — 이전 세션 호환성
-    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginTop: 4 } },
-      React.createElement("button", {
-        onClick: () => onNextArticleImage && onNextArticleImage(activeIndex),
-        disabled: !(project?.sourceImages?.length > 0),
-        style: { padding: '8px 6px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
-      }, "\uD83D\uDD04 \uB2E4\uC74C \uC774\uBBF8\uC9C0"),
-      React.createElement("button", {
-        onClick: () => onOpenArticleGallery && onOpenArticleGallery(activeIndex),
-        disabled: !(project?.sourceImages?.length > 0),
-        style: { padding: '8px 6px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', lineHeight: 1.2 },
-      }, "\uD83D\uDCCE \uAC24\uB7EC\uB9AC"),
-      React.createElement("button", {
-        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
-        disabled: regeneratingCardIdx === activeIndex,
-        style: { padding: '8px 6px', background: regeneratingCardIdx === activeIndex ? T.surfaceHover : 'rgba(194,65,12,0.15)', border: `1px solid rgba(194,65,12,0.4)`, borderRadius: T.radiusSm, color: '#fdba74', fontSize: 11, cursor: regeneratingCardIdx === activeIndex ? 'wait' : 'pointer', lineHeight: 1.2 },
-      }, regeneratingCardIdx === activeIndex ? "\uC0DD\uC131 \uC911..." : "\u2728 AI \uC7AC\uC0DD\uC131"),
-    ),
+    // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합) — Desktop
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
+      card, project,
+      onSelectImage: (src, idx) => onSelectArticleImage && onSelectArticleImage(activeIndex, src, idx),
+      onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+      regenerating: regeneratingCardIdx === activeIndex,
+    }),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
@@ -9281,6 +9340,7 @@ export default function App() {
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,
+          onSelectArticleImage: handleSelectArticleImage,
           regeneratingCardIdx,
         }),
       ) : React.createElement("div", { 'data-tour': 'card-panel' },
@@ -9306,6 +9366,7 @@ export default function App() {
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,
+          onSelectArticleImage: handleSelectArticleImage,
           regeneratingCardIdx,
         }),
       ),
