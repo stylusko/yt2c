@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5972,15 +5972,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
               articleImageCount === 0
                 ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0 \uC5C6\uC74C \u2192 \uC804\uBD80 AI \uC0DD\uC131'
-                : numericCardCount == null
-                  ? `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \uC6B0\uC120 + \uBD80\uC871\ubd84\uc740 AI \uBCF4\uCDA9`
-                  : generateCount === 0
-                    ? `\uBCF8\uBB38 ${reuseCount}\uC7A5\uC73C\uB85C \uCDA9\uBD84\ud574\uc694 \u00b7 AI \uc0dd\uc131 \uc5c6\uc74c`
-                    : `\uBCF8\uBB38 ${reuseCount}\uC7A5 + AI \uC57D ${generateCount}\uC7A5 \uBCF4\uCDA9`
-            ),
-            // 무료/비용 미니 표시 — 항상 보이면 의사결정에 도움
-            currentImageMode === 'reuse' && numericCardCount != null && generateCount > 0 && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginTop: 2 } },
-              `\u2248 \uc57d ${generateCount * 50}\uc6d0 (AI \ubcf4\ucda9\ubd84\ub9cc)`
+                : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \uBB34\uB8CC \uC0AC\uC6A9 \u00B7 \uBD80\uC871\ubd84 AI \uBCF4\uCDA9`
             ),
           ),
           // AI 생성
@@ -6017,11 +6009,35 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
         ),
       ),
-      // 스타일 프리셋 — AI 보충이 0으로 확정된 경우엔 숨기고 힌트만 노출
-      (currentImageMode === 'reuse' && numericCardCount != null && generateCount === 0 && articleImageCount > 0)
-        ? React.createElement("div", { style: { padding: '10px 12px', background: 'rgba(99,102,241,0.06)', border: `1px dashed ${T.border}`, borderRadius: T.radiusSm, fontSize: 11, color: T.textMuted } },
-            `\uD83C\uDFA8 \uBCF8\uBB38 ${reuseCount}\uC7A5\uC73C\ub85c \ucda9\ubd84\ud574\uc11c AI \uc0dd\uc131\uc774 \uc5c6\uc5b4\uc694. \uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c \uc120\ud0dd\uc740 \uac74\ub108\ub6f0\uc5b4\uc694.`)
-        : React.createElement("div", null,
+      // 카드 수 ↔ 스타일 사이 실시간 분배 안내 박스 (시선 고정)
+      (() => {
+        let msg = null;
+        let variant = 'info';
+        if (articleImageCount === 0) {
+          msg = '\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694 \u2192 \uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
+        } else if (currentImageMode === 'generate') {
+          msg = numericCardCount != null
+            ? `\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 (\uCD1D ${numericCardCount}\uC7A5 \u00B7 \u2248 \uC57D ${numericCardCount * 50}\uC6D0)`
+            : '\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
+        } else if (numericCardCount == null) {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${articleImageCount}\uC7A5 \uC6B0\uC120 \uC0AC\uC6A9 \u00B7 \uBD80\uC871\ubd84\uc740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131`;
+        } else if (generateCount === 0) {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5\uC73C\ub85c \uCDA9\uBD84 \u00B7 AI \uC0DD\uC131 \uC5C6\uC74C`;
+          variant = 'ok';
+        } else {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5 \uC0AC\uC6A9 + \uC794\uC5EC ${generateCount}\uC7A5\uC740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 \u00B7 \u2248 \uC57D ${generateCount * 50}\uC6D0`;
+        }
+        const bg = variant === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(99,102,241,0.1)';
+        const borderColor = variant === 'ok' ? 'rgba(34,197,94,0.35)' : 'rgba(99,102,241,0.35)';
+        const icon = variant === 'ok' ? '\u2713' : '\uD83D\uDCCA';
+        return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: bg, border: `1px solid ${borderColor}`, borderRadius: T.radiusSm } },
+          React.createElement("span", { style: { fontSize: 14 } }, icon),
+          React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500, lineHeight: 1.4 } }, msg),
+        );
+      })(),
+      // 스타일 프리셋 — AI 보충이 0으로 확정된 경우엔 숨김
+      !(currentImageMode === 'reuse' && numericCardCount != null && generateCount === 0 && articleImageCount > 0)
+        && React.createElement("div", null,
         React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
           "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C",
           currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(AI \uBCF4\uCDA9\ubd84\uc5d0 \uc801\uc6a9)"),
