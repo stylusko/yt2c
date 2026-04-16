@@ -117,7 +117,8 @@ export default async function handler(req, res) {
         const fullPrompt = `${preset.stylePrefix}, ${c.imagePrompt}, no text, no letters, no typography`;
 
         let bgImage = null;
-        let aiMeta = { prompt: fullPrompt, seed: null, status: 'pending' };
+        // aiMeta.prompt 는 stylePrefix 를 제외한 '주제(subject)'만 저장 — 재생성 시 새 스타일과 섞이지 않도록
+        let aiMeta = { prompt: c.imagePrompt, seed: null, status: 'pending' };
 
         try {
           const img = await generateImage({
@@ -129,14 +130,14 @@ export default async function handler(req, res) {
           try {
             const persisted = await persistImageToBucket(img.url, projectId, c.index);
             bgImage = persisted.finalUrl || img.url; // 버킷 업로드 성공 시 원본 CDN URL을 일단 쓰고, M2에서 bucketKey 기반 URL 도입
-            aiMeta = { prompt: fullPrompt, seed: img.seed, status: 'ok', bucketKey: persisted.bucketKey };
+            aiMeta = { prompt: c.imagePrompt, seed: img.seed, status: 'ok', bucketKey: persisted.bucketKey };
           } catch {
             bgImage = img.url;
-            aiMeta = { prompt: fullPrompt, seed: img.seed, status: 'ok', bucketKey: null };
+            aiMeta = { prompt: c.imagePrompt, seed: img.seed, status: 'ok', bucketKey: null };
           }
         } catch (err) {
           aiMeta = {
-            prompt: fullPrompt,
+            prompt: c.imagePrompt,
             seed: null,
             status: 'failed',
             errorCode: err.code || 'UNKNOWN',
