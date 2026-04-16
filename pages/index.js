@@ -6,20 +6,20 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0407';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_DATE = '2026.0416';
+const BUILD_NUM = 15; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
-  'AI \uC704\uC800\uB4DC \uCE74\uD53C\uD1A4 \uC120\uD0DD \uB2E8\uACC4 \uBD84\uB9AC',
-  '\uC26C\uC6B4\uD3B8\uC9D1 30\uCD08 \uB2E8\uC704 \uAD6C\uAC04 + \uCD5C\uB300 20\uC7A5',
-  'AI \uCE74\uD53C \uD1A4 \uC2DC\uC2A4\uD15C (4\uB2E8\uACC4 \uC804\uCCB4 \uAD6C\uD604)',
-  '\uC601\uC0C1 \uC2E4\uC81C \uBE44\uC728 \uAC10\uC9C0\uB85C \uD504\uB9AC\uBDF0-\uB80C\uB354\uB9C1 \uC815\uB82C',
-  'AI \uC790\uB3D9\uD3B8\uC9D1 \uBAA8\uB4DC \uCD94\uAC00',
-  '\uBAA8\uBC14\uC77C \uC2AC\uB77C\uC774\uB354 \uD130\uCE58 \uD0C0\uAC9F \uD655\uB300',
-  '\uBBF8\uB9AC\uBCF4\uAE30 \uBAA8\uB2EC \uC601\uC0C1 \uB85C\uB529 \uC2A4\uD53C\uB108 \uCD94\uAC00',
+  '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
+  '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환 (Flux 이미지 생성)',
+  '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
+  'AI 위저드 카피톤 선택 단계 분리',
+  '쉬운편집 30초 단위 구간 + 최대 20장',
+  'AI 카피 톤 시스템 (4단계 전체 구현)',
+  '영상 실제 비율 감지로 프리뷰-렌더링 정렬',
 ];
 
 /* ── Icons ── */
@@ -38,7 +38,7 @@ const TUTORIAL_STEPS_MOBILE = [
   { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 URL\uC744 \uC785\uB825\uD558\uACE0 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-clip-adjust"]', title: '\uD074\uB9BD \uC870\uC815', desc: '\uC601\uC0C1\uC758 \uC704\uCE58, \uD655\uB300, \uBC1D\uAE30\uB97C \uC870\uC808\uD558\uACE0 \uCE74\uB4DC \uBE44\uC728\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
-  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0, \uCE74\uD53C \uD1A4\uC73C\uB85C \uD6C4\uD0B9/\uC694\uC57D \uC2A4\uD0C0\uC77C\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694. \u2728 AI \uC81C\uC548\uBC1B\uAE30\uB85C \uC790\uB3D9 \uCE74\uD53C\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-overlay"]', title: '\uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
@@ -47,7 +47,7 @@ const TUTORIAL_STEPS_DESKTOP = [
   { target: '[data-tour="card-panel"]', title: '\uCE74\uB4DC \uD3B8\uC9D1', desc: '\uC88C\uCE21\uC5D0\uC11C \uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uACE0, \uC6B0\uCE21 \uD0ED\uC73C\uB85C \uD3B8\uC9D1\uD558\uC138\uC694.' },
   { target: '[data-tour="tab-fill"]', title: '\uD074\uB9BD \uD3B8\uC9D1', desc: '\uC601\uC0C1 \uAD6C\uAC04(\uC2DC\uC791~\uB05D)\uC744 \uC124\uC815\uD558\uACE0, \uCC44\uC6B0\uAE30 \uBC29\uC2DD\uC744 \uC120\uD0DD\uD558\uC138\uC694. \uAC1C\uBCC4 URL\uB85C \uCE74\uB4DC\uBCC4 \uB2E4\uB978 \uC601\uC0C1\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-layout"]', title: '\uB808\uC774\uC544\uC6C3', desc: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8, \uC0C1\uB2E8, \uADF8\uB77C\uB370\uC774\uC158 \uB4F1 \uCE74\uB4DC \uBC30\uCE58 \uC2A4\uD0C0\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.' },
-  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0 \uD3F0\uD2B8, \uD06C\uAE30, \uC0C9\uC0C1\uC744 \uC870\uC808\uD558\uC138\uC694.' },
+  { target: '[data-tour="tab-text"]', title: '\uD14D\uC2A4\uD2B8 \uB0B4\uC6A9', desc: '\uC81C\uBAA9\xB7\uBD80\uC81C\xB7\uBCF8\uBB38\uC744 \uC785\uB825\uD558\uACE0, \uCE74\uD53C \uD1A4\uC73C\uB85C \uD6C4\uD0B9/\uC694\uC57D \uC2A4\uD0C0\uC77C\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694. \u2728 AI \uC81C\uC548\uBC1B\uAE30\uB85C \uC790\uB3D9 \uCE74\uD53C\uB3C4 \uAC00\uB2A5!' },
   { target: '[data-tour="tab-overlay"]', title: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', desc: '\uB85C\uACE0\uB098 \uC2A4\uD2F0\uCEE4 \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC11C \uCE74\uB4DC \uC704\uC5D0 \uC62C\uB9B4 \uC218 \uC788\uC5B4\uC694.' },
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
@@ -152,9 +152,11 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
+  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_fade', label: '\uADF8\uB77C\uB370\uC774\uC158', desc: '\uC601\uC0C1\uC774 \uC790\uC5F0\uC2A4\uB7FD\uAC8C \uD14D\uC2A4\uD2B8\uB85C \uC774\uC5B4\uC838\uC694', layout: 'photo_top', bgColor: '#121212', bgOpacity: 1, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
   { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
@@ -184,6 +186,10 @@ const DEFAULT_CARD = () => ({
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
   appliedStart: null, appliedEnd: null, clipThumbnail: null,
+  // ── article 모드 전용 (기본 youtube) ──
+  sourceType: 'youtube',     // 'youtube' | 'article'
+  articleType: null,         // 'cover' | 'content' | 'outro' (article 모드에서만)
+  articleMeta: null,         // { aiImageSource, sourceImageIndex, aiImagePrompt, aiImageSeed, aiImageStatus, aiImageError, stylePresetId }
 });
 
 /* ── Responsive Hook ── */
@@ -280,6 +286,31 @@ function formatSec(s) {
   const m = Math.floor(s / 60);
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
+}
+function clientCardHash(card, globalConfig) {
+  const data = JSON.stringify({
+    ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
+    url: card.url || globalConfig.globalUrl || '',
+    start: card.appliedStart || card.start || '', end: card.appliedEnd || card.end || '',
+    vx: card.videoX ?? 0, vy: card.videoY ?? 0, vs: card.videoScale ?? 100, vb: card.videoBrightness ?? 0,
+    layout: card.layout || 'photo_top', ug: card.useGradient || false, pr: card.photoRatio ?? 50,
+    vf: card.videoFill || 'full', fs: card.fillSource || 'video',
+    title: card.title || '', ut: card.useTitle !== false,
+    sub: card.subtitle || '', us: card.useSubtitle !== false,
+    body: card.body || '', ub: card.useBody !== false,
+    ts: card.titleSize || 64, tc: card.titleColor || '#fff', tf: card.titleFont || '',
+    ss: card.subtitleSize || 48, sc: card.subtitleColor || '#aaa',
+    bs: card.bodySize || 40, bc: card.bodyColor || '#d2d2d2',
+    bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
+    ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
+    ui: card.uploadedImage ? 'y' : 'n',
+    tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
+    tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
+    ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
+  });
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) { hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0; }
+  return (hash >>> 0).toString(36);
 }
 function fmtMM(s) {
   if (s == null || isNaN(s)) return '--:--';
@@ -677,6 +708,89 @@ function PillBtn({ active, children, onClick, style }) {
       ...style,
     }
   }, children);
+}
+
+/* ── Article Image Carousel ── (본문 썸네일 + AI 재생성 타일 통합 UI) */
+function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, regenerating }) {
+  const images = project?.sourceImages || [];
+  const meta = card?.articleMeta || {};
+  const isAI = meta.aiImageSource === 'ai';
+  const selectedIdx = typeof meta.sourceImageIndex === 'number' ? meta.sourceImageIndex : -1;
+
+  const thumbSize = 52;
+  const baseThumbStyle = {
+    flexShrink: 0,
+    width: thumbSize,
+    height: thumbSize,
+    borderRadius: T.radiusSm,
+    padding: 0,
+    background: T.surface,
+    overflow: 'hidden',
+    position: 'relative',
+    cursor: 'pointer',
+  };
+
+  return React.createElement("div", {
+    className: 'hide-scrollbar',
+    style: {
+      display: 'flex',
+      gap: 6,
+      overflowX: 'auto',
+      marginTop: 4,
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      paddingBottom: 2,
+    },
+  },
+    images.map((src, i) => {
+      const active = !isAI && selectedIdx === i;
+      return React.createElement("button", {
+        key: i,
+        onClick: () => onSelectImage && onSelectImage(src, i),
+        title: `본문 이미지 ${i+1}`,
+        style: {
+          ...baseThumbStyle,
+          border: active ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
+          boxShadow: active ? `0 0 0 2px rgba(99,102,241,0.15)` : 'none',
+        },
+      },
+        React.createElement("img", {
+          src,
+          alt: '',
+          style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+          onError: (e) => { e.currentTarget.style.opacity = '0.3'; },
+        }),
+      );
+    }),
+    React.createElement("button", {
+      onClick: onRegenerateAI,
+      disabled: regenerating,
+      title: 'AI 재생성',
+      style: {
+        ...baseThumbStyle,
+        border: isAI ? `2px solid #f97316` : `1px solid rgba(194,65,12,0.4)`,
+        background: regenerating ? T.surfaceHover : 'rgba(194,65,12,0.15)',
+        color: '#fdba74',
+        cursor: regenerating ? 'wait' : 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 1,
+        fontSize: 9,
+        fontWeight: 700,
+        boxShadow: isAI ? `0 0 0 2px rgba(249,115,22,0.15)` : 'none',
+      },
+    },
+      regenerating
+        ? React.createElement("span", { style: { fontSize: 11 } }, "...")
+        : React.createElement(React.Fragment, null,
+            React.createElement("span", { style: { fontSize: 16, lineHeight: 1 } }, "\u2728"),
+            React.createElement("span", null, "AI"),
+          ),
+    ),
+    // 빈 상태 안내 (이미지도 없고 AI도 안 썼을 때는 아예 안 쓸 일 없음 — skip)
+  );
 }
 
 /* ── Layout Thumbnail ── */
@@ -3001,7 +3115,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
 /* ── VideoPreview (YouTube IFrame: loop between start/end with mute toggle) ── */
 let __vpIdCounter = 0;
-function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, paused, onReady, videoW, videoH }) {
+function VideoPreview({ videoId, start, end, width, height, videoX, videoY, videoScale, videoBrightness, muted, volume, paused, onReady, videoW, videoH }) {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const mutedRef = useRef(muted);
@@ -3052,12 +3166,12 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
     document.head.appendChild(tag);
   }, []);
 
-  // Mute/unmute without recreating player
+  // Mute/unmute + volume without recreating player
   useEffect(() => {
     const p = playerRef.current;
     if (!p || typeof p.mute !== 'function') return;
-    if (muted) p.mute(); else { p.unMute(); p.setVolume(100); }
-  }, [muted]);
+    if (muted) p.mute(); else { p.unMute(); p.setVolume(volume ?? 100); }
+  }, [muted, volume]);
 
   // Play/pause without recreating player
   useEffect(() => {
@@ -3238,6 +3352,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [vpMutedLocal, setVpMutedLocal] = useState(true);
   const vpMuted = externalMuted != null ? externalMuted : vpMutedLocal;
   const setVpMuted = onMuteToggle || setVpMutedLocal;
+  const [vpVolume, setVpVolume] = useState(80);
+  const [showVolSlider, setShowVolSlider] = useState(false);
+  const volTimerRef = useRef(null);
   const [imgDims, setImgDims] = useState(null);
   const [vpReady, setVpReady] = useState(false);
   const prevVideoKey = useRef(null);
@@ -3245,7 +3362,9 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   useEffect(() => {
     if (!card.uploadedImage) { setImgDims(null); return; }
     const img = new Image();
+    img.referrerPolicy = 'no-referrer';
     img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = () => setImgDims(null);
     img.src = card.uploadedImage;
   }, [card.uploadedImage]);
 
@@ -3364,13 +3483,27 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
   const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
   // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  // article 카드는 cover (카드 꽉 채우고 넘치는 부분 crop), 그 외는 기존 contain 유지.
   const uploadImgStyle = (() => {
     if (!card.uploadedImage || !imgDims) return null;
     const imgAspect = imgDims.w / imgDims.h;
     const containerAspect = previewW / previewH;
+    const useCover = card.sourceType === 'article';
     let containedW, containedH;
-    if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
-    else { containedH = previewH; containedW = previewH * imgAspect; }
+    if (useCover) {
+      // cover: 짧은 변을 컨테이너에 맞추고 긴 변은 컨테이너 밖으로
+      if (imgAspect >= containerAspect) {
+        containedH = previewH;
+        containedW = previewH * imgAspect;
+      } else {
+        containedW = previewW;
+        containedH = previewW / imgAspect;
+      }
+    } else {
+      // contain: 긴 변을 컨테이너에 맞추고 짧은 변은 letterbox
+      if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
+      else { containedH = previewH; containedW = previewH * imgAspect; }
+    }
     const scaledW = containedW * vScale;
     const scaledH = containedH * vScale;
     const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
@@ -3380,7 +3513,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
   const imgPosX = -(card.videoX ?? 0) / 4;
   const imgPosY = -(card.videoY ?? 0) / 4;
-  const imgTransform = `scale(${coverVScale}) translate(${imgPosX}%, ${imgPosY}%)`;
+  // card.uploadedImage가 있으면 coverVScale의 101% 업스케일(edge artifact 방지용, video 전용)
+  // 을 제거해 1:1 매칭으로 렌더링 — 업스케일 blur 방지.
+  const imgScale = card.uploadedImage ? vScale : coverVScale;
+  const imgTransform = `scale(${imgScale}) translate(${imgPosX}%, ${imgPosY}%)`;
   const thumbSpinner = (baseImage && isBaseThumb && !thumbLoaded)
     ? React.createElement("div", { style: { position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' } },
         React.createElement("div", { style: { width: 22, height: 22, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'rgba(255,255,255,0.7)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }))
@@ -3388,11 +3524,11 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const BgImage = () => baseImage
     ? (isBaseThumb
       ? React.createElement(React.Fragment, null,
-          React.createElement("img", { src: baseImage, alt: "", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
+          React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
           thumbSpinner)
       : uploadImgStyle
-        ? React.createElement("img", { src: baseImage, alt: "", style: uploadImgStyle })
-        : React.createElement("img", { src: baseImage, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
+        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: uploadImgStyle })
+        : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
@@ -3720,15 +3856,39 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
   const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
-  // Mute toggle button (bottom-right corner)
+  // Mute toggle + volume slider (bottom-right corner)
   const muteToggle = hasVideoPreview
-    ? React.createElement("button", {
-        onClick: (e) => { e.stopPropagation(); if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m); },
-        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
-      }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 }))
+    ? React.createElement("div", {
+        style: { position: 'absolute', bottom: 8, right: 8, zIndex: 10, display: 'flex', alignItems: 'center', gap: 6 },
+        onMouseEnter: () => { if (!vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); } },
+        onMouseLeave: () => { volTimerRef.current = setTimeout(() => setShowVolSlider(false), 1200); },
+      },
+        // Volume slider (shows when unmuted + hover)
+        showVolSlider && !vpMuted && React.createElement("div", {
+          onClick: (e) => e.stopPropagation(),
+          style: { display: 'flex', alignItems: 'center', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', borderRadius: 16, padding: '4px 10px', gap: 6 },
+        },
+          React.createElement("input", {
+            type: 'range', min: 0, max: 100, value: vpVolume,
+            onChange: (e) => setVpVolume(parseInt(e.target.value, 10)),
+            style: { width: 60, height: 4, accentColor: '#6366f1', cursor: 'pointer' },
+          }),
+          React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.7)', minWidth: 22, textAlign: 'right' } }, vpVolume),
+        ),
+        // Mute button
+        React.createElement("button", {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (vpMuted) { setShowVolSlider(true); if (volTimerRef.current) clearTimeout(volTimerRef.current); volTimerRef.current = setTimeout(() => setShowVolSlider(false), 3000); }
+            else { setShowVolSlider(false); }
+            if (onMuteToggle) onMuteToggle(); else setVpMutedLocal(m => !m);
+          },
+          style: { width: 32, height: 32, borderRadius: '50%', background: vpMuted ? 'rgba(239,68,68,0.55)' : 'rgba(0,0,0,0.55)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 16, backdropFilter: 'blur(4px)', transition: 'background 0.15s' },
+        }, React.createElement(SvgIcon, { path: vpMuted ? ICON_SPEAKER_MUTE : ICON_SPEAKER, size: 16 })),
+      )
     : null;
 
   // Video loading spinner (카드 위에 인라인 표시)
@@ -4372,7 +4532,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   );
 }
 
-function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate }) {
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat }) {
   const url = globalUrl || cards[0]?.url || '';
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
@@ -4420,6 +4580,10 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
+            const isCached = card.lastGenHash && card.lastGenHash === currentHash;
+            const hasFile = isCached && !!card.lastGenKey;
+            const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
             return React.createElement("div", {
               key: i,
               onClick: () => toggle(i),
@@ -4431,9 +4595,12 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
               ),
               // Checkbox overlay
-              !disabled && React.createElement("div", { style: { position:'absolute', top:6, left:6, width:22, height:22, borderRadius:6, background: selected[i] ? T.accent : 'rgba(0,0,0,0.5)', border: selected[i] ? 'none' : '2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' } },
-                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:13, fontWeight:700, lineHeight:1 } }, "\u2713"),
+              !disabled && React.createElement("div", { style: { position:'absolute', top:6, right:6, zIndex:20, width:24, height:24, borderRadius:6, background: selected[i] ? '#22c55e' : 'rgba(0,0,0,0.5)', border: selected[i] ? '2px solid #fff' : '2px solid rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s', boxShadow: selected[i] ? '0 1px 4px rgba(0,0,0,0.4)' : 'none' } },
+                selected[i] && React.createElement("span", { style: { color:'#fff', fontSize:14, fontWeight:700, lineHeight:1 } }, "\u2713"),
               ),
+              // Cache status badge
+              !disabled && isCached && hasFile && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(34,197,94,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\u2B07 \uB2E4\uC6B4\uB85C\uB4DC \uAC00\uB2A5"),
+              !disabled && isModified && React.createElement("div", { style: { position:'absolute', bottom:4, left:6, zIndex:20, background:'rgba(245,158,11,0.85)', color:'#fff', fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, whiteSpace:'nowrap' } }, "\uC218\uC815\uB428"),
               // Card number
               React.createElement("div", { style: { position:'absolute', bottom:4, right:6, fontSize:11, color:'rgba(255,255,255,0.7)', fontWeight:600, textShadow:'0 1px 3px rgba(0,0,0,0.8)' } }, `${i+1}`),
             );
@@ -4441,13 +4608,32 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         )
       ),
       // Footer: generate button
-      React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
-        React.createElement("button", {
-          onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
-          disabled: noneSelected,
-          style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
-        }, noneSelected ? "\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694" : `\u2728 ${selectedCount}\uAC1C \uC0DD\uC131\uD558\uAE30`),
-      ),
+      (() => {
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+        let cachedCount = 0, modifiedCount = 0, newCount = 0;
+        selected.forEach((s, i) => {
+          if (!s) return;
+          const c = cards[i];
+          const ch = clientCardHash(c, hashCfg);
+          if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedCount++;
+          else if (c.lastGenHash && c.lastGenHash !== ch) modifiedCount++;
+          else newCount++;
+        });
+        const regenCount = modifiedCount + newCount;
+        let btnLabel = '\uCE74\uB4DC\uB97C \uC120\uD0DD\uD558\uC138\uC694';
+        if (!noneSelected) {
+          if (regenCount === 0 && cachedCount > 0) btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC`;
+          else if (cachedCount === 0) btnLabel = `\u2728 ${regenCount}\uAC1C \uC0DD\uC131\uD558\uAE30`;
+          else btnLabel = `\u2B07 ${cachedCount}\uAC1C \uB2E4\uC6B4\uB85C\uB4DC + \uD83D\uDD04 ${regenCount}\uAC1C \uC7AC\uC0DD\uC131`;
+        }
+        return React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
+          React.createElement("button", {
+            onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+            disabled: noneSelected,
+            style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
+          }, btnLabel),
+        );
+      })(),
     ),
   );
 }
@@ -4668,6 +4854,11 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   globalImageSource: 'thumbnail',
   globalBgImage: null,
   cards: [DEFAULT_CARD()],
+  // ── article 모드 전용 (기본 youtube) ──
+  sourceType: 'youtube',   // 'youtube' | 'article'
+  sourceUrl: '',           // 기사 원본 URL
+  sourceTitle: '',         // 기사 원본 제목
+  sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
 });
 
 function loadProjects() {
@@ -4708,6 +4899,8 @@ const CARD_KEY_MAP = {
   textBoxX:'W', textBoxY:'X', textBoxWidth:'Y', textBoxPadding:'Z',
   textBoxRadius:'0', textBoxBgColor:'1', textBoxBgOpacity:'2',
   textBoxHeight:'3', textBoxBorderColor:'4', textBoxBorderWidth:'5',
+  // ── article 모드 필드 (기존 '6'~'9' 숫자 슬롯은 모두 비어있었음) ──
+  sourceType:'6', articleType:'7', articleMeta:'8',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
@@ -4732,7 +4925,7 @@ function restoreDefaults(obj) {
   return { ...DEFAULT_CARD(), ...expanded };
 }
 
-const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking' };
+const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
 function encodeProject(project) {
   const s = { n: project.name, u: project.globalUrl };
@@ -4741,15 +4934,34 @@ function encodeProject(project) {
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
   if (project.copyTone && project.copyTone !== PROJ_DEFAULTS.copyTone) s.ct = project.copyTone;
+  // article 모드 필드 (값이 있을 때만 직렬화 — 기존 YouTube 공유 URL 사이즈 영향 없음)
+  if (project.sourceType && project.sourceType !== PROJ_DEFAULTS.sourceType) s.t = project.sourceType;
+  if (project.sourceUrl) s.r = project.sourceUrl;
+  if (project.sourceTitle) s.h = project.sourceTitle;
+  if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) s.m = project.sourceImages;
   s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
+}
+
+// 네이버 pstatic.net 이미지 URL 정규화 (클라이언트용 헬퍼, lib/article-extractor.js와 동일 로직)
+// 기존에 저장된 공유 URL에 ?type=w1이 없어도 복원 시 자동 붙여 고화질로 로드.
+function normalizeNaverImageUrl(src) {
+  if (!src) return src;
+  let out = src;
+  out = out.replace(/mblogthumb-phinf\.pstatic\.net/, 'blogthumb.pstatic.net');
+  out = out.replace(/mblogfiles\.pstatic\.net/, 'blogfiles.pstatic.net');
+  out = out.replace(/\?type=[\w]+/, '');
+  if (/\.pstatic\.net\//.test(out)) {
+    out += (out.includes('?') ? '&' : '?') + 'type=w1';
+  }
+  return out;
 }
 
 function decodeProject(encoded) {
   const json = LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) return null;
   const s = JSON.parse(json);
-  return {
+  const proj = {
     id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     name: s.n || '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     globalUrl: s.u || '',
@@ -4760,7 +4972,27 @@ function decodeProject(encoded) {
     copyTone: s.ct || PROJ_DEFAULTS.copyTone,
     globalBgImage: null,
     cards: (s.c || []).map(c => restoreDefaults(c)),
+    // article 모드 필드 (없으면 기본값 — 기존 YouTube 공유 URL 호환성 보장)
+    sourceType: s.t || PROJ_DEFAULTS.sourceType,
+    sourceUrl: s.r || '',
+    sourceTitle: s.h || '',
+    sourceImages: Array.isArray(s.m) ? s.m.map(normalizeNaverImageUrl) : [],
   };
+  // article 프로젝트: 각 카드의 uploadedImage를 sourceImages[sourceImageIndex]로 복원
+  // (SKIP_CARD_KEYS로 uploadedImage가 인코드에서 제외되기 때문에 공유 URL에서는 항상 비어있음)
+  if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
+    proj.cards = proj.cards.map(c => {
+      if (c.sourceType !== 'article') return c;
+      const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
+        ? c.articleMeta.sourceImageIndex
+        : null;
+      if (idx !== null && idx >= 0 && idx < proj.sourceImages.length) {
+        return { ...c, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
+      }
+      return c;
+    });
+  }
+  return proj;
 }
 
 /* ── Download All as ZIP ── */
@@ -5116,7 +5348,7 @@ function StylePresetThumb({ preset }) {
 }
 
 /* ── Mode Selection Screen ── */
-function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, aiEditRunning }) {
+function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy, onSelectFree, aiEditRunning }) {
   const [hovered, setHovered] = useState(null);
   const [showAiBlock, setShowAiBlock] = useState(false);
   const [siteStats, setSiteStats] = useState(null);
@@ -5198,105 +5430,139 @@ function ModeSelectionScreen({ mob, onSelectEasy, onSelectFree, onSelectAiEdit, 
     ),
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),
-    // Section 3: Cards — AI자동편집 → 쉬운편집 → 자유편집
-    React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 24, width: '100%', maxWidth: 860, justifyContent: 'center' } },
-      // 1) AI auto-edit card
-      React.createElement("div", {
-        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectAiEdit(); },
-        onMouseEnter: () => setHovered('ai'), onMouseLeave: () => setHovered(null),
-        style: {
-          ...cardBase,
-          background: hovered === 'ai'
-            ? 'linear-gradient(135deg, #065f46 0%, #059669 40%, #10b981 100%)'
-            : 'linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%)',
-          borderColor: hovered === 'ai' ? '#6ee7b7' : 'rgba(16,185,129,0.3)',
-          boxShadow: hovered === 'ai' ? '0 8px 32px rgba(5,150,105,0.4)' : '0 4px 20px rgba(5,150,105,0.2)',
+    // Section 3: Cards — 영상/텍스트/쉬운 (상단 3열) + 자유 (하단 full-width)
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: mob ? 8 : 16, width: '100%', maxWidth: 860, alignItems: 'center' } },
+      // ── 상단 row: 영상 / 텍스트 / 쉬운 ──
+      React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 16, width: '100%', justifyContent: 'center' } },
+        // 1) 영상으로 만들기 (기존 AI자동편집 리네임, 색상 유지)
+        React.createElement("div", {
+          onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectVideo(); },
+          onMouseEnter: () => setHovered('video'), onMouseLeave: () => setHovered(null),
+          style: {
+            ...cardBase,
+            background: hovered === 'video'
+              ? 'linear-gradient(135deg, #065f46 0%, #059669 40%, #10b981 100%)'
+              : 'linear-gradient(135deg, #064e3b 0%, #047857 40%, #059669 100%)',
+            borderColor: hovered === 'video' ? '#6ee7b7' : 'rgba(16,185,129,0.3)',
+            boxShadow: hovered === 'video' ? '0 8px 32px rgba(5,150,105,0.4)' : '0 4px 20px rgba(5,150,105,0.2)',
+          },
         },
-      },
-        mob
-          ? React.createElement(React.Fragment, null,
-              React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83E\uDD16"),
-              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
-                  React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
-                  React.createElement("span", { style: { fontSize: 9, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '1px 6px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+          mob
+            ? React.createElement(React.Fragment, null,
+                React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83C\uDFAC"),
+                React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                  React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC601\uC0C1\uC73C\uB85C \uB9CC\uB4E4\uAE30"),
+                  React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "YouTube URL\uB9CC \uBD99\uC5EC\uB123\uC73C\uBA74 AI\uAC00 \uC790\uB3D9 \uC0DD\uC131"),
                 ),
-                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544 \uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9 \uC0DD\uC131"),
+                React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
+              )
+            : React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFAC"),
+                React.createElement("div", null,
+                  React.createElement("h2", { style: { fontSize: 19, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC601\uC0C1\uC73C\uB85C \uB9CC\uB4E4\uAE30"),
+                  React.createElement("p", { style: { fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uB9CC \uBD99\uC5EC\uB123\uC73C\uBA74", React.createElement("br"), "AI\uAC00 \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+                ),
+                React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                  React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+                ),
               ),
-              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#a7f3d0', flexShrink: 0 } }, "\u2192"),
-            )
-          : React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                React.createElement("span", { style: { fontSize: 32 } }, "\uD83E\uDD16"),
-                React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: '#6ee7b7', background: 'rgba(110,231,183,0.15)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
-              ),
-              React.createElement("div", null,
-                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "AI \uC790\uB3D9\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "AI\uAC00 \uC601\uC0C1\uC758 \uD575\uC2EC \uAD6C\uAC04\uC744 \uCC3E\uC544", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4\uB97C \uC790\uB3D9\uC73C\uB85C \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
-              ),
-              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
-                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#a7f3d0' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
-              ),
-            ),
-      ),
-      // 2) Easy mode card
-      React.createElement("div", {
-        onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectEasy(); },
-        onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
-        style: {
-          ...cardBase,
-          background: hovered === 'easy'
-            ? 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #7c3aed 100%)'
-            : 'linear-gradient(135deg, #3b0764 0%, #5b21b6 40%, #6d28d9 100%)',
-          borderColor: hovered === 'easy' ? '#a78bfa' : 'rgba(139,92,246,0.3)',
-          boxShadow: hovered === 'easy' ? '0 8px 32px rgba(109,40,217,0.4)' : '0 4px 20px rgba(109,40,217,0.2)',
+        ),
+        // 2) 텍스트로 만들기 (신규, NEW 배지 이관, 오렌지 그라데이션)
+        React.createElement("div", {
+          onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectArticle(); },
+          onMouseEnter: () => setHovered('article'), onMouseLeave: () => setHovered(null),
+          style: {
+            ...cardBase,
+            background: hovered === 'article'
+              ? 'linear-gradient(135deg, #9a3412 0%, #c2410c 40%, #f97316 100%)'
+              : 'linear-gradient(135deg, #7c2d12 0%, #9a3412 40%, #c2410c 100%)',
+            borderColor: hovered === 'article' ? '#fdba74' : 'rgba(249,115,22,0.3)',
+            boxShadow: hovered === 'article' ? '0 8px 32px rgba(194,65,12,0.4)' : '0 4px 20px rgba(194,65,12,0.2)',
+          },
         },
-      },
-        mob
-          ? React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\u2728"),
-              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694"),
+          mob
+            ? React.createElement(React.Fragment, null,
+                React.createElement("span", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83D\uDCF0"),
+                React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                  React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 } },
+                    React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0 } }, "\uD14D\uC2A4\uD2B8\uB85C \uB9CC\uB4E4\uAE30"),
+                    React.createElement("span", { style: { fontSize: 9, fontWeight: 600, color: '#fed7aa', background: 'rgba(253,186,116,0.18)', padding: '1px 6px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+                  ),
+                  React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "\uC6F9 \uC544\uD2F0\uD074\uACFC \uBCF8\uBB38\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C \uBCC0\uD658"),
+                ),
+                React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#fed7aa', flexShrink: 0 } }, "\u2192"),
+              )
+            : React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                  React.createElement("span", { style: { fontSize: 32 } }, "\uD83D\uDCF0"),
+                  React.createElement("span", { style: { fontSize: 11, fontWeight: 600, color: '#fed7aa', background: 'rgba(253,186,116,0.18)', padding: '2px 8px', borderRadius: 20, letterSpacing: '0.05em' } }, "NEW"),
+                ),
+                React.createElement("div", null,
+                  React.createElement("h2", { style: { fontSize: 19, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uD14D\uC2A4\uD2B8\uB85C \uB9CC\uB4E4\uAE30"),
+                  React.createElement("p", { style: { fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "\uC6F9 \uC544\uD2F0\uD074\uC774\uB098 \uBCF8\uBB38\uC744", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4\uB85C \uBCC0\uD658\uD574\uB4DC\uB824\uC694."),
+                ),
+                React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                  React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#fed7aa' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+                ),
               ),
-              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#e9d5ff', flexShrink: 0 } }, "\u2192"),
-            )
-          : React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
-              React.createElement("div", null,
-                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 14, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+        ),
+        // 3) 쉬운편집 (기존 유지, 색상 유지)
+        React.createElement("div", {
+          onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectEasy(); },
+          onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
+          style: {
+            ...cardBase,
+            background: hovered === 'easy'
+              ? 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 40%, #7c3aed 100%)'
+              : 'linear-gradient(135deg, #3b0764 0%, #5b21b6 40%, #6d28d9 100%)',
+            borderColor: hovered === 'easy' ? '#a78bfa' : 'rgba(139,92,246,0.3)',
+            boxShadow: hovered === 'easy' ? '0 8px 32px rgba(109,40,217,0.4)' : '0 4px 20px rgba(109,40,217,0.2)',
+          },
+        },
+          mob
+            ? React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\u2728"),
+                React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                  React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 2 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                  React.createElement("p", { style: { fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, margin: 0 } }, "URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74 \uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694"),
+                ),
+                React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#e9d5ff', flexShrink: 0 } }, "\u2192"),
+              )
+            : React.createElement(React.Fragment, null,
+                React.createElement("div", { style: { fontSize: 32 } }, "\u2728"),
+                React.createElement("div", null,
+                  React.createElement("h2", { style: { fontSize: 19, fontWeight: 700, color: '#fff', margin: 0, marginBottom: 8 } }, "\uC26C\uC6B4\uD3B8\uC9D1"),
+                  React.createElement("p", { style: { fontSize: 13, color: 'rgba(255,255,255,0.8)', lineHeight: 1.5, margin: 0 } }, "YouTube URL\uACFC \uC2A4\uD0C0\uC77C\uB9CC \uACE0\uB974\uBA74", React.createElement("br"), "\uCE74\uB4DC\uB274\uC2A4 \uCD08\uC548\uC744 \uB9CC\uB4E4\uC5B4 \uB4DC\uB824\uC694."),
+                ),
+                React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
+                  React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
+                ),
               ),
-              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
-                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: '#e9d5ff' } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
-              ),
-            ),
+        ),
       ),
-      // 3) Free mode card
+      // ── 하단 full-width: 자유편집 ──
       React.createElement("div", {
         onClick: onSelectFree,
         onMouseEnter: () => setHovered('free'), onMouseLeave: () => setHovered(null),
-        style: { ...cardBase, borderColor: hovered === 'free' ? T.accent : T.border, background: hovered === 'free' ? 'rgba(99,102,241,0.06)' : T.surface },
+        style: {
+          ...cardBase,
+          flex: 'none',
+          width: '100%',
+          maxWidth: mob ? 'none' : 'none',
+          flexDirection: 'row',
+          alignItems: 'center',
+          padding: mob ? '14px 16px' : '18px 28px',
+          borderColor: hovered === 'free' ? T.accent : T.border,
+          background: hovered === 'free' ? 'rgba(99,102,241,0.06)' : T.surface,
+          gap: mob ? 12 : 16,
+        },
       },
-        mob
-          ? React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { fontSize: 22, flexShrink: 0 } }, "\uD83C\uDFA8"),
-              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                React.createElement("h2", { style: { fontSize: 15, fontWeight: 700, color: T.text, margin: 0, marginBottom: 2 } }, "\uC790\uC720\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 11, color: T.textSecondary, lineHeight: 1.4, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694"),
-              ),
-              React.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: T.accent, flexShrink: 0 } }, "\u2192"),
-            )
-          : React.createElement(React.Fragment, null,
-              React.createElement("div", { style: { fontSize: 32 } }, "\uD83C\uDFA8"),
-              React.createElement("div", null,
-                React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: T.text, margin: 0, marginBottom: 8 } }, "\uC790\uC720\uD3B8\uC9D1"),
-                React.createElement("p", { style: { fontSize: 14, color: T.textSecondary, lineHeight: 1.5, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574", React.createElement("br"), "\uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
-              ),
-              React.createElement("div", { style: { marginTop: 'auto', paddingTop: 8 } },
-                React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: T.accent } }, "\uC2DC\uC791\uD558\uAE30 \u2192"),
-              ),
-            ),
+        React.createElement("div", { style: { fontSize: mob ? 22 : 26, flexShrink: 0 } }, "\uD83C\uDFA8"),
+        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          React.createElement("h2", { style: { fontSize: mob ? 15 : 17, fontWeight: 700, color: T.text, margin: 0, marginBottom: 2 } }, "\uC790\uC720\uD3B8\uC9D1"),
+          React.createElement("p", { style: { fontSize: mob ? 11 : 13, color: T.textSecondary, lineHeight: 1.4, margin: 0 } }, "\uBE48 \uCE74\uB4DC\uC5D0\uC11C \uC2DC\uC791\uD574 \uBAA8\uB4E0 \uB0B4\uC6A9\uC744 \uC9C1\uC811 \uD3B8\uC9D1\uD574\uC694."),
+        ),
+        React.createElement("span", { style: { fontSize: mob ? 13 : 14, fontWeight: 600, color: T.accent, flexShrink: 0 } }, "\u2192"),
       ),
     ),
     // AI 편집 중 차단 모달 (ModeSelectionScreen 내부)
@@ -5453,7 +5719,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
     ),
     // Style presets
     React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uBD84\uC704\uAE30"),
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 12 } },
         STYLE_PRESETS.map(p => React.createElement("div", {
           key: p.id,
@@ -5552,6 +5818,356 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
           }, (step === 1 && durationLoading) ? "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..." : "\uB2E4\uC74C \u2192")
         : React.createElement("button", { onClick: onComplete, style: { padding: '12px 32px', borderRadius: T.radiusPill, border: 'none', background: aiMode ? '#059669' : T.accent, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' } }, aiMode ? "AI \uBD84\uC11D \uC2DC\uC791 \uD83E\uDD16" : "\uB9CC\uB4E4\uAE30 \u2728"),
     ),
+    // Duration loading modal
+    durationLoading && React.createElement("div", {
+      style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    },
+      React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, boxShadow: T.shadowLg } },
+        React.createElement("div", { style: { width: 36, height: 36, border: '3px solid ' + T.border, borderTopColor: T.accent, borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { color: T.text, fontSize: 14, fontWeight: 500 } }, "\uC601\uC0C1 \uAE38\uC774 \uD655\uC778 \uC911..."),
+      ),
+    ),
+  );
+}
+
+/* ── Article Wizard Screen (텍스트로 만들기) ── */
+const ARTICLE_STYLE_PRESETS = [
+  { id: 'stock_photo',     label: '📷 스톡 포토',      desc: '게티이미지 스타일 깔끔 프로 사진' },
+  { id: 'cinematic_photo', label: '📸 시네마틱 포토',   desc: '필름 감성의 편집 매거진 사진' },
+  { id: 'char_3d',         label: '🎭 3D 캐릭터',      desc: '픽사 스타일 클레이 캐릭터' },
+  { id: 'minimal_graphic', label: '📐 미니멀 그래픽',   desc: '도형·여백 중심 그래픽' },
+];
+const ARTICLE_TONE_OPTIONS = [
+  { id: 'hooking',   label: '후킹',   desc: '호기심 유발' },
+  { id: 'summary',   label: '정보',   desc: '담백·신뢰감' },
+  { id: 'emotional', label: '감성',   desc: '따뜻·공감' },
+];
+
+function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel }) {
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [showRawInput, setShowRawInput] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(true);
+
+  // ── 파생 값 (hooks 규칙 준수: 조건부 리턴 전에 선언) ──
+  const article = data.articleData || {};
+  const currentPreset = data.presetId || 'stock_photo';
+  const currentTone = data.copyTone || 'hooking';
+  const currentCardCount = data.cardCount || 'auto';
+  const currentAr = data.aspectRatio || '1:1';
+  const articleImageCount = (data.articleData?.images || []).length;
+  // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
+  const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
+  // 카드 수 선택지는 모드 무관 동일 (이전엔 reuse 모드에서 이미지 수로 제한했으나,
+  // 이제 부족분은 자동 AI 생성으로 보충하므로 제한 불필요)
+  const cardCountOptions = ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
+  // 혼합 모드 안내용: 현재 cardCount가 이미지 수를 초과하는지
+  const numericCardCount = typeof currentCardCount === 'number' ? currentCardCount : null;
+  const reuseCount = currentImageMode === 'reuse' && articleImageCount > 0 && numericCardCount != null
+    ? Math.min(numericCardCount, articleImageCount)
+    : null;
+  const generateCount = currentImageMode === 'reuse' && numericCardCount != null
+    ? Math.max(0, numericCardCount - articleImageCount)
+    : null;
+
+  const handleLoadArticle = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const useRaw = showRawInput && data.rawText && data.rawText.trim().length >= 50;
+      const body = useRaw
+        ? { rawText: data.rawText, sourceUrl: data.url || null }
+        : { url: data.url };
+      const res = await fetch('/api/extract-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        // URL 자동 추출 실패 시 수동 붙여넣기 영역 자동 펼침
+        if (!useRaw) setShowRawInput(true);
+        throw new Error(json.error || '추출 실패');
+      }
+      onDataChange({ ...data, articleData: json.article });
+      onNext();
+    } catch (e) {
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Step 1: 입력 ──
+  if (step === 1) {
+    const canSubmit = (data.url && data.url.trim().length > 0) || (showRawInput && data.rawText && data.rawText.trim().length >= 50);
+    return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', padding: mob ? 20 : 40, overflowY: 'auto' } },
+      // 헤더
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: mob ? 20 : 32 } },
+        React.createElement("button", {
+          onClick: onCancel,
+          style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+        }, "\u2302"),
+        React.createElement("h1", { style: { fontSize: mob ? 17 : 22, fontWeight: 700, color: T.text, margin: 0 } }, "\uD83D\uDCF0 \uD14D\uC2A4\uD2B8\uB85C \uCE74\uB4DC\uB274\uC2A4 \uB9CC\uB4E4\uAE30"),
+      ),
+      // 본문
+      React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', maxWidth: 620, margin: '0 auto' } },
+        React.createElement("div", { style: { textAlign: 'center', marginBottom: mob ? 24 : 36 } },
+          React.createElement("p", { style: { fontSize: mob ? 13 : 15, color: T.textSecondary, margin: 0, lineHeight: 1.6 } }, "\uC6F9 \uC544\uD2F0\uD074 URL\uC744 \uBD99\uC5EC\uB123\uAC70\uB098\uB098", React.createElement("br"), "\uBCF8\uBB38\uC744 \uC9C1\uC811 \uC785\uB825\uD558\uBA74 AI\uAC00 \uCE74\uB4DC\uB274\uC2A4\uB85C \uBCC0\uD658\uD574\uC90D\uB2C8\uB2E4."),
+        ),
+        // URL 입력
+        React.createElement("div", { style: { width: '100%', marginBottom: 16 } },
+          React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 6, fontWeight: 500 } }, "\uC544\uD2F0\uD074 URL"),
+          React.createElement("input", {
+            type: 'url',
+            value: data.url || '',
+            onChange: (e) => onDataChange({ ...data, url: e.target.value }),
+            placeholder: 'https://blog.naver.com/...',
+            style: { width: '100%', padding: '12px 14px', background: T.surface, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 14, outline: 'none', boxSizing: 'border-box' },
+          }),
+        ),
+        // 지원 안내 + 수동 토글
+        React.createElement("div", { style: { width: '100%', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 } },
+          React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\u2713 \uB124\uC774\uBC84 \uBE14\uB85C\uADF8  \u2713 \uC77C\uBC18 \uC6F9\uC0AC\uC774\uD2B8  \u2717 \uCC28\uB2E8\uB41C \uC0AC\uC774\uD2B8\uB294 \uBCF8\uBB38\uC744 \uC9C1\uC811 \uBD99\uC5EC\uB123\uC5B4\uC8FC\uC138\uC694"),
+          React.createElement("button", {
+            onClick: () => setShowRawInput(s => !s),
+            style: { background: 'transparent', border: 'none', color: T.accent, fontSize: 11, cursor: 'pointer', padding: 0, textDecoration: 'underline' },
+          }, showRawInput ? "\uC811\uAE30" : "\u25B8 \uBCF8\uBB38 \uC9C1\uC811 \uBD99\uC5EC\uB123\uAE30"),
+        ),
+        // 수동 붙여넣기 영역
+        showRawInput && React.createElement("div", { style: { width: '100%', marginBottom: 16, animation: 'modeStepIn 0.3s ease' } },
+          React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 6, fontWeight: 500 } }, "\uBCF8\uBB38 \uC9C1\uC811 \uBD99\uC5EC\uB123\uAE30 (\uCD5C\uC18C 50\uC790)"),
+          React.createElement("textarea", {
+            value: data.rawText || '',
+            onChange: (e) => onDataChange({ ...data, rawText: e.target.value }),
+            placeholder: '\uAE30\uC0AC \uBCF8\uBB38\uC744 \uC5EC\uAE30\uC5D0 \uBD99\uC5EC\uB123\uC73C\uC138\uC694...',
+            rows: 8,
+            style: { width: '100%', padding: '12px 14px', background: T.surface, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 },
+          }),
+          React.createElement("p", { style: { fontSize: 10, color: T.textMuted, margin: '4px 0 0', textAlign: 'right' } }, (data.rawText?.length || 0) + " / 50 \uC790"),
+        ),
+        // 에러
+        errorMsg && React.createElement("div", { style: { width: '100%', padding: '10px 12px', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: T.radiusSm, fontSize: 12, color: '#fca5a5', marginBottom: 16, lineHeight: 1.5 } }, errorMsg),
+        // CTA
+        React.createElement("button", {
+          onClick: handleLoadArticle,
+          disabled: !canSubmit || loading,
+          style: {
+            width: '100%', padding: '14px 24px', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 700,
+            cursor: (!canSubmit || loading) ? 'not-allowed' : 'pointer',
+            background: (!canSubmit || loading) ? T.surfaceHover : 'linear-gradient(135deg, #c2410c 0%, #f97316 100%)',
+            color: (!canSubmit || loading) ? T.textMuted : '#fff',
+            boxShadow: (!canSubmit || loading) ? 'none' : '0 4px 16px rgba(194,65,12,0.4)',
+            transition: 'all 0.2s',
+          },
+        }, loading ? "\uBD88\uB7EC\uC624\uB294 \uC911..." : "\uBD88\uB7EC\uC624\uAE30"),
+      ),
+    );
+  }
+
+  // ── Step 2: 본문 확인 + 설정 ── (파생값은 위에서 이미 선언)
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 200, background: T.bg, display: 'flex', flexDirection: 'column', padding: mob ? 16 : 40, overflowY: 'auto' } },
+    // 헤더
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: mob ? 16 : 24 } },
+      React.createElement("button", {
+        onClick: onBack,
+        style: { padding: '6px 12px', borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
+      }, "\u2190 \uB2E4\uC2DC \uC785\uB825"),
+      React.createElement("h1", { style: { fontSize: mob ? 16 : 20, fontWeight: 700, color: T.text, margin: 0, flex: 1 } }, "\uCE74\uB4DC\uB274\uC2A4 \uC124\uC815"),
+    ),
+    React.createElement("div", { style: { flex: 1, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 620, margin: '0 auto', gap: mob ? 14 : 20 } },
+      // 추출 결과 요약 카드
+      React.createElement("div", { style: { padding: mob ? 14 : 18, background: T.surface, borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 } },
+          React.createElement("span", { style: { fontSize: 11, color: '#10b981', fontWeight: 600 } }, "\u2713 \uBD88\uB7EC\uC624\uAE30 \uC644\uB8CC"),
+          article.extractor && React.createElement("span", { style: { fontSize: 10, color: T.textMuted } }, "(" + article.extractor + ")"),
+        ),
+        React.createElement("h3", { style: { fontSize: mob ? 14 : 16, fontWeight: 700, color: T.text, margin: '0 0 4px', lineHeight: 1.4 } }, article.title || '(\uC81C\uBAA9 \uC5C6\uC74C)'),
+        article.sourceUrl && React.createElement("p", { style: { fontSize: 10, color: T.textMuted, margin: '0 0 8px', wordBreak: 'break-all' } }, article.sourceUrl),
+        React.createElement("div", { style: { display: 'flex', gap: 12, fontSize: 11, color: T.textSecondary, marginBottom: 8 } },
+          React.createElement("span", null, "\uBCF8\uBB38 " + (article.body?.length || 0).toLocaleString() + "\uC790"),
+          React.createElement("span", null, "\uC774\uBBF8\uC9C0 " + (article.images?.length || 0) + "\uC7A5"),
+        ),
+        React.createElement("button", {
+          onClick: () => setPreviewExpanded(e => !e),
+          style: { background: 'transparent', border: 'none', color: T.accent, fontSize: 11, cursor: 'pointer', padding: 0 },
+        }, previewExpanded ? "\u25BC \uBCF8\uBB38 \uD3B8\uC9D1 \uC811\uAE30" : "\u25B8 \uBCF8\uBB38 \uD3B8\uC9D1 (" + (article.body || '').length + "\uC790)"),
+        previewExpanded && React.createElement("div", { style: { marginTop: 8 } },
+          React.createElement("textarea", {
+            value: article.body || '',
+            onChange: (e) => onDataChange({ ...data, articleData: { ...article, body: e.target.value } }),
+            rows: 10,
+            style: {
+              width: '100%',
+              padding: 10,
+              background: T.bg,
+              color: T.text,
+              border: `1px solid ${T.border}`,
+              borderRadius: T.radiusSm,
+              fontSize: 12,
+              lineHeight: 1.6,
+              fontFamily: 'inherit',
+              resize: 'vertical',
+              outline: 'none',
+              boxSizing: 'border-box',
+            },
+          }),
+          React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, fontSize: 10, color: T.textMuted } },
+            React.createElement("span", null, "\uBD88\uD544\uC694\ud55c \ubd80\ubd84(\ud14c\uadf8\u00b7\uad11\uace0 \ub4f1)\uc744 \uc9c1\uc811 \uc9c0\uc6b0\uace0 \uc218\uc815\ud560 \uc218 \uc788\uc5b4\uc694"),
+            React.createElement("span", null, (article.body || '').length + "\uC790"),
+          ),
+        ),
+      ),
+      // 비율 선택
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDCD0 \uBE44\uC728"),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+          ['1:1', '4:5', '9:16'].map(ar => React.createElement("button", {
+            key: ar,
+            onClick: () => onDataChange({ ...data, aspectRatio: ar }),
+            style: {
+              flex: 1, padding: '10px 14px', borderRadius: T.radiusSm, border: `1px solid ${currentAr === ar ? T.accent : T.border}`,
+              background: currentAr === ar ? 'rgba(99,102,241,0.12)' : T.surface,
+              color: currentAr === ar ? T.accent : T.text, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            },
+          }, ar)),
+        ),
+      ),
+      // 이미지 소스 선택
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDDBC \uC774\uBBF8\uC9C0 \uC18C\uC2A4"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 8 } },
+          // 본문 이미지 우선 (부족 시 AI 자동 보충)
+          React.createElement("button", {
+            onClick: () => onDataChange({ ...data, imageMode: 'reuse' }),
+            style: {
+              padding: '12px 14px', borderRadius: T.radiusSm,
+              border: `1px solid ${currentImageMode === 'reuse' ? T.accent : T.border}`,
+              background: currentImageMode === 'reuse' ? 'rgba(99,102,241,0.12)' : T.surface,
+              cursor: 'pointer',
+              textAlign: 'left',
+            },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+              React.createElement("span", { style: { fontSize: 15 } }, "\uD83D\uDCCE"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'reuse' ? T.accent : T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0 \uC6B0\uC120"),
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
+              articleImageCount === 0
+                ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0 \uC5C6\uC74C \u2192 \uC804\uBD80 AI \uC0DD\uC131'
+                : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \ud65c\uc6a9 \u00B7 \uBD80\uC871\ubd84 AI \uBCF4\uCDA9`
+            ),
+          ),
+          // AI 생성
+          React.createElement("button", {
+            onClick: () => onDataChange({ ...data, imageMode: 'generate' }),
+            style: {
+              padding: '12px 14px', borderRadius: T.radiusSm,
+              border: `1px solid ${currentImageMode === 'generate' ? T.accent : T.border}`,
+              background: currentImageMode === 'generate' ? 'rgba(99,102,241,0.12)' : T.surface,
+              cursor: 'pointer',
+              textAlign: 'left',
+            },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+              React.createElement("span", { style: { fontSize: 15 } }, "\u2728"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'generate' ? T.accent : T.text } }, "AI\uB85C \uC0DD\uC131"),
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "Flux AI\uAC00 \uC0C8\ub85c \uc0dd\uc131"),
+          ),
+        ),
+      ),
+      // 카드 수
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDD22 \uCE74\uB4DC \uC218"),
+        React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
+          cardCountOptions.map(n => React.createElement("button", {
+            key: String(n),
+            onClick: () => onDataChange({ ...data, cardCount: n }),
+            style: {
+              padding: '8px 12px', borderRadius: T.radiusSm, border: `1px solid ${currentCardCount === n ? T.accent : T.border}`,
+              background: currentCardCount === n ? 'rgba(99,102,241,0.12)' : T.surface,
+              color: currentCardCount === n ? T.accent : T.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', minWidth: 44,
+            },
+          }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
+        ),
+      ),
+      // 카드 수 ↔ 스타일 사이 실시간 분배 안내 박스 (시선 고정)
+      (() => {
+        let msg = null;
+        let variant = 'info';
+        if (articleImageCount === 0) {
+          msg = '\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694 \u2192 \uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
+        } else if (currentImageMode === 'generate') {
+          msg = numericCardCount != null
+            ? `\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131 (\uCD1D ${numericCardCount}\uC7A5)`
+            : '\uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
+        } else if (numericCardCount == null) {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${articleImageCount}\uC7A5 \uC6B0\uC120 \uC0AC\uC6A9 \u00B7 \uBD80\uC871\ubd84\uc740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131`;
+        } else if (generateCount === 0) {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5\uC73C\ub85c \uCDA9\uBD84 \u00B7 AI \uC0DD\uC131 \uC5C6\uC74C`;
+          variant = 'ok';
+        } else {
+          msg = `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${reuseCount}\uC7A5 \uC0AC\uC6A9 + \uC794\uC5EC ${generateCount}\uC7A5\uC740 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131`;
+        }
+        const bg = variant === 'ok' ? 'rgba(34,197,94,0.08)' : 'rgba(99,102,241,0.1)';
+        const borderColor = variant === 'ok' ? 'rgba(34,197,94,0.35)' : 'rgba(99,102,241,0.35)';
+        const icon = variant === 'ok' ? '\u2713' : '\uD83D\uDCCA';
+        return React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: bg, border: `1px solid ${borderColor}`, borderRadius: T.radiusSm } },
+          React.createElement("span", { style: { fontSize: 14 } }, icon),
+          React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500, lineHeight: 1.4 } }, msg),
+        );
+      })(),
+      // 스타일 프리셋 — AI 보충이 0으로 확정된 경우엔 숨김
+      !(currentImageMode === 'reuse' && numericCardCount != null && generateCount === 0 && articleImageCount > 0)
+        && React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } },
+          "\uD83C\uDFA8 \uC774\uBBF8\uC9C0 \uC2A4\uD0C0\uC77C",
+          currentImageMode === 'reuse' && React.createElement("span", { style: { color: T.textMuted, fontSize: 10, marginLeft: 6 } }, "(AI \uBCF4\uCDA9\ubd84\uc5d0 \uc801\uc6a9)"),
+        ),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 } },
+          ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
+            key: p.id,
+            onClick: () => onDataChange({ ...data, presetId: p.id }),
+            style: {
+              padding: '10px 12px', borderRadius: T.radiusSm, border: `1px solid ${currentPreset === p.id ? T.accent : T.border}`,
+              background: currentPreset === p.id ? 'rgba(99,102,241,0.12)' : T.surface,
+              textAlign: 'left', cursor: 'pointer',
+            },
+          },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: currentPreset === p.id ? T.accent : T.text, marginBottom: 2 } }, p.label),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.3 } }, p.desc),
+          )),
+        ),
+      ),
+      // 문구 톤
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDCAC \uBB38\uAD6C \uD1A4"),
+        React.createElement("div", { style: { display: 'flex', gap: 8 } },
+          ARTICLE_TONE_OPTIONS.map(t => React.createElement("button", {
+            key: t.id,
+            onClick: () => onDataChange({ ...data, copyTone: t.id }),
+            style: {
+              flex: 1, padding: '10px 8px', borderRadius: T.radiusSm, border: `1px solid ${currentTone === t.id ? T.accent : T.border}`,
+              background: currentTone === t.id ? 'rgba(99,102,241,0.12)' : T.surface,
+              cursor: 'pointer', textAlign: 'center',
+            },
+          },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: currentTone === t.id ? T.accent : T.text, marginBottom: 2 } }, t.label),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted } }, t.desc),
+          )),
+        ),
+      ),
+      // 생성 버튼
+      React.createElement("button", {
+        onClick: onComplete,
+        style: {
+          width: '100%', padding: '14px 24px', borderRadius: T.radiusPill, border: 'none', fontSize: 15, fontWeight: 700,
+          background: 'linear-gradient(135deg, #c2410c 0%, #f97316 100%)', color: '#fff',
+          boxShadow: '0 4px 16px rgba(194,65,12,0.4)', cursor: 'pointer', marginTop: mob ? 8 : 12,
+        },
+      }, "\u2728 \uCE74\uB4DC\uB274\uC2A4 \uB9CC\uB4E4\uAE30"),
+    ),
   );
 }
 
@@ -5609,6 +6225,243 @@ function WizardLoadingScreen({ mob }) {
       @keyframes wizardPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
       @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
     `),
+  );
+}
+
+/* ── Article Generation Loading Screen (텍스트로 만들기 전용) ── */
+function ArticleGenerationLoadingScreen({ mob, status, onCancel }) {
+  const step = status?.step || 'analyzing';
+  const current = status?.current || 0;
+  const total = status?.total || 0;
+  const cards = status?.cards || [];
+
+  const steps = [
+    { key: 'analyzing', label: '본문 분석' },
+    { key: 'dividing',  label: '카드 분할' },
+    { key: 'generating', label: '이미지 생성' },
+  ];
+  const stepOrder = { analyzing: 0, dividing: 1, generating: 2 };
+  const currentIdx = stepOrder[step] ?? 0;
+
+  const pct = total > 0 ? Math.round((current / total) * 100) : (currentIdx / 3) * 100;
+
+  return React.createElement("div", { style: { position: 'fixed', inset: 0, zIndex: 250, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #431407 0%, #7c2d12 50%, #9a3412 100%)', backgroundSize: '400% 400%', animation: 'wizardGradient 6s ease infinite', overflow: 'hidden', padding: 20 } },
+    React.createElement("div", { style: { position: 'absolute', inset: 0, background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.03) 55%, transparent 60%)', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease-in-out infinite' } }),
+    React.createElement("div", { style: { fontSize: 56, marginBottom: 24, animation: 'wizardPulse 2s ease-in-out infinite' } }, "\uD83D\uDCF0"),
+    React.createElement("h2", { style: { fontSize: mob ? 18 : 22, fontWeight: 700, color: '#fff', margin: '0 0 6px', textAlign: 'center' } }, status?.title || '카드뉴스 만드는 중...'),
+    React.createElement("p", { style: { fontSize: mob ? 12 : 13, color: 'rgba(255,255,255,0.6)', margin: '0 0 24px' } }, Math.round(pct) + '% 완료'),
+    // 진행 단계
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start', marginBottom: 20, minWidth: 200 } },
+      steps.map((s, i) => {
+        const done = i < currentIdx;
+        const active = i === currentIdx;
+        return React.createElement("div", { key: s.key, style: { display: 'flex', alignItems: 'center', gap: 10, opacity: (done || active) ? 1 : 0.35 } },
+          done
+            ? React.createElement("span", { style: { fontSize: 16, color: '#86efac', width: 20, textAlign: 'center' } }, "\u2713")
+            : active
+              ? React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fed7aa', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } })
+              : React.createElement("div", { style: { width: 14, height: 14, margin: '0 3px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.15)' } }),
+          React.createElement("span", { style: { fontSize: mob ? 13 : 14, color: done ? '#86efac' : active ? '#fff' : 'rgba(255,255,255,0.4)', fontWeight: active ? 600 : 400 } },
+            s.label,
+            active && s.key === 'generating' && total > 0 && ` (${current}/${total})`,
+          ),
+        );
+      }),
+    ),
+    // 진행 중인 카드 썸네일 (누적)
+    cards.length > 0 && React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', maxWidth: 380, marginBottom: 16 } },
+      cards.slice(0, 12).map((c, i) => React.createElement("div", {
+        key: i,
+        style: {
+          width: 40, height: 40, borderRadius: 6, overflow: 'hidden',
+          background: c.uploadedImage ? 'transparent' : 'rgba(255,255,255,0.1)',
+          border: '1.5px solid rgba(255,255,255,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'rgba(255,255,255,0.4)',
+          animation: 'modeStepIn 0.4s ease',
+        },
+      },
+        c.uploadedImage
+          ? React.createElement("img", { src: c.uploadedImage, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover' }, referrerPolicy: 'no-referrer' })
+          : React.createElement("span", null, i + 1),
+      )),
+    ),
+    // 취소
+    React.createElement("button", {
+      onClick: onCancel,
+      style: { padding: '8px 20px', borderRadius: 999, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 12, cursor: 'pointer' },
+    }, "\uCDE8\uC18C"),
+  );
+}
+
+/* ── Article Image Gallery Modal (본문 이미지 선택) ── */
+function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSelect, onClose }) {
+  const gridCols = mob ? 3 : 4;
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 720, maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: T.shadowLg, overflow: 'hidden' } },
+      // 헤더
+      React.createElement("div", { style: { padding: '16px 20px', borderBottom: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 } },
+        React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uC5D0\uC11C \uC120\uD0DD"),
+          sourceTitle && React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, sourceTitle),
+          React.createElement("div", { style: { fontSize: 11, color: T.textSecondary, marginTop: 2 } }, "\uCD1D " + images.length + "\uC7A5"),
+        ),
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '6px 10px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 14, cursor: 'pointer' },
+        }, "\u2715"),
+      ),
+      // 그리드
+      React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: 16 } },
+        images.length === 0
+          ? React.createElement("div", { style: { padding: 40, textAlign: 'center', color: T.textMuted, fontSize: 13 } }, "\uBCF8\uBB38\uC5D0\uC11C \uCD94\uCD9C\uB41C \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694")
+          : React.createElement("div", { style: { display: 'grid', gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 8 } },
+              images.map((src, i) => React.createElement("button", {
+                key: i,
+                onClick: () => onSelect(src, i),
+                style: {
+                  position: 'relative',
+                  aspectRatio: '1 / 1',
+                  padding: 0,
+                  background: T.bg,
+                  border: `2px solid ${src === currentImage ? T.accent : 'transparent'}`,
+                  borderRadius: T.radiusSm,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                },
+              },
+                React.createElement("img", {
+                  src,
+                  alt: "",
+                  referrerPolicy: "no-referrer",
+                  style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+                }),
+                // 현재 사용 중 배지
+                src === currentImage && React.createElement("div", { style: { position: 'absolute', top: 4, right: 4, background: T.accent, color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: T.radiusSm, fontWeight: 700 } }, "\uC0AC\uC6A9 \uC911"),
+                // 번호
+                React.createElement("div", { style: { position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '1px 6px', borderRadius: T.radiusSm, fontWeight: 600 } }, i + 1),
+              )),
+            ),
+      ),
+      // 푸터
+      React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end' } },
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '8px 16px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusPill, color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
+        }, "\uB2EB\uAE30"),
+      ),
+    ),
+  );
+}
+
+/* ── Article Regenerate Style Picker Modal (AI 재생성 스타일 선택) ── */
+// 새 카드 기본 문구들(DEFAULT_CARD 에서 사용). 이 문구가 그대로 있으면 '비어있다' 로 간주.
+const CARD_DEFAULT_PLACEHOLDERS = ['제목을 입력하세요', '부제목을 입력하세요', '본문 내용을 입력하세요'];
+function isPlaceholderText(t) {
+  if (!t || typeof t !== 'string') return true;
+  const s = t.trim();
+  if (!s) return true;
+  return CARD_DEFAULT_PLACEHOLDERS.includes(s);
+}
+
+function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, onPick, onClose }) {
+  const fields = [
+    { label: '제목', value: card?.title },
+    { label: '부제목', value: card?.subtitle },
+    { label: '본문', value: card?.body },
+  ].filter(f => !isPlaceholderText(f.value));
+  const hasRealContent = fields.length > 0;
+  const [extraPrompt, setExtraPrompt] = useState('');
+  const canGenerate = hasRealContent || extraPrompt.trim().length >= 3;
+
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget && !regenerating) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 },
+  },
+    React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, width: '100%', maxWidth: 520, maxHeight: '90vh', boxShadow: T.shadowLg, overflow: 'hidden', display: 'flex', flexDirection: 'column' } },
+      // 헤더
+      React.createElement("div", { style: { padding: '16px 20px', borderBottom: `1px solid ${T.border}` } },
+        React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: T.text, marginBottom: 4 } }, "\u2728 AI\ub85c \uc0c8 \uc774\ubbf8\uc9c0 \uc0dd\uc131"),
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, "\uc544\ub798 \ub0b4\uc6a9\uc744 \ud655\uc778\ud558\uace0 \uc2a4\ud0c0\uc77c\uc744 \uace0\ub974\uc138\uc694"),
+      ),
+      // 내용 확인 + 추가 입력 영역
+      React.createElement("div", { style: { padding: 16, borderBottom: `1px solid ${T.border}`, overflowY: 'auto' } },
+        // 프롬프트에 사용될 카드 내용
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } }, "\ud504\ub86c\ud504\ud2b8\uc5d0 \uc0ac\uc6a9\ub420 \ub0b4\uc6a9"),
+        hasRealContent
+          ? React.createElement("div", { style: { padding: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, display: 'flex', flexDirection: 'column', gap: 6 } },
+              fields.map((f, i) => React.createElement("div", { key: i, style: { fontSize: 12, color: T.text, lineHeight: 1.5 } },
+                React.createElement("span", { style: { color: T.textMuted, fontWeight: 600, marginRight: 6 } }, f.label + ':'),
+                f.value,
+              )),
+            )
+          : React.createElement("div", { style: { padding: 10, background: 'rgba(249,115,22,0.08)', border: `1px dashed rgba(249,115,22,0.4)`, borderRadius: T.radiusSm, fontSize: 11, color: '#fdba74', lineHeight: 1.5 } },
+              "\uce74\ub4dc \ub0b4\uc6a9\uc774 \uae30\ubcf8 \ubb38\uad6c\uc774\uac70\ub098 \ube44\uc5b4\uc788\uc5b4\uc694. \uc544\ub798\uc5d0 \uc6d0\ud558\ub294 \uc774\ubbf8\uc9c0 \uc124\uba85\uc744 \uc9c1\uc811 \uc791\uc131\ud574\uc8fc\uc138\uc694.",
+            ),
+        // 추가 입력
+        React.createElement("div", { style: { marginTop: 12, fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } },
+          "\uc9c1\uc811 \uc785\ub825",
+          React.createElement("span", { style: { color: T.textMuted, fontWeight: 400, marginLeft: 6 } }, hasRealContent ? "(\ucd94\uac00\ud558\uace0 \uc2f6\uc740 \ub0b4\uc6a9\uc774\ub098 \ubd84\uc704\uae30 \u2022 \uc120\ud0dd)" : "(\ud544\uc218)"),
+        ),
+        React.createElement("textarea", {
+          value: extraPrompt,
+          onChange: (e) => setExtraPrompt(e.target.value),
+          placeholder: hasRealContent ? "\uc608: \ub530\ub73b\ud55c \uc870\uba85, \uc5ec\uc790 2\uba85\uc774 \ub9c8\uc8fc\ubcf4\uba70 \uc6c3\uae30" : "\uc608: \uae40\ubc25\uc9d1 \uc678\uad00, \ub530\ub73b\ud55c \ubd84\uc704\uae30",
+          rows: 3,
+          style: {
+            width: '100%', padding: 10, background: T.bg, color: T.text,
+            border: `1px solid ${T.border}`, borderRadius: T.radiusSm,
+            fontSize: 12, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical',
+            outline: 'none', boxSizing: 'border-box',
+          },
+          onFocus: (e) => { e.target.style.borderColor = T.accent; },
+          onBlur: (e) => { e.target.style.borderColor = T.border; },
+        }),
+      ),
+      // 스타일 선택
+      React.createElement("div", { style: { padding: 16 } },
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 8, fontWeight: 600 } }, "\uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c \uc120\ud0dd"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
+          ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
+            key: p.id,
+            onClick: () => {
+              if (regenerating || !canGenerate) return;
+              onPick(p.id, extraPrompt.trim());
+            },
+            disabled: regenerating || !canGenerate,
+            style: {
+              padding: '14px 12px',
+              background: currentStyleId === p.id ? 'rgba(99,102,241,0.15)' : T.bg,
+              border: `1.5px solid ${currentStyleId === p.id ? T.accent : T.border}`,
+              borderRadius: T.radiusSm,
+              cursor: (regenerating || !canGenerate) ? 'not-allowed' : 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.15s',
+              opacity: (regenerating || !canGenerate) ? 0.4 : 1,
+            },
+          },
+            React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: currentStyleId === p.id ? T.accent : T.text, marginBottom: 4 } }, p.label),
+            React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
+          )),
+        ),
+        !canGenerate && !regenerating && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: T.textMuted, textAlign: 'center' } }, "\uc785\ub825\uce78\uc5d0 3\uae00\uc790 \uc774\uc0c1 \uc791\uc131\ud558\uba74 \uc2a4\ud0c0\uc77c\uc744 \ub204\ub97c \uc218 \uc788\uc5b4\uc694"),
+      ),
+      // 진행 중 바
+      regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(194,65,12,0.08)' } },
+        React.createElement("div", { style: { width: 14, height: 14, border: '2px solid rgba(253,186,116,0.3)', borderTopColor: '#fdba74', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
+        React.createElement("span", { style: { fontSize: 12, color: '#fdba74', fontWeight: 600 } }, "\uc0dd\uc131\ud558\ub294 \uc911... 5~10\ucd08"),
+      ),
+      // 푸터
+      !regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end' } },
+        React.createElement("button", {
+          onClick: onClose,
+          style: { padding: '8px 16px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusPill, color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
+        }, "\ucde8\uc18c"),
+      ),
+    ),
   );
 }
 
@@ -5899,7 +6752,7 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, a
       !isEditing && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); startRename(proj); },
         className: 'tab-action-btn',
-        style: { background: 'none', border: 'none', color: T.textMuted, fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 0, flexShrink: 0, transition: 'opacity 0.15s' },
+        style: { background: 'none', border: 'none', color: isActive ? T.accent : 'rgba(255,255,255,0.45)', fontSize: 11, cursor: 'pointer', padding: '0 2px', lineHeight: 1, opacity: 1, flexShrink: 0, transition: 'color 0.15s' },
       }, "\u270E"),
       !isEditing && projects.length > 1 && React.createElement("button", {
         onClick: (e) => { e.stopPropagation(); onClose(proj.id); },
@@ -5996,7 +6849,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -6071,7 +6924,9 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     setTouchDelta(0);
   };
 
-  const tabs = MOBILE_TABS;
+  // article 모드에서는 "클립 조정" 탭 숨김 (영상 구간 개념이 없음)
+  const isArticleMode = project?.sourceType === 'article' || card?.sourceType === 'article';
+  const tabs = isArticleMode ? MOBILE_TABS.filter(t => t.id !== 'clip-adjust') : MOBILE_TABS;
 
   if (!card) return null;
 
@@ -6127,6 +6982,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
+    // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합)
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
+      card, project,
+      onSelectImage: (src, idx) => onSelectArticleImage && onSelectArticleImage(activeIndex, src, idx),
+      onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+      regenerating: regeneratingCardIdx === activeIndex,
+    }),
   );
 
   const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -6458,7 +7320,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -6653,6 +7515,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+    // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합) — Desktop
+    (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
+      card, project,
+      onSelectImage: (src, idx) => onSelectArticleImage && onSelectArticleImage(activeIndex, src, idx),
+      onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+      regenerating: regeneratingCardIdx === activeIndex,
+    }),
     (card.appliedStart || card.uploadedImage) && React.createElement(React.Fragment, null,
       React.createElement("div", { style: { display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 4 } },
         (card.fillSource || 'video') === 'video' && !card.uploadedImage && React.createElement(CropGuidePreview, { videoUrl: card.url || globalUrl, aspectRatio, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoFill: card.videoFill || 'full', layout: card.layout || 'photo_top', photoRatio: card.photoRatio ?? 0.55, clipThumbnail: card.clipThumbnail, fixedWidth: 196 }),
@@ -7151,6 +8020,16 @@ export default function App() {
   const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' });
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
+  // 텍스트로 만들기 (article) 전용 생성 진행 상태
+  const [articleGenStatus, setArticleGenStatus] = useState(null); // { step, current, total, cards:[], title? }
+  const [articleGenError, setArticleGenError] = useState(null);
+  const articleAbortRef = useRef(null);
+  // 본문 이미지 갤러리 모달 — 열려있을 때 galleryCardIdx에 카드 index 저장
+  const [galleryCardIdx, setGalleryCardIdx] = useState(null);
+  // AI 재생성 스타일 선택 모달 — 열려있을 때 regenerateStyleCardIdx에 카드 index 저장
+  const [regenerateStyleCardIdx, setRegenerateStyleCardIdx] = useState(null);
+  // 단건 AI 재생성 진행 중 카드 index (스피너 표시용)
+  const [regeneratingCardIdx, setRegeneratingCardIdx] = useState(null);
   const [aiEditStatus, setAiEditStatus] = useState(null);
   const [aiEditError, setAiEditError] = useState(null);
   const [aiMode, setAiMode] = useState(false);
@@ -7335,8 +8214,8 @@ export default function App() {
   };
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
-  const removeCard = (i) => setCards(p => p.filter((_, j) => j !== i));
-  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random() }); return n; }); setActiveCardIdx(i + 1); };
+  const removeCard = (i) => { const c = cards[i]; if (c && c.lastGenKey) { fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`, { method: 'DELETE' }).catch(() => {}); } setCards(p => p.filter((_, j) => j !== i)); };
+  const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
 
@@ -7513,13 +8392,56 @@ export default function App() {
       }
     }
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
+
+    // 캐시된 카드 vs 새로 생성할 카드 분리
+    const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+    const cachedIndices = [];
+    const newIndices = [];
+    for (const i of indices) {
+      const c = cards[i];
+      const ch = clientCardHash(c, hashCfg);
+      if (c.lastGenHash && c.lastGenHash === ch && c.lastGenKey) cachedIndices.push(i);
+      else newIndices.push(i);
+    }
+
     const targetCards = indices.map(i => cards[i]);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
+      // 캐시된 카드: presigned URL 즉시 획득
+      const cachedResults = [];
+      if (cachedIndices.length > 0) {
+        setGenProgress(`캐시된 카드 ${cachedIndices.length}개 다운로드 준비 중...`);
+        for (const ci of cachedIndices) {
+          const c = cards[ci];
+          try {
+            const dlRes = await fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`);
+            if (dlRes.ok) {
+              const { url: presignedUrl } = await dlRes.json();
+              cachedResults.push({ url: presignedUrl, cardIdx: ci, bucketKey: c.lastGenKey });
+            } else {
+              // 캐시 파일이 없으면 새로 생성 대상으로 이동
+              newIndices.push(ci);
+            }
+          } catch (_) {
+            newIndices.push(ci);
+          }
+        }
+      }
+
+      // 모두 캐시에서 해결된 경우
+      if (newIndices.length === 0) {
+        setResults(cachedResults);
+        setGenProgress(`완료! ${cachedResults.length}/${indices.length}개 다운로드 준비됨`);
+        setGenerating(false);
+        return;
+      }
+
+      // 새로 생성할 카드만 오버레이 생성
+      const newTargetCards = newIndices.map(i => cards[i]);
       const overlays = [];
-      for (let j = 0; j < targetCards.length; j++) {
-        setGenProgress(`카드 ${indices[j] + 1}/${cards.length} 오버레이 생성 중...`);
-        overlays.push(await generateOverlayPng(effectiveCard(targetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
+      for (let j = 0; j < newTargetCards.length; j++) {
+        setGenProgress(`카드 ${newIndices[j] + 1}/${cards.length} 오버레이 생성 중...`);
+        overlays.push(await generateOverlayPng(effectiveCard(newTargetCards[j]), outputSize, aspectRatio, { skipBorder: true }));
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
@@ -7532,7 +8454,7 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: targetCards.map((card, j) => ({
+        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
           backgroundData: card.uploadedImage
@@ -7546,6 +8468,7 @@ export default function App() {
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }
       const { jobId, cardCount } = await res.json();
+      const totalCount = indices.length;
       activeJobIdRef.current = jobId;
       fetchQueueStatus(jobId);
       const pollInterval = setInterval(async () => {
@@ -7558,14 +8481,28 @@ export default function App() {
           const downloadUrls = [];
           let statusMsg = "";
           for (const c of (status.cards || [])) {
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx }); }
+            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx, bucketKey: c.bucketKey || '' }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else { totalProgress += (c.progress || 0); if (c.statusMessage) statusMsg = c.statusMessage; }
           }
           setGenStatusMsg(statusMsg);
-          setGenProgress(`${completedCards}/${cardCount}개 완료 (${Math.round(totalProgress / cardCount)}%)`);
+          const cachedDone = cachedResults.length;
+          setGenProgress(`${completedCards + cachedDone}/${totalCount}개 완료 (${Math.round((totalProgress + cachedDone * 100) / totalCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
-            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null; setResults(downloadUrls);
+            clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null;
+            const allResults = [...cachedResults, ...downloadUrls];
+            setResults(allResults);
+            // 생성 완료된 카드에 해시/키 저장
+            setCards(prev => {
+              const next = [...prev];
+              for (const dl of downloadUrls) {
+                const ci = dl.cardIdx;
+                if (ci != null && next[ci]) {
+                  next[ci] = { ...next[ci], lastGenHash: clientCardHash(next[ci], hashCfg), lastGenKey: dl.bucketKey || '' };
+                }
+              }
+              return next;
+            });
             const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
             const failedLines = failedCards2.map(c => {
               const um = c.userMessage;
@@ -7573,7 +8510,8 @@ export default function App() {
             });
             const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenStatusMsg("");
-            setGenProgress(`완료! ${completedCards}/${cardCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}`);
+            const totalCompleted = completedCards + cachedDone;
+            setGenProgress(`완료! ${totalCompleted}/${totalCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}${cachedDone > 0 ? ` (${cachedDone}개 캐시)` : ""}`);
             if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
             setGenerating(false);
             fetchQueueStatus();
@@ -7765,6 +8703,276 @@ export default function App() {
     }, 4800);
   };
 
+  // 텍스트로 만들기: SSE로 카드 생성 스트리밍
+  // Article 카드: 다음 본문 이미지로 순환
+  const handleNextArticleImage = (cardIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const sourceImages = proj.sourceImages || [];
+    if (sourceImages.length === 0) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    const currentSrc = target.uploadedImage;
+    const currentIdx = sourceImages.indexOf(currentSrc);
+    const nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % sourceImages.length;
+    const nextSrc = sourceImages[nextIdx];
+    setProjects(prev => prev.map(p => {
+      if (p.id !== proj.id) return p;
+      const newCards = [...(p.cards || [])];
+      newCards[cardIdx] = {
+        ...target,
+        uploadedImage: nextSrc,
+        fillSource: 'image',
+        articleMeta: {
+          ...(target.articleMeta || {}),
+          aiImageSource: 'article',
+          sourceImageIndex: nextIdx,
+        },
+      };
+      return { ...p, cards: newCards };
+    }));
+  };
+
+  // Article 카드: 갤러리에서 이미지 선택
+  const handleSelectArticleImage = (cardIdx, imgSrc, imgIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    setProjects(prev => prev.map(p => {
+      if (p.id !== proj.id) return p;
+      const newCards = [...(p.cards || [])];
+      newCards[cardIdx] = {
+        ...target,
+        uploadedImage: imgSrc,
+        fillSource: 'image',
+        articleMeta: {
+          ...(target.articleMeta || {}),
+          aiImageSource: 'article',
+          sourceImageIndex: imgIdx,
+        },
+      };
+      return { ...p, cards: newCards };
+    }));
+    setGalleryCardIdx(null);
+  };
+
+  // Article 카드: AI 재생성 버튼 클릭 시 → 스타일 선택 모달만 열기
+  const handleRegenerateArticleImage = (cardIdx) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+    setRegenerateStyleCardIdx(cardIdx);
+  };
+
+  // Article 카드: 스타일 선택 후 실제 Flux 호출
+  // extraUserPrompt: 모달에서 유저가 직접 입력한 추가 설명 (optional)
+  const handleRegenerateArticleImageWithStyle = async (cardIdx, presetId, extraUserPrompt) => {
+    const proj = activeProject;
+    if (!proj) return;
+    const target = proj.cards?.[cardIdx];
+    if (!target) return;
+
+    // 프롬프트 구성:
+    //   카드 내용(title/subtitle/body) 중 기본 문구(placeholder)가 아닌 것만 사용
+    //   + 유저가 모달에서 입력한 extraUserPrompt
+    //   둘 다 없으면 기사 제목으로 폴백 (절대 random fallback 쓰지 않음)
+    const cardSubject = ['title', 'subtitle', 'body']
+      .map(k => target[k])
+      .filter(v => !isPlaceholderText(v))
+      .join(' · ')
+      .slice(0, 240);
+    const extra = (extraUserPrompt || '').trim().slice(0, 240);
+    const articleTitle = (proj.sourceTitle || '').trim().slice(0, 120);
+    let prompt = [cardSubject, extra].filter(Boolean).join(' — ');
+    if (!prompt) prompt = articleTitle || 'editorial scene related to the article';
+    const aspectRatio = proj.aspectRatio || '1:1';
+
+    setRegeneratingCardIdx(cardIdx);
+    try {
+      const res = await fetch('/api/regenerate-article-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, presetId, aspectRatio }),
+      });
+      const json = await res.json();
+      if (!json.ok) throw new Error(json.error || '재생성 실패');
+
+      setProjects(prev => prev.map(p => {
+        if (p.id !== proj.id) return p;
+        const newCards = [...(p.cards || [])];
+        const prevCard = newCards[cardIdx];
+        newCards[cardIdx] = {
+          ...prevCard,
+          uploadedImage: json.url,
+          fillSource: 'image',
+          articleMeta: {
+            ...(prevCard.articleMeta || {}),
+            aiImageSource: 'ai',
+            sourceImageIndex: null,
+            aiImagePrompt: json.prompt || prompt,
+            aiImageSeed: json.seed ?? null,
+            aiImageStatus: 'ok',
+            aiImageError: null,
+            stylePresetId: presetId,  // 선택한 스타일 저장 (다음 재생성 시 기본값)
+          },
+        };
+        return { ...p, cards: newCards };
+      }));
+      // 성공 시 모달 닫기
+      setRegenerateStyleCardIdx(null);
+    } catch (e) {
+      window.alert('AI 재생성 실패: ' + (e.message || '알 수 없는 오류'));
+    } finally {
+      setRegeneratingCardIdx(null);
+    }
+  };
+
+  const handleArticleWizardComplete = async () => {
+    const article = wizardData.articleData;
+    if (!article) { setArticleGenError('기사 데이터가 없습니다. 다시 시도해주세요.'); return; }
+
+    setArticleGenError(null);
+    setArticleGenStatus({ step: 'analyzing', message: '본문을 분석하는 중', current: 0, total: 0, cards: [] });
+    setWizardLoading(true);
+
+    const abort = new AbortController();
+    articleAbortRef.current = abort;
+
+    try {
+      const res = await fetch('/api/generate-cards-from-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          article,
+          presetId: wizardData.presetId || 'warm_illust',
+          cardCount: wizardData.cardCount,
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          copyTone: wizardData.copyTone || 'hooking',
+          imageMode: wizardData.imageMode || 'reuse',
+        }),
+        signal: abort.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error('생성 서버 응답 오류 (' + res.status + ')');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let doneData = null;
+      const streamingCards = new Map(); // index → card
+
+      const processMessage = (rawMsg) => {
+        // SSE spec: 여러 data 라인은 \n으로 조인. CRLF/LF 모두 수용.
+        let evt = '';
+        const dataLines = [];
+        for (const line of rawMsg.split(/\r?\n/)) {
+          if (!line) continue;
+          if (line.startsWith(':')) continue; // comment
+          const colon = line.indexOf(':');
+          if (colon < 0) continue;
+          const field = line.slice(0, colon);
+          let value = line.slice(colon + 1);
+          if (value.startsWith(' ')) value = value.slice(1);
+          if (field === 'event') evt = value.trim();
+          else if (field === 'data') dataLines.push(value);
+        }
+        if (!evt || dataLines.length === 0) return null;
+        const data = dataLines.join('\n');
+        try {
+          return { evt, parsed: JSON.parse(data) };
+        } catch (err) {
+          console.error('[SSE parse error]', err.message, 'event=', evt, 'data(first 300)=', data.slice(0, 300), 'data(last 100)=', data.slice(-100), 'length=', data.length);
+          return null;
+        }
+      };
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // 이벤트 경계: 빈 라인 (\n\n 또는 \r\n\r\n)
+        const parts = buffer.split(/\r?\n\r?\n/);
+        buffer = parts.pop() || ''; // 마지막은 미완성
+        for (const rawMsg of parts) {
+          if (!rawMsg.trim()) continue;
+          const msg = processMessage(rawMsg);
+          if (!msg) continue;
+          const { evt, parsed } = msg;
+
+          if (evt === 'analyzing' || evt === 'dividing') {
+            setArticleGenStatus(s => ({ ...(s || {}), step: evt, message: parsed.message || '' }));
+          } else if (evt === 'cards-ready') {
+            setArticleGenStatus(s => ({
+              ...(s || {}),
+              step: 'generating',
+              title: parsed.title,
+              total: parsed.cardCount,
+              current: 0,
+              cards: [],
+            }));
+          } else if (evt === 'card') {
+            streamingCards.set(parsed.index, parsed.card);
+            setArticleGenStatus(s => ({
+              ...(s || {}),
+              cards: Array.from(streamingCards.entries()).sort((a, b) => a[0] - b[0]).map(([, c]) => c),
+            }));
+          } else if (evt === 'progress') {
+            setArticleGenStatus(s => ({ ...(s || {}), current: parsed.current, total: parsed.total, step: parsed.stage }));
+          } else if (evt === 'done') {
+            doneData = parsed;
+          } else if (evt === 'error') {
+            throw new Error(parsed.message || '알 수 없는 오류');
+          }
+        }
+      }
+
+      if (!doneData) throw new Error('완료 이벤트를 받지 못했습니다.');
+
+      // 프로젝트에 반영
+      const newCards = doneData.cards.map(c => ({ ...DEFAULT_CARD(), ...c }));
+      const targetId = pendingProjectId || activeProjectId;
+      setProjects(prev => prev.map(p => {
+        if (p.id !== targetId) return p;
+        return {
+          ...p,
+          sourceType: 'article',
+          sourceUrl: doneData.sourceUrl || '',
+          sourceTitle: doneData.sourceTitle || '',
+          sourceImages: doneData.sourceImages || [],
+          globalUrl: '',
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          outputFormat: 'image',
+          cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
+          copyTone: wizardData.copyTone || 'hooking',
+          videoTitle: doneData.sourceTitle || '',
+        };
+      }));
+      setActiveProjectId(targetId);
+
+      setTimeout(() => {
+        setWizardLoading(false);
+        setArticleGenStatus(null);
+        setEditorMode('editor');
+      }, 500);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        setArticleGenError('생성이 취소되었습니다.');
+      } else {
+        setArticleGenError(err.message || '생성 중 오류가 발생했습니다.');
+      }
+      setWizardLoading(false);
+      setArticleGenStatus(null);
+    } finally {
+      articleAbortRef.current = null;
+    }
+  };
+
   const [bulkRewriting, setBulkRewriting] = useState(false);
   const [bulkRewriteProgress, setBulkRewriteProgress] = useState('');
 
@@ -7853,9 +9061,10 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
+      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
-      onSelectAiEdit: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
     }),
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
@@ -7874,6 +9083,15 @@ export default function App() {
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleWizardComplete,
       onCancel: () => { setEditorMode(null); setWizardStep(1); setAiMode(false); if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; } },
+    }),
+
+    editorMode === 'article-wizard' && !wizardLoading && React.createElement(ArticleWizardScreen, {
+      mob, step: wizardStep, data: wizardData,
+      onDataChange: setWizardData,
+      onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
+      onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
+      onComplete: handleArticleWizardComplete,
+      onCancel: () => { setEditorMode(null); setWizardStep(1); if (articleAbortRef.current) { articleAbortRef.current.abort(); articleAbortRef.current = null; } },
     }),
 
     // AI edit overlay — 자유편집 모드에서 AI 진행 중일 때 블러 + 진행률 표시
@@ -7963,7 +9181,26 @@ export default function App() {
       ),
     ),
 
-    wizardLoading && React.createElement(WizardLoadingScreen, { mob }),
+    wizardLoading && articleGenStatus && React.createElement(ArticleGenerationLoadingScreen, {
+      mob,
+      status: articleGenStatus,
+      onCancel: () => {
+        if (articleAbortRef.current) { articleAbortRef.current.abort(); articleAbortRef.current = null; }
+      },
+    }),
+    wizardLoading && !articleGenStatus && React.createElement(WizardLoadingScreen, { mob }),
+    // 아티클 생성 에러 배너
+    articleGenError && React.createElement("div", {
+      style: { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 301, background: 'rgba(220,38,38,0.97)', backdropFilter: 'blur(12px)', boxShadow: '0 -4px 24px rgba(0,0,0,0.4)', padding: mob ? '14px 16px' : '16px 24px' },
+    },
+      React.createElement("div", { style: { maxWidth: 480, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 } },
+        React.createElement("span", { style: { flex: 1, fontSize: 13, color: '#fff', lineHeight: 1.4 } }, articleGenError),
+        React.createElement("button", {
+          onClick: () => setArticleGenError(null),
+          style: { background: 'rgba(255,255,255,0.2)', border: 'none', color: '#fff', fontSize: 12, padding: '6px 14px', borderRadius: 999, cursor: 'pointer', flexShrink: 0 },
+        }, "\uB2EB\uAE30"),
+      ),
+    ),
 
     // ── Editor ──
     editorMode === 'editor' && React.createElement(React.Fragment, null,
@@ -8012,7 +9249,7 @@ export default function App() {
               null,
               React.createElement("button", {
                 'data-tour': 'generate',
-                onClick: () => setShowCardSelect(true), disabled: generating,
+                onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
                 style: { padding: '6px 12px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 12, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
@@ -8022,7 +9259,7 @@ export default function App() {
               null,
               React.createElement("button", {
                 'data-tour': 'generate',
-                onClick: () => setShowCardSelect(true), disabled: generating,
+                onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
                 style: { padding: '9px 24px', background: generating ? T.surfaceHover : T.success, color: generating ? T.textMuted : '#fff', borderRadius: T.radiusPill, border: 'none', fontSize: 14, fontWeight: 600, cursor: generating ? 'not-allowed' : 'pointer', transition: 'all 0.2s', boxShadow: generating ? 'none' : '0 2px 8px rgba(34,197,94,0.3)' }
               }, generating ? "생성 중..." : "생성하기"),
             )
@@ -8166,6 +9403,11 @@ export default function App() {
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           project: activeProject,
+          onOpenArticleGallery: setGalleryCardIdx,
+          onNextArticleImage: handleNextArticleImage,
+          onRegenerateArticleImage: handleRegenerateArticleImage,
+          onSelectArticleImage: handleSelectArticleImage,
+          regeneratingCardIdx,
         }),
       ) : React.createElement("div", { 'data-tour': 'card-panel' },
         React.createElement(DesktopCardPanel, {
@@ -8187,13 +9429,37 @@ export default function App() {
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
           project: activeProject,
+          onOpenArticleGallery: setGalleryCardIdx,
+          onNextArticleImage: handleNextArticleImage,
+          onRegenerateArticleImage: handleRegenerateArticleImage,
+          onSelectArticleImage: handleSelectArticleImage,
+          regeneratingCardIdx,
         }),
       ),
     ),
 
+    // Article 본문 이미지 갤러리 모달
+    galleryCardIdx != null && activeProject && React.createElement(ArticleImageGalleryModal, {
+      mob,
+      images: activeProject.sourceImages || [],
+      currentImage: cards[galleryCardIdx]?.uploadedImage,
+      sourceTitle: activeProject.sourceTitle || '',
+      onSelect: (src, imgIdx) => handleSelectArticleImage(galleryCardIdx, src, imgIdx),
+      onClose: () => setGalleryCardIdx(null),
+    }),
+    // Article 재생성 스타일 선택 모달
+    regenerateStyleCardIdx != null && React.createElement(ArticleRegenerateStyleModal, {
+      mob,
+      card: cards[regenerateStyleCardIdx],
+      currentStyleId: cards[regenerateStyleCardIdx]?.articleMeta?.stylePresetId,
+      regenerating: regeneratingCardIdx === regenerateStyleCardIdx,
+      onPick: (presetId, extraPrompt) => handleRegenerateArticleImageWithStyle(regenerateStyleCardIdx, presetId, extraPrompt),
+      onClose: () => setRegenerateStyleCardIdx(null),
+    }),
+
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); }, generating }),
-    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,

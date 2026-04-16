@@ -1,5 +1,26 @@
 # YOUMECA Changelog
 
+## v2026.0415.1 — 2026-04-15
+### ✨ 신규 기능: 텍스트로 카드뉴스 만들기 (article → card news)
+- 웹 아티클 URL 또는 본문 텍스트를 붙여넣으면 AI가 카드뉴스로 자동 변환
+- **홈 화면 재구성**: 영상으로 만들기 / 텍스트로 만들기 (NEW) / 쉬운편집 (상단 3열) + 자유편집 (하단 full-width)
+  - 기존 "AI 자동편집" → "영상으로 만들기"로 리네임
+  - NEW 배지를 새 기능(텍스트로 만들기)으로 이관
+- **아티클 추출 파이프라인** (`lib/article-extractor.js`)
+  - 1차: 네이버 블로그 전용 파서 (m.blog.naver.com + cheerio + se-main-container)
+  - 2차: Jina Reader 폴백 (`r.jina.ai`)
+  - 3차: 수동 본문 붙여넣기
+- **Flux 1.1 Pro 이미지 생성** (`lib/falai.js`) — Fal.ai API 연동, 병렬 생성, 버킷 영속화
+- **Claude 아티클 분할** (`lib/claude.js` 확장) — 본문을 N장 카드로 분할 + 이미지 프롬프트 자동 생성
+  - 스타일 프리셋 4종: 따뜻한 일러스트 / 뉴스 톤 / 미니멀 / 사진
+  - 기사 원본 이미지 재사용(reuse) + AI 생성(generate) 자동 판단
+- **아티클 위저드** (`ArticleWizardScreen`) — 2단계 (URL 입력 → 설정)
+- **SSE 스트리밍 생성** (`/api/generate-cards-from-article`) — analyzing/dividing/cards-ready/card/progress/done 이벤트
+- **아티클 로딩 화면** (`ArticleGenerationLoadingScreen`) — 진행률 + 실시간 카드 썸네일 누적
+- **카드/프로젝트 스키마 확장** — `CARD_KEY_MAP`에 `sourceType`, `articleType`, `articleMeta` 추가 (기존 공유 URL 호환성 유지)
+- **모바일 "클립 조정" 탭**: article 모드에서 자동 숨김
+- 환경 변수: `FAL_KEY` 신규, `JINA_API_KEY` 선택
+
 ## v2026.0304.9 — 2026-03-04
 - 탭 구조 대폭 개편: 채우기 → 레이아웃 → 텍스트 내용 → 이미지 얹기
 - '전체' 레이아웃: 그라데이션 없이 배경색으로 전체 커버
