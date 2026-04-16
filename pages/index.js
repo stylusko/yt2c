@@ -7,19 +7,19 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
   '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환 (Flux 이미지 생성)',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
   'AI 위저드 카피톤 선택 단계 분리',
   '쉬운편집 30초 단위 구간 + 최대 20장',
   'AI 카피 톤 시스템 (4단계 전체 구현)',
   '영상 실제 비율 감지로 프리뷰-렌더링 정렬',
-  'AI 자동편집 모드 추가',
 ];
 
 /* ── Icons ── */
@@ -5764,7 +5764,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [showRawInput, setShowRawInput] = useState(false);
-  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [previewExpanded, setPreviewExpanded] = useState(true);
 
   // ── 파생 값 (hooks 규칙 준수: 조건부 리턴 전에 선언) ──
   const article = data.articleData || {};
@@ -5908,8 +5908,32 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         React.createElement("button", {
           onClick: () => setPreviewExpanded(e => !e),
           style: { background: 'transparent', border: 'none', color: T.accent, fontSize: 11, cursor: 'pointer', padding: 0 },
-        }, previewExpanded ? "\u25BC \uBCF8\uBB38 \uBBF8\uB9AC\uBCF4\uAE30 \uC811\uAE30" : "\u25B8 \uBCF8\uBB38 \uBBF8\uB9AC\uBCF4\uAE30"),
-        previewExpanded && React.createElement("div", { style: { marginTop: 10, padding: 10, background: T.bg, borderRadius: T.radiusSm, maxHeight: 200, overflowY: 'auto', fontSize: 11, color: T.textSecondary, lineHeight: 1.6, whiteSpace: 'pre-wrap' } }, article.body || ''),
+        }, previewExpanded ? "\u25BC \uBCF8\uBB38 \uD3B8\uC9D1 \uC811\uAE30" : "\u25B8 \uBCF8\uBB38 \uD3B8\uC9D1 (" + (article.body || '').length + "\uC790)"),
+        previewExpanded && React.createElement("div", { style: { marginTop: 8 } },
+          React.createElement("textarea", {
+            value: article.body || '',
+            onChange: (e) => onDataChange({ ...data, articleData: { ...article, body: e.target.value } }),
+            rows: 10,
+            style: {
+              width: '100%',
+              padding: 10,
+              background: T.bg,
+              color: T.text,
+              border: `1px solid ${T.border}`,
+              borderRadius: T.radiusSm,
+              fontSize: 12,
+              lineHeight: 1.6,
+              fontFamily: 'inherit',
+              resize: 'vertical',
+              outline: 'none',
+              boxSizing: 'border-box',
+            },
+          }),
+          React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, fontSize: 10, color: T.textMuted } },
+            React.createElement("span", null, "\uBD88\uD544\uC694\ud55c \ubd80\ubd84(\ud14c\uadf8\u00b7\uad11\uace0 \ub4f1)\uc744 \uc9c1\uc811 \uc9c0\uc6b0\uace0 \uc218\uc815\ud560 \uc218 \uc788\uc5b4\uc694"),
+            React.createElement("span", null, (article.body || '').length + "\uC790"),
+          ),
+        ),
       ),
       // 비율 선택
       React.createElement("div", null,
