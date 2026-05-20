@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6398,8 +6398,9 @@ function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, 
   // 우선순위: 사용자 입력 > 저장된 aiImagePrompt(영어 시각 묘사). 둘 중 하나 있어야 생성 가능.
   const savedAiPrompt = (card?.articleMeta?.aiImagePrompt || '').trim();
   const [extraPrompt, setExtraPrompt] = useState('');
+  const [selectedStyleId, setSelectedStyleId] = useState(currentStyleId || ARTICLE_STYLE_PRESETS[0]?.id);
   const hasUserInput = extraPrompt.trim().length >= 3;
-  const canGenerate = hasUserInput || !!savedAiPrompt;
+  const canGenerate = (hasUserInput || !!savedAiPrompt) && !!selectedStyleId;
 
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget && !regenerating) onClose(); },
@@ -6443,41 +6444,57 @@ function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, 
       React.createElement("div", { style: { padding: 16 } },
         React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 8, fontWeight: 600 } }, "\uc774\ubbf8\uc9c0 \uc2a4\ud0c0\uc77c \uc120\ud0dd"),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 } },
-          ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
-            key: p.id,
-            onClick: () => {
-              if (regenerating || !canGenerate) return;
-              onPick(p.id, extraPrompt.trim());
+          ARTICLE_STYLE_PRESETS.map(p => {
+            const isSelected = selectedStyleId === p.id;
+            return React.createElement("button", {
+              key: p.id,
+              onClick: () => { if (!regenerating) setSelectedStyleId(p.id); },
+              disabled: regenerating,
+              style: {
+                padding: '14px 12px',
+                background: isSelected ? 'rgba(99,102,241,0.15)' : T.bg,
+                border: `1.5px solid ${isSelected ? T.accent : T.border}`,
+                borderRadius: T.radiusSm,
+                cursor: regenerating ? 'not-allowed' : 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s',
+                opacity: regenerating ? 0.4 : 1,
+              },
             },
-            disabled: regenerating || !canGenerate,
-            style: {
-              padding: '14px 12px',
-              background: currentStyleId === p.id ? 'rgba(99,102,241,0.15)' : T.bg,
-              border: `1.5px solid ${currentStyleId === p.id ? T.accent : T.border}`,
-              borderRadius: T.radiusSm,
-              cursor: (regenerating || !canGenerate) ? 'not-allowed' : 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.15s',
-              opacity: (regenerating || !canGenerate) ? 0.4 : 1,
-            },
-          },
-            React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: currentStyleId === p.id ? T.accent : T.text, marginBottom: 4 } }, p.label),
-            React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
-          )),
+              React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: isSelected ? T.accent : T.text, marginBottom: 4 } }, p.label),
+              React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.4 } }, p.desc),
+            );
+          }),
         ),
-        !canGenerate && !regenerating && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: T.textMuted, textAlign: 'center' } }, "\uc785\ub825\uce78\uc5d0 3\uae00\uc790 \uc774\uc0c1 \uc791\uc131\ud558\uba74 \uc2a4\ud0c0\uc77c\uc744 \ub204\ub97c \uc218 \uc788\uc5b4\uc694"),
+        !hasUserInput && !savedAiPrompt && !regenerating && React.createElement("div", { style: { marginTop: 10, fontSize: 11, color: T.textMuted, textAlign: 'center' } }, "\uc785\ub825\uce78\uc5d0 3\uae00\uc790 \uc774\uc0c1 \uc791\uc131\ud558\uba74 \uc0dd\uc131\ud560 \uc218 \uc788\uc5b4\uc694"),
       ),
       // 진행 중 바
       regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(194,65,12,0.08)' } },
         React.createElement("div", { style: { width: 14, height: 14, border: '2px solid rgba(253,186,116,0.3)', borderTopColor: '#fdba74', borderRadius: '50%', animation: 'spin 0.8s linear infinite' } }),
         React.createElement("span", { style: { fontSize: 12, color: '#fdba74', fontWeight: 600 } }, "\uc0dd\uc131\ud558\ub294 \uc911... 5~10\ucd08"),
       ),
-      // 푸터
-      !regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end' } },
+      // 푸터 — 취소 + 생성
+      !regenerating && React.createElement("div", { style: { padding: '10px 20px', borderTop: `1px solid ${T.border}`, display: 'flex', justifyContent: 'flex-end', gap: 8 } },
         React.createElement("button", {
           onClick: onClose,
           style: { padding: '8px 16px', background: 'transparent', border: `1px solid ${T.border}`, borderRadius: T.radiusPill, color: T.textSecondary, fontSize: 12, cursor: 'pointer' },
         }, "\ucde8\uc18c"),
+        React.createElement("button", {
+          onClick: () => { if (canGenerate) onPick(selectedStyleId, extraPrompt.trim()); },
+          disabled: !canGenerate,
+          style: {
+            padding: '8px 20px',
+            background: canGenerate ? T.accent : T.border,
+            border: 'none',
+            borderRadius: T.radiusPill,
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: canGenerate ? 'pointer' : 'not-allowed',
+            opacity: canGenerate ? 1 : 0.5,
+            transition: 'all 0.15s',
+          },
+        }, "\u2728 \uc0dd\uc131"),
       ),
     ),
   );
