@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -8676,10 +8676,23 @@ export default function App() {
           card.useBody = !!(h.body && h.body.trim());
           card.name = (h.title || '').replace(/\n/g, ' ');
 
-          // All cards: gradient 레이아웃 (photo_top + useGradient), 텍스트 배경 영역 40% (photoRatio 60), 투명도 55%
+          // All cards: gradient 레이아웃 (photo_top + useGradient), 투명도 55%
           card.layout = 'photo_top';
           card.useGradient = true;
-          card.photoRatio = 60;
+          // photoRatio = 본문 길이에 따라 동적. 간단형(본문 없음) 60, 상세형은 본문 줄 수만큼 텍스트 영역 확장.
+          // 가정: 카드 H=1080, titleSize 72 · bodySize 40, 한 줄 ~22자, line-height 1.55
+          if (card.useBody) {
+            const titleLines = Math.max(1, (h.title || '').split('\n').length);
+            const bodyLen = (h.body || '').trim().length;
+            const bodyLines = Math.max(1, Math.ceil(bodyLen / 22));
+            const titleH = titleLines * 72 * 1.25;
+            const bodyH = bodyLines * 40 * 1.55;
+            const padding = 120;
+            const textRatio = Math.min(0.55, Math.max(0.35, (titleH + bodyH + padding) / 1080));
+            card.photoRatio = Math.round((1 - textRatio) * 100);
+          } else {
+            card.photoRatio = 60;
+          }
           card.bgColor = '#000000';
           card.bgOpacity = 0.55;
           card.titleColor = '#ffffff';
