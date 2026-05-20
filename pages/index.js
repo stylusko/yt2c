@@ -7,19 +7,19 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
   '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
   '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
-  '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환 (Flux 이미지 생성)',
+  '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
   'AI 위저드 카피톤 선택 단계 분리',
   '쉬운편집 30초 단위 구간 + 최대 20장',
-  'AI 카피 톤 시스템 (4단계 전체 구현)',
 ];
 
 /* ── Icons ── */

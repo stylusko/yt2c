@@ -4,7 +4,7 @@
 //   analyzing, dividing, cards-ready, progress, card, done, error
 
 import { divideArticleToCards, getArticleStylePreset } from '../../lib/claude.js';
-import { generateImage, persistImageToBucket } from '../../lib/falai.js';
+import { generateImage, persistImageToBucket } from '../../lib/openai-image.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '2mb' } },

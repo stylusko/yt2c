@@ -5,7 +5,7 @@
 // 카드 단위 AI 이미지 재생성용 경량 엔드포인트.
 // generate-cards-from-article 는 Claude 분할까지 포함한 full 파이프라인이라 단건 재생성엔 과함.
 
-import { generateImage } from '../../lib/falai.js';
+import { generateImage } from '../../lib/openai-image.js';
 import { getArticleStylePreset, listArticleStylePresets } from '../../lib/claude.js';
 
 export const config = {
