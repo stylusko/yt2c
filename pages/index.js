@@ -6,20 +6,20 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0416';
-const BUILD_NUM = 15; // same-day deploy count
+const BUILD_DATE = '2026.0520';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
   '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
   '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환 (Flux 이미지 생성)',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
   'AI 위저드 카피톤 선택 단계 분리',
   '쉬운편집 30초 단위 구간 + 최대 20장',
   'AI 카피 톤 시스템 (4단계 전체 구현)',
-  '영상 실제 비율 감지로 프리뷰-렌더링 정렬',
 ];
 
 /* ── Icons ── */
@@ -6368,14 +6368,12 @@ function isPlaceholderText(t) {
 }
 
 function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, onPick, onClose }) {
-  const fields = [
-    { label: '제목', value: card?.title },
-    { label: '부제목', value: card?.subtitle },
-    { label: '본문', value: card?.body },
-  ].filter(f => !isPlaceholderText(f.value));
-  const hasRealContent = fields.length > 0;
+  // 카드 화면 텍스트(title/subtitle/body 한글 본문)는 프롬프트로 쓰지 않음 — 시각 묘사가 아니므로.
+  // 우선순위: 사용자 입력 > 저장된 aiImagePrompt(영어 시각 묘사). 둘 중 하나 있어야 생성 가능.
+  const savedAiPrompt = (card?.articleMeta?.aiImagePrompt || '').trim();
   const [extraPrompt, setExtraPrompt] = useState('');
-  const canGenerate = hasRealContent || extraPrompt.trim().length >= 3;
+  const hasUserInput = extraPrompt.trim().length >= 3;
+  const canGenerate = hasUserInput || !!savedAiPrompt;
 
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget && !regenerating) onClose(); },
@@ -6390,26 +6388,20 @@ function ArticleRegenerateStyleModal({ mob, card, currentStyleId, regenerating, 
       // 내용 확인 + 추가 입력 영역
       React.createElement("div", { style: { padding: 16, borderBottom: `1px solid ${T.border}`, overflowY: 'auto' } },
         // 프롬프트에 사용될 카드 내용
-        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } }, "\ud504\ub86c\ud504\ud2b8\uc5d0 \uc0ac\uc6a9\ub420 \ub0b4\uc6a9"),
-        hasRealContent
-          ? React.createElement("div", { style: { padding: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, display: 'flex', flexDirection: 'column', gap: 6 } },
-              fields.map((f, i) => React.createElement("div", { key: i, style: { fontSize: 12, color: T.text, lineHeight: 1.5 } },
-                React.createElement("span", { style: { color: T.textMuted, fontWeight: 600, marginRight: 6 } }, f.label + ':'),
-                f.value,
-              )),
-            )
-          : React.createElement("div", { style: { padding: 10, background: 'rgba(249,115,22,0.08)', border: `1px dashed rgba(249,115,22,0.4)`, borderRadius: T.radiusSm, fontSize: 11, color: '#fdba74', lineHeight: 1.5 } },
-              "\uce74\ub4dc \ub0b4\uc6a9\uc774 \uae30\ubcf8 \ubb38\uad6c\uc774\uac70\ub098 \ube44\uc5b4\uc788\uc5b4\uc694. \uc544\ub798\uc5d0 \uc6d0\ud558\ub294 \uc774\ubbf8\uc9c0 \uc124\uba85\uc744 \uc9c1\uc811 \uc791\uc131\ud574\uc8fc\uc138\uc694.",
-            ),
-        // 추가 입력
+        savedAiPrompt && React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } }, "\ud604\uc7ac \uc774\ubbf8\uc9c0 \ubb18\uc0ac"),
+        savedAiPrompt && React.createElement("div", { style: { padding: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 11, color: T.textSecondary, lineHeight: 1.5, fontStyle: 'italic' } }, savedAiPrompt),
+        !savedAiPrompt && React.createElement("div", { style: { padding: 10, background: 'rgba(249,115,22,0.08)', border: `1px dashed rgba(249,115,22,0.4)`, borderRadius: T.radiusSm, fontSize: 11, color: '#fdba74', lineHeight: 1.5 } },
+          "\uc774 \uce74\ub4dc\ub294 \uc800\uc7a5\ub41c \uc774\ubbf8\uc9c0 \ubb18\uc0ac\uac00 \uc5c6\uc5b4\uc694. \uc544\ub798\uc5d0 \uc6d0\ud558\ub294 \uc774\ubbf8\uc9c0\ub97c \uc124\uba85\ud574\uc8fc\uc138\uc694.",
+        ),
+        // 사용자 입력
         React.createElement("div", { style: { marginTop: 12, fontSize: 11, color: T.textMuted, marginBottom: 6, fontWeight: 600 } },
-          "\uc9c1\uc811 \uc785\ub825",
-          React.createElement("span", { style: { color: T.textMuted, fontWeight: 400, marginLeft: 6 } }, hasRealContent ? "(\ucd94\uac00\ud558\uace0 \uc2f6\uc740 \ub0b4\uc6a9\uc774\ub098 \ubd84\uc704\uae30 \u2022 \uc120\ud0dd)" : "(\ud544\uc218)"),
+          "\uc6d0\ud558\ub294 \uc774\ubbf8\uc9c0 \ubb18\uc0ac",
+          React.createElement("span", { style: { color: T.textMuted, fontWeight: 400, marginLeft: 6 } }, savedAiPrompt ? "(\ube44\uc6cc\ub450\uba74 \ud604\uc7ac \ubb18\uc0ac\ub85c \ub2e4\uc2dc \ub9cc\ub4e4\uc5b4\uc694 \u2022 \uc120\ud0dd)" : "(\ud544\uc218)"),
         ),
         React.createElement("textarea", {
           value: extraPrompt,
           onChange: (e) => setExtraPrompt(e.target.value),
-          placeholder: hasRealContent ? "\uc608: \ub530\ub73b\ud55c \uc870\uba85, \uc5ec\uc790 2\uba85\uc774 \ub9c8\uc8fc\ubcf4\uba70 \uc6c3\uae30" : "\uc608: \uae40\ubc25\uc9d1 \uc678\uad00, \ub530\ub73b\ud55c \ubd84\uc704\uae30",
+          placeholder: "\uc608: \ub530\ub73b\ud55c \uc870\uba85\uc758 \uce74\ud398\uc5d0\uc11c \ub178\ud2b8\ubd81\uc744 \ubcf4\uba70 \ubbf8\uc18c\uc9d3\ub294 \uc5ec\uc790",
           rows: 3,
           style: {
             width: '100%', padding: 10, background: T.bg, color: T.text,
@@ -8774,19 +8766,15 @@ export default function App() {
     const target = proj.cards?.[cardIdx];
     if (!target) return;
 
-    // 프롬프트 구성:
-    //   카드 내용(title/subtitle/body) 중 기본 문구(placeholder)가 아닌 것만 사용
-    //   + 유저가 모달에서 입력한 extraUserPrompt
-    //   둘 다 없으면 기사 제목으로 폴백 (절대 random fallback 쓰지 않음)
-    const cardSubject = ['title', 'subtitle', 'body']
-      .map(k => target[k])
-      .filter(v => !isPlaceholderText(v))
-      .join(' · ')
-      .slice(0, 240);
+    // 프롬프트 구성 (우선순위):
+    //   1) 사용자가 입력한 extraUserPrompt → 그것만 사용 (사용자 의도 우선)
+    //   2) 이전에 저장된 aiImagePrompt(영어 시각 묘사) → 그대로 재사용 (같은 장면, 다른 스타일/시드)
+    //   3) 기사 제목으로 폴백
+    // ⚠️ 카드 화면 텍스트(title/subtitle/body, 한글 본문)는 시각 묘사가 아니므로 절대 프롬프트로 사용하지 않음.
     const extra = (extraUserPrompt || '').trim().slice(0, 240);
+    const savedAiPrompt = (target.articleMeta?.aiImagePrompt || '').trim().slice(0, 240);
     const articleTitle = (proj.sourceTitle || '').trim().slice(0, 120);
-    let prompt = [cardSubject, extra].filter(Boolean).join(' — ');
-    if (!prompt) prompt = articleTitle || 'editorial scene related to the article';
+    let prompt = extra || savedAiPrompt || articleTitle || 'editorial scene related to the article';
     const aspectRatio = proj.aspectRatio || '1:1';
 
     setRegeneratingCardIdx(cardIdx);
