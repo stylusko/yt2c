@@ -50,8 +50,11 @@ export default async function handler(req, res) {
     ]);
     const totalCards = cardVals.reduce((sum, v) => sum + parseInt(v || '0', 10), 0);
 
+    // 기본 오프셋: 사람/카드 모두 +200 (초기 노출용 floor)
+    const BASE = 200;
+
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600');
-    res.json({ visitors: allTimeVisitors, cards: totalCards });
+    res.json({ visitors: BASE + allTimeVisitors, cards: BASE + totalCards });
   } catch (e) {
     console.error('[stats] error:', e.message);
     res.json({ visitors: 0, cards: 0 });
