@@ -7,19 +7,19 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
   '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
   '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
   '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
   '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
   'AI 위저드 카피톤 선택 단계 분리',
-  '쉬운편집 30초 단위 구간 + 최대 20장',
 ];
 
 /* ── Icons ── */
@@ -5680,6 +5680,32 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
       )),
     ),
+    // \uCE74\uB4DC \uD14D\uC2A4\uD2B8 \uC591 \uC120\uD0DD (\uAC04\uB2E8\uD615/\uC0C1\uC138\uD615)
+    React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uD14D\uC2A4\uD2B8 \uC591"),
+      React.createElement("div", { style: { display: 'flex', gap: 10 } },
+        [
+          { id: 'title', label: '\uAC04\uB2E8\uD615', desc: '\uC81C\uBAA9\uB9CC' },
+          { id: 'title_body', label: '\uC0C1\uC138\uD615', desc: '\uC81C\uBAA9 + \uBCF8\uBB38' },
+        ].map(opt => {
+          const active = (data.textMode || 'title') === opt.id;
+          return React.createElement("button", {
+            key: opt.id,
+            onClick: () => update('textMode', opt.id),
+            style: {
+              flex: 1, padding: '14px 12px', borderRadius: 12,
+              border: `1.5px solid ${active ? '#10b981' : T.border}`,
+              background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+            },
+          },
+            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: active ? '#10b981' : T.text } }, opt.label),
+            React.createElement("span", { style: { fontSize: 11, color: active ? '#10b981' : T.textMuted } }, opt.desc),
+          );
+        }),
+      ),
+    ),
     React.createElement("div", { style: { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'rgba(16,185,129,0.08)', borderRadius: 12, border: '1px solid rgba(16,185,129,0.2)' } },
       React.createElement("span", { style: { fontSize: 18, flexShrink: 0 } }, "\uD83D\uDCA1"),
       React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, lineHeight: 1.5 } }, "\uD3B8\uC9D1 \uD654\uBA74\uC5D0\uC11C \uC5B8\uC81C\uB4E0 \uD1A4\uC744 \uBC14\uAFC0 \uC218 \uC788\uC5B4\uC694"),
@@ -8587,7 +8613,7 @@ export default function App() {
     // Close any previous SSE connection
     if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
 
-    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking'));
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking') + '&textMode=' + encodeURIComponent(wizardData.textMode || 'title'));
     aiEventSourceRef.current = es;
 
     es.addEventListener('status', (e) => {
@@ -8629,8 +8655,8 @@ export default function App() {
           card.title = h.title || '';
           card.subtitle = '';
           card.useSubtitle = false;
-          card.body = '';
-          card.useBody = false;
+          card.body = h.body || '';
+          card.useBody = !!(h.body && h.body.trim());
           card.name = (h.title || '').replace(/\n/g, ' ');
 
           // All cards: gradient 레이아웃 (photo_top + useGradient), 텍스트 배경 영역 40% (photoRatio 60), 투명도 55%
@@ -9049,7 +9075,7 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
-      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
       onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
