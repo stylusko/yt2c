@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -6099,7 +6099,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
               React.createElement("span", { style: { fontSize: 15 } }, "\u2728"),
               React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'generate' ? T.accent : T.text } }, "AI\uB85C \uC0DD\uC131"),
             ),
-            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "Flux AI\uAC00 \uC0C8\ub85c \uc0dd\uc131"),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "OpenAI\uAC00 \uC0C8\ub85c \uc0dd\uc131"),
           ),
         ),
       ),
@@ -8814,7 +8814,7 @@ export default function App() {
     setRegenerateStyleCardIdx(cardIdx);
   };
 
-  // Article 카드: 스타일 선택 후 실제 Flux 호출
+  // Article 카드: 스타일 선택 후 실제 OpenAI gpt-image-2 호출
   // extraUserPrompt: 모달에서 유저가 직접 입력한 추가 설명 (optional)
   const handleRegenerateArticleImageWithStyle = async (cardIdx, presetId, extraUserPrompt) => {
     const proj = activeProject;
