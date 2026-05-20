@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5399,8 +5399,7 @@ function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy
         React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 30 : 36, height: mob ? 30 : 36, borderRadius: 8 } }),
         React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: mob ? 22 : 26, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
       ),
-      React.createElement("h1", { style: { fontSize: mob ? 17 : 26, fontWeight: 700, color: T.text, margin: 0, marginBottom: 4 } }, "\uC720\uBA54\uCE74, \uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
-      React.createElement("p", { style: { fontSize: mob ? 12 : 15, color: T.textSecondary, margin: 0 } }, "\uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uC27D\uAC8C \uCE74\uB4DC\uB274\uC2A4\uB85C \uB9CC\uB4E4\uC5B4\uBCF4\uC138\uC694"),
+      React.createElement("h1", { style: { fontSize: mob ? 17 : 26, fontWeight: 700, color: T.text, margin: 0 } }, "\uC720\uBA54\uCE74, \uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30"),
     ),
     // Spacer
     React.createElement("div", { style: { flex: 1, minHeight: mob ? 20 : 24, maxHeight: mob ? 56 : 48 } }),

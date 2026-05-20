@@ -34,10 +34,12 @@ export default async function handler(req, res) {
       // Store per-session card count
       await redis.hset('yt2c:cardcounts', sessionId, Math.max(0, cardCount));
     } else if (type === 'visit') {
-      // Add IP to daily visitor set
+      // Daily visitor set (90일 TTL — 최근 통계용)
       const key = `yt2c:visitors:daily:${dateStr}`;
       await redis.sadd(key, ip);
       await redis.expire(key, 90 * 24 * 60 * 60);
+      // All-time unique visitors (HyperLogLog — TTL 없음)
+      await redis.pfadd('yt2c:visitors:alltime', ip);
     } else if (type === 'duration' && typeof duration === 'number' && duration > 0) {
       // Record session duration (seconds)
       const key = `yt2c:duration:daily:${dateStr}`;
