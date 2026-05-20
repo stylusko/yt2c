@@ -101,6 +101,10 @@ async function handleGet(req, res) {
 
         if (state === 'completed') {
           result.downloadUrl = `/api/jobs/${id}?download=true&cardIdx=${cardIdx}&ext=${ext}`;
+          const returnValue = job.returnvalue;
+          if (returnValue?.bucketKey) {
+            result.bucketKey = returnValue.bucketKey;
+          }
         }
 
         if (state === 'failed') {
