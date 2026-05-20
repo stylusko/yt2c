@@ -6,8 +6,8 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0520';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_DATE = '2026.0521';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5856,6 +5856,41 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
   );
 }
 
+/* ── 텍스트 기반 카드 수 추천 ── */
+function suggestCardCount(articleData) {
+  const title = (articleData?.title || '').trim();
+  const body  = (articleData?.body  || '').trim();
+
+  // 1. 제목에서 숫자 감지 (리스티클: "TOP 5", "5가지", "7개", "10선", "3단계" 등)
+  const titleMatch = title.match(/(?:TOP\s*|베스트\s*|BEST\s*)(\d+)|(\d+)\s*(?:가지|개|선|단계|번|위|화|편|탄|살|곳|법)/i);
+  const titleNum = titleMatch ? parseInt(titleMatch[1] || titleMatch[2], 10) : null;
+
+  // 2. 본문에서 넘버링 항목 수 감지
+  // "1. " "2. " "1) " 등 줄 앞 넘버링
+  const numberedLineCount = (body.match(/(?:^|\n)\s*\d{1,2}[\.\)]\s+\S/g) || []).length;
+  // 원형 숫자 ①②③… (최대 ⑳)
+  const circledNumCount = (body.match(/[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳]/g) || []).length;
+  const bodyListNum = Math.max(numberedLineCount, circledNumCount);
+
+  // 3. 리스티클 판정 — 제목·본문 어느 쪽이든 3~12 범위면 그 수로 추천
+  if (titleNum && titleNum >= 3 && titleNum <= 12) {
+    const bodyConfirms = bodyListNum >= titleNum - 1; // 본문 항목이 제목 수와 거의 일치하면 신뢰도 UP
+    return {
+      count: titleNum,
+      reason: 'listicle',
+      label: `제목 리스트 ${titleNum}개 감지${bodyConfirms ? ' ✓' : ''}`,
+    };
+  }
+  if (bodyListNum >= 3 && bodyListNum <= 12) {
+    return { count: bodyListNum, reason: 'listicle', label: `본문 리스트 ${bodyListNum}개 감지` };
+  }
+
+  // 4. 본문 길이 기반 (약 200자/카드)
+  const len = body.length;
+  let count = len < 300 ? 3 : len < 600 ? 5 : len < 1000 ? 7 : len < 1500 ? 8 : 10;
+  return { count: Math.min(12, count), reason: 'length', label: `본문 ${len}자 기준` };
+}
+
 /* ── Article Wizard Screen (텍스트로 만들기) ── */
 const ARTICLE_STYLE_PRESETS = [
   { id: 'stock_photo',     label: '📷 스톡 포토',      desc: '게티이미지 스타일 깔끔 프로 사진' },
@@ -5915,7 +5950,8 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         if (!useRaw) setShowRawInput(true);
         throw new Error(json.error || '추출 실패');
       }
-      onDataChange({ ...data, articleData: json.article });
+      const suggestion = suggestCardCount(json.article);
+      onDataChange({ ...data, articleData: json.article, cardCount: suggestion.count, cardCountSuggestion: suggestion });
       onNext();
     } catch (e) {
       setErrorMsg(e.message);
@@ -6105,17 +6141,38 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       ),
       // 카드 수
       React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDD22 \uCE74\uB4DC \uC218"),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } },
+          React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, fontWeight: 500, margin: 0 } }, "\uD83D\uDD22 \uCE74\uB4DC \uC218"),
+          data.cardCountSuggestion && React.createElement("span", {
+            style: { fontSize: 10, color: '#a78bfa', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 99, padding: '2px 8px', fontWeight: 600, cursor: 'pointer' },
+            onClick: () => onDataChange({ ...data, cardCount: data.cardCountSuggestion.count }),
+          },
+            data.cardCountSuggestion.reason === 'listicle'
+              ? `\uD83D\uDCCB ${data.cardCountSuggestion.label} \u2192 ${data.cardCountSuggestion.count}\uC7A5 \uCD94\uCC9C`
+              : `\uD83D\uDCA1 ${data.cardCountSuggestion.label} \u2192 ${data.cardCountSuggestion.count}\uC7A5 \uCD94\uCC9C`,
+          ),
+        ),
         React.createElement("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' } },
-          cardCountOptions.map(n => React.createElement("button", {
-            key: String(n),
-            onClick: () => onDataChange({ ...data, cardCount: n }),
-            style: {
-              padding: '8px 12px', borderRadius: T.radiusSm, border: `1px solid ${currentCardCount === n ? T.accent : T.border}`,
-              background: currentCardCount === n ? 'rgba(99,102,241,0.12)' : T.surface,
-              color: currentCardCount === n ? T.accent : T.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', minWidth: 44,
+          cardCountOptions.map(n => {
+            const isSuggested = data.cardCountSuggestion && n === data.cardCountSuggestion.count;
+            const isSelected = currentCardCount === n;
+            return React.createElement("button", {
+              key: String(n),
+              onClick: () => onDataChange({ ...data, cardCount: n }),
+              style: {
+                position: 'relative',
+                padding: '8px 12px', borderRadius: T.radiusSm,
+                border: `1px solid ${isSelected ? T.accent : isSuggested ? 'rgba(167,139,250,0.5)' : T.border}`,
+                background: isSelected ? 'rgba(99,102,241,0.12)' : isSuggested ? 'rgba(167,139,250,0.06)' : T.surface,
+                color: isSelected ? T.accent : T.text, fontSize: 12, fontWeight: 600, cursor: 'pointer', minWidth: 44,
+              },
             },
-          }, n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'))),
+              n === 'auto' ? '\uC790\uB3D9' : (n + '\uC7A5'),
+              isSuggested && !isSelected && React.createElement("span", {
+                style: { position: 'absolute', top: -6, right: -4, fontSize: 8, background: '#7c3aed', color: '#fff', borderRadius: 99, padding: '1px 4px', fontWeight: 700, lineHeight: 1.4 },
+              }, '\uCD94\uCC9C'),
+            );
+          }),
         ),
       ),
       // 카드 수 ↔ 스타일 사이 실시간 분배 안내 박스 (시선 고정)
