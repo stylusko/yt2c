@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -5918,7 +5918,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const currentAr = data.aspectRatio || '1:1';
   const articleImageCount = (data.articleData?.images || []).length;
   // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
-  const currentImageMode = articleImageCount === 0 ? 'generate' : (data.imageMode || 'reuse');
+  const currentImageMode = data.imageMode || 'reuse';
   // 카드 수 선택지는 모드 무관 동일 (이전엔 reuse 모드에서 이미지 수로 제한했으나,
   // 이제 부족분은 자동 AI 생성으로 보충하므로 제한 불필요)
   const cardCountOptions = ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
@@ -6098,7 +6098,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       // 이미지 소스 선택
       React.createElement("div", null,
         React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDDBC \uC774\uBBF8\uC9C0 \uC18C\uC2A4"),
-        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr', gap: 8 } },
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr 1fr', gap: 8 } },
           // 본문 이미지 우선 (부족 시 AI 자동 보충)
           React.createElement("button", {
             onClick: () => onDataChange({ ...data, imageMode: 'reuse' }),
@@ -6136,6 +6136,27 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
               React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'generate' ? T.accent : T.text } }, "AI\uB85C \uC0DD\uC131"),
             ),
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } }, "OpenAI\uAC00 \uC0C8\ub85c \uc0dd\uc131"),
+          ),
+          // 직접 삽입
+          React.createElement("button", {
+            onClick: () => onDataChange({ ...data, imageMode: 'manual' }),
+            style: {
+              padding: '12px 14px', borderRadius: T.radiusSm,
+              border: `1px solid ${currentImageMode === 'manual' ? '#f59e0b' : T.border}`,
+              background: currentImageMode === 'manual' ? 'rgba(245,158,11,0.12)' : T.surface,
+              cursor: 'pointer',
+              textAlign: 'left',
+            },
+          },
+            React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+              React.createElement("span", { style: { fontSize: 15 } }, "\u270F\uFE0F"),
+              React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'manual' ? '#f59e0b' : T.text } }, "\uc9c1\uc811 \uc0bd\uc785"),
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
+              articleImageCount === 0
+                ? "\uc774\ubbf8\uc9c0 \uc5c6\uc74c \u2192 \uc804\ubd80 \ube48 \uacf5\ubc31"
+                : `\ubcf8\ubb38 ${articleImageCount}\uc7a5 \ud65c\uc6a9 \u00B7 \ubd80\uc871\ubd84 \ube48 \uacf5\ubc31`
+            ),
           ),
         ),
       ),
@@ -6179,7 +6200,12 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       (() => {
         let msg = null;
         let variant = 'info';
-        if (articleImageCount === 0) {
+        if (currentImageMode === 'manual') {
+          msg = numericCardCount != null
+            ? `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${Math.min(numericCardCount, articleImageCount)}\uC7A5 \ud65c\uc6a9 \u00B7 \ub098\uba38\uc9c0 ${Math.max(0, numericCardCount - articleImageCount)}\uC7A5 \ube48 \uacf5\ubc31 (\uc9c1\uc811 \uc0bd\uc785)`
+            : `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${articleImageCount}\uC7A5 \ud65c\uc6a9 \u00B7 \ub098\uba38\uc9c0 \ube48 \uacf5\ubc31 (\uc9c1\uc811 \uc0bd\uc785)`;
+          variant = articleImageCount === 0 ? 'info' : 'ok';
+        } else if (articleImageCount === 0) {
           msg = '\uBCF8\uBB38 \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694 \u2192 \uC804\uBD80 AI \uC774\uBBF8\uC9C0 \uC0DD\uC131';
         } else if (currentImageMode === 'generate') {
           msg = numericCardCount != null

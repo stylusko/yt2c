@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   const projectId = genId();
   const preset = getArticleStylePreset(presetId);
   const ar = aspectRatio || '1:1';
-  const imageMode = rawMode === 'generate' ? 'generate' : 'reuse';
+  const imageMode = rawMode === 'generate' ? 'generate' : rawMode === 'manual' ? 'manual' : 'reuse';
   const availableImages = Array.isArray(article.images) ? article.images.length : 0;
 
   // reuse 모드는 "본문 이미지 우선 + 부족분 AI 생성" 혼합 모드로 동작.
