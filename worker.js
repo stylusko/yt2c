@@ -97,7 +97,17 @@ const worker = new Worker('video-generation', async (job) => {
     let backgroundPath = null;
     if (backgroundData) {
       console.log(`[${jobId}] Saving background image for card ${cardIdx}`);
-      backgroundPath = saveBackground(`${jobId}_${cardIdx}`, backgroundData);
+      let bgData = backgroundData;
+      // 외부 URL인 경우 fetch해서 base64 data URL로 변환
+      if (/^https?:\/\//i.test(backgroundData)) {
+        console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
+        const resp = await fetch(backgroundData, { signal: AbortSignal.timeout(30000) });
+        if (!resp.ok) throw new Error(`배경 이미지 다운로드 실패: HTTP ${resp.status}`);
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const ct = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+        bgData = `data:${ct};base64,${buf.toString('base64')}`;
+      }
+      backgroundPath = saveBackground(`${jobId}_${cardIdx}`, bgData);
     }
 
     // Download segment (30%)
