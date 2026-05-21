@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 10; // same-day deploy count
+const BUILD_NUM = 11; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🎬 영상 생성 직전 출력 형식 재검증 — 저장된 프로젝트 상태가 이미지여도 영상 카드는 MP4로 생성',
   '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
   '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
   '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
@@ -4849,6 +4850,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   name,
   globalUrl: '',
   outputFormat: 'video',
+  outputFormatTouched: false,
   outputSize: 1080,
   aspectRatio: '1:1',
   globalImageSource: 'thumbnail',
@@ -4925,11 +4927,12 @@ function restoreDefaults(obj) {
   return { ...DEFAULT_CARD(), ...expanded };
 }
 
-const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
+const PROJ_DEFAULTS = { outputFormat: 'video', outputFormatTouched: false, outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
 function encodeProject(project) {
   const s = { n: project.name, u: project.globalUrl };
   if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
+  if (project.outputFormatTouched) s.ot = 1;
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
@@ -4966,6 +4969,7 @@ function decodeProject(encoded) {
     name: s.n || '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     globalUrl: s.u || '',
     outputFormat: s.f || PROJ_DEFAULTS.outputFormat,
+    outputFormatTouched: !!s.ot,
     outputSize: s.s || PROJ_DEFAULTS.outputSize,
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
@@ -8317,7 +8321,7 @@ export default function App() {
       setCards(cs => cs.map(c => ({ ...c, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null })));
     }
   };
-  const setOutputFormat = (v) => updateProject({ outputFormat: v });
+  const setOutputFormat = (v) => updateProject({ outputFormat: v, outputFormatTouched: true });
   const setOutputSize = (v) => updateProject({ outputSize: v });
   const setAspectRatio = (v) => updateProject({ aspectRatio: v });
   const setGlobalImageSource = (v) => updateProject({ globalImageSource: v });
@@ -8477,6 +8481,16 @@ export default function App() {
     // Check if card uses image background (uploadedImage, fillSource=image, or no URL with globalBgImage)
     const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
     const allImageBg = indices.every(i => cardIsImageBg(cards[i]));
+    const hasVideoCards = indices.some(i => !cardIsImageBg(cards[i]));
+    const effectiveOutputFormat = (
+      activeProject?.sourceType === 'youtube' &&
+      hasVideoCards &&
+      outputFormat !== 'video' &&
+      activeProject?.outputFormatTouched !== true
+    ) ? 'video' : outputFormat;
+    if (effectiveOutputFormat !== outputFormat) {
+      updateProject({ outputFormat: effectiveOutputFormat, outputFormatTouched: false });
+    }
 
     // URL validation: only required if at least one card needs video
     if (!allImageBg) {
@@ -8493,7 +8507,7 @@ export default function App() {
         // Image card: check uploaded image exists
         if (!c.uploadedImage && !globalBgImage) { errors.push(`\uCE74\uB4DC ${i + 1}: \uBC30\uACBD \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC8FC\uC138\uC694.`); continue; }
         // For MP4 output: only check duration (end > start) if times are provided
-        if (outputFormat === 'video' && c.start && c.end) {
+        if (effectiveOutputFormat === 'video' && c.start && c.end) {
           const ss = parseTime(c.start), es = parseTime(c.end);
           if (ss != null && es != null && es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
         }
@@ -8511,7 +8525,7 @@ export default function App() {
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
 
     // 캐시된 카드 vs 새로 생성할 카드 분리
-    const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl };
     const cachedIndices = [];
     const newIndices = [];
     for (const i of indices) {
@@ -8563,7 +8577,10 @@ export default function App() {
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
       if (activeProject) {
-        const encoded = encodeProject(activeProject);
+        const projectForShare = effectiveOutputFormat === outputFormat
+          ? activeProject
+          : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
+        const encoded = encodeProject(projectForShare);
         try {
           const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
           if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
@@ -8571,7 +8588,7 @@ export default function App() {
         if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
+        body: JSON.stringify({ url, outputFormat: effectiveOutputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
           backgroundData: card.uploadedImage
@@ -8802,6 +8819,7 @@ export default function App() {
             globalUrl: _url,
             aspectRatio: _aspectRatio,
             outputFormat: 'video',
+            outputFormatTouched: false,
             globalBgImage: null,
             cards: newCards,
             copyTone: wd.copyTone || wizardData.copyTone || 'hooking',
@@ -8847,6 +8865,7 @@ export default function App() {
           globalUrl: wizardData.url,
           aspectRatio: wizardData.aspectRatio,
           outputFormat: 'video',
+          outputFormatTouched: false,
           globalBgImage: null,
           cards: newCards,
         };
@@ -9113,6 +9132,7 @@ export default function App() {
           globalUrl: '',
           aspectRatio: wizardData.aspectRatio || '1:1',
           outputFormat: 'image',
+          outputFormatTouched: false,
           cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
           copyTone: wizardData.copyTone || 'hooking',
           videoTitle: doneData.sourceTitle || '',
