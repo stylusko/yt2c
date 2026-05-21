@@ -9062,7 +9062,17 @@ export default function App() {
       if (!doneData) throw new Error('완료 이벤트를 받지 못했습니다.');
 
       // 프로젝트에 반영
-      const newCards = doneData.cards.map(c => ({ ...DEFAULT_CARD(), ...c }));
+      // 역직렬화와 동일하게: sourceImageIndex → uploadedImage + fillSource:'image' 복원
+      const _srcImgs = doneData.sourceImages || [];
+      const newCards = doneData.cards.map(c => {
+        const base = { ...DEFAULT_CARD(), ...c, sourceType: 'article' };
+        const idx = base.articleMeta && typeof base.articleMeta.sourceImageIndex === 'number'
+          ? base.articleMeta.sourceImageIndex : -1;
+        if (idx >= 0 && idx < _srcImgs.length) {
+          return { ...base, uploadedImage: _srcImgs[idx], fillSource: 'image' };
+        }
+        return base;
+      });
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
