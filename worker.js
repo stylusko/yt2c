@@ -101,7 +101,15 @@ const worker = new Worker('video-generation', async (job) => {
       // 외부 URL인 경우 fetch해서 base64 data URL로 변환
       if (/^https?:\/\//i.test(backgroundData)) {
         console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
-        const resp = await fetch(backgroundData, { signal: AbortSignal.timeout(30000) });
+        const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
+        const resp = await fetch(backgroundData, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Referer': referer,
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          },
+          signal: AbortSignal.timeout(30000),
+        });
         if (!resp.ok) throw new Error(`배경 이미지 다운로드 실패: HTTP ${resp.status}`);
         const buf = Buffer.from(await resp.arrayBuffer());
         const ct = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();

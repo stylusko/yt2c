@@ -10,6 +10,31 @@ export const config = {
   api: { bodyParser: { sizeLimit: '2mb' } },
 };
 
+async function fetchImageAsDataUrl(url) {
+  if (!url || !/^https?:\/\//i.test(url)) return url || null;
+  try {
+    const referer = (() => { try { return new URL(url).origin + '/'; } catch { return ''; } })();
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Referer': referer,
+        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) {
+      console.warn(`[article-cards] image fetch ${resp.status}: ${url}`);
+      return null;
+    }
+    const buf = Buffer.from(await resp.arrayBuffer());
+    const ct = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+    return `data:${ct};base64,${buf.toString('base64')}`;
+  } catch (e) {
+    console.warn(`[article-cards] image fetch error: ${e.message}`);
+    return null;
+  }
+}
+
 function sseSend(res, event, data) {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -82,7 +107,7 @@ export default async function handler(req, res) {
     // 먼저 reuse/none 카드부터 즉시 방출
     for (const c of divided.cards) {
       if (c.imageStrategy === 'reuse') {
-        const bgImage = article.images[c.sourceImageIndex] || null;
+        const bgImage = await fetchImageAsDataUrl(article.images[c.sourceImageIndex] || null);
         const finalCard = buildCard(c, {
           bgImage,
           sourceType: 'article',
