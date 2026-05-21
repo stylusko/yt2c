@@ -9062,10 +9062,13 @@ export default function App() {
       if (!doneData) throw new Error('완료 이벤트를 받지 못했습니다.');
 
       // 프로젝트에 반영
-      // 역직렬화와 동일하게: sourceImageIndex → uploadedImage + fillSource:'image' 복원
+      // API가 이미 uploadedImage에 data URL을 세팅해 반환함(fetchImageAsDataUrl).
+      // uploadedImage가 있으면 fillSource:'image'만 보장하고 덮어쓰지 않음.
+      // 없는 경우(fetch 실패)만 sourceImages[idx] 외부 URL로 폴백.
       const _srcImgs = doneData.sourceImages || [];
       const newCards = doneData.cards.map(c => {
         const base = { ...DEFAULT_CARD(), ...c, sourceType: 'article' };
+        if (base.uploadedImage) return { ...base, fillSource: 'image' };
         const idx = base.articleMeta && typeof base.articleMeta.sourceImageIndex === 'number'
           ? base.articleMeta.sourceImageIndex : -1;
         if (idx >= 0 && idx < _srcImgs.length) {
