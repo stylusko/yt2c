@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 17; // same-day deploy count
+const BUILD_NUM = 18; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
   '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
   '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
   '🖼️ 아티클 이미지 curl fallback — Node fetch/프록시가 막힌 CDN도 worker에서 재시도',
@@ -311,6 +312,7 @@ function clientCardHash(card, globalConfig) {
     bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
     ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
     ui: card.uploadedImage ? 'y' : 'n',
+    ...(card.sourceType === 'article' ? { st: 'article', ifit: 'cover' } : {}),
     tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
     tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
     ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
@@ -8447,6 +8449,7 @@ export default function App() {
 
   const buildConfig = (card) => {
     const c = effectiveCard(card);
+    const isArticle = c.sourceType === 'article';
     return {
       start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
       video_fill: c.videoFill || 'full',
@@ -8459,6 +8462,8 @@ export default function App() {
       aspect_ratio: aspectRatio,
       fill_source: c.fillSource || 'video',
       image_source: c.fillSource === 'image' ? 'upload' : 'thumbnail',
+      source_type: c.sourceType || 'youtube',
+      ...(isArticle ? { image_fit: 'cover' } : {}),
       ...(c.url && c.url !== globalUrl ? { url: c.url } : {}),
       ...(c.captureTime ? { capture_time: c.captureTime } : {}),
     };
