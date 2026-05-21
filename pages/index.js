@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -8793,7 +8793,9 @@ export default function App() {
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
           if (p.id !== targetId) return p;
-          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '' };
+          // outputFormat 명시: 텍스트 위저드(9090)는 'image'로 박는데 영상 위저드는 명시 안 해서
+          // 이전 텍스트 위저드 잔재 'image'가 남으면 영상 카드도 jpg로 나가던 비대칭 버그 수정.
+          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '', outputFormat: 'video' };
         }));
         setActiveProjectId(targetId);
         setAiEditRunning(false); setAiEditTargetId(null);
@@ -8824,7 +8826,8 @@ export default function App() {
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
-        return { ...p, globalUrl: wizardData.url, aspectRatio: wizardData.aspectRatio, cards: newCards };
+        // outputFormat 명시 — 위 영상 위저드와 같은 이유로 'video' 박아둠.
+        return { ...p, globalUrl: wizardData.url, aspectRatio: wizardData.aspectRatio, cards: newCards, outputFormat: 'video' };
       }));
       setActiveProjectId(targetId);
       setTimeout(() => {
