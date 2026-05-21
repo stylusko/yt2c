@@ -1,6 +1,7 @@
 const { Worker, Queue } = require('bullmq');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
@@ -98,22 +99,52 @@ const worker = new Worker('video-generation', async (job) => {
     if (backgroundData) {
       console.log(`[${jobId}] Saving background image for card ${cardIdx}`);
       let bgData = backgroundData;
-      // 외부 URL인 경우 fetch해서 base64 data URL로 변환
+      // 외부 URL인 경우: 버킷 캐시 확인 → 없으면 fetch 후 버킷에 저장
       if (/^https?:\/\//i.test(backgroundData)) {
-        console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
-        const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
-        const resp = await fetch(backgroundData, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-            'Referer': referer,
-            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-          },
-          signal: AbortSignal.timeout(30000),
-        });
-        if (!resp.ok) throw new Error(`배경 이미지 다운로드 실패: HTTP ${resp.status}`);
-        const buf = Buffer.from(await resp.arrayBuffer());
-        const ct = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
-        bgData = `data:${ct};base64,${buf.toString('base64')}`;
+        const { fileExists, getDownloadUrl, uploadBuffer } = await import('./lib/bucket.js');
+        const urlHash = crypto.createHash('md5').update(backgroundData).digest('hex');
+        const urlExt = (backgroundData.match(/\.(png|webp|gif)/i)?.[1] || 'jpg').toLowerCase();
+        const cacheKey = `article-images/${urlHash}.${urlExt}`;
+
+        let imgBuffer = null;
+        let imgContentType = 'image/jpeg';
+
+        // 버킷 캐시 확인
+        const isCached = await fileExists(cacheKey).catch(() => false);
+        if (isCached) {
+          console.log(`[${jobId}] Background cache hit (bucket): ${cacheKey}`);
+          const cacheUrl = await getDownloadUrl(cacheKey).catch(() => null);
+          if (cacheUrl) {
+            const r = await fetch(cacheUrl, { signal: AbortSignal.timeout(30000) });
+            if (r.ok) {
+              imgBuffer = Buffer.from(await r.arrayBuffer());
+              imgContentType = (r.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+            }
+          }
+        }
+
+        // 캐시 미스 → 외부 fetch 후 버킷에 저장
+        if (!imgBuffer) {
+          console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
+          const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
+          const resp = await fetch(backgroundData, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+              'Referer': referer,
+              'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            },
+            signal: AbortSignal.timeout(30000),
+          });
+          if (!resp.ok) throw new Error(`배경 이미지 다운로드 실패: HTTP ${resp.status}`);
+          imgBuffer = Buffer.from(await resp.arrayBuffer());
+          imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+          // 버킷에 캐싱 (실패해도 진행)
+          uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
+            console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
+          );
+        }
+
+        bgData = `data:${imgContentType};base64,${imgBuffer.toString('base64')}`;
       }
       backgroundPath = saveBackground(`${jobId}_${cardIdx}`, bgData);
     }
