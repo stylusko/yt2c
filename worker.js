@@ -123,30 +123,29 @@ const worker = new Worker('video-generation', async (job) => {
           }
         }
 
-        // 캐시 미스 → 외부 fetch 후 버킷에 저장
+        // 캐시 미스 → 외부 fetch (direct → proxy 폴백) 후 버킷에 저장
+        // Railway outbound IP가 막힌 CDN(예: ceoimg.cdn.baemin.com)은 direct에서 403을
+        // 돌려보내므로 fetchDirectThenProxy로 proxy 재시도. PR #107의 API 측 fix와 같은 패턴.
         if (!imgBuffer) {
           console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
           try {
+            const { fetchDirectThenProxy } = await import('./lib/article-extractor.js');
             const fallbackReferer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
             const referer = bgSourceUrl || fallbackReferer;
-            const resp = await fetch(backgroundData, {
+            const resp = await fetchDirectThenProxy(backgroundData, {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
                 'Referer': referer,
                 'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
               },
-              signal: AbortSignal.timeout(30000),
-            });
-            if (resp.ok) {
-              imgBuffer = Buffer.from(await resp.arrayBuffer());
-              imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
-              // 버킷에 캐싱 (실패해도 진행)
-              uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
-                console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
-              );
-            } else {
-              console.warn(`[${jobId}] External image unavailable (HTTP ${resp.status}), using fallback background`);
-            }
+              timeout: 30000,
+            }, `[${jobId}] background ${backgroundData}`);
+            imgBuffer = Buffer.from(await resp.arrayBuffer());
+            imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+            // 버킷에 캐싱 (실패해도 진행)
+            uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
+              console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
+            );
           } catch (fetchErr) {
             console.warn(`[${jobId}] External image fetch error: ${fetchErr.message}, using fallback background`);
           }
