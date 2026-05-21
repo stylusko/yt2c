@@ -151,10 +151,9 @@ const worker = new Worker('video-generation', async (job) => {
           }
         }
 
-        // 이미지 취득 실패 시 1×1 검정 PNG 폴백 (카드는 정상 생성, 배경만 검정)
+        // 이미지 취득 실패 시 초록 placeholder를 깔지 말고 실패로 노출한다.
         if (!imgBuffer) {
-          imgBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-          imgContentType = 'image/png';
+          throw new Error(`Background image fetch failed: ${backgroundData}`);
         }
 
         bgData = `data:${imgContentType};base64,${imgBuffer.toString('base64')}`;
