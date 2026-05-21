@@ -13,13 +13,13 @@ const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
   '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
   '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
   '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
   '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
   '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
-  'AI 위저드 카피톤 선택 단계 분리',
 ];
 
 /* ── Icons ── */
@@ -8793,9 +8793,21 @@ export default function App() {
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
           if (p.id !== targetId) return p;
-          // outputFormat 명시: 텍스트 위저드(9090)는 'image'로 박는데 영상 위저드는 명시 안 해서
-          // 이전 텍스트 위저드 잔재 'image'가 남으면 영상 카드도 jpg로 나가던 비대칭 버그 수정.
-          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '', outputFormat: 'video' };
+          return {
+            ...p,
+            sourceType: 'youtube',
+            sourceUrl: '',
+            sourceTitle: '',
+            sourceImages: [],
+            globalUrl: _url,
+            aspectRatio: _aspectRatio,
+            outputFormat: 'video',
+            globalBgImage: null,
+            cards: newCards,
+            copyTone: wd.copyTone || wizardData.copyTone || 'hooking',
+            transcript: _transcript || '',
+            videoTitle: videoInfo?.title || '',
+          };
         }));
         setActiveProjectId(targetId);
         setAiEditRunning(false); setAiEditTargetId(null);
@@ -8826,8 +8838,18 @@ export default function App() {
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
-        // outputFormat 명시 — 위 영상 위저드와 같은 이유로 'video' 박아둠.
-        return { ...p, globalUrl: wizardData.url, aspectRatio: wizardData.aspectRatio, cards: newCards, outputFormat: 'video' };
+        return {
+          ...p,
+          sourceType: 'youtube',
+          sourceUrl: '',
+          sourceTitle: '',
+          sourceImages: [],
+          globalUrl: wizardData.url,
+          aspectRatio: wizardData.aspectRatio,
+          outputFormat: 'video',
+          globalBgImage: null,
+          cards: newCards,
+        };
       }));
       setActiveProjectId(targetId);
       setTimeout(() => {
