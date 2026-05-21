@@ -73,7 +73,7 @@ async function handlePost(req, res) {
     // Create one job per card
     const jobIds = [];
     for (let cardIdx = 0; cardIdx < cards.length; cardIdx++) {
-      const { cardConfig, overlayData, backgroundData } = cards[cardIdx];
+      const { cardConfig, overlayData, backgroundData, bgSourceUrl } = cards[cardIdx];
 
       // Image-only cards always produce jpg, even if global outputFormat is 'video'
       const cardFormat = backgroundData
@@ -88,6 +88,7 @@ async function handlePost(req, res) {
         url: cardConfig?.url || url || '',
         overlayData: overlayData || '',
         backgroundData: backgroundData || '',
+        bgSourceUrl: bgSourceUrl || '',
         outputFormat: cardFormat,
         outputSize,
         baseUrl,
