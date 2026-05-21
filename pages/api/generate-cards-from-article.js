@@ -13,7 +13,7 @@ export const config = {
 
 // 외부 CDN 이미지를 fetch 후 base64 data URL로 변환.
 // Railway outbound IP는 hotlink-가드(특히 배민 ceoimg.cdn.baemin.com)에서 403을
-// 받기 때문에 direct → proxy → curl 재시도 패턴을 적용.
+// 받기 때문에 direct → proxy → curl → browser screenshot 재시도 패턴을 적용.
 // 이게 빠지면 카드 배경 이미지가 null이 되고 워커가 1x1 placeholder를 깔아
 // "초록색 배경" 카드가 만들어지는 회귀가 발생.
 async function fetchImageAsDataUrl(url, sourceUrl) {

@@ -123,7 +123,7 @@ const worker = new Worker('video-generation', async (job) => {
           }
         }
 
-        // 캐시 미스 → 외부 fetch (direct → proxy → curl 폴백) 후 버킷에 저장
+        // 캐시 미스 → 외부 fetch (direct → proxy → curl → browser screenshot 폴백) 후 버킷에 저장
         // Railway outbound IP가 막힌 CDN(예: ceoimg.cdn.baemin.com)은 direct에서 403을
         // 돌려보내므로 fetchDirectThenProxy로 proxy 재시도. PR #107의 API 측 fix와 같은 패턴.
         if (!imgBuffer) {

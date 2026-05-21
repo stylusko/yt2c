@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 15; // same-day deploy count
+const BUILD_NUM = 16; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
   '🖼️ 아티클 이미지 curl fallback — Node fetch/프록시가 막힌 CDN도 worker에서 재시도',
   '🖼️ 아티클 이미지 추출 안정화 — CDN 이미지 차단 시 프록시 재시도, 초록 placeholder 제거',
   '🎬 MP4 인코딩 무한 길이 방지 — crop 필터가 선택 구간 길이에서 정확히 종료되도록 수정',
