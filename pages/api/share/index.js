@@ -23,8 +23,14 @@ export default async function handler(req, res) {
     .insert({ id, data });
 
   if (error) {
-    console.error('Supabase insert error:', error);
-    return res.status(500).json({ error: 'Failed to save project' });
+    console.error('Supabase insert error:', error, 'data size:', data.length);
+    return res.status(500).json({
+      error: 'Failed to save project',
+      detail: error.message,
+      code: error.code,
+      hint: error.hint,
+      dataSize: data.length,
+    });
   }
 
   return res.status(200).json({ id });
