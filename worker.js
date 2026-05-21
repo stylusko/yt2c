@@ -125,7 +125,7 @@ const worker = new Worker('video-generation', async (job) => {
 
         // 캐시 미스 → 외부 fetch 후 버킷에 저장
         if (!imgBuffer) {
-          console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
+          console.log(`[${jobId}] Fetching external background URL for card ${cardIdx} (bgSourceUrl=${bgSourceUrl || '(none)'})`);
           try {
             const fallbackReferer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
             const referer = bgSourceUrl || fallbackReferer;
