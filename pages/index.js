@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 11; // same-day deploy count
+const BUILD_NUM = 12; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🎬 하이브리드 프로젝트 영상 추출 복구 — 텍스트 프로젝트에 남은 영상 카드도 MP4로 생성',
   '🎬 영상 생성 직전 출력 형식 재검증 — 저장된 프로젝트 상태가 이미지여도 영상 카드는 MP4로 생성',
   '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
   '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
@@ -8483,7 +8484,6 @@ export default function App() {
     const allImageBg = indices.every(i => cardIsImageBg(cards[i]));
     const hasVideoCards = indices.some(i => !cardIsImageBg(cards[i]));
     const effectiveOutputFormat = (
-      activeProject?.sourceType === 'youtube' &&
       hasVideoCards &&
       outputFormat !== 'video' &&
       activeProject?.outputFormatTouched !== true
