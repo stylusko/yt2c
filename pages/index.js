@@ -8581,6 +8581,7 @@ export default function App() {
               : (!url && !card.url && globalBgImage)
                 ? globalBgImage
                 : null,
+          bgSourceUrl: activeProject?.sourceUrl || '',
         })) }),
       });
       if (!res.ok) { const err = await res.json(); throw new Error(err.error || "서버 요청 실패"); }

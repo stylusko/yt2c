@@ -83,7 +83,7 @@ function detectCookieExpirySuspicion(errorMessage) {
 
 // Create worker
 const worker = new Worker('video-generation', async (job) => {
-  const { jobId, cardIdx, cardConfig, url, overlayData, backgroundData, outputFormat, outputSize } = job.data;
+  const { jobId, cardIdx, cardConfig, url, overlayData, backgroundData, bgSourceUrl, outputFormat, outputSize } = job.data;
   const processCard = await loadProcessCard();
 
   console.log(`Processing job ${jobId}, card ${cardIdx}`);
@@ -127,7 +127,8 @@ const worker = new Worker('video-generation', async (job) => {
         if (!imgBuffer) {
           console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
           try {
-            const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
+            const fallbackReferer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
+            const referer = bgSourceUrl || fallbackReferer;
             const resp = await fetch(backgroundData, {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
