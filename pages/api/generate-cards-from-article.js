@@ -5,28 +5,31 @@
 
 import { divideArticleToCards, getArticleStylePreset } from '../../lib/claude.js';
 import { generateImage, persistImageToBucket } from '../../lib/openai-image.js';
+import { fetchDirectThenProxy } from '../../lib/article-extractor.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '2mb' } },
 };
 
+// 외부 CDN 이미지를 fetch 후 base64 data URL로 변환.
+// Railway outbound IP는 hotlink-가드(특히 배민 ceoimg.cdn.baemin.com)에서 403을
+// 받기 때문에 fetchDirectThenProxy로 direct → YT_PROXY 재시도 패턴을 적용.
+// 이게 빠지면 카드 배경 이미지가 null이 되고 워커가 1x1 placeholder를 깔아
+// "초록색 배경" 카드가 만들어지는 회귀가 발생.
 async function fetchImageAsDataUrl(url, sourceUrl) {
   if (!url || !/^https?:\/\//i.test(url)) return url || null;
   try {
     const fallbackReferer = (() => { try { return new URL(url).origin + '/'; } catch { return ''; } })();
     const referer = sourceUrl || fallbackReferer;
-    const resp = await fetch(url, {
+    const baseOpts = {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
         'Referer': referer,
         'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
       },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!resp.ok) {
-      console.warn(`[article-cards] image fetch ${resp.status}: ${url}`);
-      return null;
-    }
+      timeout: 15000,
+    };
+    const resp = await fetchDirectThenProxy(url, baseOpts, `[article-cards] image ${url}`);
     const buf = Buffer.from(await resp.arrayBuffer());
     const ct = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
     return `data:${ct};base64,${buf.toString('base64')}`;
