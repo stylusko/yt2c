@@ -10,10 +10,11 @@ export const config = {
   api: { bodyParser: { sizeLimit: '2mb' } },
 };
 
-async function fetchImageAsDataUrl(url) {
+async function fetchImageAsDataUrl(url, sourceUrl) {
   if (!url || !/^https?:\/\//i.test(url)) return url || null;
   try {
-    const referer = (() => { try { return new URL(url).origin + '/'; } catch { return ''; } })();
+    const fallbackReferer = (() => { try { return new URL(url).origin + '/'; } catch { return ''; } })();
+    const referer = sourceUrl || fallbackReferer;
     const resp = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -107,7 +108,7 @@ export default async function handler(req, res) {
     // 먼저 reuse/none 카드부터 즉시 방출
     for (const c of divided.cards) {
       if (c.imageStrategy === 'reuse') {
-        const bgImage = await fetchImageAsDataUrl(article.images[c.sourceImageIndex] || null);
+        const bgImage = await fetchImageAsDataUrl(article.images[c.sourceImageIndex] || null, article.sourceUrl);
         const finalCard = buildCard(c, {
           bgImage,
           sourceType: 'article',
