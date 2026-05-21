@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 18; // same-day deploy count
+const BUILD_NUM = 19; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
   '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
   '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
   '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
@@ -295,7 +296,16 @@ function formatSec(s) {
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
 }
+function isArticleCard(card) {
+  return card?.sourceType === 'article' || card?.articleType === 'cover' || card?.articleType === 'content' || !!card?.articleMeta;
+}
+function usesArticlePhotoArea(card) {
+  const layout = card?.layout || 'photo_top';
+  return isArticleCard(card) && (card?.fillSource || 'video') === 'image' && (layout === 'photo_top' || layout === 'photo_bottom');
+}
 function clientCardHash(card, globalConfig) {
+  const isArticle = isArticleCard(card) || globalConfig?.sourceType === 'article';
+  const hashCard = isArticle ? { ...card, sourceType: 'article' } : card;
   const data = JSON.stringify({
     ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
     url: card.url || globalConfig.globalUrl || '',
@@ -312,7 +322,7 @@ function clientCardHash(card, globalConfig) {
     bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
     ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
     ui: card.uploadedImage ? 'y' : 'n',
-    ...(card.sourceType === 'article' ? { st: 'article', ifit: 'cover' } : {}),
+    ...(isArticle ? { st: 'article', ifit: 'cover', ia: usesArticlePhotoArea(hashCard) ? 'photo' : 'full' } : {}),
     tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
     tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
     ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
@@ -3346,10 +3356,14 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const _arW = _pw || 1, _arH = _ph || 1;
   const previewW = (_arW >= _arH) ? _base : Math.round(_base * _arW / _arH);
   const previewH = (_arH >= _arW) ? _base : Math.round(_base * _arH / _arW);
+  const layout = card.layout || "photo_top";
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const textH = (layout === "full_bg" || layout === "video_only" || layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const isTop = layout === "photo_top";
+  const videoAreaH = previewH - textH;
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
+  const constrainImageToPhotoArea = usesArticlePhotoArea(card);
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -3496,14 +3510,15 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const uploadImgStyle = (() => {
     if (!card.uploadedImage || !imgDims) return null;
     const imgAspect = imgDims.w / imgDims.h;
-    const containerAspect = previewW / previewH;
-    const useCover = card.sourceType === 'article';
+    const targetH = constrainImageToPhotoArea ? videoAreaH : previewH;
+    const containerAspect = previewW / targetH;
+    const useCover = isArticleCard(card);
     let containedW, containedH;
     if (useCover) {
       // cover: 짧은 변을 컨테이너에 맞추고 긴 변은 컨테이너 밖으로
       if (imgAspect >= containerAspect) {
-        containedH = previewH;
-        containedW = previewH * imgAspect;
+        containedH = targetH;
+        containedW = targetH * imgAspect;
       } else {
         containedW = previewW;
         containedH = previewW / imgAspect;
@@ -3511,12 +3526,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     } else {
       // contain: 긴 변을 컨테이너에 맞추고 짧은 변은 letterbox
       if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
-      else { containedH = previewH; containedW = previewH * imgAspect; }
+      else { containedH = targetH; containedW = targetH * imgAspect; }
     }
     const scaledW = containedW * vScale;
     const scaledH = containedH * vScale;
     const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
-    const posY = (previewH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
+    const posY = (targetH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
     return { position: "absolute", left: posX, top: posY, width: scaledW, height: scaledH, zIndex: 0, filter: brightFilter };
   })();
   // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
@@ -3559,7 +3574,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Click target for text field switching + deselection (transparent, on top of canvas overlay)
   const handleCardTextClick = (e) => {
     if (!onTextClick) return;
-    const layout = card.layout || 'photo_top';
     if (layout === 'text_box') return; // text_box: double-click only
 
     const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
@@ -3856,9 +3870,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     );
   })();
 
-  const isTop = card.layout === "photo_top";
-  const videoAreaH = previewH - textH;
-
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
   const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video' && mountVideo;
   const videoKey = thumbnailId + '|' + card.appliedStart + '|' + card.appliedEnd;
@@ -3907,7 +3918,10 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : null;
 
   // Split mode: constrain video to video area
-  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none") {
+  if (
+    constrainImageToPhotoArea ||
+    (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none")
+  ) {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
@@ -4541,7 +4555,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   );
 }
 
-function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat }) {
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat, projectSourceType = 'youtube' }) {
   const url = globalUrl || cards[0]?.url || '';
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
@@ -4589,7 +4603,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
-            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, sourceType: projectSourceType });
             const isCached = card.lastGenHash && card.lastGenHash === currentHash;
             const hasFile = isCached && !!card.lastGenKey;
             const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
@@ -4618,7 +4632,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       ),
       // Footer: generate button
       (() => {
-        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl, sourceType: projectSourceType };
         let cachedCount = 0, modifiedCount = 0, newCount = 0;
         selected.forEach((s, i) => {
           if (!s) return;
@@ -4994,14 +5008,14 @@ function decodeProject(encoded) {
   // (SKIP_CARD_KEYS로 uploadedImage가 인코드에서 제외되기 때문에 공유 URL에서는 항상 비어있음)
   if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
     proj.cards = proj.cards.map(c => {
-      if (c.sourceType !== 'article') return c;
+      const articleCard = { ...c, sourceType: 'article' };
       const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
         ? c.articleMeta.sourceImageIndex
         : null;
       if (idx !== null && idx >= 0 && idx < proj.sourceImages.length) {
-        return { ...c, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
+        return { ...articleCard, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
       }
-      return c;
+      return articleCard;
     });
   }
   return proj;
@@ -8449,10 +8463,11 @@ export default function App() {
 
   const buildConfig = (card) => {
     const c = effectiveCard(card);
-    const isArticle = c.sourceType === 'article';
+    const isArticle = isArticleCard(c) || activeProject?.sourceType === 'article';
+    const articlePhotoArea = isArticle && usesArticlePhotoArea({ ...c, sourceType: 'article' });
     return {
       start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
-      video_fill: c.videoFill || 'full',
+      video_fill: articlePhotoArea ? 'split' : (c.videoFill || 'full'),
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
       body: c.body, body_size: c.bodySize, body_font: c.bodyFont, body_color: c.bodyColor,
@@ -8462,8 +8477,8 @@ export default function App() {
       aspect_ratio: aspectRatio,
       fill_source: c.fillSource || 'video',
       image_source: c.fillSource === 'image' ? 'upload' : 'thumbnail',
-      source_type: c.sourceType || 'youtube',
-      ...(isArticle ? { image_fit: 'cover' } : {}),
+      source_type: isArticle ? 'article' : (c.sourceType || 'youtube'),
+      ...(isArticle ? { image_fit: 'cover', image_area: articlePhotoArea ? 'photo' : 'full' } : {}),
       ...(c.url && c.url !== globalUrl ? { url: c.url } : {}),
       ...(c.captureTime ? { capture_time: c.captureTime } : {}),
     };
@@ -8535,7 +8550,7 @@ export default function App() {
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
 
     // 캐시된 카드 vs 새로 생성할 카드 분리
-    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl };
+    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl, sourceType: activeProject?.sourceType };
     const cachedIndices = [];
     const newIndices = [];
     for (const i of indices) {
@@ -9654,7 +9669,7 @@ export default function App() {
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
     showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
-    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat, projectSourceType: activeProject?.sourceType }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,
