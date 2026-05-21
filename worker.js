@@ -126,22 +126,35 @@ const worker = new Worker('video-generation', async (job) => {
         // 캐시 미스 → 외부 fetch 후 버킷에 저장
         if (!imgBuffer) {
           console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
-          const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
-          const resp = await fetch(backgroundData, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-              'Referer': referer,
-              'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-            },
-            signal: AbortSignal.timeout(30000),
-          });
-          if (!resp.ok) throw new Error(`배경 이미지 다운로드 실패: HTTP ${resp.status}`);
-          imgBuffer = Buffer.from(await resp.arrayBuffer());
-          imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
-          // 버킷에 캐싱 (실패해도 진행)
-          uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
-            console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
-          );
+          try {
+            const referer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
+            const resp = await fetch(backgroundData, {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+                'Referer': referer,
+                'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+              },
+              signal: AbortSignal.timeout(30000),
+            });
+            if (resp.ok) {
+              imgBuffer = Buffer.from(await resp.arrayBuffer());
+              imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+              // 버킷에 캐싱 (실패해도 진행)
+              uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
+                console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
+              );
+            } else {
+              console.warn(`[${jobId}] External image unavailable (HTTP ${resp.status}), using fallback background`);
+            }
+          } catch (fetchErr) {
+            console.warn(`[${jobId}] External image fetch error: ${fetchErr.message}, using fallback background`);
+          }
+        }
+
+        // 이미지 취득 실패 시 1×1 검정 PNG 폴백 (카드는 정상 생성, 배경만 검정)
+        if (!imgBuffer) {
+          imgBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+          imgContentType = 'image/png';
         }
 
         bgData = `data:${imgContentType};base64,${imgBuffer.toString('base64')}`;
