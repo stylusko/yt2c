@@ -12,6 +12,8 @@ function classifyError(err) {
     return { msg: '일시적인 서버 오류예요. 관리자에게 자동 보고되었으니, 잠시 후 다시 시도해주세요.', type: 'server' };
   if (e.includes('yt-dlp') || e.includes('unable to download') || e.includes('video unavailable') || e.includes('urlopen'))
     return { msg: '영상을 불러올 수 없어요. URL이 유효한지 확인해주세요.', type: 'user' };
+  if (e.includes('background image fetch failed') || e.includes('[article-cards] image'))
+    return { msg: '본문 이미지를 불러오지 못했어요. 잠시 후 다시 시도해주세요.', type: 'server' };
   if (e.includes('padded dimensions') || e.includes('filter') && e.includes('invalid argument'))
     return { msg: '레이아웃 설정에 문제가 있어요. 비율이나 레이아웃을 변경해보세요.', type: 'bug' };
   if (e.includes('timeout') || e.includes('etimedout') || e.includes('timed out'))
