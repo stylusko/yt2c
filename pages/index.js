@@ -7,13 +7,14 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 24; // same-day deploy count
+const BUILD_NUM = 25; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 3;
+const ARTICLE_IMAGE_RENDER_VERSION = 4;
 const RECENT_FEATURES = [
+  '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
   '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
   '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
   '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
