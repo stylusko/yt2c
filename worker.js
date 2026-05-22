@@ -5,6 +5,7 @@ const crypto = require('crypto');
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
+const ARTICLE_IMAGE_CACHE_VERSION = 'v2';
 
 // Parse Redis URL
 const redisConfig = new URL(redisUrl);
@@ -104,7 +105,7 @@ const worker = new Worker('video-generation', async (job) => {
         const { fileExists, getDownloadUrl, uploadBuffer } = await import('./lib/bucket.js');
         const urlHash = crypto.createHash('md5').update(backgroundData).digest('hex');
         const urlExt = (backgroundData.match(/\.(png|webp|gif)/i)?.[1] || 'jpg').toLowerCase();
-        const cacheKey = `article-images/${urlHash}.${urlExt}`;
+        const cacheKey = `article-images/${ARTICLE_IMAGE_CACHE_VERSION}/${urlHash}.${urlExt}`;
 
         let imgBuffer = null;
         let imgContentType = 'image/jpeg';
