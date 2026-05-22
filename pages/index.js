@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 19; // same-day deploy count
+const BUILD_NUM = 20; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
   '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
   '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
   '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
@@ -7086,6 +7087,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   // Tab content renderers
   const mobVideoUrl = card.url || globalUrl || '';
   const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
+  const renderImageAdjustControls = () => React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
+    React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
+  );
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
@@ -7132,6 +7141,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
       regenerating: regeneratingCardIdx === activeIndex,
     }),
+    isArticleMode && (card.fillSource || 'video') === 'image' && card.uploadedImage && renderImageAdjustControls(),
   );
 
   const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
