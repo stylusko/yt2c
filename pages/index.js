@@ -7,12 +7,13 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 20; // same-day deploy count
+const BUILD_NUM = 21; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
   '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
   '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
   '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
@@ -302,7 +303,7 @@ function isArticleCard(card) {
 }
 function usesArticlePhotoArea(card) {
   const layout = card?.layout || 'photo_top';
-  return isArticleCard(card) && (card?.fillSource || 'video') === 'image' && (layout === 'photo_top' || layout === 'photo_bottom');
+  return isArticleCard(card) && (card?.fillSource || 'video') === 'image' && (card?.videoFill || 'full') === 'split' && (layout === 'photo_top' || layout === 'photo_bottom');
 }
 function clientCardHash(card, globalConfig) {
   const isArticle = isArticleCard(card) || globalConfig?.sourceType === 'article';
@@ -3351,7 +3352,8 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
+function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle, projectSourceType = 'youtube' }) {
+  const card = projectSourceType === 'article' && !isArticleCard(rawCard) ? { ...rawCard, sourceType: 'article' } : rawCard;
   const _base = previewWidth || 320;
   const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
   const _arW = _pw || 1, _arH = _ph || 1;
@@ -4426,7 +4428,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating, projectSourceType = 'youtube' }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -4503,7 +4505,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m), projectSourceType }),
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
@@ -4613,7 +4615,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor: disabled ? 'not-allowed' : 'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: disabled ? 0.4 : (selected[i] ? 1 : 0.45), transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false, projectSourceType }),
               // Disabled overlay + badge for unselected segment
               disabled && React.createElement("div", { style: { position:'absolute', inset:0, background:'rgba(220,38,38,0.18)', display:'flex', alignItems:'center', justifyContent:'center' } },
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
@@ -7436,7 +7438,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
       React.createElement("div", { key: 'mcp-' + previewResetKey, style: { display: 'flex', justifyContent: 'center' } },
-        React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle }),
+        React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle, projectSourceType: project?.sourceType }),
       ),
     ),
 
@@ -7957,7 +7959,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle, projectSourceType: project?.sourceType })
         ),
         React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -7992,7 +7994,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               },
             },
               React.createElement("div", { style: { pointerEvents: 'none', width: '100%', height: '100%' } },
-                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false })
+                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false, projectSourceType: project?.sourceType })
               )
             ))
           ),
@@ -8477,7 +8479,7 @@ export default function App() {
     const articlePhotoArea = isArticle && usesArticlePhotoArea({ ...c, sourceType: 'article' });
     return {
       start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
-      video_fill: articlePhotoArea ? 'split' : (c.videoFill || 'full'),
+      video_fill: c.videoFill || 'full',
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
       body: c.body, body_size: c.bodySize, body_font: c.bodyFont, body_color: c.bodyColor,
@@ -9540,7 +9542,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced), projectSourceType: activeProject?.sourceType }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
@@ -9678,7 +9680,7 @@ export default function App() {
     }),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating, projectSourceType: activeProject?.sourceType }),
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat, projectSourceType: activeProject?.sourceType }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
