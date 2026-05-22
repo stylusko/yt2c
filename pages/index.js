@@ -7,13 +7,14 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 22; // same-day deploy count
+const BUILD_NUM = 23; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 2;
 const RECENT_FEATURES = [
+  '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
   '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
   '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
   '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
