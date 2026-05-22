@@ -63,6 +63,7 @@ async function main() {
       const completedCards = completedJobs
         .map((j) => ({
           cardIdx: j.data?.cardIdx,
+          ext: j.data?.outputFormat || 'mp4',
           url: `${baseUrl}/api/jobs/${jobId}?download=true&cardIdx=${j.data?.cardIdx}&ext=${j.data?.outputFormat || 'mp4'}`,
         }))
         .filter((c) => Number.isInteger(c.cardIdx))
