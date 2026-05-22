@@ -7,13 +7,14 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 23; // same-day deploy count
+const BUILD_NUM = 24; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 2;
+const ARTICLE_IMAGE_RENDER_VERSION = 3;
 const RECENT_FEATURES = [
+  '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
   '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
   '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
   '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
@@ -8481,7 +8482,7 @@ export default function App() {
     const isArticle = isArticleCard(c) || activeProject?.sourceType === 'article';
     const articlePhotoArea = isArticle && usesArticlePhotoArea({ ...c, sourceType: 'article' });
     return {
-      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
+      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: (c.photoRatio ?? 50) / 100,
       video_fill: c.videoFill || 'full',
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
