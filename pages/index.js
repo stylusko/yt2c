@@ -4,16 +4,18 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
+import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 26; // same-day deploy count
+const BUILD_NUM = 27; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 4;
+const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
   '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',
   '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
   '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
@@ -312,32 +314,11 @@ function usesArticlePhotoArea(card) {
   return isArticleCard(card) && (card?.fillSource || 'video') === 'image' && (card?.videoFill || 'full') === 'split' && (layout === 'photo_top' || layout === 'photo_bottom');
 }
 function clientCardHash(card, globalConfig) {
-  const isArticle = isArticleCard(card) || globalConfig?.sourceType === 'article';
-  const hashCard = isArticle ? { ...card, sourceType: 'article' } : card;
-  const data = JSON.stringify({
-    ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
-    url: card.url || globalConfig.globalUrl || '',
-    start: card.appliedStart || card.start || '', end: card.appliedEnd || card.end || '',
-    vx: card.videoX ?? 0, vy: card.videoY ?? 0, vs: card.videoScale ?? 100, vb: card.videoBrightness ?? 0,
-    layout: card.layout || 'photo_top', ug: card.useGradient || false, pr: card.photoRatio ?? 50,
-    vf: card.videoFill || 'full', fs: card.fillSource || 'video',
-    title: card.title || '', ut: card.useTitle !== false,
-    sub: card.subtitle || '', us: card.useSubtitle !== false,
-    body: card.body || '', ub: card.useBody !== false,
-    ts: card.titleSize || 64, tc: card.titleColor || '#fff', tf: card.titleFont || '',
-    ss: card.subtitleSize || 48, sc: card.subtitleColor || '#aaa',
-    bs: card.bodySize || 40, bc: card.bodyColor || '#d2d2d2',
-    bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
-    ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
-    ui: card.uploadedImage ? 'y' : 'n',
-    ...(isArticle ? { st: 'article', ifit: 'cover', ia: usesArticlePhotoArea(hashCard) ? 'photo' : 'full', airv: ARTICLE_IMAGE_RENDER_VERSION } : {}),
-    tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
-    tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
-    ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
-  });
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) { hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0; }
-  return (hash >>> 0).toString(36);
+  return computeCardCacheHash(card, globalConfig, ARTICLE_IMAGE_RENDER_VERSION);
+}
+function clearGeneratedCache(card) {
+  const { lastGenHash, lastGenKey, ...rest } = card || {};
+  return rest;
 }
 function fmtMM(s) {
   if (s == null || isNaN(s)) return '--:--';
@@ -4612,7 +4593,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
-            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, sourceType: projectSourceType });
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType });
             const isCached = card.lastGenHash && card.lastGenHash === currentHash;
             const hasFile = isCached && !!card.lastGenKey;
             const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
@@ -4641,7 +4622,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       ),
       // Footer: generate button
       (() => {
-        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl, sourceType: projectSourceType };
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType };
         let cachedCount = 0, modifiedCount = 0, newCount = 0;
         selected.forEach((s, i) => {
           if (!s) return;
@@ -8374,7 +8355,13 @@ export default function App() {
     }));
   };
 
-  const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
+  const updateCard = (i, c) => setCards(p => p.map((x, j) => {
+    if (j !== i) return x;
+    if (x?.uploadedImage !== c?.uploadedImage || (x?.fillSource || 'video') !== (c?.fillSource || 'video')) {
+      return clearGeneratedCache(c);
+    }
+    return c;
+  }));
   const removeCard = (i) => { const c = cards[i]; if (c && c.lastGenKey) { fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`, { method: 'DELETE' }).catch(() => {}); } setCards(p => p.filter((_, j) => j !== i)); };
   const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
@@ -8568,7 +8555,7 @@ export default function App() {
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
 
     // 캐시된 카드 vs 새로 생성할 카드 분리
-    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl, sourceType: activeProject?.sourceType };
+    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl, globalBgImage, sourceType: activeProject?.sourceType };
     const cachedIndices = [];
     const newIndices = [];
     for (const i of indices) {
@@ -8937,7 +8924,7 @@ export default function App() {
     setProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
-      newCards[cardIdx] = {
+      newCards[cardIdx] = clearGeneratedCache({
         ...target,
         uploadedImage: nextSrc,
         fillSource: 'image',
@@ -8946,7 +8933,7 @@ export default function App() {
           aiImageSource: 'article',
           sourceImageIndex: nextIdx,
         },
-      };
+      });
       return { ...p, cards: newCards };
     }));
   };
@@ -8960,7 +8947,7 @@ export default function App() {
     setProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
-      newCards[cardIdx] = {
+      newCards[cardIdx] = clearGeneratedCache({
         ...target,
         uploadedImage: imgSrc,
         fillSource: 'image',
@@ -8969,7 +8956,7 @@ export default function App() {
           aiImageSource: 'article',
           sourceImageIndex: imgIdx,
         },
-      };
+      });
       return { ...p, cards: newCards };
     }));
     setGalleryCardIdx(null);
@@ -9017,7 +9004,7 @@ export default function App() {
         if (p.id !== proj.id) return p;
         const newCards = [...(p.cards || [])];
         const prevCard = newCards[cardIdx];
-        newCards[cardIdx] = {
+        newCards[cardIdx] = clearGeneratedCache({
           ...prevCard,
           uploadedImage: json.url,
           fillSource: 'image',
@@ -9031,7 +9018,7 @@ export default function App() {
             aiImageError: null,
             stylePresetId: presetId,  // 선택한 스타일 저장 (다음 재생성 시 기본값)
           },
-        };
+        });
         return { ...p, cards: newCards };
       }));
       // 성공 시 모달 닫기
