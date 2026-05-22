@@ -7,12 +7,14 @@ import LZString from 'lz-string';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 21; // same-day deploy count
+const BUILD_NUM = 22; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
+const ARTICLE_IMAGE_RENDER_VERSION = 2;
 const RECENT_FEATURES = [
+  '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
   '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
   '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
   '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
@@ -324,7 +326,7 @@ function clientCardHash(card, globalConfig) {
     bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
     ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
     ui: card.uploadedImage ? 'y' : 'n',
-    ...(isArticle ? { st: 'article', ifit: 'cover', ia: usesArticlePhotoArea(hashCard) ? 'photo' : 'full' } : {}),
+    ...(isArticle ? { st: 'article', ifit: 'cover', ia: usesArticlePhotoArea(hashCard) ? 'photo' : 'full', airv: ARTICLE_IMAGE_RENDER_VERSION } : {}),
     tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
     tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
     ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
