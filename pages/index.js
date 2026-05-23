@@ -8,13 +8,14 @@ import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 33; // same-day deploy count
+const BUILD_NUM = 34; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
   '📰 텍스트 카드 생성 안정화 — AI 응답 JSON 파싱 오류를 구조화 응답으로 방지',
   '🖼️ 로고/이미지 오버레이 기본 레이어 — 새로 추가한 오버레이가 레이아웃 위에 표시',
   '📝 아티클 본문 4줄 제한 — 텍스트 카드 본문이 넘치거나 문장 중간에서 끊기는 문제 완화',
@@ -216,6 +217,40 @@ const DEFAULT_CARD = () => ({
   articleType: null,         // 'cover' | 'content' | 'outro' (article 모드에서만)
   articleMeta: null,         // { aiImageSource, sourceImageIndex, aiImagePrompt, aiImageSeed, aiImageStatus, aiImageError, stylePresetId }
 });
+
+const createImageOverlay = () => ({
+  type: 'image',
+  image: null,
+  x: 50,
+  y: 50,
+  scale: 80,
+  opacity: 1,
+  aboveLayout: true,
+});
+
+const createLogoOverlay = () => ({
+  type: 'logo',
+  image: null,
+  x: 50,
+  y: 92,
+  scale: 16,
+  opacity: 1,
+  aboveLayout: true,
+  applyToAll: true,
+});
+
+const resetOverlayProps = (overlay = {}) => (
+  overlay.type === 'logo'
+    ? { x: 50, y: 92, scale: 16, opacity: 1, aboveLayout: true }
+    : { x: 50, y: 50, scale: 100, opacity: 1 }
+);
+
+const LOGO_POSITION_PRESETS = [
+  ['하단 중앙', 50, 92],
+  ['하단 우측', 86, 92],
+  ['상단 우측', 86, 8],
+  ['상단 좌측', 14, 8],
+];
 
 /* ── Responsive Hook ── */
 function useIsMobile(breakpoint = 768) {
@@ -4110,6 +4145,14 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const urlInputRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
+  const addOverlay = (overlay) => {
+    const overlayIdx = (card.overlays || []).length;
+    if (overlay.applyToAll && onApplyOverlayToAll) {
+      onApplyOverlayToAll(overlayIdx, overlay);
+      return;
+    }
+    update("overlays", [...(card.overlays || []), overlay]);
+  };
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
   useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
@@ -4367,7 +4410,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 12, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
                 React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-                    React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+                    React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
                     React.createElement("div", { onClick: () => { updateOverlay1(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
                       React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                         React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -4389,7 +4432,10 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 ),
                 React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlay1(oi, { image: v }), maxMb: 5 }),
                 ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-                  React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+                  React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, resetOverlayProps(ov)) }),
+                  ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+                    LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlay1(oi, { x, y }) }, label))
+                  ),
                   React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { x: v }) }),
                   React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { y: v }) }),
                   React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlay1(oi, { scale: v }), suffix: '%' }),
@@ -4398,7 +4444,13 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               )),
             ),
             React.createElement("button", {
-              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1, aboveLayout: true }]),
+              onClick: () => addOverlay(createLogoOverlay()),
+              style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
+              onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; },
+              onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; },
+            }, "+ 로고 추가"),
+            React.createElement("button", {
+              onClick: () => addOverlay(createImageOverlay()),
               style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -7330,12 +7382,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   };
 
   const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
+  const addOverlayMob = (overlay) => { const overlayIdx = (card.overlays || []).length; if (overlay.applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(overlayIdx, overlay); } else { update("overlays", [...(card.overlays||[]), overlay]); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
             React.createElement("div", { onClick: () => { updateOverlayMob(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -7357,7 +7410,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayMob(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-          React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+          React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, resetOverlayProps(ov)) }),
+          ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+            LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayMob(oi, { x, y }) }, label))
+          ),
           React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayMob(oi, { scale: v }), suffix: '%' }),
@@ -7366,7 +7422,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1, aboveLayout: true }]),
+      onClick: () => addOverlayMob(createLogoOverlay()),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' },
+    }, "+ 로고 추가"),
+    React.createElement("button", {
+      onClick: () => addOverlayMob(createImageOverlay()),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
@@ -7862,12 +7922,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
   const updateOverlayDesk = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
+  const addOverlayDesk = (overlay) => { const overlayIdx = (card.overlays || []).length; if (overlay.applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(overlayIdx, overlay); } else { update("overlays", [...(card.overlays||[]), overlay]); } };
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
+            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
             React.createElement("div", { onClick: () => { updateOverlayDesk(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -7889,6 +7950,10 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayDesk(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+          React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "이미지 조정", onReset: () => updateOverlayDesk(oi, resetOverlayProps(ov)) }),
+          ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+            LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayDesk(oi, { x, y }) }, label))
+          ),
           React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayDesk(oi, { scale: v }), suffix: '%' }),
@@ -7897,7 +7962,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1, aboveLayout: true }]),
+      onClick: () => addOverlayDesk(createLogoOverlay()),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' },
+      onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; },
+      onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; },
+    }, "+ 로고 추가"),
+    React.createElement("button", {
+      onClick: () => addOverlayDesk(createImageOverlay()),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -8376,7 +8447,7 @@ export default function App() {
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
-      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 80, opacity: 1, aboveLayout: true });
+      while (ovs.length <= overlayIdx) ovs.push(createImageOverlay());
       ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
