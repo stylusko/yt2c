@@ -8,6 +8,7 @@
     "start": "next start",
     "worker": "node worker.js",
     "test:cache-hash": "node scripts/test-card-cache-hash.mjs",
+    "test:preview-output": "node scripts/test-preview-output-geometry.mjs",
     "telegram:replay48h": "node scripts/replay-telegram-48h.mjs"
   },
   "dependencies": {
