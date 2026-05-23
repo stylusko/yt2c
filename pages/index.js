@@ -8,13 +8,14 @@ import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 29; // same-day deploy count
+const BUILD_NUM = 30; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '🧭 분리형 프리뷰 스케일 일치 — 쉬운/자유편집 출력과 같은 사진 영역 기준으로 렌더링',
   '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
   '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
   '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
@@ -1506,7 +1507,8 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const zoom = Math.max(videoScale ?? 100, 1) / 100;
   const [_aw, _ah] = (aspectRatio || '1:1').split(':').map(Number);
   const outAspect = (_aw && _ah) ? _aw / _ah : 1;
-  const pr = photoRatio ?? 0.55;
+  const rawPr = Number(photoRatio ?? 0.55);
+  const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
   const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
     ? outAspect / pr : outAspect;
   let visW, visH;
@@ -2123,7 +2125,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         const zoom = Math.max(videoScale ?? 100, 1) / 100;
         const [__aw, __ah] = (aspectRatio || '1:1').split(':').map(Number);
         const outAspect = (__aw && __ah) ? __aw / __ah : 1;
-        const pr = photoRatio ?? 0.55;
+        const rawPr = Number(photoRatio ?? 0.55);
+        const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
         const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
           ? outAspect / pr : outAspect;
         let visW, visH;
@@ -3355,7 +3358,8 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const videoAreaH = previewH - textH;
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
-  const constrainImageToPhotoArea = usesArticlePhotoArea(card);
+  const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
+  const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -3373,15 +3377,21 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const [imgDims, setImgDims] = useState(null);
   const [vpReady, setVpReady] = useState(false);
   const prevVideoKey = useRef(null);
+  const baseImage = card.uploadedImage
+    ? card.uploadedImage
+    : fillSource === 'image'
+      ? (globalBgImage || thumbSrc)
+      : (thumbSrc || globalBgImage);
+  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
 
   useEffect(() => {
-    if (!card.uploadedImage) { setImgDims(null); return; }
+    if (!baseImage || isBaseThumb) { setImgDims(null); return; }
     const img = new Image();
     img.referrerPolicy = 'no-referrer';
     img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
     img.onerror = () => setImgDims(null);
-    img.src = card.uploadedImage;
-  }, [card.uploadedImage]);
+    img.src = baseImage;
+  }, [baseImage, isBaseThumb]);
 
   // Canvas overlay state
   const [overlayUrl, setOverlayUrl] = useState(null);
@@ -3442,12 +3452,6 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     else setThumbSrc(null);
   };
 
-  const baseImage = card.uploadedImage
-    ? card.uploadedImage
-    : fillSource === 'image'
-      ? (globalBgImage || thumbSrc)
-      : (thumbSrc || globalBgImage);
-  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
   const overlays = card.overlays || [];
 
   const snapPx = Math.round(8 * sc);
@@ -3487,7 +3491,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   }
   thumbContentOffX = (thumbW - thumbContentW) / 2;
   thumbContentOffY = (thumbH - thumbContentH) / 2;
-  const thumbCoverScale = Math.max(previewW / thumbContentW, previewH / thumbContentH);
+  const thumbCoverScale = Math.max(previewW / thumbContentW, mediaAreaH / thumbContentH);
   const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
@@ -3496,13 +3500,13 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const thumbScaledCenterX = (thumbContentOffX + thumbContentW / 2) * thumbTotalScale;
   const thumbScaledCenterY = (thumbContentOffY + thumbContentH / 2) * thumbTotalScale;
   const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
-  const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
-  // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  const thumbOffY = thumbScaledCenterY - mediaAreaH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
+  // Uploaded/global image: pixel-based positioning matching backend computePixelPos exactly
   // article 카드는 cover (카드 꽉 채우고 넘치는 부분 crop), 그 외는 기존 contain 유지.
-  const uploadImgStyle = (() => {
-    if (!card.uploadedImage || !imgDims) return null;
+  const baseImgStyle = (() => {
+    if (!baseImage || isBaseThumb || !imgDims) return null;
     const imgAspect = imgDims.w / imgDims.h;
-    const targetH = constrainImageToPhotoArea ? videoAreaH : previewH;
+    const targetH = mediaAreaH;
     const containerAspect = previewW / targetH;
     const useCover = isArticleCard(card);
     let containedW, containedH;
@@ -3542,8 +3546,8 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
       ? React.createElement(React.Fragment, null,
           React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
           thumbSpinner)
-      : uploadImgStyle
-        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: uploadImgStyle })
+      : baseImgStyle
+        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: baseImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
@@ -3868,7 +3872,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
   const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: mediaAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
   // Mute toggle + volume slider (bottom-right corner)
@@ -3910,10 +3914,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     : null;
 
   // Split mode: constrain video to video area
-  if (
-    constrainImageToPhotoArea ||
-    (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none")
-  ) {
+  if (splitMediaInPhotoArea) {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
