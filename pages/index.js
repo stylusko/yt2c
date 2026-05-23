@@ -8,13 +8,14 @@ import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 28; // same-day deploy count
+const BUILD_NUM = 29; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
   '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
   '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
   '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',

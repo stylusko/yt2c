@@ -1,14 +1,10 @@
 import crypto from 'crypto';
 import { getSupabase } from '../../../lib/supabase';
+import { saveShareToRedis } from '../../../lib/share-store';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const supabase = getSupabase();
-  if (!supabase) {
-    return res.status(503).json({ error: 'Supabase not configured' });
   }
 
   const { data } = req.body;
@@ -17,15 +13,23 @@ export default async function handler(req, res) {
   }
 
   const id = crypto.randomBytes(4).toString('base64url');
+  const supabase = getSupabase();
 
-  const { error } = await supabase
-    .from('shared_projects')
-    .insert({ id, data });
+  if (supabase) {
+    const { error } = await supabase
+      .from('shared_projects')
+      .insert({ id, data });
 
-  if (error) {
+    if (!error) return res.status(200).json({ id });
     console.error('Supabase insert error:', error);
-    return res.status(500).json({ error: 'Failed to save project' });
   }
 
-  return res.status(200).json({ id });
+  try {
+    const saved = await saveShareToRedis(id, data);
+    if (saved) return res.status(200).json({ id, fallback: 'redis' });
+  } catch (redisErr) {
+    console.error('Redis share fallback error:', redisErr);
+  }
+
+  return res.status(500).json({ error: 'Failed to save project' });
 }
