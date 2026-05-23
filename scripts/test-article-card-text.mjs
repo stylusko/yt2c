@@ -4,6 +4,7 @@ import {
   estimateArticleBodyLines,
   fitArticleBodyToFourLines,
   normalizeArticleSourceNames,
+  parseClaudeJsonObject,
 } from '../lib/claude.js';
 
 const baeminUrl = 'https://ceo.baemin.com/knowhow/11654';
@@ -34,5 +35,29 @@ assert.equal(normalized, '자세한 정보는 배민외식업광장과 배민외
 const normalizedBody = fitArticleBodyToFourLines(sourceText, { sourceUrl: baeminUrl });
 assert.ok(!/배민\s*사장님|배민사장님광장/.test(normalizedBody), normalizedBody);
 assert.ok(normalizedBody.includes('배민외식업광장'), normalizedBody);
+
+const looseJson = `Here is the JSON:
+{
+  "title": "테스트"
+  "cards": [
+    {
+      "type": "cover",
+      "headline": "할인 팝업",
+      "subtext": "타임세일 오픈",
+      "body": "",
+      "imageStrategy": "reuse",
+      "sourceImageIndex": 0,
+    }
+  ],
+}`;
+
+const parsedLooseJson = parseClaudeJsonObject(looseJson);
+assert.equal(parsedLooseJson.title, '테스트');
+assert.equal(parsedLooseJson.cards[0].imageStrategy, 'reuse');
+
+assert.throws(
+  () => parseClaudeJsonObject('{ "title": "깨진 응답", '),
+  /AI 응답 형식이 깨졌습니다/,
+);
 
 console.log('PASS article card text fit and source naming');
