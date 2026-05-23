@@ -8,13 +8,14 @@ import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 30; // same-day deploy count
+const BUILD_NUM = 31; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '📝 아티클 본문 4줄 제한 — 텍스트 카드 본문이 넘치거나 문장 중간에서 끊기는 문제 완화',
   '🧭 분리형 프리뷰 스케일 일치 — 쉬운/자유편집 출력과 같은 사진 영역 기준으로 렌더링',
   '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
   '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
