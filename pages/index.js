@@ -8,13 +8,14 @@ import { computeCardCacheHash } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 27; // same-day deploy count
+const BUILD_NUM = 28; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 5;
 const RECENT_FEATURES = [
+  '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
   '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
   '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',
   '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
@@ -4641,7 +4642,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         }
         return React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
           React.createElement("button", {
-            onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+            onClick: () => { onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
             disabled: noneSelected,
             style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
           }, btnLabel),
@@ -8566,6 +8567,7 @@ export default function App() {
     }
 
     const targetCards = indices.map(i => cards[i]);
+    setShowCardSelect(false);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
       // 캐시된 카드: presigned URL 즉시 획득
@@ -8607,15 +8609,19 @@ export default function App() {
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
       if (activeProject) {
-        const projectForShare = effectiveOutputFormat === outputFormat
-          ? activeProject
-          : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
-        const encoded = encodeProject(projectForShare);
         try {
-          const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
-          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
-        } catch (_) {}
-        if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          const projectForShare = effectiveOutputFormat === outputFormat
+            ? activeProject
+            : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
+          const encoded = encodeProject(projectForShare);
+          try {
+            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+            if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
+          } catch (_) {}
+          if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+        } catch (shareErr) {
+          console.warn('[generate] project share link skipped:', shareErr);
+        }
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, outputFormat: effectiveOutputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
