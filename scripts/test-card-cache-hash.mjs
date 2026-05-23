@@ -72,4 +72,31 @@ assert.equal(
   'unchanged card state should keep the same cache hash',
 );
 
+const logoOverlay = {
+  image: 'data:image/png;base64,' + 'logo'.repeat(32),
+  x: 50,
+  y: 94,
+  scale: 16,
+  opacity: 1,
+  aboveLayout: true,
+};
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, aboveLayout: false }] }, cfg, 5),
+  'overlay layer position must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, scale: 24 }] }, cfg, 5),
+  'overlay scale must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, image: 'data:image/png;base64,' + 'brand'.repeat(32) }] }, cfg, 5),
+  'overlay image must be part of the cache hash',
+);
+
 console.log('card cache hash tests passed');

@@ -4,3 +4,4 @@ node_modules/
 *_cookies.txt
 cookies*.txt
 scripts/.cookies-sync-config
+tmp/
