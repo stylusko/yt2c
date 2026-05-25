@@ -8,13 +8,14 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 36; // same-day deploy count
+const BUILD_NUM = 37; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 6;
+const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const RECENT_FEATURES = [
+  '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
   '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
   '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
   '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
@@ -810,10 +811,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   } else {
     const textH = Math.round(h * (1 - photoRatio));
     const rawYStart = layout === "photo_top" ? h - textH : 0;
-    const yStart = layout === "photo_top" ? Math.max(0, rawYStart - logoSafe.bottom) : 0;
-    const effectiveTextH = layout === "photo_top"
-      ? h - yStart
-      : Math.min(h, textH + logoSafe.top);
+    const yStart = rawYStart;
+    const effectiveTextH = textH;
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
@@ -835,10 +834,36 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
         ctx.fillRect(0, yStart, w, effectiveTextH);
       }
     }
-    let curY = yStart + padTop + (layout === "photo_bottom" ? logoSafe.top : 0);
-    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + getBaselineOffset(getFont(card.titleFont, titleSz), titleSz, titleLh) + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += Math.round(21 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
+    const textItems = [];
+    if (card.title) {
+      for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) textItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
+    }
+    if (card.subtitle) {
+      if (card.title) textItems.push({ type: "gap", size: Math.round(10 * s) });
+      for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) textItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' });
+    }
+    if (card.body) {
+      if (card.title || card.subtitle) textItems.push({ type: "gap", size: Math.round(21 * s) });
+      for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) textItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, sz: bodySz, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' });
+    }
+    const contentH = textItems.reduce((sum, item) => sum + (item.type === "gap" ? item.size : (item.text ? item.lh : bodySz / 2)), 0);
+    const logoSafePad = Math.round(10 * s);
+    let curY = yStart + padTop;
+    if (layout === "photo_bottom" && logoSafe.top > 0) {
+      curY = Math.max(curY, logoSafe.top + logoSafePad);
+    } else if (layout === "photo_top" && logoSafe.bottom > 0) {
+      const safeBottom = h - logoSafe.bottom - logoSafePad;
+      const overflow = (curY + contentH) - safeBottom;
+      if (overflow > 0) curY = Math.max(logoSafePad, curY - overflow);
+    }
+    for (const item of textItems) {
+      if (item.type === "gap") { curY += item.size; continue; }
+      if (!item.text) { curY += bodySz / 2; continue; }
+      ctx.font = item.font;
+      ctx.fillStyle = item.color;
+      drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + getBaselineOffset(item.font, item.sz, item.lh) + (item.oy || 0), item.ls);
+      curY += item.lh;
+    }
   }
   // Draw above-layout overlays
   await drawOverlays(true);
