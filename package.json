@@ -10,6 +10,7 @@
     "test:cache-hash": "node scripts/test-card-cache-hash.mjs",
     "test:article-text": "node scripts/test-article-card-text.mjs",
     "test:preview-output": "node scripts/test-preview-output-geometry.mjs",
+    "test:logo-color": "node scripts/test-logo-color-output.mjs",
     "telegram:replay48h": "node scripts/replay-telegram-48h.mjs"
   },
   "dependencies": {

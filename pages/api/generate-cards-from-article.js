@@ -218,14 +218,14 @@ export default async function handler(req, res) {
 // 서사형(짧은 본문) 카드에서 그라데이션이 너무 높게 올라가는 문제 대응.
 // 규칙: 실제 렌더될 텍스트 블록 높이만큼만 텍스트 영역으로 잡고, 나머지를 이미지 영역(photoRatio)으로.
 // 카드 전체 높이 = 1080, 기본 패딩 = 상하 80px
-// 한글 기준 한 줄 ~22자 (bodySize 40 기준), 줄 높이 = fontSize * 1.55
+// 한글 기준 한 줄 ~20자 (bodySize 44 기준), 줄 높이 = fontSize * 1.55
 function computePhotoRatio({ isCover, hasContentHeadline, title, body }) {
   if (isCover) return 55; // cover는 기존 유지 (title+subtitle 중심)
   const H = 1080;
   const padding = 80; // 상단 16 + 하단 64 대략
-  const bodySize = hasContentHeadline ? 36 : 40;
+  const bodySize = hasContentHeadline ? 40 : 44;
   const bodyLineH = bodySize * 1.55;
-  const charsPerLine = 22; // 한글 bodySize 40 기준 대략
+  const charsPerLine = hasContentHeadline ? 22 : 20;
   const bodyLines = Math.max(1, Math.ceil((body || '').length / charsPerLine));
   const titleH = hasContentHeadline ? (44 * 1.25 * Math.max(1, Math.ceil((title || '').length / 20))) : 0;
   const gap = hasContentHeadline ? 15 : 0;
@@ -274,7 +274,7 @@ function buildCard(claudeCard, ctx) {
     //   content (소제목 있음) → 작은 소제목 + body
     titleSize: isCover ? 72 : 44,          // content 소제목은 44로 cover보다 작게
     subtitleSize: isCover ? 44 : 40,
-    bodySize: hasContentHeadline ? 36 : 40,  // 소제목 있을 땐 body 살짝 축소해 계층감 유지
+    bodySize: hasContentHeadline ? 40 : 44,  // 소제목 있을 땐 body 살짝 축소해 계층감 유지
     bodyLineHeight: 1.55,
     titleLineHeight: 1.25,
     // 배경 이미지

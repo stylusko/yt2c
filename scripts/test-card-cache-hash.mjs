@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cardBackgroundFingerprint, computeCardCacheHash } from '../lib/card-cache-hash.js';
+import { cardBackgroundFingerprint, computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 const cfg = {
   aspectRatio: '1:1',
@@ -72,7 +72,14 @@ assert.equal(
   'unchanged card state should keep the same cache hash',
 );
 
+assert.notEqual(
+  computeCardCacheHash({ ...aiCard, sourceType: 'youtube', articleType: null, articleMeta: null }, { ...cfg, sourceType: 'youtube' }, 5),
+  computeCardCacheHash({ ...aiCard, sourceType: 'youtube', articleType: null, articleMeta: null }, { ...cfg, sourceType: 'youtube' }, 6),
+  'render version must invalidate cached output for every card type',
+);
+
 const logoOverlay = {
+  type: 'logo',
   image: 'data:image/png;base64,' + 'logo'.repeat(32),
   x: 50,
   y: 94,
@@ -80,6 +87,36 @@ const logoOverlay = {
   opacity: 1,
   aboveLayout: true,
 };
+
+assert.equal(
+  logoSafeOverlayFingerprint([]),
+  logoSafeOverlayFingerprint([{ ...logoOverlay, image: null }]),
+  'blank logo overlays must not reserve logo safe area',
+);
+
+assert.equal(
+  logoSafeOverlayFingerprint([logoOverlay]),
+  logoSafeOverlayFingerprint([{ ...logoOverlay }]),
+  'unchanged visible logo should keep the same logo safe key',
+);
+
+assert.notEqual(
+  logoSafeOverlayFingerprint([logoOverlay]),
+  logoSafeOverlayFingerprint([{ ...logoOverlay, y: 86 }]),
+  'visible logo position must affect the logo safe key',
+);
+
+assert.equal(
+  logoSafeOverlayFingerprint([logoOverlay, { ...logoOverlay, aboveLayout: false }]),
+  logoSafeOverlayFingerprint([logoOverlay]),
+  'below-layout logo overlays must not reserve logo safe area',
+);
+
+assert.equal(
+  logoSafeOverlayFingerprint([logoOverlay, { ...logoOverlay, opacity: 0 }]),
+  logoSafeOverlayFingerprint([logoOverlay]),
+  'invisible logo overlays must not reserve logo safe area',
+);
 
 assert.notEqual(
   computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
@@ -97,6 +134,18 @@ assert.notEqual(
   computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
   computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, image: 'data:image/png;base64,' + 'brand'.repeat(32) }] }, cfg, 5),
   'overlay image must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, logoColorMode: 'original', logoColor: '#ffffff' }] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, logoColorMode: 'solid', logoColor: '#ffffff' }] }, cfg, 5),
+  'logo color mode must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, logoColorMode: 'solid', logoColor: '#ffffff' }] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, logoColorMode: 'solid', logoColor: '#000000' }] }, cfg, 5),
+  'logo color value must be part of the cache hash',
 );
 
 console.log('card cache hash tests passed');

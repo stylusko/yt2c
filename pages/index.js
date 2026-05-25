@@ -4,17 +4,20 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
-import { computeCardCacheHash } from '../lib/card-cache-hash.js';
+import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 34; // same-day deploy count
+const BUILD_NUM = 36; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 5;
+const ARTICLE_IMAGE_RENDER_VERSION = 6;
 const RECENT_FEATURES = [
+  '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
+  '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
+  '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
   '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
   '📰 텍스트 카드 생성 안정화 — AI 응답 JSON 파싱 오류를 구조화 응답으로 방지',
   '🖼️ 로고/이미지 오버레이 기본 레이어 — 새로 추가한 오버레이가 레이아웃 위에 표시',
@@ -178,14 +181,14 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
-  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 37, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 37, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
+  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const MAX_CARDS = 10;
@@ -200,7 +203,7 @@ const DEFAULT_CARD = () => ({
   useTitle: true, useSubtitle: true, useBody: true,
   title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
   subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
-  body: "본문 내용을 입력하세요", bodySize: 40, bodyFont: "Pretendard-Regular.otf",
+  body: "본문 내용을 입력하세요", bodySize: 44, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
@@ -237,11 +240,13 @@ const createLogoOverlay = () => ({
   opacity: 1,
   aboveLayout: true,
   applyToAll: true,
+  logoColorMode: 'original',
+  logoColor: '#ffffff',
 });
 
 const resetOverlayProps = (overlay = {}) => (
   overlay.type === 'logo'
-    ? { x: 50, y: 92, scale: 16, opacity: 1, aboveLayout: true }
+    ? { x: 50, y: 92, scale: 16, opacity: 1, aboveLayout: true, logoColorMode: 'original', logoColor: '#ffffff' }
     : { x: 50, y: 50, scale: 100, opacity: 1 }
 );
 
@@ -251,6 +256,60 @@ const LOGO_POSITION_PRESETS = [
   ['상단 우측', 86, 8],
   ['상단 좌측', 14, 8],
 ];
+
+const LOGO_COLOR_PRESETS = [
+  ['white', '흰색', '#ffffff'],
+  ['black', '검정', '#000000'],
+];
+
+function normalizeLogoColor(color, fallback = '#ffffff') {
+  const raw = String(color || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+    return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
+  }
+  return fallback;
+}
+
+function isSolidLogoOverlay(overlay = {}) {
+  return overlay.type === 'logo' && overlay.logoColorMode === 'solid';
+}
+
+function colorizeImageWithAlphaMask(img, color) {
+  if (typeof document === 'undefined') return img;
+  const c = document.createElement('canvas');
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return img;
+  c.width = iw;
+  c.height = ih;
+  const cx = c.getContext('2d');
+  cx.drawImage(img, 0, 0, iw, ih);
+  cx.globalCompositeOperation = 'source-in';
+  cx.fillStyle = normalizeLogoColor(color);
+  cx.fillRect(0, 0, iw, ih);
+  cx.globalCompositeOperation = 'source-over';
+  return c;
+}
+
+function colorizedLogoDataUrl(src, color) {
+  return new Promise((resolve, reject) => {
+    if (!src || typeof document === 'undefined') {
+      resolve(src);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        resolve(colorizeImageWithAlphaMask(img, color).toDataURL('image/png'));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 /* ── Responsive Hook ── */
 function useIsMobile(breakpoint = 768) {
@@ -593,26 +652,74 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
 
+  function loadOverlayImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function getLogoSafeInsets() {
+    const logos = (card.overlays || []).filter(ov =>
+      ov?.type === 'logo' &&
+      ov.image &&
+      ov.aboveLayout !== false &&
+      (ov.opacity ?? 1) > 0
+    );
+    if (logos.length === 0) return { top: 0, bottom: 0 };
+
+    let top = 0;
+    let bottom = 0;
+    for (const ov of logos) {
+      try {
+        const oImg = await loadOverlayImage(ov.image);
+        const oScale = (ov.scale || 100) / 100;
+        const fitRatio = w / oImg.width;
+        const oH = oImg.height * fitRatio * oScale;
+        const oY = (ov.y ?? 50) / 100 * h - oH / 2;
+        const centerY = oY + oH / 2;
+        const pad = Math.max(Math.round(18 * s), Math.min(Math.round(42 * s), Math.round(oH * 0.24)));
+        if (centerY >= h * 0.65) {
+          bottom = Math.max(bottom, Math.ceil(Math.max(0, h - oY + pad)));
+        } else if (centerY <= h * 0.35) {
+          top = Math.max(top, Math.ceil(Math.max(0, oY + oH + pad)));
+        }
+      } catch (e) { /* ignore invalid logo images */ }
+    }
+    return {
+      top: Math.min(top, Math.round(h * 0.4)),
+      bottom: Math.min(bottom, Math.round(h * 0.4)),
+    };
+  }
+
   // Helper: draw overlay images filtered by aboveLayout flag
   async function drawOverlays(above) {
     if (skipOverlays) return;
     for (const ov of (card.overlays || [])) {
       if (!ov.image || !!ov.aboveLayout !== above) continue;
       try {
-        const oImg = new Image();
-        await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
+        const oImg = await loadOverlayImage(ov.image);
+        const drawImg = isSolidLogoOverlay(ov)
+          ? colorizeImageWithAlphaMask(oImg, ov.logoColor)
+          : oImg;
         const oScale = (ov.scale || 100) / 100;
-        const fitRatio = w / oImg.width;
-        const oW = oImg.width * fitRatio * oScale;
-        const oH = oImg.height * fitRatio * oScale;
+        const imgW = oImg.naturalWidth || oImg.width;
+        const imgH = oImg.naturalHeight || oImg.height;
+        const fitRatio = w / imgW;
+        const oW = imgW * fitRatio * oScale;
+        const oH = imgH * fitRatio * oScale;
         const oX = (ov.x ?? 50) / 100 * w - oW / 2;
         const oY = (ov.y ?? 50) / 100 * h - oH / 2;
         ctx.globalAlpha = ov.opacity ?? 1;
-        ctx.drawImage(oImg, oX, oY, oW, oH);
+        ctx.drawImage(drawImg, oX, oY, oW, oH);
         ctx.globalAlpha = 1;
       } catch (e) { /* ignore */ }
     }
   }
+
+  const logoSafe = await getLogoSafeInsets();
 
   // Draw below-layout overlays
   await drawOverlays(false);
@@ -630,7 +737,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
     }
-    let curY = h - padTop;
+    let curY = h - padTop - logoSafe.bottom;
     const allItems = [];
     if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
     if (card.subtitle) { allItems.push({ type: "gap", size: Math.round(10 * s) }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
@@ -647,7 +754,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     // Text box layout: rounded box with text inside
     const boxW = w * (card.textBoxWidth || 80) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
-    const boxY = (card.textBoxY || 70) / 100 * h;
+    let boxY = (card.textBoxY || 70) / 100 * h;
     const boxPad = Math.round((card.textBoxPadding || 20) * s);
     const boxRad = Math.round((card.textBoxRadius || 12) * s);
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
@@ -667,6 +774,12 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(15 * s); contentH += bodyLines.length * bodyLh; }
 
     const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
+    if (logoSafe.top > 0 || logoSafe.bottom > 0) {
+      const boxSafePad = Math.round(10 * s);
+      const minBoxY = logoSafe.top + boxSafePad + boxH / 2;
+      const maxBoxY = h - logoSafe.bottom - boxSafePad - boxH / 2;
+      if (maxBoxY >= minBoxY) boxY = Math.max(minBoxY, Math.min(maxBoxY, boxY));
+    }
 
     // Draw rounded rectangle for box background
     ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
@@ -696,11 +809,15 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(15 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
-    const yStart = layout === "photo_top" ? h - textH : 0;
+    const rawYStart = layout === "photo_top" ? h - textH : 0;
+    const yStart = layout === "photo_top" ? Math.max(0, rawYStart - logoSafe.bottom) : 0;
+    const effectiveTextH = layout === "photo_top"
+      ? h - yStart
+      : Math.min(h, textH + logoSafe.top);
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
-        const gradH = textH + Math.round(h * 0.15);
+        const gradH = effectiveTextH + Math.round(h * 0.15);
         const gradStart = layout === "photo_top" ? h - gradH : 0;
         const gradEnd = layout === "photo_top" ? h : gradH;
         for (let y = gradStart; y < gradEnd; y++) {
@@ -715,10 +832,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       } else {
         const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
         ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
-        ctx.fillRect(0, yStart, w, textH);
+        ctx.fillRect(0, yStart, w, effectiveTextH);
       }
     }
-    let curY = yStart + padTop;
+    let curY = yStart + padTop + (layout === "photo_bottom" ? logoSafe.top : 0);
     if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + getBaselineOffset(getFont(card.titleFont, titleSz), titleSz, titleLh) + titleOY, titleLS); curY += titleLh; } }
     if (card.subtitle) { if (card.title) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
     if (card.body) { if (card.title || card.subtitle) curY += Math.round(21 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
@@ -757,6 +874,80 @@ function PillBtn({ active, children, onClick, style }) {
       ...style,
     }
   }, children);
+}
+
+function LogoColorControls({ overlay, onChange }) {
+  const mode = overlay.logoColorMode === 'solid' ? 'solid' : 'original';
+  const color = normalizeLogoColor(overlay.logoColor);
+  const setSolid = (nextColor) => onChange({ logoColorMode: 'solid', logoColor: normalizeLogoColor(nextColor) });
+
+  return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0' } },
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "색상"),
+      React.createElement("div", { style: { display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+        React.createElement(PillBtn, { active: mode === 'original', onClick: () => onChange({ logoColorMode: 'original' }), style: { padding: '5px 10px', fontSize: 11 } }, "원본"),
+        LOGO_COLOR_PRESETS.map(([id, label, presetColor]) => React.createElement(PillBtn, {
+          key: id,
+          active: mode === 'solid' && color === presetColor,
+          onClick: () => setSolid(presetColor),
+          style: { padding: '5px 10px', fontSize: 11 },
+        }, label)),
+      ),
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 36 } },
+      React.createElement("input", {
+        type: "color",
+        value: color,
+        onChange: (e) => setSolid(e.target.value),
+        style: { width: 34, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', padding: 2 },
+        title: "직접 색상 선택",
+      }),
+      React.createElement("button", {
+        onClick: () => setSolid(color),
+        style: { width: 24, height: 24, borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: color, cursor: 'pointer', flexShrink: 0 },
+        title: "선택 색상 적용",
+      }),
+      React.createElement("span", { style: { fontSize: 11, color: mode === 'solid' ? T.textSecondary : T.textMuted } }, mode === 'solid' ? color : '직접 선택 시 단색 적용')
+    )
+  );
+}
+
+function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
+  const [src, setSrc] = useState(ov.image || null);
+  useEffect(() => {
+    let alive = true;
+    if (!ov.image) {
+      setSrc(null);
+      return () => { alive = false; };
+    }
+    if (!isSolidLogoOverlay(ov)) {
+      setSrc(ov.image);
+      return () => { alive = false; };
+    }
+    setSrc(ov.image);
+    colorizedLogoDataUrl(ov.image, ov.logoColor)
+      .then(next => { if (alive) setSrc(next || ov.image); })
+      .catch(() => { if (alive) setSrc(ov.image); });
+    return () => { alive = false; };
+  }, [ov.image, ov.logoColorMode, ov.logoColor]);
+
+  if (!ov.image) return null;
+  return React.createElement("img", {
+    key: index,
+    src: src || ov.image,
+    alt: "",
+    style: {
+      position: "absolute",
+      zIndex: z,
+      top: '50%',
+      left: '50%',
+      width: previewW,
+      height: 'auto',
+      transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`,
+      opacity: ov.opacity ?? 1,
+      pointerEvents: 'none',
+    }
+  });
 }
 
 /* ── Article Image Carousel ── (본문 썸네일 + AI 재생성 타일 통합 UI) */
@@ -3446,7 +3637,8 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   // Generate canvas overlay (debounced) — same engine as final render
   const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
   const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
-  const cardKey = JSON.stringify(cardTextProps);
+  const logoSafeKey = logoSafeOverlayFingerprint(pvCard.overlays || []);
+  const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
   useEffect(() => {
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
     overlayTimer.current = setTimeout(async () => {
@@ -3593,7 +3785,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
 
-  const overlayImg = (ov, i, z) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: z, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null;
+  const overlayImg = (ov, i, z) => ov.image ? React.createElement(PreviewOverlayImage, { key: i, ov, index: i, z, previewW, previewH }) : null;
   const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
   const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
@@ -4436,6 +4628,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
                     LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlay1(oi, { x, y }) }, label))
                   ),
+                  ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlay1(oi, props) }),
                   React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { x: v }) }),
                   React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { y: v }) }),
                   React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlay1(oi, { scale: v }), suffix: '%' }),
@@ -4933,13 +5126,33 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
 });
 
+function normalizeLoadedProject(project) {
+  if (!project) return project;
+  return {
+    ...project,
+    cards: (project.cards || []).map(card => {
+      if (
+        card &&
+        card.bodySize === 40 &&
+        card.body === '본문 내용을 입력하세요' &&
+        card.sourceType !== 'article'
+      ) {
+        return { ...card, bodySize: 44 };
+      }
+      return card;
+    }),
+  };
+}
+
 function loadProjects() {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data.projects?.length > 0) return data;
+      if (data.projects?.length > 0) {
+        return { ...data, projects: data.projects.map(normalizeLoadedProject) };
+      }
     }
   } catch (e) {}
   return null;
@@ -7354,7 +7567,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
@@ -7414,6 +7627,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
             LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayMob(oi, { x, y }) }, label))
           ),
+          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayMob(oi, props) }),
           React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayMob(oi, { scale: v }), suffix: '%' }),
@@ -7893,7 +8107,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
@@ -7954,6 +8168,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
             LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayDesk(oi, { x, y }) }, label))
           ),
+          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayDesk(oi, props) }),
           React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayDesk(oi, { scale: v }), suffix: '%' }),
@@ -8892,13 +9107,13 @@ export default function App() {
           card.layout = 'photo_top';
           card.useGradient = true;
           // photoRatio = 본문 길이에 따라 동적. 간단형(본문 없음) 60, 상세형은 본문 줄 수만큼 텍스트 영역 확장.
-          // 가정: 카드 H=1080, titleSize 72 · bodySize 40, 한 줄 ~22자, line-height 1.55
+          // 가정: 카드 H=1080, titleSize 72 · bodySize 44, 한 줄 ~20자, line-height 1.55
           if (card.useBody) {
             const titleLines = Math.max(1, (h.title || '').split('\n').length);
             const bodyLen = (h.body || '').trim().length;
-            const bodyLines = Math.max(1, Math.ceil(bodyLen / 22));
+            const bodyLines = Math.max(1, Math.ceil(bodyLen / 20));
             const titleH = titleLines * 72 * 1.25;
-            const bodyH = bodyLines * 40 * 1.55;
+            const bodyH = bodyLines * 44 * 1.55;
             const padding = 120;
             const textRatio = Math.min(0.55, Math.max(0.35, (titleH + bodyH + padding) / 1080));
             card.photoRatio = Math.round((1 - textRatio) * 100);
@@ -8912,7 +9127,7 @@ export default function App() {
           card.bodyColor = '#d2d2d2';
           card.titleSize = 72;
           card.subtitleSize = 44;
-          card.bodySize = 40;
+          card.bodySize = 44;
           card.titleAlign = 'left';
           card.subtitleAlign = 'left';
           card.bodyAlign = 'left';
