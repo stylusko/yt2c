@@ -8,49 +8,20 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0603';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const RECENT_FEATURES = [
+  '📋 카드 스타일 복사 — 그룹 선택 붙여넣기와 textBox 캐시 반영',
   '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
   '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
   '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
   '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
   '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
   '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
-  '📰 텍스트 카드 생성 안정화 — AI 응답 JSON 파싱 오류를 구조화 응답으로 방지',
-  '🖼️ 로고/이미지 오버레이 기본 레이어 — 새로 추가한 오버레이가 레이아웃 위에 표시',
-  '📝 아티클 본문 4줄 제한 — 텍스트 카드 본문이 넘치거나 문장 중간에서 끊기는 문제 완화',
-  '🧭 분리형 프리뷰 스케일 일치 — 쉬운/자유편집 출력과 같은 사진 영역 기준으로 렌더링',
-  '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
-  '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
-  '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
-  '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',
-  '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
-  '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
-  '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
-  '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
-  '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
-  '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
-  '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
-  '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
-  '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
-  '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
-  '🖼️ 아티클 이미지 curl fallback — Node fetch/프록시가 막힌 CDN도 worker에서 재시도',
-  '🖼️ 아티클 이미지 추출 안정화 — CDN 이미지 차단 시 프록시 재시도, 초록 placeholder 제거',
-  '🎬 MP4 인코딩 무한 길이 방지 — crop 필터가 선택 구간 길이에서 정확히 종료되도록 수정',
-  '🎬 하이브리드 프로젝트 영상 추출 복구 — 텍스트 프로젝트에 남은 영상 카드도 MP4로 생성',
-  '🎬 영상 생성 직전 출력 형식 재검증 — 저장된 프로젝트 상태가 이미지여도 영상 카드는 MP4로 생성',
-  '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
-  '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
-  '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
-  '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
-  '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
-  '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
-  '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
 ];
 
 /* ── Icons ── */
@@ -222,6 +193,66 @@ const DEFAULT_CARD = () => ({
   articleType: null,         // 'cover' | 'content' | 'outro' (article 모드에서만)
   articleMeta: null,         // { aiImageSource, sourceImageIndex, aiImagePrompt, aiImageSeed, aiImageStatus, aiImageError, stylePresetId }
 });
+
+const STYLE_COPY_GROUPS = [
+  {
+    id: 'layout',
+    label: '레이아웃·배경',
+    shortLabel: '레이아웃',
+    keys: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
+  },
+  {
+    id: 'text',
+    label: '텍스트 스타일',
+    shortLabel: '텍스트',
+    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY'],
+  },
+  {
+    id: 'video',
+    label: '영상 배치',
+    shortLabel: '영상',
+    keys: ['videoX', 'videoY', 'videoScale', 'videoBrightness', 'videoFill'],
+  },
+  {
+    id: 'overlay',
+    label: '오버레이',
+    shortLabel: '오버레이',
+    keys: ['overlays'],
+  },
+];
+const STYLE_COPY_GROUP_IDS = STYLE_COPY_GROUPS.map(g => g.id);
+
+function cloneStyleValue(value) {
+  if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.parse(JSON.stringify(value));
+  return value;
+}
+
+function extractCardStyleGroups(card) {
+  const defaults = DEFAULT_CARD();
+  return STYLE_COPY_GROUPS.reduce((acc, group) => {
+    acc[group.id] = {};
+    group.keys.forEach(key => {
+      const value = card && card[key] !== undefined ? card[key] : defaults[key];
+      if (value !== undefined) acc[group.id][key] = cloneStyleValue(value);
+    });
+    return acc;
+  }, {});
+}
+
+function getSelectedStyleGroupIds(selectedGroups) {
+  if (!Array.isArray(selectedGroups) || selectedGroups.length === 0 || selectedGroups.includes('all')) return STYLE_COPY_GROUP_IDS;
+  return selectedGroups.filter(id => STYLE_COPY_GROUP_IDS.includes(id));
+}
+
+function buildStylePatchFromClipboard(clipboard, selectedGroups) {
+  const patch = {};
+  if (!clipboard || !clipboard.groups) return patch;
+  getSelectedStyleGroupIds(selectedGroups).forEach(groupId => {
+    Object.assign(patch, clipboard.groups[groupId] || {});
+  });
+  Object.keys(patch).forEach(key => { patch[key] = cloneStyleValue(patch[key]); });
+  return patch;
+}
 
 const createImageOverlay = () => ({
   type: 'image',
@@ -4350,7 +4381,7 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
 }
 
 /* ── CardEditor ── */
-function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, project }) {
+function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, mob, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, project, styleClipboardActions }) {
   const [expanded, setExpanded] = useState(true);
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -4438,6 +4469,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
       expanded && React.createElement("div", { style: { padding: mob ? '0 12px 16px' : '0 20px 20px', display: 'flex', flexDirection: mob ? 'column-reverse' : 'row', gap: mob ? 16 : 28 } },
         // Left: Form
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+          styleClipboardActions && React.createElement(ApplyToAllBtn, { cards: styleClipboardActions.cards || [card], card, activeIndex: index, onCardChange: () => {}, styleClipboardActions, mt: 0 }),
 
           // 클립 편집
           React.createElement(Section, { title: "클립 편집" },
@@ -7252,12 +7284,90 @@ const MOBILE_TABS = [
   { id: 'overlay', label: '\uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-/* ── ApplyToAllBtn: apply current card's style keys to all other cards ── */
-function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt }) {
+function StyleClipboardBar({ cards, aspectRatio, globalUrl, globalBgImage, project, clipboard, pasteMode, selectedGroups, selectedTargetIds, onStartPaste, onClose, onToggleGroup, onToggleTarget, onSelectAll, onPaste, onCancelPaste }) {
+  if (!clipboard) return null;
+  const sourceIdx = cards.findIndex(c => c.id === clipboard.sourceCardId);
+  const sourceNo = (sourceIdx >= 0 ? sourceIdx : clipboard.sourceIndex) + 1;
+  const selectableCards = cards.filter(c => c.id !== clipboard.sourceCardId);
+  const selectedCount = selectedTargetIds.length;
+  const allSelected = selectableCards.length > 0 && selectableCards.every(c => selectedTargetIds.includes(c.id));
+  const thumbSize = 42;
+  const thumbW = (() => { const [tw, th] = (aspectRatio || '1:1').split(':').map(Number); const w = tw || 1, h = th || 1; return w >= h ? thumbSize : Math.round(thumbSize * w / h); })();
+  const thumbH = (() => { const [tw, th] = (aspectRatio || '1:1').split(':').map(Number); const w = tw || 1, h = th || 1; return h >= w ? thumbSize : Math.round(thumbSize * h / w); })();
+  const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
+  const groupActive = (id) => selectedGroups.includes('all') ? id === 'all' : selectedGroups.includes(id);
+  const chipStyle = (active) => ({
+    padding: '5px 9px',
+    borderRadius: T.radiusPill,
+    border: '1px solid ' + (active ? T.accent : T.border),
+    background: active ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
+    color: active ? T.accentHover : T.textSecondary,
+    fontSize: 11,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
+  return React.createElement('div', {
+    style: { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.28)', borderRadius: T.radius, padding: 12, display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 20px rgba(0,0,0,0.14)' },
+  },
+    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+      React.createElement('span', { style: { flex: 1, minWidth: 180, color: T.text, fontSize: 13, fontWeight: 700 } }, pasteMode ? `📋 ${sourceNo}번 스타일 복사됨 — 붙일 카드 고르기` : `📋 ${sourceNo}번 카드 스타일 복사됨`),
+      !pasteMode && React.createElement('button', { onClick: onStartPaste, disabled: selectableCards.length === 0, style: { padding: '6px 10px', borderRadius: T.radiusSm, border: 'none', background: selectableCards.length === 0 ? 'rgba(255,255,255,0.06)' : T.accent, color: selectableCards.length === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, '붙여넣기 모드'),
+      React.createElement('button', { onClick: onClose, title: '복사 상태 지우기', style: { width: 28, height: 28, borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, cursor: 'pointer', fontSize: 14 } }, '✕'),
+    ),
+    pasteMode && React.createElement(React.Fragment, null,
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } },
+        React.createElement('span', { style: { fontSize: 12, color: T.textMuted, marginRight: 2 } }, '무엇을:'),
+        React.createElement('button', { onClick: () => onToggleGroup('all'), style: chipStyle(groupActive('all')) }, '전체'),
+        STYLE_COPY_GROUPS.map(group => React.createElement('button', { key: group.id, onClick: () => onToggleGroup(group.id), style: chipStyle(groupActive(group.id)) }, group.shortLabel))
+      ),
+      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+        React.createElement('button', { onClick: onSelectAll, disabled: selectableCards.length === 0, style: { padding: '7px 10px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: selectableCards.length === 0 ? T.textMuted : T.textSecondary, fontSize: 12, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, allSelected ? '선택 해제' : '전체 선택'),
+        React.createElement('button', { onClick: onPaste, disabled: selectedCount === 0, style: { padding: '7px 12px', borderRadius: T.radiusSm, border: 'none', background: selectedCount === 0 ? 'rgba(255,255,255,0.08)' : T.accent, color: selectedCount === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectedCount === 0 ? 'not-allowed' : 'pointer' } }, `✓ ${selectedCount}장에 붙여넣기`),
+        React.createElement('button', { onClick: onCancelPaste, style: { padding: '7px 10px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, fontSize: 12, cursor: 'pointer' } }, '취소'),
+      ),
+      React.createElement('div', { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 0 4px', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+        cards.map((c, i) => {
+          const isSource = c.id === clipboard.sourceCardId;
+          const checked = selectedTargetIds.includes(c.id);
+          return React.createElement('button', {
+            key: c.id,
+            disabled: isSource,
+            onClick: () => !isSource && onToggleTarget(c.id),
+            style: { position: 'relative', width: thumbW + 10, minWidth: thumbW + 10, height: thumbH + 16, padding: 5, borderRadius: 7, border: '1px solid ' + (checked ? T.accent : isSource ? 'rgba(255,255,255,0.08)' : T.border), background: checked ? 'rgba(99,102,241,0.18)' : 'rgba(0,0,0,0.18)', opacity: isSource ? 0.45 : 1, cursor: isSource ? 'not-allowed' : 'pointer' },
+            title: isSource ? '복사한 원본 카드' : `${i + 1}번 카드 선택`,
+          },
+            React.createElement('div', { style: { width: thumbW, height: thumbH, borderRadius: 4, overflow: 'hidden', pointerEvents: 'none' } },
+              React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: thumbW, showVideo: false, mountVideo: false, projectSourceType: project?.sourceType })
+            ),
+            React.createElement('span', { style: { position: 'absolute', left: 4, top: 4, width: 18, height: 18, borderRadius: T.radiusPill, display: 'flex', alignItems: 'center', justifyContent: 'center', background: checked ? T.accent : isSource ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.58)', color: '#fff', fontSize: 11, fontWeight: 800, border: '1px solid rgba(255,255,255,0.35)' } }, checked ? '✓' : (i + 1)),
+          );
+        })
+      )
+    )
+  );
+}
+
+/* ── ApplyToAllBtn: copy current card style into app clipboard ── */
+function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt, styleClipboardActions }) {
   const [phase, setPhase] = useState('idle');
   const timerRef = useRef(null);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
   const singleCard = cards.length <= 1;
+  if (styleClipboardActions) {
+    const copied = styleClipboardActions.clipboard?.sourceCardId === card?.id;
+    const marginTop = mt || 4;
+    return React.createElement('div', { style: { display: 'flex', gap: 6, marginTop, flexWrap: 'wrap' } },
+      React.createElement('button', {
+        onClick: () => styleClipboardActions.onCopy(activeIndex),
+        style: { flex: 1, minWidth: 130, padding: '8px 0', background: copied ? 'rgba(99,102,241,0.18)' : 'transparent', border: '1px solid ' + (copied ? T.accent : T.border), borderRadius: T.radiusSm, color: copied ? T.accentHover : T.accent, fontSize: 12, cursor: 'pointer', fontWeight: copied ? 700 : 500 },
+      }, copied ? '✓ 이 카드 스타일 복사됨' : '이 카드 스타일 복사'),
+      styleClipboardActions.clipboard && React.createElement('button', {
+        onClick: styleClipboardActions.onStartPaste,
+        disabled: singleCard,
+        style: { padding: '8px 10px', background: singleCard ? 'rgba(255,255,255,0.05)' : T.accent, border: 'none', borderRadius: T.radiusSm, color: singleCard ? T.textMuted : '#fff', fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', fontWeight: 700 },
+      }, '붙여넣기'),
+    );
+  }
   const handleApply = () => {
     const stylesToCopy = {};
     keysToApply.forEach(k => { if (card[k] !== undefined) stylesToCopy[k] = card[k]; });
@@ -7279,7 +7389,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -7379,7 +7489,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
     React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
@@ -7445,7 +7555,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }),
       style: { marginTop: 4, padding: '8px 0', background: 'rgba(255,255,255,0.05)', border: '1px solid ' + T.border, borderRadius: 8, color: T.textSecondary, fontSize: 12, cursor: 'pointer', width: '100%' },
     }, '\uAE30\uBCF8\uAC12 \uCD08\uAE30\uD654'),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
   const renderLayoutTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -7505,7 +7615,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
@@ -7616,7 +7726,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange }),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
     );
   };
 
@@ -7669,7 +7779,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onClick: () => addOverlayMob(createImageOverlay()),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
   const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
@@ -7768,7 +7878,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -8045,7 +8155,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'] }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], styleClipboardActions }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
@@ -8156,7 +8266,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'] }),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'], styleClipboardActions }),
     );
   };
 
@@ -8214,7 +8324,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
     }, "+ \uc774\ubbf8\uc9c0 \ucd94\uac00"),
-    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'] }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'], styleClipboardActions }),
   );
 
   const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
@@ -8465,6 +8575,12 @@ export default function App() {
   // Reset editor silence when user switches cards
   useEffect(() => { setEditorSilenced(false); }, [activeCardIdx]);
   const closePreviewModal = () => { setShowPreview(false); setEditorSilenced(true); setEditorResetKey(k => k + 1); };
+  useEffect(() => {
+    setStyleClipboard(null);
+    setStylePasteMode(false);
+    setStylePasteGroups(['all']);
+    setStylePasteTargetIds([]);
+  }, [activeProjectId]);
   const [showCardSelect, setShowCardSelect] = useState(false);
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [queueStatus, setQueueStatus] = useState(null);
@@ -8474,6 +8590,10 @@ export default function App() {
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
+  const [styleClipboard, setStyleClipboard] = useState(null);
+  const [stylePasteMode, setStylePasteMode] = useState(false);
+  const [stylePasteGroups, setStylePasteGroups] = useState(['all']);
+  const [stylePasteTargetIds, setStylePasteTargetIds] = useState([]);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
@@ -8684,6 +8804,66 @@ export default function App() {
   const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
   const moveCard = (from, to) => { if (from === to) return; setCards(p => { const n = [...p]; const [item] = n.splice(from, 1); n.splice(to, 0, item); return n; }); setActiveCardIdx(to); };
+
+  const cardIdsKey = cards.map(c => c.id).join('|');
+  useEffect(() => {
+    setStylePasteTargetIds(prev => {
+      const validIds = new Set(cards.map(c => c.id));
+      const next = prev.filter(id => validIds.has(id) && id !== styleClipboard?.sourceCardId);
+      return next.length === prev.length ? prev : next;
+    });
+  }, [cardIdsKey, styleClipboard?.sourceCardId]);
+
+  const copyCardStyleToClipboard = (idx) => {
+    const src = cards[idx];
+    if (!src) return;
+    setStyleClipboard({
+      sourceIndex: idx,
+      sourceCardId: src.id,
+      copiedAt: Date.now(),
+      groups: extractCardStyleGroups(src),
+    });
+    setStylePasteGroups(['all']);
+    setStylePasteTargetIds([]);
+  };
+  const clearStyleClipboard = () => {
+    setStyleClipboard(null);
+    setStylePasteMode(false);
+    setStylePasteGroups(['all']);
+    setStylePasteTargetIds([]);
+  };
+  const toggleStylePasteGroup = (groupId) => {
+    setStylePasteGroups(prev => {
+      if (groupId === 'all') return ['all'];
+      const base = prev.includes('all') ? [] : prev;
+      const next = base.includes(groupId) ? base.filter(id => id !== groupId) : [...base, groupId];
+      return next.length === 0 ? ['all'] : next;
+    });
+  };
+  const toggleStylePasteTarget = (cardId) => {
+    if (!styleClipboard || cardId === styleClipboard.sourceCardId) return;
+    setStylePasteTargetIds(prev => prev.includes(cardId) ? prev.filter(id => id !== cardId) : [...prev, cardId]);
+  };
+  const toggleAllStylePasteTargets = () => {
+    if (!styleClipboard) return;
+    const ids = cards.filter(c => c.id !== styleClipboard.sourceCardId).map(c => c.id);
+    const allSelected = ids.length > 0 && ids.every(id => stylePasteTargetIds.includes(id));
+    setStylePasteTargetIds(allSelected ? [] : ids);
+  };
+  const pasteCopiedStyleToTargets = () => {
+    if (!styleClipboard || stylePasteTargetIds.length === 0) return;
+    const targetSet = new Set(stylePasteTargetIds);
+    setCards(prev => prev.map(c => targetSet.has(c.id) ? { ...c, ...buildStylePatchFromClipboard(styleClipboard, stylePasteGroups) } : c));
+    setStylePasteMode(false);
+    setStylePasteTargetIds([]);
+  };
+  const styleClipboardActions = {
+    cards,
+    clipboard: styleClipboard,
+    pasteMode: stylePasteMode,
+    onCopy: copyCardStyleToClipboard,
+    onStartPaste: () => styleClipboard && setStylePasteMode(true),
+  };
 
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
@@ -9919,6 +10099,25 @@ export default function App() {
           ),
         ),
 
+      styleClipboard && React.createElement(StyleClipboardBar, {
+        cards,
+        aspectRatio,
+        globalUrl,
+        globalBgImage,
+        project: activeProject,
+        clipboard: styleClipboard,
+        pasteMode: stylePasteMode,
+        selectedGroups: stylePasteGroups,
+        selectedTargetIds: stylePasteTargetIds,
+        onStartPaste: () => setStylePasteMode(true),
+        onClose: clearStyleClipboard,
+        onToggleGroup: toggleStylePasteGroup,
+        onToggleTarget: toggleStylePasteTarget,
+        onSelectAll: toggleAllStylePasteTargets,
+        onPaste: pasteCopiedStyleToTargets,
+        onCancelPaste: () => { setStylePasteMode(false); setStylePasteTargetIds([]); },
+      }),
+
       // Cards — mobile carousel vs desktop list
       mob ? React.createElement("div", { 'data-tour': 'edit-area', style: { background: T.surface, borderRadius: T.radius, padding: '8px 12px', boxShadow: T.shadow } },
         React.createElement(MobileCardCarousel, {
@@ -9946,6 +10145,7 @@ export default function App() {
           onRegenerateArticleImage: handleRegenerateArticleImage,
           onSelectArticleImage: handleSelectArticleImage,
           regeneratingCardIdx,
+          styleClipboardActions,
         }),
       ) : React.createElement("div", { 'data-tour': 'card-panel' },
         React.createElement(DesktopCardPanel, {
@@ -9972,6 +10172,7 @@ export default function App() {
           onRegenerateArticleImage: handleRegenerateArticleImage,
           onSelectArticleImage: handleSelectArticleImage,
           regeneratingCardIdx,
+          styleClipboardActions,
         }),
       ),
     ),
