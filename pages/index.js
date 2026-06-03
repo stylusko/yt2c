@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
+import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0603';
@@ -12,8 +13,38 @@ const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
+const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const RECENT_FEATURES = [
-  '🧩 텍스트 카드 분할 — Claude 응답 카드 배열 파싱 안정화',
+  '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
+  '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
+  '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
+  '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
+  '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
+  '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
+  '📰 텍스트 카드 생성 안정화 — AI 응답 JSON 파싱 오류를 구조화 응답으로 방지',
+  '🖼️ 로고/이미지 오버레이 기본 레이어 — 새로 추가한 오버레이가 레이아웃 위에 표시',
+  '📝 아티클 본문 4줄 제한 — 텍스트 카드 본문이 넘치거나 문장 중간에서 끊기는 문제 완화',
+  '🧭 분리형 프리뷰 스케일 일치 — 쉬운/자유편집 출력과 같은 사진 영역 기준으로 렌더링',
+  '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
+  '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
+  '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
+  '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',
+  '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
+  '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
+  '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
+  '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
+  '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
+  '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
+  '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
+  '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
+  '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
+  '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
+  '🖼️ 아티클 이미지 curl fallback — Node fetch/프록시가 막힌 CDN도 worker에서 재시도',
+  '🖼️ 아티클 이미지 추출 안정화 — CDN 이미지 차단 시 프록시 재시도, 초록 placeholder 제거',
+  '🎬 MP4 인코딩 무한 길이 방지 — crop 필터가 선택 구간 길이에서 정확히 종료되도록 수정',
+  '🎬 하이브리드 프로젝트 영상 추출 복구 — 텍스트 프로젝트에 남은 영상 카드도 MP4로 생성',
+  '🎬 영상 생성 직전 출력 형식 재검증 — 저장된 프로젝트 상태가 이미지여도 영상 카드는 MP4로 생성',
+  '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
   '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
   '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
   '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
@@ -152,14 +183,14 @@ const FONT_OPTIONS = [
 const getFontFamily = (variantId) => { const f = FONT_OPTIONS.find(fo => fo.variants.some(v => v.id === variantId)); return f ? f.id : 'Pretendard'; };
 
 const STYLE_PRESETS = [
-  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 34, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
-  { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 34, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
-  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 40, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'video_only', label: '\uC5C6\uC74C', desc: '\uC601\uC0C1\uB9CC \uD45C\uC2DC', layout: 'video_only', bgColor: '#000000', bgOpacity: 0, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_top', label: '\uD14D\uC2A4\uD2B8 \uD558\uB2E8', desc: '\uC704\uC5D0 \uC601\uC0C1, \uC544\uB798\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.8, useGradient: false, titleColor: '#ffffff', subtitleColor: '#aaaaaa', bodyColor: '#d2d2d2', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'photo_bottom', label: '\uD14D\uC2A4\uD2B8 \uC0C1\uB2E8', desc: '\uC704\uC5D0 \uD14D\uC2A4\uD2B8, \uC544\uB798\uC5D0 \uC601\uC0C1', layout: 'photo_bottom', bgColor: '#181818', bgOpacity: 0.7, useGradient: false, titleColor: '#ffffff', subtitleColor: '#a0a0a0', bodyColor: '#c8c8c8', titleSize: 52, subtitleSize: 42, bodySize: 37, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 50, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_bottom', label: '\uADF8\uB77C\uB370\uC774\uC158 \uD558\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD558\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_top', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'gradient_top', label: '\uADF8\uB77C\uB370\uC774\uC158 \uC0C1\uB2E8', desc: '\uC601\uC0C1 \uC704\uC5D0 \uC0C1\uB2E8 \uADF8\uB77C\uB370\uC774\uC158', layout: 'photo_bottom', bgColor: '#121212', bgOpacity: 0.75, useGradient: true, titleColor: '#ffffff', subtitleColor: '#c0c0c0', bodyColor: '#e0e0e0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, photoRatio: 55, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'full_bg', label: '\uC804\uCCB4 \uBC30\uACBD', desc: '\uC601\uC0C1 \uC704\uC5D0 \uD14D\uC2A4\uD2B8\uB97C \uC62C\uB9B0 \uC2A4\uD0C0\uC77C', layout: 'full_bg', bgColor: '#0a0a0a', bgOpacity: 0.85, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'left', subtitleAlign: 'left', bodyAlign: 'left', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
+  { id: 'clean_box', label: '\uD14D\uC2A4\uD2B8 \uBC15\uC2A4', desc: '\uBC18\uD22C\uBA85 \uBC15\uC2A4 \uC548\uC5D0 \uD14D\uC2A4\uD2B8', layout: 'text_box', bgColor: '#1a1a2e', bgOpacity: 0.5, useGradient: false, titleColor: '#ffffff', subtitleColor: '#c8c8d0', bodyColor: '#e0e0e8', titleSize: 52, subtitleSize: 40, bodySize: 37, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.55, textBoxX: 50, textBoxY: 55, textBoxWidth: 85, textBoxPadding: 24, textBoxRadius: 16 },
+  { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
 const MAX_CARDS = 10;
@@ -174,7 +205,7 @@ const DEFAULT_CARD = () => ({
   useTitle: true, useSubtitle: true, useBody: true,
   title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
   subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
-  body: "본문 내용을 입력하세요", bodySize: 40, bodyFont: "Pretendard-Regular.otf",
+  body: "본문 내용을 입력하세요", bodySize: 44, bodyFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
@@ -191,6 +222,96 @@ const DEFAULT_CARD = () => ({
   articleType: null,         // 'cover' | 'content' | 'outro' (article 모드에서만)
   articleMeta: null,         // { aiImageSource, sourceImageIndex, aiImagePrompt, aiImageSeed, aiImageStatus, aiImageError, stylePresetId }
 });
+
+const createImageOverlay = () => ({
+  type: 'image',
+  image: null,
+  x: 50,
+  y: 50,
+  scale: 80,
+  opacity: 1,
+  aboveLayout: true,
+});
+
+const createLogoOverlay = () => ({
+  type: 'logo',
+  image: null,
+  x: 50,
+  y: 92,
+  scale: 16,
+  opacity: 1,
+  aboveLayout: true,
+  applyToAll: true,
+  logoColorMode: 'original',
+  logoColor: '#ffffff',
+});
+
+const resetOverlayProps = (overlay = {}) => (
+  overlay.type === 'logo'
+    ? { x: 50, y: 92, scale: 16, opacity: 1, aboveLayout: true, logoColorMode: 'original', logoColor: '#ffffff' }
+    : { x: 50, y: 50, scale: 100, opacity: 1 }
+);
+
+const LOGO_POSITION_PRESETS = [
+  ['하단 중앙', 50, 92],
+  ['하단 우측', 86, 92],
+  ['상단 우측', 86, 8],
+  ['상단 좌측', 14, 8],
+];
+
+const LOGO_COLOR_PRESETS = [
+  ['white', '흰색', '#ffffff'],
+  ['black', '검정', '#000000'],
+];
+
+function normalizeLogoColor(color, fallback = '#ffffff') {
+  const raw = String(color || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+    return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
+  }
+  return fallback;
+}
+
+function isSolidLogoOverlay(overlay = {}) {
+  return overlay.type === 'logo' && overlay.logoColorMode === 'solid';
+}
+
+function colorizeImageWithAlphaMask(img, color) {
+  if (typeof document === 'undefined') return img;
+  const c = document.createElement('canvas');
+  const iw = img.naturalWidth || img.width;
+  const ih = img.naturalHeight || img.height;
+  if (!iw || !ih) return img;
+  c.width = iw;
+  c.height = ih;
+  const cx = c.getContext('2d');
+  cx.drawImage(img, 0, 0, iw, ih);
+  cx.globalCompositeOperation = 'source-in';
+  cx.fillStyle = normalizeLogoColor(color);
+  cx.fillRect(0, 0, iw, ih);
+  cx.globalCompositeOperation = 'source-over';
+  return c;
+}
+
+function colorizedLogoDataUrl(src, color) {
+  return new Promise((resolve, reject) => {
+    if (!src || typeof document === 'undefined') {
+      resolve(src);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        resolve(colorizeImageWithAlphaMask(img, color).toDataURL('image/png'));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 /* ── Responsive Hook ── */
 function useIsMobile(breakpoint = 768) {
@@ -287,30 +408,19 @@ function formatSec(s) {
   const sec = s % 60;
   return m > 0 ? `${m}:${String(sec).padStart(2,'0')}` : `${sec}초`;
 }
+function isArticleCard(card) {
+  return card?.sourceType === 'article' || card?.articleType === 'cover' || card?.articleType === 'content' || !!card?.articleMeta;
+}
+function usesArticlePhotoArea(card) {
+  const layout = card?.layout || 'photo_top';
+  return isArticleCard(card) && (card?.fillSource || 'video') === 'image' && (card?.videoFill || 'full') === 'split' && (layout === 'photo_top' || layout === 'photo_bottom');
+}
 function clientCardHash(card, globalConfig) {
-  const data = JSON.stringify({
-    ar: globalConfig.aspectRatio, os: globalConfig.outputSize, of: globalConfig.outputFormat,
-    url: card.url || globalConfig.globalUrl || '',
-    start: card.appliedStart || card.start || '', end: card.appliedEnd || card.end || '',
-    vx: card.videoX ?? 0, vy: card.videoY ?? 0, vs: card.videoScale ?? 100, vb: card.videoBrightness ?? 0,
-    layout: card.layout || 'photo_top', ug: card.useGradient || false, pr: card.photoRatio ?? 50,
-    vf: card.videoFill || 'full', fs: card.fillSource || 'video',
-    title: card.title || '', ut: card.useTitle !== false,
-    sub: card.subtitle || '', us: card.useSubtitle !== false,
-    body: card.body || '', ub: card.useBody !== false,
-    ts: card.titleSize || 64, tc: card.titleColor || '#fff', tf: card.titleFont || '',
-    ss: card.subtitleSize || 48, sc: card.subtitleColor || '#aaa',
-    bs: card.bodySize || 40, bc: card.bodyColor || '#d2d2d2',
-    bgc: card.bgColor || '#121212', bgo: card.bgOpacity ?? 0.75, useBg: card.useBg !== false,
-    ovl: (card.overlays || []).map(o => ({ s: o.src || '', x: o.x, y: o.y, w: o.width, h: o.height, op: o.opacity })),
-    ui: card.uploadedImage ? 'y' : 'n',
-    tbx: card.textBoxX ?? 50, tby: card.textBoxY ?? 70, tbw: card.textBoxWidth ?? 80,
-    tbbc: card.textBoxBgColor || '#000', tbbo: card.textBoxBgOpacity ?? 0.6,
-    ta: card.titleAlign || 'left', sa: card.subtitleAlign || 'left', ba: card.bodyAlign || 'left',
-  });
-  let hash = 0;
-  for (let i = 0; i < data.length; i++) { hash = ((hash << 5) - hash + data.charCodeAt(i)) | 0; }
-  return (hash >>> 0).toString(36);
+  return computeCardCacheHash(card, globalConfig, ARTICLE_IMAGE_RENDER_VERSION);
+}
+function clearGeneratedCache(card) {
+  const { lastGenHash, lastGenKey, ...rest } = card || {};
+  return rest;
 }
 function fmtMM(s) {
   if (s == null || isNaN(s)) return '--:--';
@@ -544,26 +654,74 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
 
+  function loadOverlayImage(src) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function getLogoSafeInsets() {
+    const logos = (card.overlays || []).filter(ov =>
+      ov?.type === 'logo' &&
+      ov.image &&
+      ov.aboveLayout !== false &&
+      (ov.opacity ?? 1) > 0
+    );
+    if (logos.length === 0) return { top: 0, bottom: 0 };
+
+    let top = 0;
+    let bottom = 0;
+    for (const ov of logos) {
+      try {
+        const oImg = await loadOverlayImage(ov.image);
+        const oScale = (ov.scale || 100) / 100;
+        const fitRatio = w / oImg.width;
+        const oH = oImg.height * fitRatio * oScale;
+        const oY = (ov.y ?? 50) / 100 * h - oH / 2;
+        const centerY = oY + oH / 2;
+        const pad = Math.max(Math.round(18 * s), Math.min(Math.round(42 * s), Math.round(oH * 0.24)));
+        if (centerY >= h * 0.65) {
+          bottom = Math.max(bottom, Math.ceil(Math.max(0, h - oY + pad)));
+        } else if (centerY <= h * 0.35) {
+          top = Math.max(top, Math.ceil(Math.max(0, oY + oH + pad)));
+        }
+      } catch (e) { /* ignore invalid logo images */ }
+    }
+    return {
+      top: Math.min(top, Math.round(h * 0.4)),
+      bottom: Math.min(bottom, Math.round(h * 0.4)),
+    };
+  }
+
   // Helper: draw overlay images filtered by aboveLayout flag
   async function drawOverlays(above) {
     if (skipOverlays) return;
     for (const ov of (card.overlays || [])) {
       if (!ov.image || !!ov.aboveLayout !== above) continue;
       try {
-        const oImg = new Image();
-        await new Promise((resolve, reject) => { oImg.onload = resolve; oImg.onerror = reject; oImg.src = ov.image; });
+        const oImg = await loadOverlayImage(ov.image);
+        const drawImg = isSolidLogoOverlay(ov)
+          ? colorizeImageWithAlphaMask(oImg, ov.logoColor)
+          : oImg;
         const oScale = (ov.scale || 100) / 100;
-        const fitRatio = w / oImg.width;
-        const oW = oImg.width * fitRatio * oScale;
-        const oH = oImg.height * fitRatio * oScale;
+        const imgW = oImg.naturalWidth || oImg.width;
+        const imgH = oImg.naturalHeight || oImg.height;
+        const fitRatio = w / imgW;
+        const oW = imgW * fitRatio * oScale;
+        const oH = imgH * fitRatio * oScale;
         const oX = (ov.x ?? 50) / 100 * w - oW / 2;
         const oY = (ov.y ?? 50) / 100 * h - oH / 2;
         ctx.globalAlpha = ov.opacity ?? 1;
-        ctx.drawImage(oImg, oX, oY, oW, oH);
+        ctx.drawImage(drawImg, oX, oY, oW, oH);
         ctx.globalAlpha = 1;
       } catch (e) { /* ignore */ }
     }
   }
+
+  const logoSafe = await getLogoSafeInsets();
 
   // Draw below-layout overlays
   await drawOverlays(false);
@@ -581,7 +739,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
       ctx.fillRect(0, 0, w, h);
     }
-    let curY = h - padTop;
+    let curY = h - padTop - logoSafe.bottom;
     const allItems = [];
     if (card.title) for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) allItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
     if (card.subtitle) { allItems.push({ type: "gap", size: Math.round(10 * s) }); for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) allItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' }); }
@@ -598,7 +756,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     // Text box layout: rounded box with text inside
     const boxW = w * (card.textBoxWidth || 80) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
-    const boxY = (card.textBoxY || 70) / 100 * h;
+    let boxY = (card.textBoxY || 70) / 100 * h;
     const boxPad = Math.round((card.textBoxPadding || 20) * s);
     const boxRad = Math.round((card.textBoxRadius || 12) * s);
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
@@ -618,6 +776,12 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(15 * s); contentH += bodyLines.length * bodyLh; }
 
     const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
+    if (logoSafe.top > 0 || logoSafe.bottom > 0) {
+      const boxSafePad = Math.round(10 * s);
+      const minBoxY = logoSafe.top + boxSafePad + boxH / 2;
+      const maxBoxY = h - logoSafe.bottom - boxSafePad - boxH / 2;
+      if (maxBoxY >= minBoxY) boxY = Math.max(minBoxY, Math.min(maxBoxY, boxY));
+    }
 
     // Draw rounded rectangle for box background
     ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
@@ -647,11 +811,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(15 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
   } else {
     const textH = Math.round(h * (1 - photoRatio));
-    const yStart = layout === "photo_top" ? h - textH : 0;
+    const rawYStart = layout === "photo_top" ? h - textH : 0;
+    const yStart = rawYStart;
+    const effectiveTextH = textH;
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
-        const gradH = textH + Math.round(h * 0.15);
+        const gradH = effectiveTextH + Math.round(h * 0.15);
         const gradStart = layout === "photo_top" ? h - gradH : 0;
         const gradEnd = layout === "photo_top" ? h : gradH;
         for (let y = gradStart; y < gradEnd; y++) {
@@ -666,13 +832,39 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       } else {
         const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
         ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
-        ctx.fillRect(0, yStart, w, textH);
+        ctx.fillRect(0, yStart, w, effectiveTextH);
       }
     }
+    const textItems = [];
+    if (card.title) {
+      for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) textItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
+    }
+    if (card.subtitle) {
+      if (card.title) textItems.push({ type: "gap", size: Math.round(10 * s) });
+      for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) textItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' });
+    }
+    if (card.body) {
+      if (card.title || card.subtitle) textItems.push({ type: "gap", size: Math.round(21 * s) });
+      for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) textItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, sz: bodySz, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' });
+    }
+    const contentH = textItems.reduce((sum, item) => sum + (item.type === "gap" ? item.size : (item.text ? item.lh : bodySz / 2)), 0);
+    const logoSafePad = Math.round(10 * s);
     let curY = yStart + padTop;
-    if (card.title) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) { ctx.font = getFont(card.titleFont, titleSz); drawTextLS(ln, alignX(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + getBaselineOffset(getFont(card.titleFont, titleSz), titleSz, titleLh) + titleOY, titleLS); curY += titleLh; } }
-    if (card.subtitle) { if (card.title) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) { ctx.font = getFont(card.subtitleFont, subSz); drawTextLS(ln, alignX(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
-    if (card.body) { if (card.title || card.subtitle) curY += Math.round(21 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) { if (!ln) { curY += bodySz / 2; continue; } ctx.font = getFont(card.bodyFont, bodySz); drawTextLS(ln, alignX(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
+    if (layout === "photo_bottom" && logoSafe.top > 0) {
+      curY = Math.max(curY, logoSafe.top + logoSafePad);
+    } else if (layout === "photo_top" && logoSafe.bottom > 0) {
+      const safeBottom = h - logoSafe.bottom - logoSafePad;
+      const overflow = (curY + contentH) - safeBottom;
+      if (overflow > 0) curY = Math.max(logoSafePad, curY - overflow);
+    }
+    for (const item of textItems) {
+      if (item.type === "gap") { curY += item.size; continue; }
+      if (!item.text) { curY += bodySz / 2; continue; }
+      ctx.font = item.font;
+      ctx.fillStyle = item.color;
+      drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + getBaselineOffset(item.font, item.sz, item.lh) + (item.oy || 0), item.ls);
+      curY += item.lh;
+    }
   }
   // Draw above-layout overlays
   await drawOverlays(true);
@@ -708,6 +900,80 @@ function PillBtn({ active, children, onClick, style }) {
       ...style,
     }
   }, children);
+}
+
+function LogoColorControls({ overlay, onChange }) {
+  const mode = overlay.logoColorMode === 'solid' ? 'solid' : 'original';
+  const color = normalizeLogoColor(overlay.logoColor);
+  const setSolid = (nextColor) => onChange({ logoColorMode: 'solid', logoColor: normalizeLogoColor(nextColor) });
+
+  return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0' } },
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "색상"),
+      React.createElement("div", { style: { display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+        React.createElement(PillBtn, { active: mode === 'original', onClick: () => onChange({ logoColorMode: 'original' }), style: { padding: '5px 10px', fontSize: 11 } }, "원본"),
+        LOGO_COLOR_PRESETS.map(([id, label, presetColor]) => React.createElement(PillBtn, {
+          key: id,
+          active: mode === 'solid' && color === presetColor,
+          onClick: () => setSolid(presetColor),
+          style: { padding: '5px 10px', fontSize: 11 },
+        }, label)),
+      ),
+    ),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 36 } },
+      React.createElement("input", {
+        type: "color",
+        value: color,
+        onChange: (e) => setSolid(e.target.value),
+        style: { width: 34, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', padding: 2 },
+        title: "직접 색상 선택",
+      }),
+      React.createElement("button", {
+        onClick: () => setSolid(color),
+        style: { width: 24, height: 24, borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: color, cursor: 'pointer', flexShrink: 0 },
+        title: "선택 색상 적용",
+      }),
+      React.createElement("span", { style: { fontSize: 11, color: mode === 'solid' ? T.textSecondary : T.textMuted } }, mode === 'solid' ? color : '직접 선택 시 단색 적용')
+    )
+  );
+}
+
+function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
+  const [src, setSrc] = useState(ov.image || null);
+  useEffect(() => {
+    let alive = true;
+    if (!ov.image) {
+      setSrc(null);
+      return () => { alive = false; };
+    }
+    if (!isSolidLogoOverlay(ov)) {
+      setSrc(ov.image);
+      return () => { alive = false; };
+    }
+    setSrc(ov.image);
+    colorizedLogoDataUrl(ov.image, ov.logoColor)
+      .then(next => { if (alive) setSrc(next || ov.image); })
+      .catch(() => { if (alive) setSrc(ov.image); });
+    return () => { alive = false; };
+  }, [ov.image, ov.logoColorMode, ov.logoColor]);
+
+  if (!ov.image) return null;
+  return React.createElement("img", {
+    key: index,
+    src: src || ov.image,
+    alt: "",
+    style: {
+      position: "absolute",
+      zIndex: z,
+      top: '50%',
+      left: '50%',
+      width: previewW,
+      height: 'auto',
+      transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`,
+      opacity: ov.opacity ?? 1,
+      pointerEvents: 'none',
+    }
+  });
 }
 
 /* ── Article Image Carousel ── (본문 썸네일 + AI 재생성 타일 통합 UI) */
@@ -1496,7 +1762,8 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
   const zoom = Math.max(videoScale ?? 100, 1) / 100;
   const [_aw, _ah] = (aspectRatio || '1:1').split(':').map(Number);
   const outAspect = (_aw && _ah) ? _aw / _ah : 1;
-  const pr = photoRatio ?? 0.55;
+  const rawPr = Number(photoRatio ?? 0.55);
+  const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
   const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
     ? outAspect / pr : outAspect;
   let visW, visH;
@@ -2113,7 +2380,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         const zoom = Math.max(videoScale ?? 100, 1) / 100;
         const [__aw, __ah] = (aspectRatio || '1:1').split(':').map(Number);
         const outAspect = (__aw && __ah) ? __aw / __ah : 1;
-        const pr = photoRatio ?? 0.55;
+        const rawPr = Number(photoRatio ?? 0.55);
+        const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
         const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
           ? outAspect / pr : outAspect;
         let visW, visH;
@@ -3331,16 +3599,22 @@ function VideoPreview({ videoId, start, end, width, height, videoX, videoY, vide
 }
 
 /* ── CardPreview ── */
-function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle }) {
+function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgImage, previewWidth, showVideo = true, mountVideo = true, onTextClick, onCardUpdate, selectedHandle, onSelectHandle, onVideoReady, externalMuted, onMuteToggle, projectSourceType = 'youtube' }) {
+  const card = projectSourceType === 'article' && !isArticleCard(rawCard) ? { ...rawCard, sourceType: 'article' } : rawCard;
   const _base = previewWidth || 320;
   const [_pw, _ph] = (aspectRatio || '1:1').split(':').map(Number);
   const _arW = _pw || 1, _arH = _ph || 1;
   const previewW = (_arW >= _arH) ? _base : Math.round(_base * _arW / _arH);
   const previewH = (_arH >= _arW) ? _base : Math.round(_base * _arH / _arW);
+  const layout = card.layout || "photo_top";
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textH = (card.layout === "full_bg" || card.layout === "video_only" || card.layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const textH = (layout === "full_bg" || layout === "video_only" || layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const isTop = layout === "photo_top";
+  const videoAreaH = previewH - textH;
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
+  const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
+  const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -3358,15 +3632,21 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const [imgDims, setImgDims] = useState(null);
   const [vpReady, setVpReady] = useState(false);
   const prevVideoKey = useRef(null);
+  const baseImage = card.uploadedImage
+    ? card.uploadedImage
+    : fillSource === 'image'
+      ? (globalBgImage || thumbSrc)
+      : (thumbSrc || globalBgImage);
+  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
 
   useEffect(() => {
-    if (!card.uploadedImage) { setImgDims(null); return; }
+    if (!baseImage || isBaseThumb) { setImgDims(null); return; }
     const img = new Image();
     img.referrerPolicy = 'no-referrer';
     img.onload = () => setImgDims({ w: img.naturalWidth, h: img.naturalHeight });
     img.onerror = () => setImgDims(null);
-    img.src = card.uploadedImage;
-  }, [card.uploadedImage]);
+    img.src = baseImage;
+  }, [baseImage, isBaseThumb]);
 
   // Canvas overlay state
   const [overlayUrl, setOverlayUrl] = useState(null);
@@ -3383,7 +3663,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Generate canvas overlay (debounced) — same engine as final render
   const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
   const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
-  const cardKey = JSON.stringify(cardTextProps);
+  const logoSafeKey = logoSafeOverlayFingerprint(pvCard.overlays || []);
+  const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
   useEffect(() => {
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
     overlayTimer.current = setTimeout(async () => {
@@ -3427,12 +3708,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     else setThumbSrc(null);
   };
 
-  const baseImage = card.uploadedImage
-    ? card.uploadedImage
-    : fillSource === 'image'
-      ? (globalBgImage || thumbSrc)
-      : (thumbSrc || globalBgImage);
-  const isBaseThumb = baseImage === thumbSrc && !card.uploadedImage && fillSource === 'video';
   const overlays = card.overlays || [];
 
   const snapPx = Math.round(8 * sc);
@@ -3472,7 +3747,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   }
   thumbContentOffX = (thumbW - thumbContentW) / 2;
   thumbContentOffY = (thumbH - thumbContentH) / 2;
-  const thumbCoverScale = Math.max(previewW / thumbContentW, previewH / thumbContentH);
+  const thumbCoverScale = Math.max(previewW / thumbContentW, mediaAreaH / thumbContentH);
   const thumbTotalScale = thumbCoverScale * coverVScale;
   const thumbScaledW = thumbW * thumbTotalScale;
   const thumbScaledH = thumbH * thumbTotalScale;
@@ -3481,20 +3756,21 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   const thumbScaledCenterX = (thumbContentOffX + thumbContentW / 2) * thumbTotalScale;
   const thumbScaledCenterY = (thumbContentOffY + thumbContentH / 2) * thumbTotalScale;
   const thumbOffX = thumbScaledCenterX - previewW / 2 + thumbScaledContentW * (card.videoX ?? 0) / 400;
-  const thumbOffY = thumbScaledCenterY - previewH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
-  // Uploaded image: pixel-based positioning matching backend computePixelPos exactly
+  const thumbOffY = thumbScaledCenterY - mediaAreaH / 2 + thumbScaledContentH * (card.videoY ?? 0) / 400;
+  // Uploaded/global image: pixel-based positioning matching backend computePixelPos exactly
   // article 카드는 cover (카드 꽉 채우고 넘치는 부분 crop), 그 외는 기존 contain 유지.
-  const uploadImgStyle = (() => {
-    if (!card.uploadedImage || !imgDims) return null;
+  const baseImgStyle = (() => {
+    if (!baseImage || isBaseThumb || !imgDims) return null;
     const imgAspect = imgDims.w / imgDims.h;
-    const containerAspect = previewW / previewH;
-    const useCover = card.sourceType === 'article';
+    const targetH = mediaAreaH;
+    const containerAspect = previewW / targetH;
+    const useCover = isArticleCard(card);
     let containedW, containedH;
     if (useCover) {
       // cover: 짧은 변을 컨테이너에 맞추고 긴 변은 컨테이너 밖으로
       if (imgAspect >= containerAspect) {
-        containedH = previewH;
-        containedW = previewH * imgAspect;
+        containedH = targetH;
+        containedW = targetH * imgAspect;
       } else {
         containedW = previewW;
         containedH = previewW / imgAspect;
@@ -3502,12 +3778,12 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     } else {
       // contain: 긴 변을 컨테이너에 맞추고 짧은 변은 letterbox
       if (imgAspect >= containerAspect) { containedW = previewW; containedH = previewW / imgAspect; }
-      else { containedH = previewH; containedW = previewH * imgAspect; }
+      else { containedH = targetH; containedW = targetH * imgAspect; }
     }
     const scaledW = containedW * vScale;
     const scaledH = containedH * vScale;
     const posX = (previewW - scaledW) / 2 - scaledW * (card.videoX ?? 0) / 400;
-    const posY = (previewH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
+    const posY = (targetH - scaledH) / 2 - scaledH * (card.videoY ?? 0) / 400;
     return { position: "absolute", left: posX, top: posY, width: scaledW, height: scaledH, zIndex: 0, filter: brightFilter };
   })();
   // Non-uploaded image: CSS transform fallback (globalBgImage etc.)
@@ -3526,8 +3802,8 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
       ? React.createElement(React.Fragment, null,
           React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", onError: handleThumbError, onLoad: () => setThumbLoaded(true), style: { position: "absolute", left: -thumbOffX, top: -thumbOffY, width: thumbScaledW, height: thumbScaledH, zIndex: 0, filter: brightFilter, opacity: thumbLoaded ? 1 : 0, transition: 'opacity 0.3s' } }),
           thumbSpinner)
-      : uploadImgStyle
-        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: uploadImgStyle })
+      : baseImgStyle
+        ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: baseImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
     : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
@@ -3535,7 +3811,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
 
-  const overlayImg = (ov, i, z) => ov.image ? React.createElement("img", { key: i, src: ov.image, alt: "", style: { position: "absolute", zIndex: z, top: '50%', left: '50%', width: previewW, height: 'auto', transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`, opacity: ov.opacity ?? 1, pointerEvents: 'none' } }) : null;
+  const overlayImg = (ov, i, z) => ov.image ? React.createElement(PreviewOverlayImage, { key: i, ov, index: i, z, previewW, previewH }) : null;
   const OverlayImgsBelow = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => !ov.aboveLayout ? overlayImg(ov, i, 1) : null));
   const OverlayImgsAbove = () => React.createElement(React.Fragment, null, ...overlays.map((ov, i) => ov.aboveLayout ? overlayImg(ov, i, 5) : null));
 
@@ -3550,7 +3826,6 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
   // Click target for text field switching + deselection (transparent, on top of canvas overlay)
   const handleCardTextClick = (e) => {
     if (!onTextClick) return;
-    const layout = card.layout || 'photo_top';
     if (layout === 'text_box') return; // text_box: double-click only
 
     const fields = ['title', 'subtitle', 'body'].filter(f => card[f]);
@@ -3847,16 +4122,13 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     );
   })();
 
-  const isTop = card.layout === "photo_top";
-  const videoAreaH = previewH - textH;
-
   // VideoPreview: show when appliedStart is set (iframe-based loop playback)
   const hasVideoPreview = card.appliedStart && card.appliedEnd && thumbnailId && !card.uploadedImage && fillSource === 'video' && mountVideo;
   const videoKey = thumbnailId + '|' + card.appliedStart + '|' + card.appliedEnd;
   if (prevVideoKey.current !== videoKey) { prevVideoKey.current = videoKey; if (hasVideoPreview) setVpReady(false); }
   const handleVideoReady = useCallback(() => { setVpReady(true); if (onVideoReady) onVideoReady(); }, [onVideoReady]);
   const videoPreview = hasVideoPreview
-    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: previewH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
+    ? React.createElement(VideoPreview, { videoId: thumbnailId, start: card.appliedStart, end: card.appliedEnd, width: previewW, height: mediaAreaH, videoX: card.videoX, videoY: card.videoY, videoScale: card.videoScale, videoBrightness: card.videoBrightness, muted: vpMuted, volume: vpVolume, paused: !showVideo, onReady: handleVideoReady, videoW: nativeDims?.w, videoH: nativeDims?.h })
     : null;
 
   // Mute toggle + volume slider (bottom-right corner)
@@ -3898,7 +4170,7 @@ function CardPreview({ card, globalUrl, aspectRatio = '1:1', globalBgImage, prev
     : null;
 
   // Split mode: constrain video to video area
-  if (videoFill === "split" && fillSource === 'video' && !card.uploadedImage && card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none") {
+  if (splitMediaInPhotoArea) {
     return React.createElement("div", { style: wrapper },
       React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
@@ -4091,6 +4363,14 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   const urlInputRef = useRef(null);
   const update = (key, val) => onChange({ ...card, [key]: val });
   const updateMulti = (obj) => onChange({ ...card, ...obj });
+  const addOverlay = (overlay) => {
+    const overlayIdx = (card.overlays || []).length;
+    if (overlay.applyToAll && onApplyOverlayToAll) {
+      onApplyOverlayToAll(overlayIdx, overlay);
+      return;
+    }
+    update("overlays", [...(card.overlays || []), overlay]);
+  };
 
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
   useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
@@ -4348,7 +4628,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 12, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: `1px solid ${T.border}` } },
                 React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-                    React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+                    React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
                     React.createElement("div", { onClick: () => { updateOverlay1(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
                       React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                         React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -4370,7 +4650,11 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 ),
                 React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlay1(oi, { image: v }), maxMb: 5 }),
                 ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-                  React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+                  React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, resetOverlayProps(ov)) }),
+                  ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+                    LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlay1(oi, { x, y }) }, label))
+                  ),
+                  ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlay1(oi, props) }),
                   React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { x: v }) }),
                   React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { y: v }) }),
                   React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlay1(oi, { scale: v }), suffix: '%' }),
@@ -4379,7 +4663,13 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               )),
             ),
             React.createElement("button", {
-              onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
+              onClick: () => addOverlay(createLogoOverlay()),
+              style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
+              onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; },
+              onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; },
+            }, "+ 로고 추가"),
+            React.createElement("button", {
+              onClick: () => addOverlay(createImageOverlay()),
               style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s', marginTop: 4 },
               onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
               onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -4402,7 +4692,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
 /* ── JSON Modal ── */
 
 /* ── PreviewModal ── */
-function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating }) {
+function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onOpenCardSelect, generating, projectSourceType = 'youtube' }) {
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const scrollRef = useRef(null);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -4479,7 +4769,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
           style: { flex: '0 0 ' + cardSlotW + 'px', width: cardSlotW, display: 'flex', justifyContent: 'center', alignItems: 'center', scrollSnapAlign: 'center', padding: '0 20px' }
         },
           React.createElement("div", { style: { position: 'relative', borderRadius: 10, overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' } },
-            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m) }),
+            React.createElement(CardPreview, { card: pvc, globalUrl, aspectRatio, globalBgImage, previewWidth: previewW, showVideo: i === currentIdx, mountVideo: i === currentIdx, onVideoReady: () => setVideoReady(prev => ({ ...prev, [i]: true })), externalMuted: previewMuted, onMuteToggle: () => setPreviewMuted(m => !m), projectSourceType }),
             showSpinner && React.createElement("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)', zIndex: 5, gap: 10 } },
               React.createElement("div", { className: 'preview-spinner' }),
               React.createElement("span", { style: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } }, "\uC601\uC0C1 \uB85C\uB529 \uC911...")
@@ -4532,7 +4822,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
   );
 }
 
-function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat }) {
+function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, onGenerate, outputSize, outputFormat, projectSourceType = 'youtube' }) {
   const url = globalUrl || cards[0]?.url || '';
   const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
   const cardDisabled = (c) => !cardIsImageBg(c) && (!c.appliedStart || !c.appliedEnd);
@@ -4580,7 +4870,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
           cards.map((card, i) => {
             const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
             const disabled = cardDisabled(card);
-            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl });
+            const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType });
             const isCached = card.lastGenHash && card.lastGenHash === currentHash;
             const hasFile = isCached && !!card.lastGenKey;
             const isModified = card.lastGenHash && card.lastGenHash !== currentHash;
@@ -4589,7 +4879,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor: disabled ? 'not-allowed' : 'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: disabled ? 0.4 : (selected[i] ? 1 : 0.45), transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false, projectSourceType }),
               // Disabled overlay + badge for unselected segment
               disabled && React.createElement("div", { style: { position:'absolute', inset:0, background:'rgba(220,38,38,0.18)', display:'flex', alignItems:'center', justifyContent:'center' } },
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
@@ -4609,7 +4899,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       ),
       // Footer: generate button
       (() => {
-        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+        const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType };
         let cachedCount = 0, modifiedCount = 0, newCount = 0;
         selected.forEach((s, i) => {
           if (!s) return;
@@ -4628,7 +4918,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
         }
         return React.createElement("div", { style: { padding:'16px 20px', paddingBottom:'max(20px, env(safe-area-inset-bottom, 20px))', borderTop:`1px solid ${T.border}`, display:'flex', justifyContent:'flex-end' } },
           React.createElement("button", {
-            onClick: () => { onClose(); onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
+            onClick: () => { onGenerate(selected.map((s, i) => s ? i : -1).filter(i => i >= 0)); },
             disabled: noneSelected,
             style: { padding:'10px 28px', background: noneSelected ? T.surfaceHover : T.success, color: noneSelected ? T.textMuted : '#fff', borderRadius:T.radiusPill, border:'none', fontSize:14, fontWeight:600, cursor: noneSelected ? 'not-allowed' : 'pointer', boxShadow: noneSelected ? 'none' : '0 2px 8px rgba(34,197,94,0.3)', transition:'all 0.2s' }
           }, btnLabel),
@@ -4849,6 +5139,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   name,
   globalUrl: '',
   outputFormat: 'video',
+  outputFormatTouched: false,
   outputSize: 1080,
   aspectRatio: '1:1',
   globalImageSource: 'thumbnail',
@@ -4861,13 +5152,33 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
 });
 
+function normalizeLoadedProject(project) {
+  if (!project) return project;
+  return {
+    ...project,
+    cards: (project.cards || []).map(card => {
+      if (
+        card &&
+        card.bodySize === 40 &&
+        card.body === '본문 내용을 입력하세요' &&
+        card.sourceType !== 'article'
+      ) {
+        return { ...card, bodySize: 44 };
+      }
+      return card;
+    }),
+  };
+}
+
 function loadProjects() {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data.projects?.length > 0) return data;
+      if (data.projects?.length > 0) {
+        return { ...data, projects: data.projects.map(normalizeLoadedProject) };
+      }
     }
   } catch (e) {}
   return null;
@@ -4925,11 +5236,12 @@ function restoreDefaults(obj) {
   return { ...DEFAULT_CARD(), ...expanded };
 }
 
-const PROJ_DEFAULTS = { outputFormat: 'video', outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
+const PROJ_DEFAULTS = { outputFormat: 'video', outputFormatTouched: false, outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
 function encodeProject(project) {
   const s = { n: project.name, u: project.globalUrl };
   if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
+  if (project.outputFormatTouched) s.ot = 1;
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
@@ -4966,6 +5278,7 @@ function decodeProject(encoded) {
     name: s.n || '\uC0C8 \uD504\uB85C\uC81D\uD2B8',
     globalUrl: s.u || '',
     outputFormat: s.f || PROJ_DEFAULTS.outputFormat,
+    outputFormatTouched: !!s.ot,
     outputSize: s.s || PROJ_DEFAULTS.outputSize,
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
@@ -4982,14 +5295,14 @@ function decodeProject(encoded) {
   // (SKIP_CARD_KEYS로 uploadedImage가 인코드에서 제외되기 때문에 공유 URL에서는 항상 비어있음)
   if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
     proj.cards = proj.cards.map(c => {
-      if (c.sourceType !== 'article') return c;
+      const articleCard = { ...c, sourceType: 'article' };
       const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
         ? c.articleMeta.sourceImageIndex
         : null;
       if (idx !== null && idx >= 0 && idx < proj.sourceImages.length) {
-        return { ...c, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
+        return { ...articleCard, uploadedImage: proj.sourceImages[idx], fillSource: 'image' };
       }
-      return c;
+      return articleCard;
     });
   }
   return proj;
@@ -7060,6 +7373,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   // Tab content renderers
   const mobVideoUrl = card.url || globalUrl || '';
   const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
+  const renderImageAdjustControls = () => React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 } },
+    React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
+    React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "위아래", value: card.videoY ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoY", v), defaultValue: 0, suffix: '' }),
+    React.createElement(SliderRow, { label: "확대", value: card.videoScale ?? 100, min: 0, max: 400, step: 1, onChange: (v) => update("videoScale", v), defaultValue: 100, toSlider: zoomToSlider, fromSlider: zoomFromSlider }),
+    React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange }),
+  );
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
@@ -7106,6 +7427,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       onRegenerateAI: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
       regenerating: regeneratingCardIdx === activeIndex,
     }),
+    isArticleMode && (card.fillSource || 'video') === 'image' && card.uploadedImage && renderImageAdjustControls(),
   );
 
   const renderClipAdjustTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
@@ -7271,7 +7593,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
@@ -7299,12 +7621,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   };
 
   const updateOverlayMob = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
+  const addOverlayMob = (overlay) => { const overlayIdx = (card.overlays || []).length; if (overlay.applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(overlayIdx, overlay); } else { update("overlays", [...(card.overlays||[]), overlay]); } };
   const renderOverlayTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 400, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 10, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `이미지 ${oi + 1}`),
+            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
             React.createElement("div", { onClick: () => { updateOverlayMob(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -7326,7 +7649,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayMob(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
-          React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, { x: 50, y: 50, scale: 100, opacity: 1 }) }),
+          React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, resetOverlayProps(ov)) }),
+          ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+            LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayMob(oi, { x, y }) }, label))
+          ),
+          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayMob(oi, props) }),
           React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayMob(oi, { scale: v }), suffix: '%' }),
@@ -7335,7 +7662,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
+      onClick: () => addOverlayMob(createLogoOverlay()),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' },
+    }, "+ 로고 추가"),
+    React.createElement("button", {
+      onClick: () => addOverlayMob(createImageOverlay()),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
     }, "+ 이미지 추가"),
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange }),
@@ -7400,7 +7731,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     // Sticky preview — hidden if hidePreview
     !hidePreview && React.createElement("div", { ref: mobilePreviewRef, style: { position: 'sticky', top: 0, zIndex: 20, background: T.bg, paddingBottom: 8, display: 'flex', justifyContent: 'center' } },
       React.createElement("div", { key: 'mcp-' + previewResetKey, style: { display: 'flex', justifyContent: 'center' } },
-        React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle }),
+        React.createElement(CardPreview, { card: previewCard, globalUrl, aspectRatio, globalBgImage, previewWidth: Math.min(360, window.innerWidth - 32), showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle, projectSourceType: project?.sourceType }),
       ),
     ),
 
@@ -7802,7 +8133,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [18, 24, 32, 40] }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
@@ -7831,12 +8162,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Overlay Tab \u2500\u2500
   const updateOverlayDesk = (oi, props) => { const ov = (card.overlays || [])[oi] || {}; const willApply = ('applyToAll' in props) ? props.applyToAll : ov.applyToAll; if (willApply && onApplyOverlayToAll) { const isOn = props.applyToAll === true && !ov.applyToAll; onApplyOverlayToAll(oi, isOn ? { ...ov, ...props } : props); } else { const ovs = [...(card.overlays||[])]; ovs[oi] = {...ovs[oi], ...props}; update("overlays", ovs); } };
+  const addOverlayDesk = (overlay) => { const overlayIdx = (card.overlays || []).length; if (overlay.applyToAll && onApplyOverlayToAll) { onApplyOverlayToAll(overlayIdx, overlay); } else { update("overlays", [...(card.overlays||[]), overlay]); } };
   const renderOverlay = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement("div", { style: { maxHeight: 480, overflowY: 'auto' } },
       (card.overlays || []).map((ov, oi) => React.createElement("div", { key: oi, style: { marginBottom: 8, padding: 12, background: 'rgba(255,255,255,0.02)', borderRadius: T.radiusSm, border: selectedHandle === 'overlay-' + oi ? `1.5px solid ${T.accent}` : `1px solid ${T.border}` } },
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 } },
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `\uc774\ubbf8\uc9c0 ${oi + 1}`),
+            React.createElement("span", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 500 } }, `${ov.type === 'logo' ? '로고' : '이미지'} ${oi + 1}`),
             React.createElement("div", { onClick: () => { updateOverlayDesk(oi, { applyToAll: !ov.applyToAll }) }, style: { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' } },
               React.createElement("div", { style: { width: 24, height: 12, borderRadius: 6, background: ov.applyToAll ? T.accent : 'rgba(255,255,255,0.2)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 } },
                 React.createElement("div", { style: { width: 8, height: 8, borderRadius: '50%', background: '#fff', position: 'absolute', top: 2, left: ov.applyToAll ? 14 : 2, transition: 'left 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.3)' } })
@@ -7858,6 +8190,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         ),
         React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayDesk(oi, { image: v }), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
+          React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "이미지 조정", onReset: () => updateOverlayDesk(oi, resetOverlayProps(ov)) }),
+          ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
+            LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayDesk(oi, { x, y }) }, label))
+          ),
+          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayDesk(oi, props) }),
           React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayDesk(oi, { scale: v }), suffix: '%' }),
@@ -7866,7 +8203,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       )),
     ),
     React.createElement("button", {
-      onClick: () => update("overlays", [...(card.overlays||[]), { image: null, x: 50, y: 50, scale: 80, opacity: 1 }]),
+      onClick: () => addOverlayDesk(createLogoOverlay()),
+      style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.accent}`, borderRadius: T.radiusSm, background: 'rgba(99,102,241,0.08)', color: T.accent, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' },
+      onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.14)'; },
+      onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; },
+    }, "+ 로고 추가"),
+    React.createElement("button", {
+      onClick: () => addOverlayDesk(createImageOverlay()),
       style: { width: '100%', padding: '10px', border: `1.5px dashed ${T.border}`, borderRadius: T.radiusSm, background: 'transparent', color: T.textSecondary, fontSize: 12, cursor: 'pointer', transition: 'all 0.15s' },
       onMouseEnter: (e) => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.color = T.accent; },
       onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.textSecondary; },
@@ -7921,7 +8264,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             maxWidth: '100%',
           },
         },
-          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle })
+          React.createElement(CardPreview, { card: pvCard(card), globalUrl, aspectRatio, globalBgImage, previewWidth: 360, showVideo: !pausePreview, onTextClick: handlePreviewTextClick, onCardUpdate: (obj) => updateMulti(obj), selectedHandle, onSelectHandle: handleSelectHandle, onVideoReady: () => setVideoLoading(false), externalMuted, onMuteToggle, projectSourceType: project?.sourceType })
         ),
         React.createElement("div", { style: { fontSize: 10, color: T.textMuted, textAlign: 'center', marginTop: 4 } }, "\uC601\uC0C1 \uC81C\uBAA9\xB7\uAD11\uACE0 \uD45C\uC2DC \uB4F1\uC774 \uBCF4\uC77C \uC218 \uC788\uC9C0\uB9CC, \uC2E4\uC81C \uCE74\uB4DC\uC5D0\uB294 \uD3EC\uD568\uB418\uC9C0 \uC54A\uC544\uC694"),
       ),
@@ -7956,7 +8299,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               },
             },
               React.createElement("div", { style: { pointerEvents: 'none', width: '100%', height: '100%' } },
-                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false })
+                React.createElement(CardPreview, { card: pvCard(c), globalUrl, aspectRatio, globalBgImage, previewWidth: 38, showVideo: false, mountVideo: false, projectSourceType: project?.sourceType })
               )
             ))
           ),
@@ -8317,7 +8660,7 @@ export default function App() {
       setCards(cs => cs.map(c => ({ ...c, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null })));
     }
   };
-  const setOutputFormat = (v) => updateProject({ outputFormat: v });
+  const setOutputFormat = (v) => updateProject({ outputFormat: v, outputFormatTouched: true });
   const setOutputSize = (v) => updateProject({ outputSize: v });
   const setAspectRatio = (v) => updateProject({ aspectRatio: v });
   const setGlobalImageSource = (v) => updateProject({ globalImageSource: v });
@@ -8330,7 +8673,13 @@ export default function App() {
     }));
   };
 
-  const updateCard = (i, c) => setCards(p => p.map((x, j) => j === i ? c : x));
+  const updateCard = (i, c) => setCards(p => p.map((x, j) => {
+    if (j !== i) return x;
+    if (x?.uploadedImage !== c?.uploadedImage || (x?.fillSource || 'video') !== (c?.fillSource || 'video')) {
+      return clearGeneratedCache(c);
+    }
+    return c;
+  }));
   const removeCard = (i) => { const c = cards[i]; if (c && c.lastGenKey) { fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`, { method: 'DELETE' }).catch(() => {}); } setCards(p => p.filter((_, j) => j !== i)); };
   const duplicateCard = (i) => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => { const n = [...p]; n.splice(i+1, 0, { ...p[i], id: Date.now() + Math.random(), lastGenHash: undefined, lastGenKey: undefined }); return n; }); setActiveCardIdx(i + 1); };
   const addCard = () => { if (cards.length >= MAX_CARDS) { setAlertMsg(`카드는 최대 ${MAX_CARDS}개까지 추가할 수 있습니다.`); return; } setCards(p => [...p, { ...DEFAULT_CARD(), url: globalUrl || "" }]); setActiveCardIdx(cards.length); };
@@ -8339,7 +8688,7 @@ export default function App() {
   const applyOverlayToAll = (overlayIdx, props) => {
     setCards(prev => prev.map(card => {
       const ovs = [...(card.overlays || [])];
-      while (ovs.length <= overlayIdx) ovs.push({ image: null, x: 50, y: 50, scale: 80, opacity: 1 });
+      while (ovs.length <= overlayIdx) ovs.push(createImageOverlay());
       ovs[overlayIdx] = { ...ovs[overlayIdx], ...props };
       return { ...card, overlays: ovs };
     }));
@@ -8437,8 +8786,10 @@ export default function App() {
 
   const buildConfig = (card) => {
     const c = effectiveCard(card);
+    const isArticle = isArticleCard(c) || activeProject?.sourceType === 'article';
+    const articlePhotoArea = isArticle && usesArticlePhotoArea({ ...c, sourceType: 'article' });
     return {
-      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: c.photoRatio,
+      start: c.appliedStart || c.start, end: c.appliedEnd || c.end, layout: c.layout, photo_ratio: (c.photoRatio ?? 50) / 100,
       video_fill: c.videoFill || 'full',
       title: c.title, title_size: c.titleSize, title_font: c.titleFont, title_color: c.titleColor,
       subtitle: c.subtitle, subtitle_size: c.subtitleSize, subtitle_font: c.subtitleFont, subtitle_color: c.subtitleColor,
@@ -8449,6 +8800,8 @@ export default function App() {
       aspect_ratio: aspectRatio,
       fill_source: c.fillSource || 'video',
       image_source: c.fillSource === 'image' ? 'upload' : 'thumbnail',
+      source_type: isArticle ? 'article' : (c.sourceType || 'youtube'),
+      ...(isArticle ? { image_fit: 'cover', image_area: articlePhotoArea ? 'photo' : 'full' } : {}),
       ...(c.url && c.url !== globalUrl ? { url: c.url } : {}),
       ...(c.captureTime ? { capture_time: c.captureTime } : {}),
     };
@@ -8477,6 +8830,15 @@ export default function App() {
     // Check if card uses image background (uploadedImage, fillSource=image, or no URL with globalBgImage)
     const cardIsImageBg = (c) => !!c.uploadedImage || (c.fillSource || 'video') === 'image' || (!url && !c.url && !!globalBgImage);
     const allImageBg = indices.every(i => cardIsImageBg(cards[i]));
+    const hasVideoCards = indices.some(i => !cardIsImageBg(cards[i]));
+    const effectiveOutputFormat = (
+      hasVideoCards &&
+      outputFormat !== 'video' &&
+      activeProject?.outputFormatTouched !== true
+    ) ? 'video' : outputFormat;
+    if (effectiveOutputFormat !== outputFormat) {
+      updateProject({ outputFormat: effectiveOutputFormat, outputFormatTouched: false });
+    }
 
     // URL validation: only required if at least one card needs video
     if (!allImageBg) {
@@ -8493,7 +8855,7 @@ export default function App() {
         // Image card: check uploaded image exists
         if (!c.uploadedImage && !globalBgImage) { errors.push(`\uCE74\uB4DC ${i + 1}: \uBC30\uACBD \uC774\uBBF8\uC9C0\uB97C \uC5C5\uB85C\uB4DC\uD574\uC8FC\uC138\uC694.`); continue; }
         // For MP4 output: only check duration (end > start) if times are provided
-        if (outputFormat === 'video' && c.start && c.end) {
+        if (effectiveOutputFormat === 'video' && c.start && c.end) {
           const ss = parseTime(c.start), es = parseTime(c.end);
           if (ss != null && es != null && es <= ss) { errors.push(`\uCE74\uB4DC ${i + 1}: \uC885\uB8CC \uC2DC\uAC04\uC774 \uC2DC\uC791\uBCF4\uB2E4 \uBE68\uB77C\uC694.`); continue; }
         }
@@ -8511,7 +8873,7 @@ export default function App() {
     if (errors.length) { setAlertMsg(errors.join('\n')); return; }
 
     // 캐시된 카드 vs 새로 생성할 카드 분리
-    const hashCfg = { aspectRatio, outputSize, outputFormat, globalUrl };
+    const hashCfg = { aspectRatio, outputSize, outputFormat: effectiveOutputFormat, globalUrl, globalBgImage, sourceType: activeProject?.sourceType };
     const cachedIndices = [];
     const newIndices = [];
     for (const i of indices) {
@@ -8522,6 +8884,7 @@ export default function App() {
     }
 
     const targetCards = indices.map(i => cards[i]);
+    setShowCardSelect(false);
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
       // 캐시된 카드: presigned URL 즉시 획득
@@ -8563,15 +8926,22 @@ export default function App() {
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
       if (activeProject) {
-        const encoded = encodeProject(activeProject);
         try {
-          const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
-          if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
-        } catch (_) {}
-        if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          const projectForShare = effectiveOutputFormat === outputFormat
+            ? activeProject
+            : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
+          const encoded = encodeProject(projectForShare);
+          try {
+            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+            if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
+          } catch (_) {}
+          if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+        } catch (shareErr) {
+          console.warn('[generate] project share link skipped:', shareErr);
+        }
       }
       const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, outputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
+        body: JSON.stringify({ url, outputFormat: effectiveOutputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
           backgroundData: card.uploadedImage
@@ -8763,13 +9133,13 @@ export default function App() {
           card.layout = 'photo_top';
           card.useGradient = true;
           // photoRatio = 본문 길이에 따라 동적. 간단형(본문 없음) 60, 상세형은 본문 줄 수만큼 텍스트 영역 확장.
-          // 가정: 카드 H=1080, titleSize 72 · bodySize 40, 한 줄 ~22자, line-height 1.55
+          // 가정: 카드 H=1080, titleSize 72 · bodySize 44, 한 줄 ~20자, line-height 1.55
           if (card.useBody) {
             const titleLines = Math.max(1, (h.title || '').split('\n').length);
             const bodyLen = (h.body || '').trim().length;
-            const bodyLines = Math.max(1, Math.ceil(bodyLen / 22));
+            const bodyLines = Math.max(1, Math.ceil(bodyLen / 20));
             const titleH = titleLines * 72 * 1.25;
-            const bodyH = bodyLines * 40 * 1.55;
+            const bodyH = bodyLines * 44 * 1.55;
             const padding = 120;
             const textRatio = Math.min(0.55, Math.max(0.35, (titleH + bodyH + padding) / 1080));
             card.photoRatio = Math.round((1 - textRatio) * 100);
@@ -8783,7 +9153,7 @@ export default function App() {
           card.bodyColor = '#d2d2d2';
           card.titleSize = 72;
           card.subtitleSize = 44;
-          card.bodySize = 40;
+          card.bodySize = 44;
           card.titleAlign = 'left';
           card.subtitleAlign = 'left';
           card.bodyAlign = 'left';
@@ -8793,9 +9163,22 @@ export default function App() {
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
           if (p.id !== targetId) return p;
-          // outputFormat 명시: 텍스트 위저드(9090)는 'image'로 박는데 영상 위저드는 명시 안 해서
-          // 이전 텍스트 위저드 잔재 'image'가 남으면 영상 카드도 jpg로 나가던 비대칭 버그 수정.
-          return { ...p, globalUrl: _url, aspectRatio: _aspectRatio, cards: newCards, copyTone: wd.copyTone || wizardData.copyTone || 'hooking', transcript: _transcript || '', videoTitle: videoInfo?.title || '', outputFormat: 'video' };
+          return {
+            ...p,
+            sourceType: 'youtube',
+            sourceUrl: '',
+            sourceTitle: '',
+            sourceImages: [],
+            globalUrl: _url,
+            aspectRatio: _aspectRatio,
+            outputFormat: 'video',
+            outputFormatTouched: false,
+            globalBgImage: null,
+            cards: newCards,
+            copyTone: wd.copyTone || wizardData.copyTone || 'hooking',
+            transcript: _transcript || '',
+            videoTitle: videoInfo?.title || '',
+          };
         }));
         setActiveProjectId(targetId);
         setAiEditRunning(false); setAiEditTargetId(null);
@@ -8826,8 +9209,19 @@ export default function App() {
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
-        // outputFormat 명시 — 위 영상 위저드와 같은 이유로 'video' 박아둠.
-        return { ...p, globalUrl: wizardData.url, aspectRatio: wizardData.aspectRatio, cards: newCards, outputFormat: 'video' };
+        return {
+          ...p,
+          sourceType: 'youtube',
+          sourceUrl: '',
+          sourceTitle: '',
+          sourceImages: [],
+          globalUrl: wizardData.url,
+          aspectRatio: wizardData.aspectRatio,
+          outputFormat: 'video',
+          outputFormatTouched: false,
+          globalBgImage: null,
+          cards: newCards,
+        };
       }));
       setActiveProjectId(targetId);
       setTimeout(() => {
@@ -8853,7 +9247,7 @@ export default function App() {
     setProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
-      newCards[cardIdx] = {
+      newCards[cardIdx] = clearGeneratedCache({
         ...target,
         uploadedImage: nextSrc,
         fillSource: 'image',
@@ -8862,7 +9256,7 @@ export default function App() {
           aiImageSource: 'article',
           sourceImageIndex: nextIdx,
         },
-      };
+      });
       return { ...p, cards: newCards };
     }));
   };
@@ -8876,7 +9270,7 @@ export default function App() {
     setProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
-      newCards[cardIdx] = {
+      newCards[cardIdx] = clearGeneratedCache({
         ...target,
         uploadedImage: imgSrc,
         fillSource: 'image',
@@ -8885,7 +9279,7 @@ export default function App() {
           aiImageSource: 'article',
           sourceImageIndex: imgIdx,
         },
-      };
+      });
       return { ...p, cards: newCards };
     }));
     setGalleryCardIdx(null);
@@ -8933,7 +9327,7 @@ export default function App() {
         if (p.id !== proj.id) return p;
         const newCards = [...(p.cards || [])];
         const prevCard = newCards[cardIdx];
-        newCards[cardIdx] = {
+        newCards[cardIdx] = clearGeneratedCache({
           ...prevCard,
           uploadedImage: json.url,
           fillSource: 'image',
@@ -8947,7 +9341,7 @@ export default function App() {
             aiImageError: null,
             stylePresetId: presetId,  // 선택한 스타일 저장 (다음 재생성 시 기본값)
           },
-        };
+        });
         return { ...p, cards: newCards };
       }));
       // 성공 시 모달 닫기
@@ -9091,6 +9485,7 @@ export default function App() {
           globalUrl: '',
           aspectRatio: wizardData.aspectRatio || '1:1',
           outputFormat: 'image',
+          outputFormatTouched: false,
           cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
           copyTone: wizardData.copyTone || 'hooking',
           videoTitle: doneData.sourceTitle || '',
@@ -9463,7 +9858,7 @@ export default function App() {
           )
         : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', paddingBottom: 4, gap: 4 } },
             React.createElement("div", { key: 'mob-prev-' + editorResetKey, style: { display: 'flex', justifyContent: 'center' } },
-              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced) }),
+              React.createElement(CardPreview, { card: cards[activeCardIdx], globalUrl, aspectRatio, globalBgImage, previewWidth: mobilePreviewExpanded ? Math.min(window.innerWidth - 32, 480) : Math.min(200, window.innerWidth - 32), showVideo: !(showPreview || editorSilenced), projectSourceType: activeProject?.sourceType }),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%' } },
               React.createElement("button", {
@@ -9601,8 +9996,8 @@ export default function App() {
     }),
 
     showJson && React.createElement(JsonModal, { json: jsonStr, onClose: () => setShowJson(false) }),
-    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating }),
-    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat }),
+    showPreview && React.createElement(PreviewModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: closePreviewModal, onOpenCardSelect: () => { setShowPreview(false); setShowCardSelect(true); setEditorPreviewMuted(true); }, generating, projectSourceType: activeProject?.sourceType }),
+    showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat, projectSourceType: activeProject?.sourceType }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
       onDownloadAll: handleDownloadAll,

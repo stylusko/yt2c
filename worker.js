@@ -5,6 +5,7 @@ const crypto = require('crypto');
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
+const ARTICLE_IMAGE_CACHE_VERSION = 'v2';
 
 // Parse Redis URL
 const redisConfig = new URL(redisUrl);
@@ -104,7 +105,7 @@ const worker = new Worker('video-generation', async (job) => {
         const { fileExists, getDownloadUrl, uploadBuffer } = await import('./lib/bucket.js');
         const urlHash = crypto.createHash('md5').update(backgroundData).digest('hex');
         const urlExt = (backgroundData.match(/\.(png|webp|gif)/i)?.[1] || 'jpg').toLowerCase();
-        const cacheKey = `article-images/${urlHash}.${urlExt}`;
+        const cacheKey = `article-images/${ARTICLE_IMAGE_CACHE_VERSION}/${urlHash}.${urlExt}`;
 
         let imgBuffer = null;
         let imgContentType = 'image/jpeg';
@@ -123,16 +124,16 @@ const worker = new Worker('video-generation', async (job) => {
           }
         }
 
-        // 캐시 미스 → 외부 fetch (direct → proxy 폴백) 후 버킷에 저장
+        // 캐시 미스 → 외부 fetch (direct → proxy → curl → browser screenshot 폴백) 후 버킷에 저장
         // Railway outbound IP가 막힌 CDN(예: ceoimg.cdn.baemin.com)은 direct에서 403을
         // 돌려보내므로 fetchDirectThenProxy로 proxy 재시도. PR #107의 API 측 fix와 같은 패턴.
         if (!imgBuffer) {
           console.log(`[${jobId}] Fetching external background URL for card ${cardIdx}`);
           try {
-            const { fetchDirectThenProxy } = await import('./lib/article-extractor.js');
+            const { fetchImageBufferDirectThenProxy } = await import('./lib/article-extractor.js');
             const fallbackReferer = (() => { try { return new URL(backgroundData).origin + '/'; } catch { return ''; } })();
             const referer = bgSourceUrl || fallbackReferer;
-            const resp = await fetchDirectThenProxy(backgroundData, {
+            const fetched = await fetchImageBufferDirectThenProxy(backgroundData, {
               headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
                 'Referer': referer,
@@ -140,8 +141,8 @@ const worker = new Worker('video-generation', async (job) => {
               },
               timeout: 30000,
             }, `[${jobId}] background ${backgroundData}`);
-            imgBuffer = Buffer.from(await resp.arrayBuffer());
-            imgContentType = (resp.headers.get('content-type') || 'image/jpeg').split(';')[0].trim();
+            imgBuffer = fetched.buffer;
+            imgContentType = fetched.contentType;
             // 버킷에 캐싱 (실패해도 진행)
             uploadBuffer(cacheKey, imgBuffer, imgContentType).catch(e =>
               console.warn(`[${jobId}] Bucket cache upload failed: ${e.message}`)
@@ -151,10 +152,9 @@ const worker = new Worker('video-generation', async (job) => {
           }
         }
 
-        // 이미지 취득 실패 시 1×1 검정 PNG 폴백 (카드는 정상 생성, 배경만 검정)
+        // 이미지 취득 실패 시 초록 placeholder를 깔지 말고 실패로 노출한다.
         if (!imgBuffer) {
-          imgBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-          imgContentType = 'image/png';
+          throw new Error(`Background image fetch failed: ${backgroundData}`);
         }
 
         bgData = `data:${imgContentType};base64,${imgBuffer.toString('base64')}`;
