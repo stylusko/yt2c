@@ -4,6 +4,7 @@ import {
   estimateArticleBodyLines,
   fitArticleBodyToFourLines,
   normalizeArticleSourceNames,
+  parseArticleCardsResponse,
   parseClaudeJsonObject,
 } from '../lib/claude.js';
 
@@ -54,6 +55,26 @@ const looseJson = `Here is the JSON:
 const parsedLooseJson = parseClaudeJsonObject(looseJson);
 assert.equal(parsedLooseJson.title, '테스트');
 assert.equal(parsedLooseJson.cards[0].imageStrategy, 'reuse');
+
+const fallbackCard = {
+  type: 'cover',
+  headline: 'fallback 카드',
+  subtext: '배열 응답도 복구',
+  body: '',
+  imageStrategy: 'generate',
+  imagePrompt: 'editorial scene, no text',
+};
+
+const parsedArrayCards = parseArticleCardsResponse(JSON.stringify([fallbackCard]), 'fallback 제목');
+assert.equal(parsedArrayCards.title, 'fallback 제목');
+assert.equal(parsedArrayCards.cards[0].headline, fallbackCard.headline);
+
+const parsedNestedCards = parseArticleCardsResponse(JSON.stringify({
+  projectTitle: '중첩 응답',
+  payload: { slides: [fallbackCard] },
+}));
+assert.equal(parsedNestedCards.title, '중첩 응답');
+assert.equal(parsedNestedCards.cards[0].subtext, fallbackCard.subtext);
 
 assert.throws(
   () => parseClaudeJsonObject('{ "title": "깨진 응답", '),
