@@ -8,14 +8,14 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0603';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const RECENT_FEATURES = [
-  '📋 카드 스타일 복사 — 그룹 선택 붙여넣기와 textBox 캐시 반영',
+  '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
   '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
   '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
   '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
@@ -7285,13 +7285,23 @@ const MOBILE_TABS = [
 ];
 
 function StyleClipboardBar({ cards, aspectRatio, globalUrl, globalBgImage, project, clipboard, pasteMode, selectedGroups, selectedTargetIds, onStartPaste, onClose, onToggleGroup, onToggleTarget, onSelectAll, onPaste, onCancelPaste }) {
+  useEffect(() => {
+    if (!pasteMode) return undefined;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && onCancelPaste) onCancelPaste();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pasteMode, onCancelPaste]);
+
   if (!clipboard) return null;
-  const sourceIdx = cards.findIndex(c => c.id === clipboard.sourceCardId);
+  const safeCards = cards || [];
+  const sourceIdx = safeCards.findIndex(c => c.id === clipboard.sourceCardId);
   const sourceNo = (sourceIdx >= 0 ? sourceIdx : clipboard.sourceIndex) + 1;
-  const selectableCards = cards.filter(c => c.id !== clipboard.sourceCardId);
+  const selectableCards = safeCards.filter(c => c.id !== clipboard.sourceCardId);
   const selectedCount = selectedTargetIds.length;
   const allSelected = selectableCards.length > 0 && selectableCards.every(c => selectedTargetIds.includes(c.id));
-  const thumbSize = 42;
+  const thumbSize = 58;
   const thumbW = (() => { const [tw, th] = (aspectRatio || '1:1').split(':').map(Number); const w = tw || 1, h = th || 1; return w >= h ? thumbSize : Math.round(thumbSize * w / h); })();
   const thumbH = (() => { const [tw, th] = (aspectRatio || '1:1').split(':').map(Number); const w = tw || 1, h = th || 1; return h >= w ? thumbSize : Math.round(thumbSize * h / w); })();
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
@@ -7306,34 +7316,41 @@ function StyleClipboardBar({ cards, aspectRatio, globalUrl, globalBgImage, proje
     cursor: 'pointer',
     whiteSpace: 'nowrap',
   });
-  return React.createElement('div', {
-    style: { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.28)', borderRadius: T.radius, padding: 12, display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 8px 20px rgba(0,0,0,0.14)' },
+  const pastePopup = pasteMode && React.createElement('div', {
+    onClick: onCancelPaste,
+    style: { position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(4,8,20,0.58)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
   },
-    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-      React.createElement('span', { style: { flex: 1, minWidth: 180, color: T.text, fontSize: 13, fontWeight: 700 } }, pasteMode ? `📋 ${sourceNo}번 스타일 복사됨 — 붙일 카드 고르기` : `📋 ${sourceNo}번 카드 스타일 복사됨`),
-      !pasteMode && React.createElement('button', { onClick: onStartPaste, disabled: selectableCards.length === 0, style: { padding: '6px 10px', borderRadius: T.radiusSm, border: 'none', background: selectableCards.length === 0 ? 'rgba(255,255,255,0.06)' : T.accent, color: selectableCards.length === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, '붙여넣기 모드'),
-      React.createElement('button', { onClick: onClose, title: '복사 상태 지우기', style: { width: 28, height: 28, borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, cursor: 'pointer', fontSize: 14 } }, '✕'),
-    ),
-    pasteMode && React.createElement(React.Fragment, null,
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } },
-        React.createElement('span', { style: { fontSize: 12, color: T.textMuted, marginRight: 2 } }, '무엇을:'),
-        React.createElement('button', { onClick: () => onToggleGroup('all'), style: chipStyle(groupActive('all')) }, '전체'),
-        STYLE_COPY_GROUPS.map(group => React.createElement('button', { key: group.id, onClick: () => onToggleGroup(group.id), style: chipStyle(groupActive(group.id)) }, group.shortLabel))
+    React.createElement('div', {
+      onClick: (e) => e.stopPropagation(),
+      style: { width: 'min(620px, 100%)', maxHeight: 'min(78vh, 640px)', overflow: 'hidden', background: T.surfaceElevated || T.surface, border: '1px solid rgba(99,102,241,0.34)', borderRadius: T.radiusLg || 14, boxShadow: '0 24px 70px rgba(0,0,0,0.46)', display: 'flex', flexDirection: 'column' },
+    },
+      React.createElement('div', { style: { padding: '14px 16px 12px', borderBottom: '1px solid ' + T.border, display: 'flex', alignItems: 'flex-start', gap: 10 } },
+        React.createElement('div', { style: { flex: 1, minWidth: 0 } },
+          React.createElement('div', { style: { color: T.text, fontSize: 15, fontWeight: 800, marginBottom: 4 } }, `📋 ${sourceNo}번 스타일 붙여넣기`),
+          React.createElement('div', { style: { color: T.textMuted, fontSize: 12 } }, '붙여넣을 스타일 그룹과 대상 카드를 고르세요.')
+        ),
+        React.createElement('button', { onClick: onCancelPaste, title: '닫기', style: { width: 30, height: 30, borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, cursor: 'pointer', fontSize: 15 } }, '✕')
       ),
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
-        React.createElement('button', { onClick: onSelectAll, disabled: selectableCards.length === 0, style: { padding: '7px 10px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: selectableCards.length === 0 ? T.textMuted : T.textSecondary, fontSize: 12, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, allSelected ? '선택 해제' : '전체 선택'),
-        React.createElement('button', { onClick: onPaste, disabled: selectedCount === 0, style: { padding: '7px 12px', borderRadius: T.radiusSm, border: 'none', background: selectedCount === 0 ? 'rgba(255,255,255,0.08)' : T.accent, color: selectedCount === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectedCount === 0 ? 'not-allowed' : 'pointer' } }, `✓ ${selectedCount}장에 붙여넣기`),
-        React.createElement('button', { onClick: onCancelPaste, style: { padding: '7px 10px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, fontSize: 12, cursor: 'pointer' } }, '취소'),
-      ),
-      React.createElement('div', { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 0 4px', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
-        cards.map((c, i) => {
+      React.createElement('div', { style: { padding: 16, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 } },
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } },
+          React.createElement('span', { style: { fontSize: 12, color: T.textMuted, marginRight: 2 } }, '무엇을:'),
+          React.createElement('button', { onClick: () => onToggleGroup('all'), style: chipStyle(groupActive('all')) }, '전체'),
+          STYLE_COPY_GROUPS.map(group => React.createElement('button', { key: group.id, onClick: () => onToggleGroup(group.id), style: chipStyle(groupActive(group.id)) }, group.shortLabel))
+        ),
+        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' } },
+          React.createElement('button', { onClick: onSelectAll, disabled: selectableCards.length === 0, style: { padding: '8px 11px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: selectableCards.length === 0 ? T.textMuted : T.textSecondary, fontSize: 12, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, allSelected ? '선택 해제' : '전체 선택'),
+          React.createElement('button', { onClick: onPaste, disabled: selectedCount === 0, style: { padding: '8px 13px', borderRadius: T.radiusSm, border: 'none', background: selectedCount === 0 ? 'rgba(255,255,255,0.08)' : T.accent, color: selectedCount === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectedCount === 0 ? 'not-allowed' : 'pointer' } }, `✓ ${selectedCount}장에 붙여넣기`),
+          React.createElement('button', { onClick: onCancelPaste, style: { padding: '8px 11px', borderRadius: T.radiusSm, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, fontSize: 12, cursor: 'pointer' } }, '취소'),
+        ),
+        React.createElement('div', { className: 'hide-scrollbar', style: { display: 'flex', gap: 9, overflowX: 'auto', padding: '2px 0 6px', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
+          safeCards.map((c, i) => {
           const isSource = c.id === clipboard.sourceCardId;
           const checked = selectedTargetIds.includes(c.id);
           return React.createElement('button', {
             key: c.id,
             disabled: isSource,
             onClick: () => !isSource && onToggleTarget(c.id),
-            style: { position: 'relative', width: thumbW + 10, minWidth: thumbW + 10, height: thumbH + 16, padding: 5, borderRadius: 7, border: '1px solid ' + (checked ? T.accent : isSource ? 'rgba(255,255,255,0.08)' : T.border), background: checked ? 'rgba(99,102,241,0.18)' : 'rgba(0,0,0,0.18)', opacity: isSource ? 0.45 : 1, cursor: isSource ? 'not-allowed' : 'pointer' },
+            style: { position: 'relative', width: thumbW + 14, minWidth: thumbW + 14, height: thumbH + 22, padding: 7, borderRadius: 8, border: '1px solid ' + (checked ? T.accent : isSource ? 'rgba(255,255,255,0.08)' : T.border), background: checked ? 'rgba(99,102,241,0.18)' : 'rgba(0,0,0,0.18)', opacity: isSource ? 0.45 : 1, cursor: isSource ? 'not-allowed' : 'pointer' },
             title: isSource ? '복사한 원본 카드' : `${i + 1}번 카드 선택`,
           },
             React.createElement('div', { style: { width: thumbW, height: thumbH, borderRadius: 4, overflow: 'hidden', pointerEvents: 'none' } },
@@ -7341,9 +7358,20 @@ function StyleClipboardBar({ cards, aspectRatio, globalUrl, globalBgImage, proje
             ),
             React.createElement('span', { style: { position: 'absolute', left: 4, top: 4, width: 18, height: 18, borderRadius: T.radiusPill, display: 'flex', alignItems: 'center', justifyContent: 'center', background: checked ? T.accent : isSource ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.58)', color: '#fff', fontSize: 11, fontWeight: 800, border: '1px solid rgba(255,255,255,0.35)' } }, checked ? '✓' : (i + 1)),
           );
-        })
+          })
+        )
       )
     )
+  );
+  return React.createElement(React.Fragment, null,
+    React.createElement('div', {
+      style: { background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.28)', borderRadius: T.radius, padding: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', boxShadow: '0 8px 20px rgba(0,0,0,0.14)' },
+    },
+      React.createElement('span', { style: { flex: 1, minWidth: 180, color: T.text, fontSize: 13, fontWeight: 700 } }, pasteMode ? `📋 ${sourceNo}번 스타일 붙여넣기 팝업 열림` : `📋 ${sourceNo}번 카드 스타일 복사됨`),
+      React.createElement('button', { onClick: onStartPaste, disabled: selectableCards.length === 0, style: { padding: '6px 10px', borderRadius: T.radiusSm, border: 'none', background: selectableCards.length === 0 ? 'rgba(255,255,255,0.06)' : T.accent, color: selectableCards.length === 0 ? T.textMuted : '#fff', fontSize: 12, fontWeight: 700, cursor: selectableCards.length === 0 ? 'not-allowed' : 'pointer' } }, pasteMode ? '팝업 보기' : '붙여넣기'),
+      React.createElement('button', { onClick: onClose, title: '복사 상태 지우기', style: { width: 28, height: 28, borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, cursor: 'pointer', fontSize: 14 } }, '✕')
+    ),
+    pastePopup
   );
 }
 
