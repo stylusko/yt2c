@@ -111,6 +111,34 @@ const LAYOUT_OPTIONS = [
   { id: "none", label: "\uD14D\uC2A4\uD2B8\uB9CC" },
 ];
 
+// 레이아웃 썸네일 클릭 시 updateMulti에 전달할 patch 생성.
+// text_box는 깨끗한 clean_box 프리셋 값으로 textBox* 필드 reset — 다른 레이아웃의
+// stale textBox* 값이 남아 "카드 전체 적용"으로 잘못 전파되는 버그 방지.
+const layoutClickPatch = (optId) => {
+  const isGrad = optId === 'gradient_bottom' || optId === 'gradient_top';
+  if (optId === 'text_box') {
+    return {
+      layout: 'text_box',
+      useGradient: false,
+      textBoxX: 50,
+      textBoxY: 55,
+      textBoxWidth: 85,
+      textBoxHeight: 0,
+      textBoxPadding: 24,
+      textBoxRadius: 16,
+      textBoxBgColor: '#000000',
+      textBoxBgOpacity: 0.55,
+      textBoxBorderColor: '#ffffff',
+      textBoxBorderWidth: 0,
+    };
+  }
+  return {
+    layout: optId === 'gradient_bottom' ? 'photo_top' : optId === 'gradient_top' ? 'photo_bottom' : optId,
+    useGradient: isGrad,
+    ...(isGrad ? { bgOpacity: 0.75 } : {}),
+  };
+};
+
 const ASPECT_OPTIONS = [
   { id: "1:1", label: "1:1", w: 1, h: 1, desc: "\uC778\uC2A4\uD0C0 \uD53C\uB4DC" },
   { id: "3:4", label: "3:4", w: 3, h: 4, desc: "\uB9B4\uC2A4\xB7\uC20F\uCE20" },
@@ -4485,7 +4513,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
           // 레이아웃
           React.createElement(Section, { title: "레이아웃" },
             React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'nowrap', overflowX: 'auto' } },
-              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
+              LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti(layoutClickPatch(opt.id)) }))
             ),
             // 카드 비율
             onAspectRatioChange && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 } },
@@ -7452,7 +7480,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti(layoutClickPatch(opt.id)) }))
       )
     ),
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -7992,7 +8020,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uB808\uC774\uC544\uC6C3"),
       React.createElement("div", { className: 'hide-scrollbar', style: { display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none' } },
-        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => { const isGrad = opt.id === 'gradient_bottom' || opt.id === 'gradient_top'; updateMulti({ layout: opt.id === 'gradient_bottom' ? 'photo_top' : opt.id === 'gradient_top' ? 'photo_bottom' : opt.id, useGradient: isGrad, ...(isGrad ? { bgOpacity: 0.75 } : {}) }); } }))
+        LAYOUT_OPTIONS.map(opt => React.createElement(LayoutThumb, { key: opt.id, type: opt.id, label: opt.label, active: opt.id === 'gradient_bottom' ? (card.layout === 'photo_top' && card.useGradient === true) : opt.id === 'gradient_top' ? (card.layout === 'photo_bottom' && card.useGradient === true) : opt.id === 'photo_top' ? (card.layout === 'photo_top' && !card.useGradient) : opt.id === 'photo_bottom' ? (card.layout === 'photo_bottom' && !card.useGradient) : card.layout === opt.id, onClick: () => updateMulti(layoutClickPatch(opt.id)) }))
       ),
     ),
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
