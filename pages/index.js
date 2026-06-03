@@ -6,20 +6,20 @@ import JSZip from 'jszip';
 import LZString from 'lz-string';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0521';
-const BUILD_NUM = 10; // same-day deploy count
+const BUILD_DATE = '2026.0603';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const RECENT_FEATURES = [
+  '🧩 텍스트 카드 분할 — Claude 응답 카드 배열 파싱 안정화',
   '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
   '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
   '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
   '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
   '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
   '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
-  'AI 위저드 카피톤 선택 단계 분리',
 ];
 
 /* ── Icons ── */
