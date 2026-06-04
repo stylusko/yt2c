@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0603';
+const BUILD_DATE = '2026.0604';
 const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
@@ -15,42 +15,13 @@ const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const RECENT_FEATURES = [
+  '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
+  '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
   '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
   '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
   '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
   '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
   '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
-  '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
-  '📰 텍스트 카드 생성 안정화 — AI 응답 JSON 파싱 오류를 구조화 응답으로 방지',
-  '🖼️ 로고/이미지 오버레이 기본 레이어 — 새로 추가한 오버레이가 레이아웃 위에 표시',
-  '📝 아티클 본문 4줄 제한 — 텍스트 카드 본문이 넘치거나 문장 중간에서 끊기는 문제 완화',
-  '🧭 분리형 프리뷰 스케일 일치 — 쉬운/자유편집 출력과 같은 사진 영역 기준으로 렌더링',
-  '🔗 공유 링크 저장 fallback — Supabase 장애 시 Redis로 저장해 생성 흐름 유지',
-  '🧭 생성 팝업 전환 안정화 — 검증 실패 시 선택 팝업이 갑자기 닫히지 않도록 수정',
-  '♻️ 카드 배경 캐시 정확화 — AI/아티클 이미지 교체 후 이전 추출물이 재사용되지 않도록 수정',
-  '📨 텔레그램 완료 알림 표기 수정 — 실제 출력이 이미지면 이미지로 표시',
-  '🖼️ 아티클 이미지 위치 출력 일치 — 프리뷰에서 밀어 만든 검정 여백까지 최종 추출에 반영',
-  '🖼️ 아티클 이미지 스케일 출력 일치 — 프리뷰에서 줄인/올린 이미지 위치를 최종 추출에도 그대로 반영',
-  '🌐 배민 CDN 이미지 KR 프록시 재시도 — Railway 403 우회',
-  '♻️ 아티클 이미지 캐시 갱신 — 기존 초록 placeholder 캐시 무시',
-  '🧩 아티클 이미지 레이아웃 우선 — 분할 강제 없이 선택한 채우기 방식 적용',
-  '📱 모바일 아티클 이미지 조정 — 채우기 탭에 크기/위치 슬라이더 표시',
-  '🖼️ 아티클 이미지 출력 영역 일치 — 사진 영역만 프리뷰처럼 렌더링',
-  '🖼️ 아티클 이미지 출력 fit 일치 — 프리뷰처럼 cover/crop으로 최종 추출',
-  '🖼️ 아티클 이미지 browser navigation fallback — 이미지 URL 직접 열기까지 재시도',
-  '🖼️ 아티클 이미지 browser fallback — 서버 브라우저 스크린샷으로 차단 CDN 이미지 복구',
-  '🖼️ 아티클 이미지 curl fallback — Node fetch/프록시가 막힌 CDN도 worker에서 재시도',
-  '🖼️ 아티클 이미지 추출 안정화 — CDN 이미지 차단 시 프록시 재시도, 초록 placeholder 제거',
-  '🎬 MP4 인코딩 무한 길이 방지 — crop 필터가 선택 구간 길이에서 정확히 종료되도록 수정',
-  '🎬 하이브리드 프로젝트 영상 추출 복구 — 텍스트 프로젝트에 남은 영상 카드도 MP4로 생성',
-  '🎬 영상 생성 직전 출력 형식 재검증 — 저장된 프로젝트 상태가 이미지여도 영상 카드는 MP4로 생성',
-  '🎬 영상 카드 생성 복구 — 텍스트 모드 이후에도 영상 출력이 이미지로 바뀌지 않도록 수정',
-  '📝 영상 모드 "상세형" 옵션 — 제목 + 본문까지 AI가 자동 작성 (간단형/상세형 선택)',
-  '🎨 이미지 생성 모델 교체 — Fal Flux → OpenAI gpt-image-2 (한글 프롬프트 정상 인식)',
-  '🔧 AI 이미지 재생성 — 카드 한글 본문 대신 저장된 시각 묘사/사용자 입력만 사용',
-  '✏️ 본문 편집 — 위저드에서 추출한 본문을 직접 수정·삭제 후 카드화',
-  '📰 텍스트로 만들기 — 웹 아티클/본문을 카드뉴스로 자동 변환',
-  '홈 화면 4개 모드 (영상/텍스트/쉬운/자유) 재구성',
 ];
 
 /* ── Icons ── */
@@ -976,11 +947,87 @@ function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
   });
 }
 
+function isGeneratedArticleImageSource(src) {
+  return typeof src === 'string' && /^data:image\//i.test(src);
+}
+
+function cleanSourceImageMeta(meta) {
+  const out = {};
+  if (!meta || typeof meta !== 'object') return out;
+  if (meta.source) out.source = meta.source;
+  if (meta.prompt) out.prompt = meta.prompt;
+  if (meta.seed !== undefined && meta.seed !== null) out.seed = meta.seed;
+  if (meta.status) out.status = meta.status;
+  if (meta.stylePresetId) out.stylePresetId = meta.stylePresetId;
+  if (meta.errorCode) out.errorCode = meta.errorCode;
+  return out;
+}
+
+function normalizeProjectSourceImageMeta(images = [], metaList = []) {
+  const safeMeta = Array.isArray(metaList) ? metaList : [];
+  return (images || []).map((src, i) => {
+    const meta = safeMeta[i] && typeof safeMeta[i] === 'object' ? safeMeta[i] : {};
+    const source = meta.source || (isGeneratedArticleImageSource(src) ? 'ai' : 'article');
+    return cleanSourceImageMeta({ ...meta, source });
+  });
+}
+
+function getProjectSourceImageMeta(project, src, idx) {
+  const meta = project?.sourceImageMeta?.[idx] || {};
+  const source = meta.source || (isGeneratedArticleImageSource(src) ? 'ai' : 'article');
+  return cleanSourceImageMeta({ ...meta, source });
+}
+
+function buildArticleMetaForSource(prevMeta, project, src, idx) {
+  const sourceMeta = getProjectSourceImageMeta(project, src, idx);
+  const isAI = sourceMeta.source === 'ai';
+  return {
+    ...(prevMeta || {}),
+    aiImageSource: isAI ? 'ai' : 'article',
+    sourceImageIndex: idx,
+    ...(isAI ? {
+      aiImagePrompt: sourceMeta.prompt || prevMeta?.aiImagePrompt || null,
+      aiImageSeed: sourceMeta.seed ?? prevMeta?.aiImageSeed ?? null,
+      aiImageStatus: sourceMeta.status || 'ok',
+      aiImageError: null,
+      stylePresetId: sourceMeta.stylePresetId || prevMeta?.stylePresetId,
+    } : {}),
+  };
+}
+
+function addProjectSourceImage(project, src, meta) {
+  const sourceImages = [...(project?.sourceImages || [])];
+  const sourceImageMeta = normalizeProjectSourceImageMeta(sourceImages, project?.sourceImageMeta || []);
+  let idx = sourceImages.indexOf(src);
+  const cleanMeta = cleanSourceImageMeta({
+    source: meta?.source || (isGeneratedArticleImageSource(src) ? 'ai' : 'article'),
+    ...meta,
+  });
+  if (idx < 0) {
+    idx = sourceImages.length;
+    sourceImages.push(src);
+    sourceImageMeta.push(cleanMeta);
+  } else {
+    sourceImageMeta[idx] = cleanSourceImageMeta({ ...sourceImageMeta[idx], ...cleanMeta });
+  }
+  return { sourceImages, sourceImageMeta, sourceImageIndex: idx };
+}
+
+function sourceImageMetaFromCard(card, fallbackStyleId) {
+  const meta = card?.articleMeta || {};
+  return cleanSourceImageMeta({
+    source: 'ai',
+    prompt: meta.aiImagePrompt,
+    seed: meta.aiImageSeed,
+    status: meta.aiImageStatus || 'ok',
+    stylePresetId: meta.stylePresetId || fallbackStyleId,
+  });
+}
+
 /* ── Article Image Carousel ── (본문 썸네일 + AI 재생성 타일 통합 UI) */
 function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, regenerating }) {
   const images = project?.sourceImages || [];
   const meta = card?.articleMeta || {};
-  const isAI = meta.aiImageSource === 'ai';
   const selectedIdx = typeof meta.sourceImageIndex === 'number' ? meta.sourceImageIndex : -1;
 
   const thumbSize = 52;
@@ -1009,15 +1056,17 @@ function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, re
     },
   },
     images.map((src, i) => {
-      const active = !isAI && selectedIdx === i;
+      const imgMeta = getProjectSourceImageMeta(project, src, i);
+      const isAIThumb = imgMeta.source === 'ai';
+      const active = selectedIdx === i;
       return React.createElement("button", {
         key: i,
         onClick: () => onSelectImage && onSelectImage(src, i),
-        title: `본문 이미지 ${i+1}`,
+        title: `${isAIThumb ? 'AI 이미지' : '본문 이미지'} ${i+1}`,
         style: {
           ...baseThumbStyle,
-          border: active ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
-          boxShadow: active ? `0 0 0 2px rgba(99,102,241,0.15)` : 'none',
+          border: active ? `2px solid ${isAIThumb ? '#f97316' : T.accent}` : `1px solid ${isAIThumb ? 'rgba(249,115,22,0.42)' : T.border}`,
+          boxShadow: active ? `0 0 0 2px ${isAIThumb ? 'rgba(249,115,22,0.15)' : 'rgba(99,102,241,0.15)'}` : 'none',
         },
       },
         React.createElement("img", {
@@ -1026,6 +1075,7 @@ function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, re
           style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
           onError: (e) => { e.currentTarget.style.opacity = '0.3'; },
         }),
+        isAIThumb && React.createElement("span", { style: { position: 'absolute', top: 3, left: 3, background: 'rgba(194,65,12,0.9)', color: '#fff', fontSize: 8, lineHeight: 1, padding: '2px 4px', borderRadius: 4, fontWeight: 800 } }, "AI"),
       );
     }),
     React.createElement("button", {
@@ -1034,7 +1084,7 @@ function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, re
       title: 'AI 재생성',
       style: {
         ...baseThumbStyle,
-        border: isAI ? `2px solid #f97316` : `1px solid rgba(194,65,12,0.4)`,
+        border: meta.aiImageSource === 'ai' ? `2px solid #f97316` : `1px solid rgba(194,65,12,0.4)`,
         background: regenerating ? T.surfaceHover : 'rgba(194,65,12,0.15)',
         color: '#fdba74',
         cursor: regenerating ? 'wait' : 'pointer',
@@ -1045,7 +1095,7 @@ function ArticleImageCarousel({ card, project, onSelectImage, onRegenerateAI, re
         gap: 1,
         fontSize: 9,
         fontWeight: 700,
-        boxShadow: isAI ? `0 0 0 2px rgba(249,115,22,0.15)` : 'none',
+        boxShadow: meta.aiImageSource === 'ai' && selectedIdx < 0 ? `0 0 0 2px rgba(249,115,22,0.15)` : 'none',
       },
     },
       regenerating
@@ -5150,12 +5200,16 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceUrl: '',           // 기사 원본 URL
   sourceTitle: '',         // 기사 원본 제목
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
+  sourceImageMeta: [],      // sourceImages와 같은 인덱스의 출처 메타 ({ source:'article'|'ai', ... })
 });
 
 function normalizeLoadedProject(project) {
   if (!project) return project;
+  const sourceImages = Array.isArray(project.sourceImages) ? project.sourceImages : [];
   return {
     ...project,
+    sourceImages,
+    sourceImageMeta: normalizeProjectSourceImageMeta(sourceImages, project.sourceImageMeta),
     cards: (project.cards || []).map(card => {
       if (
         card &&
@@ -5251,6 +5305,7 @@ function encodeProject(project) {
   if (project.sourceUrl) s.r = project.sourceUrl;
   if (project.sourceTitle) s.h = project.sourceTitle;
   if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) s.m = project.sourceImages;
+  if (Array.isArray(project.sourceImageMeta) && project.sourceImageMeta.length > 0) s.q = normalizeProjectSourceImageMeta(project.sourceImages || [], project.sourceImageMeta);
   s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
@@ -5290,7 +5345,9 @@ function decodeProject(encoded) {
     sourceUrl: s.r || '',
     sourceTitle: s.h || '',
     sourceImages: Array.isArray(s.m) ? s.m.map(normalizeNaverImageUrl) : [],
+    sourceImageMeta: [],
   };
+  proj.sourceImageMeta = normalizeProjectSourceImageMeta(proj.sourceImages, s.q);
   // article 프로젝트: 각 카드의 uploadedImage를 sourceImages[sourceImageIndex]로 복원
   // (SKIP_CARD_KEYS로 uploadedImage가 인코드에서 제외되기 때문에 공유 URL에서는 항상 비어있음)
   if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
@@ -6715,7 +6772,7 @@ function ArticleGenerationLoadingScreen({ mob, status, onCancel }) {
 }
 
 /* ── Article Image Gallery Modal (본문 이미지 선택) ── */
-function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSelect, onClose }) {
+function ArticleImageGalleryModal({ mob, images, imageMeta = [], currentImage, sourceTitle, onSelect, onClose }) {
   const gridCols = mob ? 3 : 4;
   return React.createElement("div", {
     onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
@@ -6739,32 +6796,39 @@ function ArticleImageGalleryModal({ mob, images, currentImage, sourceTitle, onSe
         images.length === 0
           ? React.createElement("div", { style: { padding: 40, textAlign: 'center', color: T.textMuted, fontSize: 13 } }, "\uBCF8\uBB38\uC5D0\uC11C \uCD94\uCD9C\uB41C \uC774\uBBF8\uC9C0\uAC00 \uC5C6\uC5B4\uC694")
           : React.createElement("div", { style: { display: 'grid', gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 8 } },
-              images.map((src, i) => React.createElement("button", {
-                key: i,
-                onClick: () => onSelect(src, i),
-                style: {
-                  position: 'relative',
-                  aspectRatio: '1 / 1',
-                  padding: 0,
-                  background: T.bg,
-                  border: `2px solid ${src === currentImage ? T.accent : 'transparent'}`,
-                  borderRadius: T.radiusSm,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
+              images.map((src, i) => {
+                const imgMeta = imageMeta[i] || {};
+                const isAIThumb = imgMeta.source === 'ai' || isGeneratedArticleImageSource(src);
+                const active = src === currentImage;
+                return React.createElement("button", {
+                  key: i,
+                  onClick: () => onSelect(src, i),
+                  title: `${isAIThumb ? 'AI 이미지' : '본문 이미지'} ${i + 1}`,
+                  style: {
+                    position: 'relative',
+                    aspectRatio: '1 / 1',
+                    padding: 0,
+                    background: T.bg,
+                    border: `2px solid ${active ? (isAIThumb ? '#f97316' : T.accent) : 'transparent'}`,
+                    borderRadius: T.radiusSm,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  },
                 },
-              },
-                React.createElement("img", {
-                  src,
-                  alt: "",
-                  referrerPolicy: "no-referrer",
-                  style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-                }),
-                // 현재 사용 중 배지
-                src === currentImage && React.createElement("div", { style: { position: 'absolute', top: 4, right: 4, background: T.accent, color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: T.radiusSm, fontWeight: 700 } }, "\uC0AC\uC6A9 \uC911"),
-                // 번호
-                React.createElement("div", { style: { position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '1px 6px', borderRadius: T.radiusSm, fontWeight: 600 } }, i + 1),
-              )),
+                  React.createElement("img", {
+                    src,
+                    alt: "",
+                    referrerPolicy: "no-referrer",
+                    style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+                  }),
+                  isAIThumb && React.createElement("div", { style: { position: 'absolute', top: 4, left: 4, background: 'rgba(194,65,12,0.92)', color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: T.radiusSm, fontWeight: 800 } }, "AI"),
+                  // 현재 사용 중 배지
+                  active && React.createElement("div", { style: { position: 'absolute', top: 4, right: 4, background: isAIThumb ? '#f97316' : T.accent, color: '#fff', fontSize: 9, padding: '2px 6px', borderRadius: T.radiusSm, fontWeight: 700 } }, "\uC0AC\uC6A9 \uC911"),
+                  // 번호
+                  React.createElement("div", { style: { position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '1px 6px', borderRadius: T.radiusSm, fontWeight: 600 } }, i + 1),
+                );
+              }),
             ),
       ),
       // 푸터
@@ -9169,6 +9233,7 @@ export default function App() {
             sourceUrl: '',
             sourceTitle: '',
             sourceImages: [],
+            sourceImageMeta: [],
             globalUrl: _url,
             aspectRatio: _aspectRatio,
             outputFormat: 'video',
@@ -9215,6 +9280,7 @@ export default function App() {
           sourceUrl: '',
           sourceTitle: '',
           sourceImages: [],
+          sourceImageMeta: [],
           globalUrl: wizardData.url,
           aspectRatio: wizardData.aspectRatio,
           outputFormat: 'video',
@@ -9251,11 +9317,7 @@ export default function App() {
         ...target,
         uploadedImage: nextSrc,
         fillSource: 'image',
-        articleMeta: {
-          ...(target.articleMeta || {}),
-          aiImageSource: 'article',
-          sourceImageIndex: nextIdx,
-        },
+        articleMeta: buildArticleMetaForSource(target.articleMeta, p, nextSrc, nextIdx),
       });
       return { ...p, cards: newCards };
     }));
@@ -9274,11 +9336,7 @@ export default function App() {
         ...target,
         uploadedImage: imgSrc,
         fillSource: 'image',
-        articleMeta: {
-          ...(target.articleMeta || {}),
-          aiImageSource: 'article',
-          sourceImageIndex: imgIdx,
-        },
+        articleMeta: buildArticleMetaForSource(target.articleMeta, p, imgSrc, imgIdx),
       });
       return { ...p, cards: newCards };
     }));
@@ -9325,6 +9383,13 @@ export default function App() {
 
       setProjects(prev => prev.map(p => {
         if (p.id !== proj.id) return p;
+        const added = addProjectSourceImage(p, json.url, {
+          source: 'ai',
+          prompt: json.prompt || prompt,
+          seed: json.seed ?? null,
+          status: 'ok',
+          stylePresetId: presetId,
+        });
         const newCards = [...(p.cards || [])];
         const prevCard = newCards[cardIdx];
         newCards[cardIdx] = clearGeneratedCache({
@@ -9334,7 +9399,7 @@ export default function App() {
           articleMeta: {
             ...(prevCard.articleMeta || {}),
             aiImageSource: 'ai',
-            sourceImageIndex: null,
+            sourceImageIndex: added.sourceImageIndex,
             aiImagePrompt: json.prompt || prompt,
             aiImageSeed: json.seed ?? null,
             aiImageStatus: 'ok',
@@ -9342,7 +9407,7 @@ export default function App() {
             stylePresetId: presetId,  // 선택한 스타일 저장 (다음 재생성 시 기본값)
           },
         });
-        return { ...p, cards: newCards };
+        return { ...p, sourceImages: added.sourceImages, sourceImageMeta: added.sourceImageMeta, cards: newCards };
       }));
       // 성공 시 모달 닫기
       setRegenerateStyleCardIdx(null);
@@ -9462,9 +9527,26 @@ export default function App() {
       // API가 이미 uploadedImage에 data URL을 세팅해 반환함(fetchImageAsDataUrl).
       // uploadedImage가 있으면 fillSource:'image'만 보장하고 덮어쓰지 않음.
       // 없는 경우(fetch 실패)만 sourceImages[idx] 외부 URL로 폴백.
-      const _srcImgs = doneData.sourceImages || [];
+      let _srcImgs = doneData.sourceImages || [];
+      let _srcMeta = normalizeProjectSourceImageMeta(_srcImgs, doneData.sourceImageMeta);
+      const sourceImageProject = { sourceImages: _srcImgs, sourceImageMeta: _srcMeta };
       const newCards = doneData.cards.map(c => {
         const base = { ...DEFAULT_CARD(), ...c, sourceType: 'article' };
+        if (base.uploadedImage && base.articleMeta?.aiImageSource === 'ai') {
+          const added = addProjectSourceImage(sourceImageProject, base.uploadedImage, sourceImageMetaFromCard(base, wizardData.presetId || 'stock_photo'));
+          _srcImgs = added.sourceImages;
+          _srcMeta = added.sourceImageMeta;
+          sourceImageProject.sourceImages = _srcImgs;
+          sourceImageProject.sourceImageMeta = _srcMeta;
+          return {
+            ...base,
+            fillSource: 'image',
+            articleMeta: {
+              ...(base.articleMeta || {}),
+              sourceImageIndex: added.sourceImageIndex,
+            },
+          };
+        }
         if (base.uploadedImage) return { ...base, fillSource: 'image' };
         const idx = base.articleMeta && typeof base.articleMeta.sourceImageIndex === 'number'
           ? base.articleMeta.sourceImageIndex : -1;
@@ -9481,7 +9563,8 @@ export default function App() {
           sourceType: 'article',
           sourceUrl: doneData.sourceUrl || '',
           sourceTitle: doneData.sourceTitle || '',
-          sourceImages: doneData.sourceImages || [],
+          sourceImages: _srcImgs,
+          sourceImageMeta: _srcMeta,
           globalUrl: '',
           aspectRatio: wizardData.aspectRatio || '1:1',
           outputFormat: 'image',
@@ -9980,6 +10063,7 @@ export default function App() {
     galleryCardIdx != null && activeProject && React.createElement(ArticleImageGalleryModal, {
       mob,
       images: activeProject.sourceImages || [],
+      imageMeta: activeProject.sourceImageMeta || [],
       currentImage: cards[galleryCardIdx]?.uploadedImage,
       sourceTitle: activeProject.sourceTitle || '',
       onSelect: (src, imgIdx) => handleSelectArticleImage(galleryCardIdx, src, imgIdx),
