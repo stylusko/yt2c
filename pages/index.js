@@ -265,7 +265,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 140, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
     },
@@ -282,8 +282,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 70, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 108, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: -78,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 108, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -88,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
     },
   },
@@ -299,8 +299,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 70, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 108, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: -38,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 108, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -48,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
     },
   },
