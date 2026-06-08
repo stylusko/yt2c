@@ -247,7 +247,9 @@ const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
 const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
 const BAEMIN_PHOTO_COVER_TITLE_SIZE = 108;
-const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5.4; // Figma BAEMIN WORK -5% at 108px
+const LETTER_SPACING_UNIT_PX = 'px';
+const LETTER_SPACING_UNIT_PERCENT = 'percent';
+const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5;
 const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
 const BAEMIN_TEXT_LIMITS = {
   photoCover: { title: 12, subtitle: 12 },
@@ -259,10 +261,10 @@ const BAEMIN_STYLE_KEYS = [
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
   'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom',
   'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth',
-  'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY',
-  'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
-  'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY',
-  'useBoxText', 'boxTextSize', 'boxTextColor', 'boxTextFont', 'boxTextAlign', 'boxTextLetterSpacing', 'boxTextLineHeight', 'boxTextX', 'boxTextY',
+  'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLetterSpacingUnit', 'titleLineHeight', 'titleX', 'titleY',
+  'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLetterSpacingUnit', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
+  'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLetterSpacingUnit', 'bodyLineHeight', 'bodyX', 'bodyY',
+  'useBoxText', 'boxTextSize', 'boxTextColor', 'boxTextFont', 'boxTextAlign', 'boxTextLetterSpacing', 'boxTextLetterSpacingUnit', 'boxTextLineHeight', 'boxTextX', 'boxTextY',
   'videoBrightness', 'overlays',
 ];
 
@@ -335,8 +337,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -354,8 +356,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -499,6 +501,17 @@ const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm
 
 function isBaeminPhotoCoverLayout(card) {
   return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
+}
+
+function resolveLetterSpacingPx(value, unit, fontSize, scale = 1) {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 0;
+  if (unit === LETTER_SPACING_UNIT_PERCENT) return numeric / 100 * (fontSize || 0) * scale;
+  return numeric * scale;
+}
+
+function letterSpacingSuffix(card, field) {
+  return card?.[`${field}LetterSpacingUnit`] === LETTER_SPACING_UNIT_PERCENT ? '%' : 'px';
 }
 
 function baeminTextLimitFor(card, field) {
@@ -706,10 +719,10 @@ const DEFAULT_CARD = () => ({
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
   titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2", boxTextColor: "#111111",
-  titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
-  subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
-  bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
-  boxTextLetterSpacing: 0, boxTextLineHeight: 1.45, boxTextX: 0, boxTextY: 0, boxTextAlign: 'left',
+  titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
+  subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
+  bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
+  boxTextLetterSpacing: 0, boxTextLetterSpacingUnit: LETTER_SPACING_UNIT_PX, boxTextLineHeight: 1.45, boxTextX: 0, boxTextY: 0, boxTextAlign: 'left',
   captureTime: "", videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
@@ -733,7 +746,7 @@ const STYLE_COPY_GROUPS = [
     id: 'text',
     label: '텍스트 스타일',
     shortLabel: '텍스트',
-    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY', 'boxTextLetterSpacing', 'boxTextLineHeight', 'boxTextX', 'boxTextY'],
+    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign', 'titleLetterSpacing', 'titleLetterSpacingUnit', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLetterSpacingUnit', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLetterSpacingUnit', 'bodyLineHeight', 'bodyX', 'bodyY', 'boxTextLetterSpacing', 'boxTextLetterSpacingUnit', 'boxTextLineHeight', 'boxTextX', 'boxTextY'],
   },
   {
     id: 'video',
@@ -1107,13 +1120,17 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const padX = Math.round(60 * s), padTop = Math.round(40 * s);
   const maxTextW = w - padX * 2;
 
-  const titleLS = (card.titleLetterSpacing ?? 0) * s;
+  const titleSizeBase = card.titleSize || 64;
+  const subtitleSizeBase = card.subtitleSize || 48;
+  const bodySizeBase = card.bodySize || 40;
+  const boxTextSizeBase = card.boxTextSize ?? 32;
+  const titleLS = resolveLetterSpacingPx(card.titleLetterSpacing, card.titleLetterSpacingUnit, titleSizeBase, s);
   const titleLH = card.titleLineHeight ?? 1.4;
-  const subtitleLS = (card.subtitleLetterSpacing ?? 0) * s;
+  const subtitleLS = resolveLetterSpacingPx(card.subtitleLetterSpacing, card.subtitleLetterSpacingUnit, subtitleSizeBase, s);
   const subtitleLH = card.subtitleLineHeight ?? 1.4;
-  const bodyLS = (card.bodyLetterSpacing ?? 0) * s;
+  const bodyLS = resolveLetterSpacingPx(card.bodyLetterSpacing, card.bodyLetterSpacingUnit, bodySizeBase, s);
   const bodyLH = card.bodyLineHeight ?? 1.4;
-  const boxTextLS = (card.boxTextLetterSpacing ?? 0) * s;
+  const boxTextLS = resolveLetterSpacingPx(card.boxTextLetterSpacing, card.boxTextLetterSpacingUnit, boxTextSizeBase, s);
   const boxTextLH = card.boxTextLineHeight ?? 1.45;
 
   const fontMap = {
@@ -1207,10 +1224,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     return offset;
   }
 
-  const titleSz = Math.round(card.titleSize * s);
-  const subSz = Math.round(card.subtitleSize * s);
-  const bodySz = Math.round(card.bodySize * s);
-  const boxTextSz = Math.round((card.boxTextSize ?? 32) * s);
+  const titleSz = Math.round(titleSizeBase * s);
+  const subSz = Math.round(subtitleSizeBase * s);
+  const bodySz = Math.round(bodySizeBase * s);
+  const boxTextSz = Math.round(boxTextSizeBase * s);
   const titleLh = Math.round(titleSz * titleLH);
   const subLh = Math.round(subSz * subtitleLH);
   const bodyLh = Math.round(bodySz * bodyLH);
@@ -5352,7 +5369,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
               React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -5362,7 +5379,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
               React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -5377,7 +5394,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
               React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -5387,7 +5404,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
               React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -5402,7 +5419,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 4 } },
               React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
@@ -6017,6 +6034,8 @@ const CARD_KEY_MAP = {
   brandGuideId:'9', brandLayoutId:'10',
   baeminTextTop:'11', baeminTextTopRatio:'12', baeminTextBottom:'13',
   textBoxPaddingX:'14', textBoxPaddingY:'15',
+  titleLetterSpacingUnit:'16', subtitleLetterSpacingUnit:'17',
+  bodyLetterSpacingUnit:'18', boxTextLetterSpacingUnit:'19',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
@@ -8672,7 +8691,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -8682,7 +8701,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -8697,7 +8716,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -8707,7 +8726,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -8722,7 +8741,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
@@ -9225,7 +9244,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -9235,7 +9254,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -9250,7 +9269,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -9260,7 +9279,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -9275,7 +9294,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),

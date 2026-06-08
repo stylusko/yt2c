@@ -177,8 +177,20 @@ assert.notEqual(
 
 assert.notEqual(
   computeCardCacheHash(baeminCard, cfg, 5),
-  computeCardCacheHash({ ...baeminCard, titleLetterSpacing: -5.4 }, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, titleLetterSpacing: -5, titleLetterSpacingUnit: 'percent' }, cfg, 5),
   'text letter spacing must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...baeminCard, titleLetterSpacing: -5, titleLetterSpacingUnit: 'px' }, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, titleLetterSpacing: -5, titleLetterSpacingUnit: 'percent' }, cfg, 5),
+  'text letter spacing unit must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...baeminCard, boxTextLetterSpacing: -5, boxTextLetterSpacingUnit: 'px' }, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, boxTextLetterSpacing: -5, boxTextLetterSpacingUnit: 'percent' }, cfg, 5),
+  'box text letter spacing unit must be part of the cache hash',
 );
 
 assert.notEqual(
