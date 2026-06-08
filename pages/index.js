@@ -289,11 +289,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-text-square',
     group: '표지',
-    section: '사진 없는 표지',
-    label: '사진 없음 · 1:1 텍스트 표지',
+    section: '영상/사진 없는 표지',
+    label: '영상/사진 없음 · 1:1 텍스트 표지',
     shortLabel: '1:1 텍스트 표지',
     desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 정방형 표지',
-    rule: '사진 없음 / 타이틀 중심',
+    rule: '영상/사진 없음 / 타이틀 중심',
     badges: ['사진 없음', '타이틀 있음'],
     aspectRatio: '1:1',
     swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
@@ -309,11 +309,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-feed',
     group: '표지',
-    section: '사진 없는 표지',
-    label: '사진 없음 · 3:4 텍스트 표지',
+    section: '영상/사진 없는 표지',
+    label: '영상/사진 없음 · 3:4 텍스트 표지',
     shortLabel: '3:4 텍스트 표지',
     desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 세로형 표지',
-    rule: '사진 없음 / 타이틀 중심',
+    rule: '영상/사진 없음 / 타이틀 중심',
     badges: ['사진 없음', '타이틀 있음'],
     aspectRatio: '3:4',
     swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
@@ -367,11 +367,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-body',
     group: '본문',
-    section: '사진 없는 본문',
-    label: '사진 없음 · 본문만',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 본문만',
     shortLabel: '본문',
     desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 본문',
-    rule: '사진 없음 / 타이틀 없음',
+    rule: '영상/사진 없음 / 타이틀 없음',
     badges: ['사진 없음', '타이틀 없음'],
     swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
     patch: {
@@ -386,11 +386,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-title-body',
     group: '본문',
-    section: '사진 없는 본문',
-    label: '사진 없음 · 타이틀+본문',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 타이틀+본문',
     shortLabel: '타이틀+본문',
     desc: '짧은 제목과 본문을 함께 쓰는 표준 정보 카드',
-    rule: '사진 없음 / 타이틀 있음',
+    rule: '영상/사진 없음 / 타이틀 있음',
     badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
@@ -405,11 +405,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-box',
     group: '본문',
-    section: '사진 없는 본문',
-    label: '사진 없음 · 박스 강조',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 박스 강조',
     shortLabel: '박스 강조',
     desc: '핵심 문장, 가격, 체크포인트를 박스로 고정',
-    rule: '사진 없음 / 타이틀 있음',
+    rule: '영상/사진 없음 / 타이틀 있음',
     badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
@@ -8150,8 +8150,8 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
   const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
   const activePreset = BAEMIN_LAYOUT_PRESETS.find(preset => preset.id === activePresetId);
   const groups = [
-    { label: '표지', sections: ['사진 있는 표지', '사진 없는 표지'] },
-    { label: '본문', sections: ['사진 없는 본문', '사진 있는 본문'] },
+    { label: '표지', sections: ['사진 있는 표지', '영상/사진 없는 표지'] },
+    { label: '본문', sections: ['영상/사진 없는 본문', '사진 있는 본문'] },
   ];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
   const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
