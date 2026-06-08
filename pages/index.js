@@ -262,7 +262,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_MINT, BAEMIN_INK],
     patch: {
-      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 0.94, videoFill: 'full', videoBrightness: -12,
+      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 1, videoFill: 'full', videoBrightness: -12,
       useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 74, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.08, titleX: 0, titleY: -88,
       useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: -78,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
@@ -391,11 +391,15 @@ const BAEMIN_LAYOUT_PRESETS = [
 ];
 
 function baeminLayoutPatch(preset) {
-  return {
+  const patch = {
     ...preset.patch,
     brandGuideId: BAEMIN_GUIDE_ID,
     brandLayoutId: preset.id,
   };
+  if ((preset.badges || []).includes('사진 없음') && patch.useBg !== false) {
+    patch.bgOpacity = 1;
+  }
+  return patch;
 }
 
 const MAX_CARDS = 10;
@@ -7639,6 +7643,9 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
     if (!canApply) return;
     updateMulti(baeminLayoutPatch(preset));
   };
+  const isBaeminNoPhoto = card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_LAYOUT_PRESETS.some(preset =>
+    preset.id === card?.brandLayoutId && (preset.badges || []).includes('사진 없음')
+  );
   const renderPresetButton = (preset) => {
     const active = activePresetId === preset.id;
     const compactBadges = (preset.badges || []).filter(badge => !badge.startsWith('사진'));
@@ -7682,14 +7689,15 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
           key: preset.id + '-badge-' + badge,
           style: {
             borderRadius: 999,
-            padding: '2px 5px',
+            padding: compact ? '2px 4px' : '2px 6px',
             background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.05)',
             color: active ? '#9ff3ee' : T.textMuted,
-            fontSize: 9,
+            fontSize: compact ? 8.5 : 9.5,
             fontWeight: 800,
             lineHeight: 1,
+            whiteSpace: 'nowrap',
           },
-        }, badge.replace('타이틀 ', 'T '))),
+        }, badge)),
         active && React.createElement("span", { style: { color: BAEMIN_MINT, fontSize: 10, fontWeight: 900, lineHeight: 1 } }, "적용")
       )
     );
@@ -7705,24 +7713,61 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
     ),
     groups.map(group => React.createElement("section", { key: group.label, style: { display: 'flex', flexDirection: 'column', gap: 5 } },
       React.createElement("div", { style: sectionTitleStyle }, group.label),
-      group.sections.map(section => {
-        const presets = BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group.label && preset.section === section);
-        if (presets.length === 0) return null;
-        return React.createElement("div", {
-          key: section,
-          style: { display: 'flex', flexDirection: 'column', gap: 4 },
+      React.createElement("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: compact ? '1fr' : 'repeat(' + group.sections.length + ', minmax(0, 1fr))',
+          gap: compact ? 5 : 8,
         },
-          React.createElement("div", { style: subsectionTitleStyle }, section),
-          React.createElement("div", {
-            style: {
-              display: 'grid',
-              gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-              gap: 5,
-            },
-          }, presets.map(renderPresetButton))
-        );
-      })
+      },
+        group.sections.map(section => {
+          const presets = BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group.label && preset.section === section);
+          if (presets.length === 0) return null;
+          return React.createElement("div", {
+            key: section,
+            style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 },
+          },
+            React.createElement("div", { style: subsectionTitleStyle }, section),
+            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 5 } }, presets.map(renderPresetButton))
+          );
+        })
+      )
     )),
+    card && card.layout !== "none" && card.layout !== "video_only" && React.createElement("div", {
+      style: {
+        borderTop: '1px solid ' + T.border,
+        paddingTop: compact ? 8 : 10,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: compact ? 7 : 8,
+      },
+    },
+      React.createElement(SectionTitleWithReset, {
+        title: "텍스트 배경 설정",
+        onReset: () => updateMulti({
+          useBg: true,
+          bgColor: card.bgColor || BAEMIN_CREAM,
+          bgOpacity: isBaeminNoPhoto ? 1 : 0.75,
+        }),
+      }),
+      React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => updateMulti({ useBg: v, ...(isBaeminNoPhoto && v ? { bgOpacity: 1 } : {}) }) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "색상"),
+        React.createElement("input", { type: "color", value: card.bgColor || BAEMIN_CREAM, onChange: (e) => updateMulti({ bgColor: e.target.value, ...(isBaeminNoPhoto ? { bgOpacity: 1 } : {}) }), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor || BAEMIN_CREAM),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, {
+        label: "투명도",
+        value: isBaeminNoPhoto ? 1 : (card.bgOpacity ?? 0.75),
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: (v) => updateMulti({ bgOpacity: isBaeminNoPhoto ? 1 : v }),
+        defaultValue: isBaeminNoPhoto ? 1 : 0.75,
+      }),
+      card.useBg !== false && !isBaeminNoPhoto && React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => updateMulti({ bgOpacity: v ? 0 : 0.75 }) }),
+    ),
     canApply && cards && onCardChange && React.createElement(ApplyToAllBtn, {
       keysToApply: BAEMIN_STYLE_KEYS,
       cards,
