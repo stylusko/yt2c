@@ -245,6 +245,11 @@ const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
 const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
+const BAEMIN_TEXT_LIMITS = {
+  photoCover: { title: 12, subtitle: 12 },
+  textCover: { title: 24, subtitle: 0 },
+  content: { title: 24, subtitle: 20 },
+};
 const BAEMIN_STYLE_KEYS = [
   'brandGuideId', 'brandLayoutId',
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
@@ -486,6 +491,35 @@ const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-co
 const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
 const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
 
+function baeminTextLimitFor(card, field) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return null;
+  if (field !== 'title' && field !== 'subtitle') return null;
+  const group = ['bm-cover-square', 'bm-cover-reels'].includes(card?.brandLayoutId)
+    ? 'photoCover'
+    : ['bm-cover-text-square', 'bm-cover-feed'].includes(card?.brandLayoutId)
+      ? 'textCover'
+      : 'content';
+  return BAEMIN_TEXT_LIMITS[group][field] || null;
+}
+
+function clampBaeminTextField(card, field, value) {
+  const limit = baeminTextLimitFor(card, field);
+  const text = String(value || '');
+  if (!limit || text.length <= limit) return text;
+  const sliced = text.slice(0, limit).trimEnd();
+  const lastSpace = sliced.lastIndexOf(' ');
+  if (lastSpace >= Math.floor(limit * 0.65)) return sliced.slice(0, lastSpace).trimEnd();
+  return sliced;
+}
+
+function clampBaeminCardCopy(card) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return card;
+  const next = { ...card };
+  next.title = clampBaeminTextField(next, 'title', next.title);
+  next.subtitle = clampBaeminTextField(next, 'subtitle', next.subtitle);
+  return next;
+}
+
 function cleanBaeminText(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -599,7 +633,7 @@ function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
     const boxText = deriveBaeminBoxText(card, recommendation);
     if (boxText) patch.boxText = boxText;
   }
-  return clearGeneratedCache({ ...card, ...patch });
+  return clearGeneratedCache(clampBaeminCardCopy({ ...card, ...patch }));
 }
 
 async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true } = {}) {
@@ -1987,11 +2021,26 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
 }
 
 /* ── Text Field Row (checkbox + input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets }) {
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets, maxLength, limitLabel }) {
   const disabled = enabled === false;
+  const textValue = String(value || '');
+  const textLength = textValue.length;
+  useEffect(() => {
+    if (maxLength && textLength > maxLength) onTextChange(textValue);
+  }, [maxLength, textLength, textValue, onTextChange]);
+  const handleTextChange = (e) => {
+    onTextChange(e.target.value);
+  };
   const input = rows
-    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
-    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
+    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: handleTextChange, style: { ...inputBase, width: '100%', resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: handleTextChange, style: { ...inputBase, width: '100%', opacity: disabled ? 0.35 : 1 } });
+  const inputWithLimit = React.createElement("div", { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 } },
+    input,
+    maxLength && React.createElement("div", { style: { display: 'flex', justifyContent: 'flex-end', gap: 6, fontSize: 10, color: textLength >= maxLength ? T.accent : T.textMuted, lineHeight: 1.2 } },
+      limitLabel && React.createElement("span", { style: { color: T.textMuted } }, limitLabel),
+      React.createElement("span", null, `${Math.min(textLength, maxLength)}/${maxLength}자`)
+    )
+  );
 
   const PRESET_LABELS = ['S', 'M', 'L', 'XL'];
 
@@ -2029,7 +2078,7 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
     },
       React.createElement("div", { style: { position: 'absolute', inset: -10 } }),
       enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
-    input,
+    inputWithLimit,
     sizeControls,
   );
 }
@@ -4981,7 +5030,10 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
   const [applied, setApplied] = useState(false);
   const hasClip = card.appliedStart && card.appliedEnd;
   const fieldLabel = field === 'subtitle' ? '\uBD80\uC81C\uBAA9' : field === 'body' ? '\uBCF8\uBB38' : '\uC81C\uBAA9';
-  const fieldHint = field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
+  const baeminLimit = baeminTextLimitFor(card, field);
+  const fieldHint = baeminLimit
+    ? `배민전용 레이아웃용. 최대 ${baeminLimit}자 이내, 짧은 핵심어 중심${field === 'title' ? ', 1~2줄 가능' : ', 개행 없이'}`
+    : field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
 
   if (!hasClip) return null;
 
@@ -8542,6 +8594,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const titleLimit = baeminTextLimitFor(card, 'title');
+    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
@@ -8566,8 +8620,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -8591,8 +8645,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -9094,6 +9148,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const titleLimit = baeminTextLimitFor(card, 'title');
+    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
@@ -9117,8 +9173,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -9142,8 +9198,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -10284,7 +10340,7 @@ export default function App() {
     // Close any previous SSE connection
     if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
 
-    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking') + '&textMode=' + encodeURIComponent(wizardData.textMode || 'title'));
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking') + '&textMode=' + encodeURIComponent(wizardData.textMode || 'title') + (isBmOnlyPage ? '&brandGuide=baemin-only' : ''));
     aiEventSourceRef.current = es;
 
     es.addEventListener('status', (e) => {
@@ -10590,6 +10646,7 @@ export default function App() {
           aspectRatio: wizardData.aspectRatio || '1:1',
           copyTone: wizardData.copyTone || 'hooking',
           imageMode: wizardData.imageMode || 'reuse',
+          brandGuide: isBmOnlyPage ? 'baemin-only' : null,
         }),
         signal: abort.signal,
       });

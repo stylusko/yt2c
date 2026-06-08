@@ -60,7 +60,7 @@ export default async function handler(req, res) {
     'X-Accel-Buffering': 'no',
   });
 
-  const { article, presetId, cardCount, aspectRatio, copyTone, imageMode: rawMode } = req.body || {};
+  const { article, presetId, cardCount, aspectRatio, copyTone, imageMode: rawMode, brandGuide } = req.body || {};
 
   if (!article || !article.body) {
     sseSend(res, 'error', { code: 'MISSING_ARTICLE', message: '기사 데이터가 없습니다.' });
@@ -85,6 +85,7 @@ export default async function handler(req, res) {
       tone: copyTone || 'hooking',
       presetId,
       imageMode,
+      brandGuide: brandGuide === 'baemin-only' ? 'baemin-only' : null,
     });
 
     sseSend(res, 'dividing', { message: `${divided.cards.length}장으로 나눴어요` });

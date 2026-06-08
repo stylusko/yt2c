@@ -19,6 +19,7 @@ export default async function handler(req, res) {
   const url = req.query.url;
   const tone = req.query.tone || 'hooking';
   const textMode = req.query.textMode === 'title_body' ? 'title_body' : 'title';
+  const brandGuide = req.query.brandGuide === 'baemin-only' ? 'baemin-only' : null;
   if (!url) {
     res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
     return;
@@ -106,6 +107,7 @@ export default async function handler(req, res) {
       videoInfo.duration,
       tone,
       textMode,
+      { brandGuide },
     );
 
     if (aborted) return res.end();
