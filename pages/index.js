@@ -283,11 +283,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
   {
     id: 'bm-solid-body',
-    group: '내지',
-    label: '솔리드 본문형',
+    group: '본문',
+    label: '사진 없음 · 본문만',
     shortLabel: '본문',
-    desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 내지',
-    rule: '공지사항처럼 이미지 필요 없는 경우',
+    desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 본문',
+    rule: '사진 없음 / 타이틀 없음',
+    badges: ['사진 없음', '타이틀 없음'],
     swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
     patch: {
       layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
@@ -298,11 +299,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
   {
     id: 'bm-solid-title-body',
-    group: '내지',
-    label: '솔리드 타이틀+본문형',
+    group: '본문',
+    label: '사진 없음 · 타이틀+본문',
     shortLabel: '타이틀+본문',
     desc: '짧은 제목과 본문을 함께 쓰는 표준 정보 카드',
-    rule: '타이틀+본문 최소 3줄, 최대 5줄',
+    rule: '사진 없음 / 타이틀 있음',
+    badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_MINT, '#FFFFFF', BAEMIN_INK],
     patch: {
       layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
@@ -313,11 +315,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
   {
     id: 'bm-solid-box',
-    group: '내지',
-    label: '솔리드 박스 강조형',
+    group: '본문',
+    label: '사진 없음 · 박스 강조',
     shortLabel: '박스 강조',
     desc: '핵심 문장, 가격, 체크포인트를 박스로 고정',
-    rule: '타이틀+본문 최소 3줄, 최대 4줄',
+    rule: '사진 없음 / 타이틀 있음',
+    badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
@@ -329,11 +332,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
   {
     id: 'bm-photo-frame',
-    group: '사진',
-    label: '사진 프레임형',
+    group: '본문',
+    label: '사진 있음 · 하단 타이틀+본문',
     shortLabel: '사진 프레임',
     desc: '사진을 위에 두고 하단을 배민 톤 정보 영역으로 분리',
-    rule: '로고 상단 48px, 하단 여백 80px 기준',
+    rule: '사진 있음 / 타이틀 있음',
+    badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
     patch: {
       layout: 'photo_top', photoRatio: 64, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
@@ -344,17 +348,34 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
   {
     id: 'bm-photo-body',
-    group: '사진',
-    label: '사진 본문형',
+    group: '본문',
+    label: '사진 있음 · 오버레이 타이틀+본문',
     shortLabel: '사진 본문',
     desc: '실사 이미지 위에 하단 본문을 얹는 설명형 카드',
-    rule: '텍스트는 하단 안전영역 안에 배치',
+    rule: '사진 있음 / 타이틀 있음',
+    badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
       layout: 'photo_top', photoRatio: 56, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 48, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 30, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+    },
+  },
+  {
+    id: 'bm-photo-body-only',
+    group: '본문',
+    label: '사진 있음 · 오버레이 본문만',
+    shortLabel: '사진 본문만',
+    desc: '사진은 살리고 제목 없이 설명 문장만 얹는 카드',
+    rule: '사진 있음 / 타이틀 없음',
+    badges: ['사진 있음', '타이틀 없음'],
+    swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
+    patch: {
+      layout: 'photo_top', photoRatio: 58, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.68, videoFill: 'full', videoBrightness: -4,
+      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
     },
   },
 ];
@@ -7594,7 +7615,7 @@ function withBaeminLayoutTab(tabs, enabled) {
 function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions }) {
   const canApply = !!(card && updateMulti);
   const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
-  const groups = ['표지', '내지', '사진'];
+  const groups = ['표지', '본문'];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 800, letterSpacing: 0.4 };
   const applyPreset = (preset) => {
     if (!canApply) return;
@@ -7610,7 +7631,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
       onClick: () => applyPreset(preset),
       style: {
         width: '100%',
-        minHeight: compact ? 104 : 118,
+        minHeight: compact ? 118 : 132,
         border: '1px solid ' + (active ? BAEMIN_MINT : T.border),
         borderRadius: 8,
         background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.03)',
@@ -7643,6 +7664,20 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
           },
         }))
       ),
+      preset.badges && React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 4 } },
+        preset.badges.map((badge) => React.createElement("span", {
+          key: preset.id + '-badge-' + badge,
+          style: {
+            border: '1px solid ' + (active ? 'rgba(42,193,188,0.55)' : 'rgba(255,255,255,0.18)'),
+            borderRadius: 999,
+            padding: '3px 7px',
+            color: active ? '#9ff3ee' : T.textMuted,
+            fontSize: 10,
+            fontWeight: 800,
+            lineHeight: 1,
+          },
+        }, badge))
+      ),
       React.createElement("div", { style: { color: T.textSecondary, fontSize: 11, lineHeight: 1.45 } }, preset.desc),
       React.createElement("div", { style: { marginTop: 'auto', color: active ? '#7ddbd8' : T.textMuted, fontSize: 10, lineHeight: 1.35, fontWeight: 700 } }, preset.rule)
     );
@@ -7665,7 +7700,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
     },
       React.createElement("span", { style: { fontSize: 11, color: '#7ddbd8', fontWeight: 800, letterSpacing: 0.4 } }, "BM ONLY"),
       React.createElement("div", { style: { color: T.text, fontSize: compact ? 15 : 16, fontWeight: 800 } }, "배민전용 레이아웃"),
-      React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "피그마 가이드의 표지/내지/사진 규칙을 현재 카드에 바로 적용합니다."),
+      React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "피그마 가이드의 표지/본문 규칙을 현재 카드에 바로 적용합니다."),
     ),
     groups.map(group => React.createElement("section", { key: group, style: { display: 'flex', flexDirection: 'column', gap: 8 } },
       React.createElement("div", { style: sectionTitleStyle }, group),
