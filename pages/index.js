@@ -246,6 +246,7 @@ const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
 const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
+const BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE = 88;
 const BAEMIN_PHOTO_COVER_TITLE_SIZE = 108;
 const LETTER_SPACING_UNIT_PX = 'px';
 const LETTER_SPACING_UNIT_PERCENT = 'percent';
@@ -340,8 +341,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
