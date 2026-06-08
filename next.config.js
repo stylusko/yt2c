@@ -7,6 +7,11 @@ const nextConfig = {
       { source: '/edit', destination: '/' },
       { source: '/ai-edit', destination: '/' },
       { source: '/share', destination: '/' },
+      { source: '/bmonly', destination: '/' },
+      { source: '/bmonly/easy', destination: '/' },
+      { source: '/bmonly/ai-edit', destination: '/' },
+      { source: '/bmonly/article', destination: '/' },
+      { source: '/bmonly/edit', destination: '/' },
       { source: '/s/:id/bmonly', destination: '/' },
       { source: '/s/:id', destination: '/' },
     ];

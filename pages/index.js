@@ -15,6 +15,13 @@ const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 7;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
+const BM_ONLY_MODE_PATHS = {
+  home: '/bmonly',
+  wizard: '/bmonly/easy',
+  aiWizard: '/bmonly/ai-edit',
+  articleWizard: '/bmonly/article',
+  editor: '/bmonly/edit',
+};
 const SHORT_SHARE_ROUTE_RE = /^\/s\/([^/]+)(?:\/(bmonly))?$/;
 function parseShortShareRoute(pathname) {
   const match = pathname.match(SHORT_SHARE_ROUTE_RE);
@@ -29,6 +36,21 @@ function buildShortSharePath(shareId, variant = PAGE_VARIANTS.DEFAULT) {
 }
 function isBmOnlyVariant(variant) {
   return variant === PAGE_VARIANTS.BM_ONLY;
+}
+function parseBmOnlyRoute(pathname) {
+  if (pathname === BM_ONLY_MODE_PATHS.home) return { mode: null };
+  if (pathname === BM_ONLY_MODE_PATHS.wizard) return { mode: 'wizard' };
+  if (pathname === BM_ONLY_MODE_PATHS.aiWizard) return { mode: 'ai-wizard' };
+  if (pathname === BM_ONLY_MODE_PATHS.articleWizard) return { mode: 'article-wizard' };
+  if (pathname === BM_ONLY_MODE_PATHS.editor) return { mode: 'editor' };
+  return null;
+}
+function buildBmOnlyPath(editorMode) {
+  if (editorMode === 'wizard') return BM_ONLY_MODE_PATHS.wizard;
+  if (editorMode === 'ai-wizard' || editorMode === 'ai-loading') return BM_ONLY_MODE_PATHS.aiWizard;
+  if (editorMode === 'article-wizard') return BM_ONLY_MODE_PATHS.articleWizard;
+  if (editorMode === 'editor') return BM_ONLY_MODE_PATHS.editor;
+  return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
@@ -8521,7 +8543,7 @@ function BmOnlyBadge({ mob }) {
       position: 'fixed',
       top: mob ? 54 : 64,
       right: mob ? 12 : 24,
-      zIndex: 45,
+      zIndex: 260,
       padding: mob ? '5px 9px' : '6px 11px',
       borderRadius: T.radiusPill,
       border: '1px solid rgba(245,158,11,0.45)',
@@ -8535,6 +8557,29 @@ function BmOnlyBadge({ mob }) {
       pointerEvents: 'none',
     },
   }, "BM ONLY");
+}
+
+function applyBmOnlyMode(route, setters) {
+  setters.setRouteShareId(null);
+  setters.setPageVariant(PAGE_VARIANTS.BM_ONLY);
+  setters.setAiMode(route.mode === 'ai-wizard');
+  if (route.mode === 'wizard') {
+    setters.setWizardStep(1);
+    setters.setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' });
+    setters.setEditorMode('wizard');
+  } else if (route.mode === 'ai-wizard') {
+    setters.setWizardStep(1);
+    setters.setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' });
+    setters.setEditorMode('ai-wizard');
+  } else if (route.mode === 'article-wizard') {
+    setters.setWizardStep(1);
+    setters.setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' });
+    setters.setEditorMode('article-wizard');
+  } else if (route.mode === 'editor') {
+    setters.setEditorMode('editor');
+  } else {
+    setters.setEditorMode(null);
+  }
 }
 
 /* ── App ── */
@@ -8560,6 +8605,7 @@ export default function App() {
   const [importProject, setImportProject] = useState(null);
   const [pageVariant, setPageVariant] = useState(PAGE_VARIANTS.DEFAULT);
   const [routeShareId, setRouteShareId] = useState(null);
+  const [routeReady, setRouteReady] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
@@ -8643,7 +8689,10 @@ export default function App() {
     }
     const path = window.location.pathname;
     const shortRoute = parseShortShareRoute(path);
-    if (shortRoute) {
+    const bmOnlyRoute = parseBmOnlyRoute(path);
+    if (bmOnlyRoute) {
+      applyBmOnlyMode(bmOnlyRoute, { setRouteShareId, setPageVariant, setAiMode, setWizardStep, setWizardData, setEditorMode });
+    } else if (shortRoute) {
       const shareId = shortRoute.shareId;
       setRouteShareId(shareId);
       setPageVariant(shortRoute.variant);
@@ -8703,14 +8752,18 @@ export default function App() {
       setPageVariant(PAGE_VARIANTS.DEFAULT);
       setEditorMode(null);
     }
+    setRouteReady(true);
   }, []);
 
   // Sync editorMode → URL (shallow)
   useEffect(() => {
+    if (!routeReady) return;
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
-    const bmOnlyPath = isBmOnlyPage && routeShareId && editorMode === 'editor'
-      ? buildShortSharePath(routeShareId, pageVariant)
+    const bmOnlyPath = isBmOnlyPage
+      ? routeShareId && editorMode === 'editor'
+        ? buildShortSharePath(routeShareId, pageVariant)
+        : buildBmOnlyPath(editorMode)
       : null;
     const targetPath = bmOnlyPath || (editorMode === 'wizard' ? '/easy' : editorMode === 'ai-wizard' ? '/ai-edit' : editorMode === 'ai-loading' ? '/ai-edit' : editorMode === 'editor' ? '/edit' : '/');
     if (window.location.pathname !== targetPath) {
@@ -8720,15 +8773,18 @@ export default function App() {
         router.push(targetPath, undefined, { shallow: true });
       }
     }
-  }, [editorMode, wizardLoading, importProject, isBmOnlyPage, pageVariant, routeShareId]);
+  }, [editorMode, wizardLoading, importProject, isBmOnlyPage, pageVariant, routeReady, routeShareId]);
 
   // Handle browser back/forward
   useEffect(() => {
     const onRouteChange = (url) => {
       if (wizardLoading) return;
       const p = url.split('?')[0];
+      const bmOnlyRoute = parseBmOnlyRoute(p);
       const shareRoute = parseShortShareRoute(p);
-      if (shareRoute) {
+      if (bmOnlyRoute) {
+        applyBmOnlyMode(bmOnlyRoute, { setRouteShareId, setPageVariant, setAiMode, setWizardStep, setWizardData, setEditorMode });
+      } else if (shareRoute) {
         setRouteShareId(shareRoute.shareId);
         setPageVariant(shareRoute.variant);
         if (editorMode !== 'editor') setEditorMode('editor');
@@ -9732,8 +9788,9 @@ export default function App() {
     style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg },
   },
     React.createElement(Head, null,
-      React.createElement("title", null, "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
+      React.createElement("title", null, isBmOnlyPage ? "YOUMECA BM ONLY" : "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
       React.createElement("meta", { name: "description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
+      isBmOnlyPage && React.createElement("meta", { name: "robots", content: "noindex,nofollow" }),
       React.createElement("meta", { property: "og:type", content: "website" }),
       React.createElement("meta", { property: "og:url", content: "https://youmeca.me" }),
       React.createElement("meta", { property: "og:title", content: "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C" }),
@@ -9758,7 +9815,7 @@ export default function App() {
       ADSENSE_ID && React.createElement("script", { async: true, src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`, crossOrigin: "anonymous" }),
     ),
 
-    editorMode === 'editor' && isBmOnlyPage && React.createElement(BmOnlyBadge, { mob }),
+    isBmOnlyPage && React.createElement(BmOnlyBadge, { mob }),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
