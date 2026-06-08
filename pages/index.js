@@ -13,7 +13,7 @@ const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 7;
+const ARTICLE_IMAGE_RENDER_VERSION = 8;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
 const BM_ONLY_MODE_PATHS = {
   home: '/bmonly',
@@ -268,8 +268,9 @@ const BAEMIN_STYLE_KEYS = [
   'videoBrightness', 'overlays',
 ];
 
+const BAEMIN_PHOTO_COVER_LOGO_COLOR = '#9a9a9a';
 const BAEMIN_LOGO_POSITIONS = {
-  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: 0.5, logoColor: '#ffffff' },
+  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: 1, logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR },
   solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: 0.3, logoColor: BAEMIN_INK },
   textCover: { x: 82.1, y: 93.1, scale: 21, opacity: 0.3, logoColor: '#041F1C' },
 };
@@ -277,6 +278,7 @@ const BAEMIN_LOGO_POSITIONS = {
 const baeminLogoOverlay = (position = 'solidBody') => ({
   type: 'logo',
   image: BAEMIN_LOGO_SRC,
+  brandOverlayId: 'baemin-logo',
   aboveLayout: true,
   applyToAll: false,
   logoColorMode: 'solid',
@@ -501,6 +503,47 @@ const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm
 
 function isBaeminPhotoCoverLayout(card) {
   return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
+}
+
+function isBaeminPresetLogoOverlay(overlay = {}) {
+  return overlay.type === 'logo' && overlay.image === BAEMIN_LOGO_SRC;
+}
+
+function isLegacyWhiteBaeminPhotoCoverLogo(card, overlay = {}) {
+  if (!isBaeminPhotoCoverLayout(card) || !isBaeminPresetLogoOverlay(overlay)) return false;
+  if (overlay.logoColorMode !== 'solid' || normalizeLogoColor(overlay.logoColor) !== '#ffffff') return false;
+  if (overlay.brandOverlayId === 'baemin-logo') return true;
+  return Math.abs((overlay.x ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.x) < 1 &&
+    Math.abs((overlay.y ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.y) < 1 &&
+    Math.abs((overlay.scale ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.scale) < 2;
+}
+
+function renderableCardOverlays(card) {
+  return (card?.overlays || []).map(overlay => {
+    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
+    return {
+      ...overlay,
+      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
+      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
+      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
+    };
+  });
+}
+
+function normalizeBaeminCardOverlays(card) {
+  if (!card?.overlays?.length) return card;
+  let changed = false;
+  const overlays = card.overlays.map(overlay => {
+    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
+    changed = true;
+    return {
+      ...overlay,
+      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
+      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
+      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
+    };
+  });
+  return changed ? { ...card, overlays } : card;
 }
 
 function resolveLetterSpacingPx(value, unit, fontSize, scale = 1) {
@@ -1238,6 +1281,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const boxTextOX = Math.round((card.boxTextX ?? 0) * s), boxTextOY = Math.round((card.boxTextY ?? 0) * s);
   const isBaeminGuide = card.brandGuideId === BAEMIN_GUIDE_ID;
   const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
+  const renderOverlays = renderableCardOverlays(card);
   const guidePx = (value) => Math.round(Number(value) * s);
   const hasGuideValue = (value) => Number.isFinite(Number(value));
 
@@ -1251,7 +1295,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   }
 
   async function getLogoSafeInsets() {
-    const logos = (card.overlays || []).filter(ov =>
+    const logos = renderOverlays.filter(ov =>
       ov?.type === 'logo' &&
       ov.image &&
       ov.aboveLayout !== false &&
@@ -1286,7 +1330,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   // Helper: draw overlay images filtered by aboveLayout flag
   async function drawOverlays(above) {
     if (skipOverlays) return;
-    for (const ov of (card.overlays || [])) {
+    for (const ov of renderOverlays) {
       if (!ov.image || !!ov.aboveLayout !== above) continue;
       try {
         const oImg = await loadOverlayImage(ov.image);
@@ -4441,8 +4485,9 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
 
   // Generate canvas overlay (debounced) — same engine as final render
   const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '', boxText: card.useBoxText !== false ? card.boxText : '' };
+  const pvOverlays = renderableCardOverlays(pvCard);
   const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
-  const logoSafeKey = logoSafeOverlayFingerprint(pvCard.overlays || []);
+  const logoSafeKey = logoSafeOverlayFingerprint(pvOverlays);
   const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
   useEffect(() => {
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
@@ -4487,7 +4532,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     else setThumbSrc(null);
   };
 
-  const overlays = card.overlays || [];
+  const overlays = pvOverlays;
 
   const snapPx = Math.round(8 * sc);
   const centerOffset = Math.round(previewW / 2 - padX);
@@ -5976,15 +6021,16 @@ function normalizeLoadedProject(project) {
     sourceImages,
     sourceImageMeta: normalizeProjectSourceImageMeta(sourceImages, project.sourceImageMeta),
     cards: (project.cards || []).map(card => {
+      let nextCard = card;
       if (
         card &&
         card.bodySize === 40 &&
         card.body === '본문 내용을 입력하세요' &&
         card.sourceType !== 'article'
       ) {
-        return { ...card, bodySize: 44 };
+        nextCard = { ...card, bodySize: 44 };
       }
-      return card;
+      return normalizeBaeminCardOverlays(nextCard);
     }),
   };
 }
