@@ -242,6 +242,7 @@ const BAEMIN_COVER_AQUA = '#08F0D2';
 const BAEMIN_INK = '#111111';
 const BAEMIN_CREAM = '#CEFCF6';
 const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
+const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_STYLE_KEYS = [
   'brandGuideId', 'brandLayoutId',
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
@@ -4044,6 +4045,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const videoFill = card.videoFill || "full";
   const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
   const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
+  const useBaeminBackgroundPlaceholder = card.brandGuideId === BAEMIN_GUIDE_ID && !['full_bg', 'video_only', 'text_box', 'none'].includes(layout);
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -4235,7 +4237,9 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
         ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: baseImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
-    : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
+    : useBaeminBackgroundPlaceholder
+      ? React.createElement("img", { src: BAEMIN_BACKGROUND_PLACEHOLDER_SRC, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: "center center" } })
+      : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
