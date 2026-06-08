@@ -241,6 +241,7 @@ const BAEMIN_MINT = '#2AC1BC';
 const BAEMIN_COVER_AQUA = '#08F0D2';
 const BAEMIN_INK = '#111111';
 const BAEMIN_CREAM = '#CEFCF6';
+const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
 const BAEMIN_STYLE_KEYS = [
   'brandGuideId', 'brandLayoutId',
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
@@ -248,19 +249,35 @@ const BAEMIN_STYLE_KEYS = [
   'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY',
   'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
   'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY',
-  'videoBrightness',
+  'videoBrightness', 'overlays',
 ];
+
+const BAEMIN_LOGO_POSITIONS = {
+  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: 0.5, logoColor: '#ffffff' },
+  solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: 0.3, logoColor: BAEMIN_INK },
+  textCover: { x: 82.1, y: 93.1, scale: 21, opacity: 0.3, logoColor: '#041F1C' },
+};
+
+const baeminLogoOverlay = (position = 'solidBody') => ({
+  type: 'logo',
+  image: BAEMIN_LOGO_SRC,
+  aboveLayout: true,
+  applyToAll: false,
+  logoColorMode: 'solid',
+  ...(BAEMIN_LOGO_POSITIONS[position] || BAEMIN_LOGO_POSITIONS.solidBody),
+});
 
 const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-feed',
     group: '표지',
     section: '사진 없는 표지',
-    label: '사진 없음 · 텍스트 표지',
-    shortLabel: '텍스트 표지',
-    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 표지',
+    label: '사진 없음 · 4:3 텍스트 표지',
+    shortLabel: '4:3 텍스트 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 4:3 표지',
     rule: '사진 없음 / 타이틀 중심',
     badges: ['사진 없음', '타이틀 있음'],
+    aspectRatio: '4:3',
     swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
@@ -268,14 +285,15 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('textCover')],
     },
   },
   {
     id: 'bm-cover-square',
     group: '표지',
     section: '사진 있는 표지',
-    label: '사진 있음 · 정사각 표지',
-    shortLabel: '정사각 표지',
+    label: '사진 있음 · 1:1 사진 표지',
+    shortLabel: '1:1 사진 표지',
     desc: '사진 하단 그라데이션 위에 제목을 얹는 표지',
     rule: '사진 있음 / 타이틀 중심',
     badges: ['사진 있음', '타이틀 있음'],
@@ -286,14 +304,15 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
       useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
     },
   },
   {
     id: 'bm-cover-reels',
     group: '표지',
     section: '사진 있는 표지',
-    label: '사진 있음 · 세로 표지',
-    shortLabel: '세로 표지',
+    label: '사진 있음 · 3:4 사진 표지',
+    shortLabel: '3:4 사진 표지',
     desc: '세로 사진 하단 그라데이션 위에 제목을 얹는 표지',
     rule: '사진 있음 / 타이틀 중심',
     badges: ['사진 있음', '타이틀 있음'],
@@ -304,6 +323,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
       useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
     },
   },
   {
@@ -317,10 +337,12 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 없음', '타이틀 없음'],
     swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
     patch: {
-      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
       useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.18, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: -72,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 84,
+      overlays: [baeminLogoOverlay('solidBody')],
     },
   },
   {
@@ -338,6 +360,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 58, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: -92,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 36, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.38, bodyX: 0, bodyY: -74,
+      overlays: [baeminLogoOverlay('solidBody')],
     },
   },
   {
@@ -356,6 +379,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('solidBody')],
     },
   },
   {
@@ -373,6 +397,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 44, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.16, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 28, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
     },
   },
   {
@@ -390,6 +415,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 48, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 30, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
     },
   },
   {
@@ -407,6 +433,7 @@ const BAEMIN_LAYOUT_PRESETS = [
       useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
     },
   },
 ];
@@ -417,6 +444,9 @@ function baeminLayoutPatch(preset) {
     brandGuideId: BAEMIN_GUIDE_ID,
     brandLayoutId: preset.id,
   };
+  if (Array.isArray(patch.overlays)) {
+    patch.overlays = patch.overlays.map(overlay => ({ ...overlay }));
+  }
   if ((preset.badges || []).includes('사진 없음') && patch.useBg !== false) {
     patch.bgOpacity = 1;
   }
