@@ -173,6 +173,10 @@ const FONT_OPTIONS = [
       { id: 'Pretendard-SemiBold.otf', label: 'SemiBold', weight: 600 },
       { id: 'Pretendard-Bold.otf', label: 'Bold', weight: 700 },
     ]},
+  { id: 'BaeminWork', label: '배민워크체', family: "'BAEMINWORK', Pretendard, sans-serif",
+    variants: [
+      { id: 'BAEMINWORK.otf', label: 'Regular', weight: 400 },
+    ]},
   { id: 'BlackHanSans', label: 'Black Han Sans', family: "'Black Han Sans', sans-serif",
     variants: [
       { id: 'BlackHanSans-Regular', label: 'Regular', weight: 400 },
@@ -232,6 +236,137 @@ const STYLE_PRESETS = [
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
+const BAEMIN_GUIDE_ID = 'baemin-only';
+const BAEMIN_MINT = '#2AC1BC';
+const BAEMIN_INK = '#111111';
+const BAEMIN_CREAM = '#F3FFFE';
+const BAEMIN_STYLE_KEYS = [
+  'brandGuideId', 'brandLayoutId',
+  'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
+  'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth',
+  'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY',
+  'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
+  'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY',
+  'videoBrightness',
+];
+
+const BAEMIN_LAYOUT_PRESETS = [
+  {
+    id: 'bm-cover-feed',
+    group: '표지',
+    label: '표지 피드형',
+    shortLabel: '피드 표지',
+    desc: '게시글 피드에서 제목이 먼저 읽히는 민트 표지',
+    rule: '타이틀 2줄, 윗줄 가이드 고정',
+    swatches: [BAEMIN_MINT, BAEMIN_INK],
+    patch: {
+      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 0.94, videoFill: 'full', videoBrightness: -12,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 74, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.08, titleX: 0, titleY: -88,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: -78,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+    },
+  },
+  {
+    id: 'bm-cover-reels',
+    group: '표지',
+    label: '표지 릴스형',
+    shortLabel: '릴스 표지',
+    desc: '릴스 썸네일을 피드 기준 타이틀 높이로 정리',
+    rule: '릴스도 게시글 피드 기준으로 타이틀 배치',
+    swatches: ['#101010', '#FFFFFF', BAEMIN_MINT],
+    patch: {
+      layout: 'full_bg', useGradient: false, useBg: true, bgColor: '#101010', bgOpacity: 0.46, videoFill: 'full', videoBrightness: -8,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 66, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: -84,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: -76,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+    },
+  },
+  {
+    id: 'bm-solid-body',
+    group: '내지',
+    label: '솔리드 본문형',
+    shortLabel: '본문',
+    desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 내지',
+    rule: '공지사항처럼 이미지 필요 없는 경우',
+    swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
+    patch: {
+      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.18, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: -72,
+    },
+  },
+  {
+    id: 'bm-solid-title-body',
+    group: '내지',
+    label: '솔리드 타이틀+본문형',
+    shortLabel: '타이틀+본문',
+    desc: '짧은 제목과 본문을 함께 쓰는 표준 정보 카드',
+    rule: '타이틀+본문 최소 3줄, 최대 5줄',
+    swatches: [BAEMIN_MINT, '#FFFFFF', BAEMIN_INK],
+    patch: {
+      layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 58, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: -92,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 36, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.38, bodyX: 0, bodyY: -74,
+    },
+  },
+  {
+    id: 'bm-solid-box',
+    group: '내지',
+    label: '솔리드 박스 강조형',
+    shortLabel: '박스 강조',
+    desc: '핵심 문장, 가격, 체크포인트를 박스로 고정',
+    rule: '타이틀+본문 최소 3줄, 최대 4줄',
+    swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 58, textBoxWidth: 86, textBoxHeight: 46, textBoxPadding: 34, textBoxRadius: 8, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+    },
+  },
+  {
+    id: 'bm-photo-frame',
+    group: '사진',
+    label: '사진 프레임형',
+    shortLabel: '사진 프레임',
+    desc: '사진을 위에 두고 하단을 배민 톤 정보 영역으로 분리',
+    rule: '로고 상단 48px, 하단 여백 80px 기준',
+    swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
+    patch: {
+      layout: 'photo_top', photoRatio: 64, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 44, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.16, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 28, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+    },
+  },
+  {
+    id: 'bm-photo-body',
+    group: '사진',
+    label: '사진 본문형',
+    shortLabel: '사진 본문',
+    desc: '실사 이미지 위에 하단 본문을 얹는 설명형 카드',
+    rule: '텍스트는 하단 안전영역 안에 배치',
+    swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
+    patch: {
+      layout: 'photo_top', photoRatio: 56, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 48, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 30, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+    },
+  },
+];
+
+function baeminLayoutPatch(preset) {
+  return {
+    ...preset.patch,
+    brandGuideId: BAEMIN_GUIDE_ID,
+    brandLayoutId: preset.id,
+  };
+}
+
 const MAX_CARDS = 10;
 
 const DEFAULT_CARD = () => ({
@@ -255,6 +390,7 @@ const DEFAULT_CARD = () => ({
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
+  brandGuideId: null, brandLayoutId: null,
   appliedStart: null, appliedEnd: null, clipThumbnail: null,
   // ── article 모드 전용 (기본 youtube) ──
   sourceType: 'youtube',     // 'youtube' | 'article'
@@ -267,7 +403,7 @@ const STYLE_COPY_GROUPS = [
     id: 'layout',
     label: '레이아웃·배경',
     shortLabel: '레이아웃',
-    keys: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
+    keys: ['brandGuideId', 'brandLayoutId', 'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
   },
   {
     id: 'text',
@@ -655,6 +791,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const bodyLH = card.bodyLineHeight ?? 1.4;
 
   const fontMap = {
+    "BAEMINWORK.otf": "400 {s}px 'BAEMINWORK', Pretendard, sans-serif",
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
@@ -853,6 +990,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     }
   } else if (layout === "text_box") {
     // Text box layout: rounded box with text inside
+    if (card.brandGuideId === BAEMIN_GUIDE_ID && useBg) {
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+    }
     const boxW = w * (card.textBoxWidth || 80) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     let boxY = (card.textBoxY || 70) / 100 * h;
@@ -5395,6 +5536,7 @@ const CARD_KEY_MAP = {
   textBoxHeight:'3', textBoxBorderColor:'4', textBoxBorderWidth:'5',
   // ── article 모드 필드 (기존 '6'~'9' 숫자 슬롯은 모두 비어있었음) ──
   sourceType:'6', articleType:'7', articleMeta:'8',
+  brandGuideId:'9', brandLayoutId:'10',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
@@ -7436,6 +7578,120 @@ function TabPill({ label, active, onClick, dataTour }) {
   }, label);
 }
 
+const BAEMIN_LAYOUT_TAB = { id: 'baemin-layout', label: '배민전용 레이아웃', tour: 'tab-baemin-layout' };
+
+function withBaeminLayoutTab(tabs, enabled) {
+  if (!enabled || tabs.some(t => t.id === BAEMIN_LAYOUT_TAB.id)) return tabs;
+  const layoutIndex = tabs.findIndex(t => t.id === 'layout');
+  if (layoutIndex < 0) return [...tabs, BAEMIN_LAYOUT_TAB];
+  return [
+    ...tabs.slice(0, layoutIndex + 1),
+    BAEMIN_LAYOUT_TAB,
+    ...tabs.slice(layoutIndex + 1),
+  ];
+}
+
+function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions }) {
+  const canApply = !!(card && updateMulti);
+  const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
+  const groups = ['표지', '내지', '사진'];
+  const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 800, letterSpacing: 0.4 };
+  const applyPreset = (preset) => {
+    if (!canApply) return;
+    updateMulti(baeminLayoutPatch(preset));
+  };
+  const renderPresetButton = (preset) => {
+    const active = activePresetId === preset.id;
+    return React.createElement("button", {
+      key: preset.id,
+      type: "button",
+      disabled: !canApply,
+      'aria-pressed': active,
+      onClick: () => applyPreset(preset),
+      style: {
+        width: '100%',
+        minHeight: compact ? 104 : 118,
+        border: '1px solid ' + (active ? BAEMIN_MINT : T.border),
+        borderRadius: 8,
+        background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.03)',
+        color: T.text,
+        padding: compact ? '10px 11px' : '12px 13px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 8,
+        textAlign: 'left',
+        cursor: canApply ? 'pointer' : 'not-allowed',
+        opacity: canApply ? 1 : 0.55,
+        boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.24) inset' : 'none',
+      },
+    },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+        React.createElement("span", { style: { fontSize: compact ? 12 : 13, fontWeight: 800, color: active ? '#9ff3ee' : T.text } }, preset.label),
+        active && React.createElement("span", { style: { color: BAEMIN_MINT, fontSize: 11, fontWeight: 900 } }, "적용")
+      ),
+      React.createElement("div", { style: { display: 'flex', gap: 4 } },
+        preset.swatches.map((color, idx) => React.createElement("span", {
+          key: preset.id + '-swatch-' + idx,
+          style: {
+            width: idx === 0 ? 26 : 18,
+            height: 10,
+            borderRadius: 999,
+            background: color,
+            border: '1px solid rgba(255,255,255,0.25)',
+            boxSizing: 'border-box',
+          },
+        }))
+      ),
+      React.createElement("div", { style: { color: T.textSecondary, fontSize: 11, lineHeight: 1.45 } }, preset.desc),
+      React.createElement("div", { style: { marginTop: 'auto', color: active ? '#7ddbd8' : T.textMuted, fontSize: 10, lineHeight: 1.35, fontWeight: 700 } }, preset.rule)
+    );
+  };
+
+  return React.createElement("div", {
+    'data-bm-layout-panel': 'true',
+    style: { display: 'flex', flexDirection: 'column', gap: 12 },
+  },
+    React.createElement("div", {
+      style: {
+        border: '1px solid rgba(42,193,188,0.36)',
+        borderRadius: 8,
+        background: 'rgba(42,193,188,0.08)',
+        padding: compact ? '14px 14px' : '16px 18px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      },
+    },
+      React.createElement("span", { style: { fontSize: 11, color: '#7ddbd8', fontWeight: 800, letterSpacing: 0.4 } }, "BM ONLY"),
+      React.createElement("div", { style: { color: T.text, fontSize: compact ? 15 : 16, fontWeight: 800 } }, "배민전용 레이아웃"),
+      React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "피그마 가이드의 표지/내지/사진 규칙을 현재 카드에 바로 적용합니다."),
+    ),
+    groups.map(group => React.createElement("section", { key: group, style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      React.createElement("div", { style: sectionTitleStyle }, group),
+      React.createElement("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+          gap: 8,
+        },
+      },
+        BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group).map(renderPresetButton)
+      )
+    )),
+    canApply && cards && onCardChange && React.createElement(ApplyToAllBtn, {
+      keysToApply: BAEMIN_STYLE_KEYS,
+      cards,
+      card,
+      activeIndex,
+      onCardChange,
+      mt: 2,
+      styleClipboardActions,
+    }),
+    !canApply && React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "카드를 선택하면 배민 전용 프리셋을 적용할 수 있습니다."),
+  );
+}
+
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
   { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
@@ -7578,7 +7834,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -7655,7 +7911,12 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   // article 모드에서는 "클립 조정" 탭 숨김 (영상 구간 개념이 없음)
   const isArticleMode = project?.sourceType === 'article' || card?.sourceType === 'article';
-  const tabs = isArticleMode ? MOBILE_TABS.filter(t => t.id !== 'clip-adjust') : MOBILE_TABS;
+  const baseTabs = isArticleMode ? MOBILE_TABS.filter(t => t.id !== 'clip-adjust') : MOBILE_TABS;
+  const tabs = withBaeminLayoutTab(baseTabs, isBmOnlyPage);
+
+  useEffect(() => {
+    if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
+  }, [activeTab, isBmOnlyPage]);
 
   if (!card) return null;
 
@@ -7971,7 +8232,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
-  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { compact: true, card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions }), text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -8067,7 +8328,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -8170,6 +8431,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const goTo = (idx) => { if (idx >= 0 && idx < cards.length) { setSelectedHandle(null); onActiveChange(idx); } };
+  const desktopTabs = withBaeminLayoutTab(DESKTOP_TABS, isBmOnlyPage);
+
+  useEffect(() => {
+    if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
+  }, [activeTab, isBmOnlyPage]);
 
   const handlePreviewTextClick = (field) => {
     setActiveTab('text');
@@ -8516,7 +8782,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'], styleClipboardActions }),
   );
 
-  const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
+  const tabRenderers = { fill: renderFill, layout: renderLayout, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions }), text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
@@ -8635,7 +8901,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // Tab bar
       React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
-        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
+        desktopTabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
@@ -10447,6 +10713,7 @@ export default function App() {
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           project: activeProject,
+          isBmOnlyPage,
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,
@@ -10474,6 +10741,7 @@ export default function App() {
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
           project: activeProject,
+          isBmOnlyPage,
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,
