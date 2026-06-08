@@ -7633,14 +7633,15 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
     { label: '표지', sections: ['사진 없는 표지', '사진 있는 표지'] },
     { label: '본문', sections: ['사진 없는 본문', '사진 있는 본문'] },
   ];
-  const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 800, letterSpacing: 0.4 };
-  const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 900, letterSpacing: 0.35 };
+  const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
+  const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
   const applyPreset = (preset) => {
     if (!canApply) return;
     updateMulti(baeminLayoutPatch(preset));
   };
   const renderPresetButton = (preset) => {
     const active = activePresetId === preset.id;
+    const compactBadges = (preset.badges || []).filter(badge => !badge.startsWith('사진'));
     return React.createElement("button", {
       key: preset.id,
       type: "button",
@@ -7649,100 +7650,74 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
       onClick: () => applyPreset(preset),
       style: {
         width: '100%',
-        minHeight: compact ? 118 : 132,
+        minHeight: compact ? 42 : 46,
         border: '1px solid ' + (active ? BAEMIN_MINT : T.border),
         borderRadius: 8,
-        background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.03)',
+        background: active ? 'rgba(42,193,188,0.14)' : 'rgba(255,255,255,0.025)',
         color: T.text,
-        padding: compact ? '10px 11px' : '12px 13px',
+        padding: compact ? '7px 9px' : '8px 10px',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'stretch',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         gap: 8,
         textAlign: 'left',
         cursor: canApply ? 'pointer' : 'not-allowed',
         opacity: canApply ? 1 : 0.55,
-        boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.24) inset' : 'none',
+        boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.2) inset' : 'none',
       },
     },
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
-        React.createElement("span", { style: { fontSize: compact ? 12 : 13, fontWeight: 800, color: active ? '#9ff3ee' : T.text } }, preset.label),
-        active && React.createElement("span", { style: { color: BAEMIN_MINT, fontSize: 11, fontWeight: 900 } }, "적용")
-      ),
-      React.createElement("div", { style: { display: 'flex', gap: 4 } },
-        preset.swatches.map((color, idx) => React.createElement("span", {
-          key: preset.id + '-swatch-' + idx,
-          style: {
-            width: idx === 0 ? 26 : 18,
-            height: 10,
-            borderRadius: 999,
-            background: color,
-            border: '1px solid rgba(255,255,255,0.25)',
-            boxSizing: 'border-box',
-          },
-        }))
-      ),
-      preset.badges && React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 4 } },
-        preset.badges.map((badge) => React.createElement("span", {
+      React.createElement("span", {
+        style: {
+          color: active ? '#9ff3ee' : T.text,
+          fontSize: compact ? 11 : 12,
+          fontWeight: 800,
+          lineHeight: 1.2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        },
+      }, preset.label.replace(/^사진 (없음|있음) · /, '')),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
+        compactBadges.map((badge) => React.createElement("span", {
           key: preset.id + '-badge-' + badge,
           style: {
-            border: '1px solid ' + (active ? 'rgba(42,193,188,0.55)' : 'rgba(255,255,255,0.18)'),
             borderRadius: 999,
-            padding: '3px 7px',
+            padding: '2px 5px',
+            background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.05)',
             color: active ? '#9ff3ee' : T.textMuted,
-            fontSize: 10,
+            fontSize: 9,
             fontWeight: 800,
             lineHeight: 1,
           },
-        }, badge))
-      ),
-      React.createElement("div", { style: { color: T.textSecondary, fontSize: 11, lineHeight: 1.45 } }, preset.desc),
-      React.createElement("div", { style: { marginTop: 'auto', color: active ? '#7ddbd8' : T.textMuted, fontSize: 10, lineHeight: 1.35, fontWeight: 700 } }, preset.rule)
+        }, badge.replace('타이틀 ', 'T '))),
+        active && React.createElement("span", { style: { color: BAEMIN_MINT, fontSize: 10, fontWeight: 900, lineHeight: 1 } }, "적용")
+      )
     );
   };
 
   return React.createElement("div", {
     'data-bm-layout-panel': 'true',
-    style: { display: 'flex', flexDirection: 'column', gap: 12 },
+    style: { display: 'flex', flexDirection: 'column', gap: compact ? 8 : 9 },
   },
-    React.createElement("div", {
-      style: {
-        border: '1px solid rgba(42,193,188,0.36)',
-        borderRadius: 8,
-        background: 'rgba(42,193,188,0.08)',
-        padding: compact ? '14px 14px' : '16px 18px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 6,
-      },
-    },
-      React.createElement("span", { style: { fontSize: 11, color: '#7ddbd8', fontWeight: 800, letterSpacing: 0.4 } }, "BM ONLY"),
-      React.createElement("div", { style: { color: T.text, fontSize: compact ? 15 : 16, fontWeight: 800 } }, "배민전용 레이아웃"),
-      React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "피그마 가이드의 표지/본문 규칙을 현재 카드에 바로 적용합니다."),
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+      React.createElement("div", { style: { color: T.text, fontSize: 13, fontWeight: 900 } }, "배민전용"),
+      React.createElement("div", { style: { color: BAEMIN_MINT, fontSize: 10, fontWeight: 900 } }, "BM ONLY")
     ),
-    groups.map(group => React.createElement("section", { key: group.label, style: { display: 'flex', flexDirection: 'column', gap: 9 } },
+    groups.map(group => React.createElement("section", { key: group.label, style: { display: 'flex', flexDirection: 'column', gap: 5 } },
       React.createElement("div", { style: sectionTitleStyle }, group.label),
       group.sections.map(section => {
         const presets = BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group.label && preset.section === section);
         if (presets.length === 0) return null;
         return React.createElement("div", {
           key: section,
-          style: {
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 8,
-            padding: compact ? '10px 10px 11px' : '11px 12px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            background: 'rgba(255,255,255,0.025)',
-          },
+          style: { display: 'flex', flexDirection: 'column', gap: 4 },
         },
           React.createElement("div", { style: subsectionTitleStyle }, section),
           React.createElement("div", {
             style: {
               display: 'grid',
               gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-              gap: 8,
+              gap: 5,
             },
           }, presets.map(renderPresetButton))
         );
@@ -7754,7 +7729,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
       card,
       activeIndex,
       onCardChange,
-      mt: 2,
+      mt: 0,
       styleClipboardActions,
     }),
     !canApply && React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "카드를 선택하면 배민 전용 프리셋을 적용할 수 있습니다."),
