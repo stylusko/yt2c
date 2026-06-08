@@ -329,11 +329,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-square',
     group: '표지',
-    section: '사진 있는 표지',
-    label: '사진 있음 · 1:1 사진 표지',
+    section: '영상/사진 있는 표지',
+    label: '영상/사진 있음 · 1:1 사진 표지',
     shortLabel: '1:1 사진 표지',
     desc: '사진 하단 그라데이션 위에 제목을 얹는 표지',
-    rule: '사진 있음 / 타이틀 중심',
+    rule: '영상/사진 있음 / 타이틀 중심',
     badges: ['사진 있음', '타이틀 있음'],
     aspectRatio: '1:1',
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
@@ -348,11 +348,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-reels',
     group: '표지',
-    section: '사진 있는 표지',
-    label: '사진 있음 · 3:4 사진 표지',
+    section: '영상/사진 있는 표지',
+    label: '영상/사진 있음 · 3:4 사진 표지',
     shortLabel: '3:4 사진 표지',
     desc: '세로 사진 하단 그라데이션 위에 제목을 얹는 표지',
-    rule: '사진 있음 / 타이틀 중심',
+    rule: '영상/사진 있음 / 타이틀 중심',
     badges: ['사진 있음', '타이틀 있음'],
     aspectRatio: '3:4',
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
@@ -425,11 +425,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-frame',
     group: '본문',
-    section: '사진 있는 본문',
-    label: '사진 있음 · 하단 타이틀+본문',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 하단 타이틀+본문',
     shortLabel: '사진 프레임',
     desc: '사진을 위에 두고 하단을 배민 톤 정보 영역으로 분리',
-    rule: '사진 있음 / 타이틀 있음',
+    rule: '영상/사진 있음 / 타이틀 있음',
     badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
     patch: {
@@ -443,11 +443,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-body',
     group: '본문',
-    section: '사진 있는 본문',
-    label: '사진 있음 · 오버레이 타이틀+본문',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 오버레이 타이틀+본문',
     shortLabel: '사진 본문',
     desc: '실사 이미지 위에 하단 본문을 얹는 설명형 카드',
-    rule: '사진 있음 / 타이틀 있음',
+    rule: '영상/사진 있음 / 타이틀 있음',
     badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
@@ -461,11 +461,11 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-body-only',
     group: '본문',
-    section: '사진 있는 본문',
-    label: '사진 있음 · 오버레이 본문만',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 오버레이 본문만',
     shortLabel: '사진 본문만',
     desc: '사진은 살리고 제목 없이 설명 문장만 얹는 카드',
-    rule: '사진 있음 / 타이틀 없음',
+    rule: '영상/사진 있음 / 타이틀 없음',
     badges: ['사진 있음', '타이틀 없음'],
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
@@ -8150,8 +8150,8 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
   const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
   const activePreset = BAEMIN_LAYOUT_PRESETS.find(preset => preset.id === activePresetId);
   const groups = [
-    { label: '표지', sections: ['사진 있는 표지', '영상/사진 없는 표지'] },
-    { label: '본문', sections: ['영상/사진 없는 본문', '사진 있는 본문'] },
+    { label: '표지', sections: ['영상/사진 있는 표지', '영상/사진 없는 표지'] },
+    { label: '본문', sections: ['영상/사진 없는 본문', '영상/사진 있는 본문'] },
   ];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
   const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
