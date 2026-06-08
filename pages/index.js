@@ -4549,12 +4549,24 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   });
 
   // Text box click target (z:6)
-  const textBoxClickTarget = card.layout === 'text_box' && onSelectHandle && (() => {
+  const isBoxTextClickLayout = card.layout === 'text_box' || card.layout === BAEMIN_BOX_BODY_LAYOUT;
+  const textBoxClickTarget = isBoxTextClickLayout && (onSelectHandle || onTextClick) && (() => {
     const { bW, bH, bX, bY } = getTextBoxGeom();
+    const openBoxText = (e) => {
+      e.stopPropagation();
+      if (card.layout === BAEMIN_BOX_BODY_LAYOUT && onTextClick) {
+        onTextClick('box');
+        return;
+      }
+      if (onSelectHandle) onSelectHandle('textbox');
+    };
     return React.createElement("div", {
-      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
-      onClick: (e) => { e.stopPropagation(); onSelectHandle('textbox'); },
-      onDoubleClick: (e) => { e.stopPropagation(); handleCardTextDblClick(e); },
+      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: card.layout === BAEMIN_BOX_BODY_LAYOUT ? 'text' : 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
+      onClick: openBoxText,
+      onDoubleClick: (e) => {
+        if (card.layout === BAEMIN_BOX_BODY_LAYOUT) openBoxText(e);
+        else { e.stopPropagation(); handleCardTextDblClick(e); }
+      },
     });
   })();
 
@@ -7789,13 +7801,14 @@ function TabPill({ label, active, onClick, dataTour }) {
 const BAEMIN_LAYOUT_TAB = { id: 'baemin-layout', label: '배민전용 레이아웃', tour: 'tab-baemin-layout' };
 
 function withBaeminLayoutTab(tabs, enabled) {
-  if (!enabled || tabs.some(t => t.id === BAEMIN_LAYOUT_TAB.id)) return tabs;
+  if (!enabled) return tabs;
   const layoutIndex = tabs.findIndex(t => t.id === 'layout');
-  if (layoutIndex < 0) return [...tabs, BAEMIN_LAYOUT_TAB];
+  const baseTabs = tabs.filter(t => t.id !== 'layout' && t.id !== BAEMIN_LAYOUT_TAB.id);
+  if (layoutIndex < 0) return [...baseTabs, BAEMIN_LAYOUT_TAB];
   return [
-    ...tabs.slice(0, layoutIndex + 1),
+    ...baseTabs.slice(0, layoutIndex),
     BAEMIN_LAYOUT_TAB,
-    ...tabs.slice(layoutIndex + 1),
+    ...baseTabs.slice(layoutIndex),
   ];
 }
 
@@ -8200,6 +8213,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
   const tabs = withBaeminLayoutTab(baseTabs, isBmOnlyPage);
 
   useEffect(() => {
+    if (isBmOnlyPage && activeTab === 'layout') setActiveTab(BAEMIN_LAYOUT_TAB.id);
     if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
   }, [activeTab, isBmOnlyPage]);
 
@@ -8724,6 +8738,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const desktopTabs = withBaeminLayoutTab(DESKTOP_TABS, isBmOnlyPage);
 
   useEffect(() => {
+    if (isBmOnlyPage && activeTab === 'layout') setActiveTab(BAEMIN_LAYOUT_TAB.id);
     if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
   }, [activeTab, isBmOnlyPage]);
 
@@ -8731,7 +8746,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     setActiveTab('text');
     setTimeout(() => {
       const el = document.getElementById('desk-text-' + field);
-      if (el) el.focus();
+      if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }, 50);
   };
 
