@@ -14,6 +14,22 @@ const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
 const ARTICLE_IMAGE_RENDER_VERSION = 7;
+const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
+const SHORT_SHARE_ROUTE_RE = /^\/s\/([^/]+)(?:\/(bmonly))?$/;
+function parseShortShareRoute(pathname) {
+  const match = pathname.match(SHORT_SHARE_ROUTE_RE);
+  if (!match) return null;
+  return {
+    shareId: match[1],
+    variant: match[2] === PAGE_VARIANTS.BM_ONLY ? PAGE_VARIANTS.BM_ONLY : PAGE_VARIANTS.DEFAULT,
+  };
+}
+function buildShortSharePath(shareId, variant = PAGE_VARIANTS.DEFAULT) {
+  return variant === PAGE_VARIANTS.BM_ONLY ? `/s/${shareId}/bmonly` : `/s/${shareId}`;
+}
+function isBmOnlyVariant(variant) {
+  return variant === PAGE_VARIANTS.BM_ONLY;
+}
 const RECENT_FEATURES = [
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
   '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
@@ -8498,6 +8514,29 @@ function HelpModal({ onClose, onStartTour, mob }) {
   );
 }
 
+function BmOnlyBadge({ mob }) {
+  return React.createElement("div", {
+    'data-bm-only-badge': 'true',
+    style: {
+      position: 'fixed',
+      top: mob ? 54 : 64,
+      right: mob ? 12 : 24,
+      zIndex: 45,
+      padding: mob ? '5px 9px' : '6px 11px',
+      borderRadius: T.radiusPill,
+      border: '1px solid rgba(245,158,11,0.45)',
+      background: 'rgba(24,24,27,0.88)',
+      color: '#fbbf24',
+      fontSize: mob ? 10 : 11,
+      fontWeight: 800,
+      letterSpacing: 0.4,
+      lineHeight: 1,
+      boxShadow: '0 6px 18px rgba(0,0,0,0.25)',
+      pointerEvents: 'none',
+    },
+  }, "BM ONLY");
+}
+
 /* ── App ── */
 export default function App() {
   const mob = useIsMobile();
@@ -8519,6 +8558,8 @@ export default function App() {
   const [shareLoading, setShareLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [importProject, setImportProject] = useState(null);
+  const [pageVariant, setPageVariant] = useState(PAGE_VARIANTS.DEFAULT);
+  const [routeShareId, setRouteShareId] = useState(null);
   const [showInfo, setShowInfo] = useState(false);
   const [showReorder, setShowReorder] = useState(false);
   const [activeCardIdx, setActiveCardIdx] = useState(0);
@@ -8564,6 +8605,7 @@ export default function App() {
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
+  const isBmOnlyPage = isBmOnlyVariant(pageVariant);
 
   // Tutorial auto-start on first editor entry
   useEffect(() => {
@@ -8600,9 +8642,11 @@ export default function App() {
       setPendingProjectId(first.id);
     }
     const path = window.location.pathname;
-    const shortMatch = path.match(/^\/s\/([^/]+)$/);
-    if (shortMatch) {
-      const shareId = shortMatch[1];
+    const shortRoute = parseShortShareRoute(path);
+    if (shortRoute) {
+      const shareId = shortRoute.shareId;
+      setRouteShareId(shareId);
+      setPageVariant(shortRoute.variant);
       setImportLoading(true);
       fetch(`/api/share/${shareId}`)
         .then(r => r.ok ? r.json() : Promise.reject())
@@ -8615,6 +8659,8 @@ export default function App() {
         .finally(() => setImportLoading(false));
       setEditorMode('editor');
     } else if (path === '/share') {
+      setRouteShareId(null);
+      setPageVariant(PAGE_VARIANTS.DEFAULT);
       const params = new URLSearchParams(window.location.search);
       const shareId = params.get('id');
       const d = params.get('d');
@@ -8638,15 +8684,23 @@ export default function App() {
       }
       setEditorMode('editor');
     } else if (path === '/easy') {
+      setRouteShareId(null);
+      setPageVariant(PAGE_VARIANTS.DEFAULT);
       setEditorMode('wizard');
       setWizardStep(1);
     } else if (path === '/ai-edit') {
+      setRouteShareId(null);
+      setPageVariant(PAGE_VARIANTS.DEFAULT);
       setEditorMode('ai-wizard');
       setAiMode(true);
       setWizardStep(1);
     } else if (path === '/edit') {
+      setRouteShareId(null);
+      setPageVariant(PAGE_VARIANTS.DEFAULT);
       setEditorMode('editor');
     } else {
+      setRouteShareId(null);
+      setPageVariant(PAGE_VARIANTS.DEFAULT);
       setEditorMode(null);
     }
   }, []);
@@ -8655,21 +8709,37 @@ export default function App() {
   useEffect(() => {
     if (editorMode === null && wizardLoading) return;
     if (importProject) return; // don't change URL while import dialog is open
-    const targetPath = editorMode === 'wizard' ? '/easy' : editorMode === 'ai-wizard' ? '/ai-edit' : editorMode === 'ai-loading' ? '/ai-edit' : editorMode === 'editor' ? '/edit' : '/';
+    const bmOnlyPath = isBmOnlyPage && routeShareId && editorMode === 'editor'
+      ? buildShortSharePath(routeShareId, pageVariant)
+      : null;
+    const targetPath = bmOnlyPath || (editorMode === 'wizard' ? '/easy' : editorMode === 'ai-wizard' ? '/ai-edit' : editorMode === 'ai-loading' ? '/ai-edit' : editorMode === 'editor' ? '/edit' : '/');
     if (window.location.pathname !== targetPath) {
-      router.push(targetPath, undefined, { shallow: true });
+      if (bmOnlyPath) {
+        window.history.replaceState(window.history.state, '', targetPath);
+      } else {
+        router.push(targetPath, undefined, { shallow: true });
+      }
     }
-  }, [editorMode, wizardLoading, importProject]);
+  }, [editorMode, wizardLoading, importProject, isBmOnlyPage, pageVariant, routeShareId]);
 
   // Handle browser back/forward
   useEffect(() => {
     const onRouteChange = (url) => {
       if (wizardLoading) return;
       const p = url.split('?')[0];
-      if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
-      else if (p === '/ai-edit' && editorMode !== 'ai-wizard') { setEditorMode('ai-wizard'); setWizardStep(1); setAiMode(true); }
-      else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
-      else if (p === '/' && editorMode !== null) { setEditorMode(null); setAiMode(false); }
+      const shareRoute = parseShortShareRoute(p);
+      if (shareRoute) {
+        setRouteShareId(shareRoute.shareId);
+        setPageVariant(shareRoute.variant);
+        if (editorMode !== 'editor') setEditorMode('editor');
+      } else {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        if (p === '/easy' && editorMode !== 'wizard') { setEditorMode('wizard'); setWizardStep(1); }
+        else if (p === '/ai-edit' && editorMode !== 'ai-wizard') { setEditorMode('ai-wizard'); setWizardStep(1); setAiMode(true); }
+        else if (p === '/edit' && editorMode !== 'editor') { setEditorMode('editor'); }
+        else if (p === '/' && editorMode !== null) { setEditorMode(null); setAiMode(false); }
+      }
     };
     router.events.on('routeChangeComplete', onRouteChange);
     return () => router.events.off('routeChangeComplete', onRouteChange);
@@ -8813,7 +8883,7 @@ export default function App() {
       });
       if (res.ok) {
         const { id } = await res.json();
-        const url = `${window.location.origin}/s/${id}`;
+        const url = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`;
         if (navigator.clipboard) navigator.clipboard.writeText(url);
         setShareLoading(false);
         setShareUrl(url);
@@ -8838,7 +8908,11 @@ export default function App() {
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
-    router.push('/edit', undefined, { shallow: true });
+    if (isBmOnlyPage && routeShareId) {
+      window.history.replaceState(window.history.state, '', buildShortSharePath(routeShareId, pageVariant));
+    } else {
+      router.push('/edit', undefined, { shallow: true });
+    }
   };
 
   const effectiveCard = (card) => ({
@@ -8997,7 +9071,7 @@ export default function App() {
           const encoded = encodeProject(projectForShare);
           try {
             const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
-            if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}/s/${id}`; }
+            if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`; }
           } catch (_) {}
           if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
         } catch (shareErr) {
@@ -9652,7 +9726,11 @@ export default function App() {
     if (failCount > 0) window.alert(`${failCount}\uAC1C \uCE74\uB4DC\uC758 \uCE74\uD53C \uBCC0\uD658\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.`);
   };
 
-  return React.createElement("div", { style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg } },
+  return React.createElement("div", {
+    'data-page-variant': pageVariant,
+    'data-bm-only-page': isBmOnlyPage ? 'true' : undefined,
+    style: { ...(mob ? { height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" } : { minHeight: "100vh" }), background: T.bg },
+  },
     React.createElement(Head, null,
       React.createElement("title", null, "YOUMECA - \uC720\uBA54\uCE74, \uC720\uD29C\uBE0C \uC601\uC0C1\uC744 \uCE74\uB4DC\uB274\uC2A4\uB85C"),
       React.createElement("meta", { name: "description", content: "\uB0B4\uAC00 \uAFC8\uAFB8\uB358 \uCE74\uB4DC\uB274\uC2A4 \uC0DD\uC131\uAE30" }),
@@ -9679,6 +9757,8 @@ export default function App() {
       React.createElement("link", { href: "https://fonts.googleapis.com/css2?family=Bitcount+Prop+Single&family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;700&family=Gothic+A1:wght@400;700;900&family=Dongle:wght@300;400;700&family=Gamja+Flower&family=East+Sea+Dokdo&family=Single+Day&family=Gasoek+One&display=swap", rel: "stylesheet" }),
       ADSENSE_ID && React.createElement("script", { async: true, src: `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_ID}`, crossOrigin: "anonymous" }),
     ),
+
+    editorMode === 'editor' && isBmOnlyPage && React.createElement(BmOnlyBadge, { mob }),
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
