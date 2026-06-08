@@ -6636,7 +6636,7 @@ function StylePresetThumb({ preset }) {
 }
 
 /* ── Mode Selection Screen ── */
-function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy, onSelectFree, aiEditRunning }) {
+function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy, onSelectFree, aiEditRunning, onLogoClick }) {
   const [hovered, setHovered] = useState(null);
   const [showAiBlock, setShowAiBlock] = useState(false);
   const [siteStats, setSiteStats] = useState(null);
@@ -6683,7 +6683,10 @@ function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy
     `),
     // Section 1: Logo + copy
     React.createElement("div", { style: { textAlign: 'center' } },
-      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 8 : 12 } },
+      React.createElement("div", {
+        onClick: onLogoClick,
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: mob ? 8 : 12, cursor: onLogoClick ? 'pointer' : 'default', userSelect: 'none' },
+      },
         React.createElement("img", { src: "/icon-round.png", style: { width: mob ? 30 : 36, height: mob ? 30 : 36, borderRadius: 8 } }),
         React.createElement("span", { style: { fontFamily: "'Bitcount Prop Single', monospace", fontSize: mob ? 22 : 26, color: T.text, letterSpacing: '0.05em' } }, "YOUMECA"),
       ),
@@ -9865,7 +9868,29 @@ export default function App() {
   const infoRef = useRef(null);
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
+  const homeLogoTapRef = useRef({ count: 0, timer: null });
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
+
+  const handleHomeLogoClick = useCallback(() => {
+    if (isBmOnlyPage || editorMode !== null) return;
+    if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
+    const nextCount = homeLogoTapRef.current.count + 1;
+    if (nextCount >= 5) {
+      homeLogoTapRef.current.count = 0;
+      homeLogoTapRef.current.timer = null;
+      router.push(BM_ONLY_MODE_PATHS.home);
+      return;
+    }
+    homeLogoTapRef.current.count = nextCount;
+    homeLogoTapRef.current.timer = setTimeout(() => {
+      homeLogoTapRef.current.count = 0;
+      homeLogoTapRef.current.timer = null;
+    }, 1600);
+  }, [editorMode, isBmOnlyPage, router]);
+
+  useEffect(() => () => {
+    if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
+  }, []);
 
   // Tutorial auto-start on first editor entry
   useEffect(() => {
@@ -11116,6 +11141,7 @@ export default function App() {
 
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
+      onLogoClick: isBmOnlyPage ? undefined : handleHomeLogoClick,
       onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
       onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
