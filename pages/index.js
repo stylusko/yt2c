@@ -243,6 +243,8 @@ const BAEMIN_INK = '#111111';
 const BAEMIN_CREAM = '#CEFCF6';
 const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
 const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
+const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
+const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
 const BAEMIN_STYLE_KEYS = [
   'brandGuideId', 'brandLayoutId',
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
@@ -250,6 +252,7 @@ const BAEMIN_STYLE_KEYS = [
   'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY',
   'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
   'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY',
+  'useBoxText', 'boxTextSize', 'boxTextColor', 'boxTextFont', 'boxTextAlign', 'boxTextLetterSpacing', 'boxTextLineHeight', 'boxTextX', 'boxTextY',
   'videoBrightness', 'overlays',
 ];
 
@@ -395,11 +398,12 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
-      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 58, textBoxWidth: 86, textBoxHeight: 46, textBoxPadding: 34, textBoxRadius: 8, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
+      layout: BAEMIN_BOX_BODY_LAYOUT, useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 60, textBoxWidth: 78, textBoxHeight: 25, textBoxPadding: 34, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 34, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.25, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 29, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.48, bodyX: 0, bodyY: 0,
+      useBoxText: true, boxTextFont: 'Pretendard-Regular.otf', boxTextSize: 29, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: 0, boxTextLineHeight: 1.45, boxTextX: 0, boxTextY: 0,
       overlays: [baeminLogoOverlay('solidBody')],
     },
   },
@@ -459,7 +463,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   },
 ];
 
-function baeminLayoutPatch(preset) {
+function baeminLayoutPatch(preset, card = {}) {
   const patch = {
     ...preset.patch,
     brandGuideId: BAEMIN_GUIDE_ID,
@@ -470,6 +474,9 @@ function baeminLayoutPatch(preset) {
   }
   if ((preset.badges || []).includes('사진 없음') && patch.useBg !== false) {
     patch.bgOpacity = 1;
+  }
+  if (preset.id === 'bm-solid-box' && !card.boxText) {
+    patch.boxText = DEFAULT_BOX_TEXT;
   }
   return patch;
 }
@@ -487,12 +494,15 @@ const DEFAULT_CARD = () => ({
   title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
   subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
   body: "본문 내용을 입력하세요", bodySize: 44, bodyFont: "Pretendard-Regular.otf",
+  useBoxText: false,
+  boxText: DEFAULT_BOX_TEXT, boxTextSize: 32, boxTextFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
-  titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
+  titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2", boxTextColor: "#111111",
   titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
   subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
   bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
+  boxTextLetterSpacing: 0, boxTextLineHeight: 1.45, boxTextX: 0, boxTextY: 0, boxTextAlign: 'left',
   captureTime: "", videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
@@ -516,7 +526,7 @@ const STYLE_COPY_GROUPS = [
     id: 'text',
     label: '텍스트 스타일',
     shortLabel: '텍스트',
-    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY'],
+    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY', 'boxTextLetterSpacing', 'boxTextLineHeight', 'boxTextX', 'boxTextY'],
   },
   {
     id: 'video',
@@ -896,6 +906,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const subtitleLH = card.subtitleLineHeight ?? 1.4;
   const bodyLS = (card.bodyLetterSpacing ?? 0) * s;
   const bodyLH = card.bodyLineHeight ?? 1.4;
+  const boxTextLS = (card.boxTextLetterSpacing ?? 0) * s;
+  const boxTextLH = card.boxTextLineHeight ?? 1.45;
 
   const fontMap = {
     "BAEMINWORK.otf": "400 {s}px 'BAEMINWORK', Pretendard, sans-serif",
@@ -927,6 +939,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   if (card.useTitle !== false && card.title) fontsToLoad.push({ font: getFont(card.titleFont, 48), text: card.title });
   if (card.useSubtitle !== false && card.subtitle) fontsToLoad.push({ font: getFont(card.subtitleFont, 48), text: card.subtitle });
   if (card.useBody !== false && card.body) fontsToLoad.push({ font: getFont(card.bodyFont, 48), text: card.body });
+  if (card.useBoxText !== false && card.boxText) fontsToLoad.push({ font: getFont(card.boxTextFont, 48), text: card.boxText });
   if (fontsToLoad.length > 0) {
     await Promise.all(fontsToLoad.map(({ font, text }) => document.fonts.load(font, text).catch(() => {})));
   }
@@ -990,12 +1003,15 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const titleSz = Math.round(card.titleSize * s);
   const subSz = Math.round(card.subtitleSize * s);
   const bodySz = Math.round(card.bodySize * s);
+  const boxTextSz = Math.round((card.boxTextSize ?? 32) * s);
   const titleLh = Math.round(titleSz * titleLH);
   const subLh = Math.round(subSz * subtitleLH);
   const bodyLh = Math.round(bodySz * bodyLH);
+  const boxTextLh = Math.round(boxTextSz * boxTextLH);
   const titleOX = Math.round((card.titleX ?? 0) * s), titleOY = Math.round((card.titleY ?? 0) * s);
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
+  const boxTextOX = Math.round((card.boxTextX ?? 0) * s), boxTextOY = Math.round((card.boxTextY ?? 0) * s);
 
   function loadOverlayImage(src) {
     return new Promise((resolve, reject) => {
@@ -1094,6 +1110,84 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       curY -= item.lh;
       ctx.font = item.font; ctx.fillStyle = item.color;
       drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + getBaselineOffset(item.font, item.sz, item.lh) + (item.oy || 0), item.ls);
+    }
+  } else if (layout === BAEMIN_BOX_BODY_LAYOUT) {
+    if (useBg) {
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    const contentPadX = Math.round(132 * s);
+    const contentW = w - contentPadX * 2;
+    const contentTop = Math.round(150 * s);
+    const topGap = Math.round(18 * s);
+    let curY = contentTop;
+    const drawInRect = (text, align, fieldLS, left, width, xOffset) => {
+      const tw = measureTextLS(text, fieldLS);
+      let x = left;
+      if (align === 'center') x = left + width / 2 - tw / 2;
+      else if (align === 'right') x = left + width - tw;
+      return x + (xOffset || 0);
+    };
+
+    const topTitleLines = card.title ? wrapText(card.title, titleSz, card.titleFont, titleLS, contentW) : [];
+    const topBodyLines = card.body ? wrapText(card.body, bodySz, card.bodyFont, bodyLS, contentW) : [];
+    if (topTitleLines.length > 0) {
+      const titleFont = getFont(card.titleFont, titleSz);
+      ctx.font = titleFont;
+      ctx.fillStyle = card.titleColor;
+      for (const ln of topTitleLines) {
+        drawTextLS(ln, drawInRect(ln, card.titleAlign || 'left', titleLS, contentPadX, contentW, titleOX), curY + getBaselineOffset(titleFont, titleSz, titleLh) + titleOY, titleLS);
+        curY += titleLh;
+      }
+    }
+    if (topBodyLines.length > 0) {
+      if (topTitleLines.length > 0) curY += topGap;
+      const bodyFont = getFont(card.bodyFont, bodySz);
+      ctx.font = bodyFont;
+      ctx.fillStyle = card.bodyColor;
+      for (const ln of topBodyLines) {
+        if (!ln) { curY += Math.round(bodySz * 0.55); continue; }
+        drawTextLS(ln, drawInRect(ln, card.bodyAlign || 'left', bodyLS, contentPadX, contentW, bodyOX), curY + getBaselineOffset(bodyFont, bodySz, bodyLh) + bodyOY, bodyLS);
+        curY += bodyLh;
+      }
+    }
+
+    const boxW = w * (card.textBoxWidth || 78) / 100;
+    const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
+    const boxY = (card.textBoxY || 60) / 100 * h;
+    const boxPad = Math.round((card.textBoxPadding || 34) * s);
+    const boxRad = Math.round((card.textBoxRadius || 0) * s);
+    const boxBgRgb = (card.textBoxBgColor || "#ffffff").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [255,255,255];
+    const boxBgOp = card.textBoxBgOpacity ?? 1;
+    const boxBorderW = Math.round((card.textBoxBorderWidth || 0) * s);
+    const boxTextContentW = boxW - boxPad * 2;
+    const boxTextLines = (card.useBoxText !== false && card.boxText) ? wrapText(card.boxText, boxTextSz, card.boxTextFont, boxTextLS, boxTextContentW) : [];
+    const boxContentH = boxTextLines.reduce((sum, ln) => sum + (ln ? boxTextLh : Math.round(boxTextSz * 0.55)), 0);
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxContentH + boxPad * 2;
+
+    ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxRad, boxY - boxH/2);
+    ctx.arcTo(boxX + boxW, boxY - boxH/2, boxX + boxW, boxY - boxH/2 + boxRad, boxRad);
+    ctx.arcTo(boxX + boxW, boxY + boxH/2, boxX + boxW - boxRad, boxY + boxH/2, boxRad);
+    ctx.arcTo(boxX, boxY + boxH/2, boxX, boxY + boxH/2 - boxRad, boxRad);
+    ctx.arcTo(boxX, boxY - boxH/2, boxX + boxRad, boxY - boxH/2, boxRad);
+    ctx.fill();
+    if (boxBorderW > 0) {
+      ctx.strokeStyle = card.textBoxBorderColor || '#ffffff';
+      ctx.lineWidth = boxBorderW;
+      ctx.stroke();
+    }
+
+    const boxTextFont = getFont(card.boxTextFont, boxTextSz);
+    ctx.font = boxTextFont;
+    ctx.fillStyle = card.boxTextColor || BAEMIN_INK;
+    let boxCurY = boxY - boxH / 2 + boxPad;
+    for (const ln of boxTextLines) {
+      if (!ln) { boxCurY += Math.round(boxTextSz * 0.55); continue; }
+      drawTextLS(ln, drawInRect(ln, card.boxTextAlign || 'left', boxTextLS, boxX + boxPad, boxTextContentW, boxTextOX), boxCurY + getBaselineOffset(boxTextFont, boxTextSz, boxTextLh) + boxTextOY, boxTextLS);
+      boxCurY += boxTextLh;
     }
   } else if (layout === "text_box") {
     // Text box layout: rounded box with text inside
@@ -4045,7 +4139,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const videoFill = card.videoFill || "full";
   const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
   const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
-  const useBaeminBackgroundPlaceholder = card.brandGuideId === BAEMIN_GUIDE_ID && !['full_bg', 'video_only', 'text_box', 'none'].includes(layout);
+  const useBaeminBackgroundPlaceholder = card.brandGuideId === BAEMIN_GUIDE_ID && !['full_bg', 'video_only', 'text_box', BAEMIN_BOX_BODY_LAYOUT, 'none'].includes(layout);
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -4092,7 +4186,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   }, [thumbnailId, card.clipThumbnail]);
 
   // Generate canvas overlay (debounced) — same engine as final render
-  const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+  const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '', boxText: card.useBoxText !== false ? card.boxText : '' };
   const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
   const logoSafeKey = logoSafeOverlayFingerprint(pvCard.overlays || []);
   const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
@@ -5302,7 +5396,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
         React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, auto)', gap:12, justifyContent:'center' } },
           cards.map((card, i) => {
-            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '', boxText: card.useBoxText !== false ? card.boxText : '' };
             const disabled = cardDisabled(card);
             const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType });
             const isCached = card.lastGenHash && card.lastGenHash === currentHash;
@@ -7716,7 +7810,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
   const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
   const applyPresetNow = (preset) => {
-    updateMulti(baeminLayoutPatch(preset));
+    updateMulti(baeminLayoutPatch(preset, card));
     if (preset.aspectRatio && preset.aspectRatio !== aspectRatio && onBaeminAspectRatioChange) {
       onBaeminAspectRatioChange(preset.aspectRatio);
     }
@@ -8259,31 +8353,32 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
-  const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align, boxTextAlign: align });
   const setAllFont = (fontId) => {
     const font = FONT_OPTIONS.find(f => f.id === fontId);
     if (!font) return;
     const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
-    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id, boxTextFont: regV.id });
   };
   const renderTextTab = () => {
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlign(v) }, lb))
         ),
       ),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFont(id) }),
-        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id, boxTextFont: id }) }) : null; })(),
       ),
       // 카피 톤 (AI)
       React.createElement("div", { style: headerRowStyle },
@@ -8367,7 +8462,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
+      isBaeminBoxBody && React.createElement("div", { style: cardStyle },
+        React.createElement("div", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 700 } }, "박스 내용"),
+        React.createElement(TextFieldRow, { inputId: "mob-text-box", value: card.boxText || '', onTextChange: (v) => update("boxText", v), placeholder: "박스 내용", rows: 3, size: card.boxTextSize ?? 32, onSizeChange: (v) => update("boxTextSize", v), color: card.boxTextColor || BAEMIN_INK, onColorChange: (v) => update("boxTextColor", v), enabled: card.useBoxText !== false, onToggle: () => update("useBoxText", card.useBoxText === false ? true : false), presets: [22, 28, 32, 38] }),
+      ),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
     );
   };
 
@@ -8805,30 +8904,31 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
-  const setAllAlignDesk = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const setAllAlignDesk = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align, boxTextAlign: align });
   const setAllFontDesk = (fontId) => {
     const font = FONT_OPTIONS.find(f => f.id === fontId);
     if (!font) return;
     const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
-    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id, boxTextFont: regV.id });
   };
   const renderText = () => {
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlignDesk(v) }, lb))
         ),
       ),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFontDesk(id) }),
-        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id, boxTextFont: id }) }) : null; })(),
       ),
       // 카피 톤 (AI)
       React.createElement("div", { style: headerRowStyle },
@@ -8912,7 +9012,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'], styleClipboardActions }),
+      isBaeminBoxBody && React.createElement("div", { style: cardStyle },
+        React.createElement("div", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 700 } }, "박스 내용"),
+        React.createElement(TextFieldRow, { inputId: "desk-text-box", value: card.boxText || '', onTextChange: (v) => update("boxText", v), placeholder: "박스 내용", rows: 3, size: card.boxTextSize ?? 32, onSizeChange: (v) => update("boxTextSize", v), color: card.boxTextColor || BAEMIN_INK, onColorChange: (v) => update("boxTextColor", v), enabled: card.useBoxText !== false, onToggle: () => update("useBoxText", card.useBoxText === false ? true : false), presets: [22, 28, 32, 38] }),
+      ),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign'], styleClipboardActions }),
     );
   };
 
@@ -9700,6 +9804,7 @@ export default function App() {
     title: card.useTitle !== false ? card.title : '',
     subtitle: card.useSubtitle !== false ? card.subtitle : '',
     body: card.useBody !== false ? card.body : '',
+    boxText: card.useBoxText !== false ? card.boxText : '',
   });
 
   const buildConfig = (card) => {
