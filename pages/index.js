@@ -7740,7 +7740,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
       return;
     }
     if (preset.group === '표지' && preset.aspectRatio && preset.aspectRatio !== aspectRatio) {
-      confirm('전체 카드 비율이 바뀝니다.\n바꾸시겠습니까?', '바꾸기');
+      confirm(`전체 카드 비율이 ${aspectRatio || '현재 비율'}에서 ${preset.aspectRatio}로 바뀝니다.\n바꾸시겠습니까?`, '바꾸기');
       return;
     }
     applyPresetNow(preset);
