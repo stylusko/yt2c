@@ -246,6 +246,9 @@ const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
 const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
+const BAEMIN_PHOTO_COVER_TITLE_SIZE = 108;
+const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5.4; // Figma BAEMIN WORK -5% at 108px
+const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
 const BAEMIN_TEXT_LIMITS = {
   photoCover: { title: 12, subtitle: 12 },
   textCover: { title: 24, subtitle: 0 },
@@ -332,8 +335,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 78, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 78, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.6, subtitleX: 0, subtitleY: -4,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -351,8 +354,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
       layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 78, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 78, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.6, subtitleX: 0, subtitleY: -4,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -490,8 +493,13 @@ function baeminLayoutPatch(preset, card = {}) {
 }
 
 const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-cover-square', 'bm-cover-reels'];
+const BAEMIN_PHOTO_COVER_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels'];
 const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
 const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+
+function isBaeminPhotoCoverLayout(card) {
+  return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
+}
 
 function baeminTextLimitFor(card, field) {
   if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return null;
@@ -1212,6 +1220,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
   const boxTextOX = Math.round((card.boxTextX ?? 0) * s), boxTextOY = Math.round((card.boxTextY ?? 0) * s);
   const isBaeminGuide = card.brandGuideId === BAEMIN_GUIDE_ID;
+  const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
   const guidePx = (value) => Math.round(Number(value) * s);
   const hasGuideValue = (value) => Number.isFinite(Number(value));
 
@@ -1489,7 +1498,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) textItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
     }
     if (card.subtitle) {
-      if (card.title) textItems.push({ type: "gap", size: Math.round(10 * s) });
+      if (card.title) textItems.push({ type: "gap", size: isBaeminPhotoCover ? 0 : Math.round(10 * s) });
       for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) textItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' });
     }
     if (card.body) {
@@ -4592,7 +4601,14 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     const photoRatio = (card.photoRatio ?? 50) / 100;
     const PAD = 40 / 1080;
     const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
-    const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
+    const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
+    const gap = (f) => (
+      isBaeminPhotoCover && f === 'subtitle'
+        ? 0
+        : f === 'body'
+          ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15)
+          : 10
+    ) / 1080;
 
     const centers = [];
     if (layout === 'full_bg' || layout === 'none') {

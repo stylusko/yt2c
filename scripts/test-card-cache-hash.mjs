@@ -175,4 +175,16 @@ assert.notEqual(
   'Baemin layout preset id must be part of the cache hash',
 );
 
+assert.notEqual(
+  computeCardCacheHash(baeminCard, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, titleLetterSpacing: -5.4 }, cfg, 5),
+  'text letter spacing must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash(baeminCard, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, titleLineHeight: 1.2 }, cfg, 5),
+  'text line height must be part of the cache hash',
+);
+
 console.log('card cache hash tests passed');
