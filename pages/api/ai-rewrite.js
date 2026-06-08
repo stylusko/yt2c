@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { transcript, tone, currentTitle, videoTitle, field } = req.body || {};
+  const { transcript, tone, currentTitle, videoTitle, field, fieldHint } = req.body || {};
 
   if (!transcript || !tone || !videoTitle) {
     res.status(400).json({ error: 'transcript, tone, videoTitle 필드가 필요합니다.' });
@@ -57,6 +57,8 @@ export default async function handler(req, res) {
 
   const fieldKey = (field && FIELD_INSTRUCTIONS[field]) ? field : 'title';
   const fi = FIELD_INSTRUCTIONS[fieldKey];
+  const formatHint = typeof fieldHint === 'string' && fieldHint.trim() ? fieldHint.trim() : fi.format;
+  const maxChars = Number((formatHint.match(/최대\s*(\d+)자/) || [])[1]) || null;
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -81,7 +83,7 @@ ${toneInstruction}
 ## 요청: "${fi.role}" 역할의 [${fieldKey === 'title' ? '제목' : fieldKey === 'subtitle' ? '부제목' : '본문'}] 3개 제안
 
 ## 형식
-${fi.format}
+${formatHint}
 
 ## 규칙
 ${fi.rule}
@@ -126,6 +128,15 @@ ${fi.example}
     // 부제목/본문은 개행 제거
     if (fieldKey !== 'title') {
       suggestions = suggestions.map(s => String(s).replace(/\n/g, ' ').trim());
+    }
+    if (maxChars) {
+      suggestions = suggestions.map(s => {
+        const text = String(s || '').trim();
+        if (text.length <= maxChars) return text;
+        const sliced = text.slice(0, maxChars).trimEnd();
+        const lastSpace = sliced.lastIndexOf(' ');
+        return lastSpace >= Math.floor(maxChars * 0.65) ? sliced.slice(0, lastSpace).trimEnd() : sliced;
+      });
     }
 
     res.status(200).json({ suggestions: suggestions.slice(0, 3) });

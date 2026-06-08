@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {
   ARTICLE_BODY_MAX_LINES,
   estimateArticleBodyLines,
+  fitBaeminAiHeadlineLine,
+  fitBaeminAiHeadlinePair,
   fitArticleBodyToFourLines,
   normalizeArticleSourceNames,
   parseArticleCardsResponse,
@@ -36,6 +38,23 @@ assert.equal(normalized, '자세한 정보는 배민외식업광장과 배민외
 const normalizedBody = fitArticleBodyToFourLines(sourceText, { sourceUrl: baeminUrl });
 assert.ok(!/배민\s*사장님|배민사장님광장/.test(normalizedBody), normalizedBody);
 assert.ok(normalizedBody.includes('배민외식업광장'), normalizedBody);
+
+const baeminPair = fitBaeminAiHeadlinePair('전기료 골라 내세요', '6월부터 더 싸게');
+assert.equal(baeminPair.title, '전기료 골라 내세요');
+assert.equal(baeminPair.subtitle, '6월부터 더 싸게');
+assert.ok(!/\n/.test(baeminPair.title + baeminPair.subtitle));
+assert.ok(baeminPair.title.length <= 14);
+assert.ok(baeminPair.subtitle.length <= 14);
+
+const legacyBaeminPair = fitBaeminAiHeadlinePair('영수증 하단에\nQR코드가 추가돼요');
+assert.equal(legacyBaeminPair.title, '영수증 하단에');
+assert.equal(legacyBaeminPair.subtitle, 'QR코드가 추가돼요');
+assert.ok(legacyBaeminPair.title.length <= 14);
+assert.ok(legacyBaeminPair.subtitle.length <= 14);
+
+assert.equal(fitBaeminAiHeadlineLine('제목에\n개행 금지'), '제목에 개행 금지');
+assert.equal(fitBaeminAiHeadlineLine('6월부터 전기료 더 싸게'), '6월부터 전기료 더 싸게');
+assert.equal(fitBaeminAiHeadlineLine('띄어쓰기 포함 열네자 이상 긴 문장'), '띄어쓰기 포함 열네자');
 
 const looseJson = `Here is the JSON:
 {

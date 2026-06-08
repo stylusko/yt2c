@@ -13,7 +13,7 @@ const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 7;
+const ARTICLE_IMAGE_RENDER_VERSION = 9;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
 const BM_ONLY_MODE_PATHS = {
   home: '/bmonly',
@@ -173,6 +173,10 @@ const FONT_OPTIONS = [
       { id: 'Pretendard-SemiBold.otf', label: 'SemiBold', weight: 600 },
       { id: 'Pretendard-Bold.otf', label: 'Bold', weight: 700 },
     ]},
+  { id: 'BaeminWork', label: '배민워크체', family: "'BAEMINWORK', Pretendard, sans-serif",
+    variants: [
+      { id: 'BAEMINWORK.otf', label: 'Regular', weight: 400 },
+    ]},
   { id: 'BlackHanSans', label: 'Black Han Sans', family: "'Black Han Sans', sans-serif",
     variants: [
       { id: 'BlackHanSans-Regular', label: 'Regular', weight: 400 },
@@ -232,6 +236,593 @@ const STYLE_PRESETS = [
   { id: 'text_only', label: '\uD14D\uC2A4\uD2B8\uB9CC', desc: '\uBC30\uACBD \uC5C6\uC774 \uD14D\uC2A4\uD2B8\uB9CC \uD45C\uC2DC', layout: 'none', bgColor: '#3a3a3a', bgOpacity: 1, useGradient: false, titleColor: '#ffffff', subtitleColor: '#b0b0b0', bodyColor: '#d0d0d0', titleSize: 64, subtitleSize: 48, bodySize: 44, titleAlign: 'center', subtitleAlign: 'center', bodyAlign: 'center', titleY: 0, subtitleY: 0, bodyY: 0, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6 },
 ];
 
+const BAEMIN_GUIDE_ID = 'baemin-only';
+const BAEMIN_MINT = '#2AC1BC';
+const BAEMIN_COVER_AQUA = '#08F0D2';
+const BAEMIN_INK = '#111111';
+const BAEMIN_CREAM = '#CEFCF6';
+const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
+const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
+const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
+const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
+const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
+const BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE = 88;
+const BAEMIN_PHOTO_COVER_TITLE_SIZE = 108;
+const LETTER_SPACING_UNIT_PX = 'px';
+const LETTER_SPACING_UNIT_PERCENT = 'percent';
+const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5;
+const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
+const BAEMIN_AI_HEADLINE_LINE_LIMIT = 14;
+const BAEMIN_TEXT_LIMITS = {
+  photoCover: { title: 14, subtitle: 14 },
+  textCover: { title: 24, subtitle: 0 },
+  content: { title: 24, subtitle: 20 },
+};
+const BAEMIN_STYLE_KEYS = [
+  'brandGuideId', 'brandLayoutId',
+  'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
+  'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom',
+  'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth',
+  'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLetterSpacingUnit', 'titleLineHeight', 'titleX', 'titleY',
+  'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLetterSpacingUnit', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
+  'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLetterSpacingUnit', 'bodyLineHeight', 'bodyX', 'bodyY',
+  'useBoxText', 'boxTextSize', 'boxTextColor', 'boxTextFont', 'boxTextAlign', 'boxTextLetterSpacing', 'boxTextLetterSpacingUnit', 'boxTextLineHeight', 'boxTextX', 'boxTextY',
+  'videoBrightness', 'overlays',
+];
+
+const BAEMIN_PHOTO_COVER_LOGO_COLOR = '#9a9a9a';
+const BAEMIN_LOGO_POSITIONS = {
+  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: 1, logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR },
+  solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: 0.3, logoColor: BAEMIN_INK },
+  textCover: { x: 82.1, y: 93.1, scale: 21, opacity: 0.3, logoColor: '#041F1C' },
+};
+
+const baeminLogoOverlay = (position = 'solidBody') => ({
+  type: 'logo',
+  image: BAEMIN_LOGO_SRC,
+  brandOverlayId: 'baemin-logo',
+  aboveLayout: true,
+  applyToAll: false,
+  logoColorMode: 'solid',
+  ...(BAEMIN_LOGO_POSITIONS[position] || BAEMIN_LOGO_POSITIONS.solidBody),
+});
+
+const BAEMIN_LAYOUT_PRESETS = [
+  {
+    id: 'bm-cover-text-square',
+    group: '표지',
+    section: '영상/사진 없는 표지',
+    label: '영상/사진 없음 · 1:1 텍스트 표지',
+    shortLabel: '1:1 텍스트 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 정방형 표지',
+    rule: '영상/사진 없음 / 타이틀 중심',
+    badges: ['사진 없음', '타이틀 있음'],
+    aspectRatio: '1:1',
+    swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
+      useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('textCover')],
+    },
+  },
+  {
+    id: 'bm-cover-feed',
+    group: '표지',
+    section: '영상/사진 없는 표지',
+    label: '영상/사진 없음 · 3:4 텍스트 표지',
+    shortLabel: '3:4 텍스트 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 세로형 표지',
+    rule: '영상/사진 없음 / 타이틀 중심',
+    badges: ['사진 없음', '타이틀 있음'],
+    aspectRatio: '3:4',
+    swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
+      useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('textCover')],
+    },
+  },
+  {
+    id: 'bm-cover-square',
+    group: '표지',
+    section: '영상/사진 있는 표지',
+    label: '영상/사진 있음 · 1:1 사진 표지',
+    shortLabel: '1:1 사진 표지',
+    desc: '사진 하단 그라데이션 위에 제목을 얹는 표지',
+    rule: '영상/사진 있음 / 타이틀 중심',
+    badges: ['사진 있음', '타이틀 있음'],
+    aspectRatio: '1:1',
+    swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
+    patch: {
+      layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
+    },
+  },
+  {
+    id: 'bm-cover-reels',
+    group: '표지',
+    section: '영상/사진 있는 표지',
+    label: '영상/사진 있음 · 3:4 사진 표지',
+    shortLabel: '3:4 사진 표지',
+    desc: '세로 사진 하단 그라데이션 위에 제목을 얹는 표지',
+    rule: '영상/사진 있음 / 타이틀 중심',
+    badges: ['사진 있음', '타이틀 있음'],
+    aspectRatio: '3:4',
+    swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
+    patch: {
+      layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: BAEMIN_PHOTO_COVER_TITLE_SIZE, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: BAEMIN_PHOTO_COVER_LINE_HEIGHT, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
+    },
+  },
+  {
+    id: 'bm-solid-body',
+    group: '본문',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 본문만',
+    shortLabel: '본문',
+    desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 본문',
+    rule: '영상/사진 없음 / 타이틀 없음',
+    badges: ['사진 없음', '타이틀 없음'],
+    swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
+      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.18, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 52, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 84,
+      overlays: [baeminLogoOverlay('solidBody')],
+    },
+  },
+  {
+    id: 'bm-solid-title-body',
+    group: '본문',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 타이틀+본문',
+    shortLabel: '타이틀+본문',
+    desc: '짧은 제목과 본문을 함께 쓰는 표준 정보 카드',
+    rule: '영상/사진 없음 / 타이틀 있음',
+    badges: ['사진 없음', '타이틀 있음'],
+    swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 64, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 84,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 42, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 84,
+      overlays: [baeminLogoOverlay('solidBody')],
+    },
+  },
+  {
+    id: 'bm-solid-box',
+    group: '본문',
+    section: '영상/사진 없는 본문',
+    label: '영상/사진 없음 · 박스 강조',
+    shortLabel: '박스 강조',
+    desc: '핵심 문장, 가격, 체크포인트를 박스로 고정',
+    rule: '영상/사진 없음 / 타이틀 있음',
+    badges: ['사진 없음', '타이틀 있음'],
+    swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
+    patch: {
+      layout: BAEMIN_BOX_BODY_LAYOUT, useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 63.1, textBoxWidth: 85.2, textBoxHeight: 28.3, textBoxPadding: 56, textBoxPaddingX: 80, textBoxPaddingY: 56, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.6, bodyX: 0, bodyY: 0,
+      useBoxText: true, boxTextFont: 'Pretendard-Regular.otf', boxTextSize: 46, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: 0, boxTextLineHeight: 1.6, boxTextX: 0, boxTextY: 0,
+      overlays: [baeminLogoOverlay('solidBody')],
+    },
+  },
+  {
+    id: 'bm-photo-frame',
+    group: '본문',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 하단 타이틀+본문',
+    shortLabel: '사진 프레임',
+    desc: '사진을 위에 두고 하단을 배민 톤 정보 영역으로 분리',
+    rule: '영상/사진 있음 / 타이틀 있음',
+    badges: ['사진 있음', '타이틀 있음'],
+    swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
+    patch: {
+      layout: 'photo_top', photoRatio: 68, baeminTextTopRatio: 1048 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
+    },
+  },
+  {
+    id: 'bm-photo-body',
+    group: '본문',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 오버레이 타이틀+본문',
+    shortLabel: '사진 본문',
+    desc: '실사 이미지 위에 하단 본문을 얹는 설명형 카드',
+    rule: '영상/사진 있음 / 타이틀 있음',
+    badges: ['사진 있음', '타이틀 있음'],
+    swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
+    patch: {
+      layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 36, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
+    },
+  },
+  {
+    id: 'bm-photo-body-only',
+    group: '본문',
+    section: '영상/사진 있는 본문',
+    label: '영상/사진 있음 · 오버레이 본문만',
+    shortLabel: '사진 본문만',
+    desc: '사진은 살리고 제목 없이 설명 문장만 얹는 카드',
+    rule: '영상/사진 있음 / 타이틀 없음',
+    badges: ['사진 있음', '타이틀 없음'],
+    swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
+    patch: {
+      layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.68, videoFill: 'full', videoBrightness: -4,
+      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 40, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('photoCover')],
+    },
+  },
+];
+
+function baeminLayoutPatch(preset, card = {}) {
+  const patch = {
+    ...preset.patch,
+    brandGuideId: BAEMIN_GUIDE_ID,
+    brandLayoutId: preset.id,
+  };
+  if (Array.isArray(patch.overlays)) {
+    patch.overlays = patch.overlays.map(overlay => ({ ...overlay }));
+  }
+  if ((preset.badges || []).includes('사진 없음') && patch.useBg !== false) {
+    patch.bgOpacity = 1;
+  }
+  if (preset.id === 'bm-solid-box' && !card.boxText) {
+    patch.boxText = DEFAULT_BOX_TEXT;
+  }
+  return patch;
+}
+
+const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-cover-square', 'bm-cover-reels'];
+const BAEMIN_PHOTO_COVER_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels'];
+const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
+const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+
+function isBaeminPhotoCoverLayout(card) {
+  return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
+}
+
+function isBaeminPresetLogoOverlay(overlay = {}) {
+  return overlay.type === 'logo' && overlay.image === BAEMIN_LOGO_SRC;
+}
+
+function isLegacyWhiteBaeminPhotoCoverLogo(card, overlay = {}) {
+  if (!isBaeminPhotoCoverLayout(card) || !isBaeminPresetLogoOverlay(overlay)) return false;
+  if (overlay.logoColorMode !== 'solid' || normalizeLogoColor(overlay.logoColor) !== '#ffffff') return false;
+  if (overlay.brandOverlayId === 'baemin-logo') return true;
+  return Math.abs((overlay.x ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.x) < 1 &&
+    Math.abs((overlay.y ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.y) < 1 &&
+    Math.abs((overlay.scale ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.scale) < 2;
+}
+
+function renderableCardOverlays(card) {
+  return (card?.overlays || []).map(overlay => {
+    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
+    return {
+      ...overlay,
+      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
+      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
+      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
+    };
+  });
+}
+
+function normalizeBaeminCardOverlays(card) {
+  if (!card?.overlays?.length) return card;
+  let changed = false;
+  const overlays = card.overlays.map(overlay => {
+    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
+    changed = true;
+    return {
+      ...overlay,
+      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
+      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
+      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
+    };
+  });
+  return changed ? { ...card, overlays } : card;
+}
+
+function resolveLetterSpacingPx(value, unit, fontSize, scale = 1) {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return 0;
+  if (unit === LETTER_SPACING_UNIT_PERCENT) return numeric / 100 * (fontSize || 0) * scale;
+  return numeric * scale;
+}
+
+function letterSpacingSuffix(card, field) {
+  return card?.[`${field}LetterSpacingUnit`] === LETTER_SPACING_UNIT_PERCENT ? '%' : 'px';
+}
+
+function smoothGradientProgress(progress) {
+  const p = Math.max(0, Math.min(1, progress));
+  return p * p * (3 - 2 * p);
+}
+
+function baeminTextLimitFor(card, field) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return null;
+  if (field !== 'title' && field !== 'subtitle') return null;
+  const group = ['bm-cover-square', 'bm-cover-reels'].includes(card?.brandLayoutId)
+    ? 'photoCover'
+    : ['bm-cover-text-square', 'bm-cover-feed'].includes(card?.brandLayoutId)
+      ? 'textCover'
+      : 'content';
+  return BAEMIN_TEXT_LIMITS[group][field] || null;
+}
+
+function clampBaeminTextField(card, field, value) {
+  const limit = baeminTextLimitFor(card, field);
+  const text = String(value || '');
+  if (!limit || text.length <= limit) return text;
+  const sliced = text.slice(0, limit).trimEnd();
+  const lastSpace = sliced.lastIndexOf(' ');
+  if (lastSpace >= Math.floor(limit * 0.65)) return sliced.slice(0, lastSpace).trimEnd();
+  return sliced;
+}
+
+function normalizeBaeminGeneratedHeadlineLine(value, limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text || text.length <= limit) return text;
+  const sliced = text.slice(0, limit).trimEnd();
+  const lastSpace = sliced.lastIndexOf(' ');
+  if (lastSpace >= Math.floor(limit * 0.6)) return sliced.slice(0, lastSpace).trimEnd();
+  return sliced;
+}
+
+function splitBaeminGeneratedHeadline(titleValue, subtitleValue = '', limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
+  const explicitSubtitle = normalizeBaeminGeneratedHeadlineLine(subtitleValue, limit);
+  const titleLines = String(titleValue || '').split(/\n+/).map(line => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (explicitSubtitle) {
+    return {
+      title: normalizeBaeminGeneratedHeadlineLine(titleLines[0] || titleValue, limit),
+      subtitle: explicitSubtitle,
+    };
+  }
+
+  const sourceLines = titleLines.length ? titleLines : [String(titleValue || '').replace(/\s+/g, ' ').trim()].filter(Boolean);
+  const lines = [];
+  for (const sourceLine of sourceLines) {
+    const words = sourceLine.split(/\s+/).filter(Boolean);
+    let current = '';
+    for (let word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length <= limit) {
+        current = next;
+        continue;
+      }
+      if (current) {
+        lines.push(current);
+        current = '';
+        if (lines.length >= 2) break;
+      }
+      while (word.length > limit && lines.length < 2) {
+        lines.push(word.slice(0, limit));
+        word = word.slice(limit);
+      }
+      if (lines.length >= 2) break;
+      current = word;
+    }
+    if (current && lines.length < 2) lines.push(current);
+    if (lines.length >= 2) break;
+  }
+
+  return {
+    title: normalizeBaeminGeneratedHeadlineLine(lines[0] || '', limit),
+    subtitle: normalizeBaeminGeneratedHeadlineLine(lines[1] || '', limit),
+  };
+}
+
+function clampBaeminCardCopy(card) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return card;
+  const next = { ...card };
+  next.title = clampBaeminTextField(next, 'title', next.title);
+  next.subtitle = clampBaeminTextField(next, 'subtitle', next.subtitle);
+  return next;
+}
+
+function normalizeBaeminGeneratedCardCopy(card) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return card;
+  const next = { ...card };
+
+  if (isBaeminPhotoCoverLayout(next)) {
+    const pair = splitBaeminGeneratedHeadline(next.title, next.subtitle);
+    next.title = pair.title;
+    next.subtitle = pair.subtitle;
+    next.useSubtitle = !!pair.subtitle;
+  } else {
+    next.title = normalizeBaeminGeneratedHeadlineLine(next.title);
+    next.subtitle = normalizeBaeminGeneratedHeadlineLine(next.subtitle);
+  }
+
+  next.name = [next.title, next.subtitle].filter(Boolean).join(' ');
+  return clampBaeminCardCopy(next);
+}
+
+function cleanBaeminText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function isBaeminEmptyText(value) {
+  const text = cleanBaeminText(value);
+  return !text || text === '제목을 입력하세요' || text === '부제목을 입력하세요' || text === '본문 내용을 입력하세요' || text === DEFAULT_BOX_TEXT;
+}
+
+function getBaeminVisibleText(card, field) {
+  const flag = field === 'title' ? 'useTitle' : field === 'subtitle' ? 'useSubtitle' : field === 'body' ? 'useBody' : 'useBoxText';
+  if (card?.[flag] === false) return '';
+  const text = cleanBaeminText(card?.[field]);
+  return isBaeminEmptyText(text) ? '' : text;
+}
+
+function cardHasBaeminVisual(card) {
+  const fillSource = card?.fillSource || (card?.uploadedImage ? 'image' : 'video');
+  if (card?.uploadedImage || card?.clipThumbnail) return true;
+  if (fillSource === 'image') return true;
+  return fillSource === 'video' && !!(card?.url || card?.appliedStart || card?.start || card?.end);
+}
+
+function baeminCoverLayoutId(card, aspectRatio) {
+  const vertical = aspectRatio === '3:4';
+  const hasVisual = cardHasBaeminVisual(card);
+  if (hasVisual) return vertical ? 'bm-cover-reels' : 'bm-cover-square';
+  return vertical ? 'bm-cover-feed' : 'bm-cover-text-square';
+}
+
+function hasBaeminBoxSignal(text) {
+  const body = String(text || '');
+  if (!body.trim()) return false;
+  if (/(\n|^)\s*(?:[-•*]|[0-9]+[.)]|[①-⑳]|✅|✔|✓|📌|🎁|🎉)/m.test(body)) return true;
+  return /(기간|날짜|일정|혜택|조건|가격|금액|할인|쿠폰|포인트|준비물|유의|주의|체크|단계|방법|신청|당첨|발표|오전|오후|[0-9]+\s*원|[0-9]+\s*%|[0-9]{1,2}[./-][0-9]{1,2})/.test(body);
+}
+
+function deriveBaeminBoxText(card, recommendation = {}) {
+  const llmText = cleanBaeminText(recommendation.boxText);
+  if (!isBaeminEmptyText(llmText)) return llmText;
+
+  const raw = String(card?.body || card?.subtitle || card?.title || '').trim();
+  if (!raw) return '';
+  const lines = raw.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const markedLines = lines.filter(line => /^(\s*(?:[-•*]|[0-9]+[.)]|[①-⑳]|✅|✔|✓|📌|🎁|🎉))/.test(line));
+  if (markedLines.length >= 2) return markedLines.slice(0, 5).join('\n');
+  if (lines.length >= 2) return lines.slice(-Math.min(4, lines.length)).join('\n');
+  const sentences = raw.match(/[^.!?。？！]+[.!?。？！]?/g)?.map(s => s.trim()).filter(Boolean) || [];
+  if (sentences.length >= 2) return sentences.slice(-Math.min(3, sentences.length)).join('\n');
+  return cleanBaeminText(raw).slice(0, 180);
+}
+
+function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType) {
+  if (index === 0) return baeminCoverLayoutId(card, aspectRatio);
+
+  const hasVisual = cardHasBaeminVisual(card);
+  const title = getBaeminVisibleText(card, 'title');
+  const body = getBaeminVisibleText(card, 'body');
+  const allText = [title, getBaeminVisibleText(card, 'subtitle'), body, card?.boxText].filter(Boolean).join('\n');
+
+  if (hasVisual) {
+    if (!title && body) return 'bm-photo-body-only';
+    if (sourceType === 'article' && (title || body)) return 'bm-photo-frame';
+    return body ? 'bm-photo-body' : 'bm-photo-body-only';
+  }
+
+  if (hasBaeminBoxSignal(allText) && deriveBaeminBoxText(card)) return 'bm-solid-box';
+  if (title && body) return 'bm-solid-title-body';
+  return 'bm-solid-body';
+}
+
+function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType) {
+  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType);
+  const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
+  if (!preset) return fallback;
+
+  const isCover = index === 0;
+  const hasVisual = cardHasBaeminVisual(card);
+  if (isCover) {
+    return BAEMIN_COVER_LAYOUT_IDS.includes(layoutId) ? baeminCoverLayoutId(card, aspectRatio) : fallback;
+  }
+  if (BAEMIN_COVER_LAYOUT_IDS.includes(layoutId)) return fallback;
+  if (hasVisual && BAEMIN_NO_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
+  if (!hasVisual && BAEMIN_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
+  return layoutId;
+}
+
+function summarizeCardForBaeminRecommendation(card, index) {
+  const title = getBaeminVisibleText(card, 'title');
+  const subtitle = getBaeminVisibleText(card, 'subtitle');
+  const body = getBaeminVisibleText(card, 'body');
+  return {
+    cardIndex: index,
+    articleType: card?.articleType || null,
+    hasVisual: cardHasBaeminVisual(card),
+    hasTitle: !!title,
+    hasSubtitle: !!subtitle,
+    hasBody: !!body,
+    title,
+    subtitle,
+    body,
+    boxText: getBaeminVisibleText(card, 'boxText'),
+  };
+}
+
+function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
+  const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
+  if (!preset) return card;
+  const patch = baeminLayoutPatch(preset, card);
+  if (layoutId === 'bm-solid-box') {
+    const boxText = deriveBaeminBoxText(card, recommendation);
+    if (boxText) patch.boxText = boxText;
+  }
+  return clearGeneratedCache(clampBaeminCardCopy({ ...card, ...patch }));
+}
+
+async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true } = {}) {
+  const sourceCards = Array.isArray(cards) ? cards : [];
+  const fallbackRecommendations = sourceCards.map((card, index) => ({
+    cardIndex: index,
+    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType),
+    confidence: 0.5,
+    reason: 'fallback',
+  }));
+  let recommendations = fallbackRecommendations;
+
+  if (useLLM) {
+    try {
+      const res = await fetch('/api/recommend-baemin-layouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aspectRatio,
+          sourceType,
+          cards: sourceCards.map(summarizeCardForBaeminRecommendation),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok && Array.isArray(json.recommendations) && json.recommendations.length > 0) {
+        const fallbackByIndex = new Map(fallbackRecommendations.map(item => [item.cardIndex, item]));
+        recommendations = sourceCards.map((_, index) => {
+          const found = json.recommendations.find(item => item?.cardIndex === index);
+          return found || fallbackByIndex.get(index);
+        });
+      }
+    } catch (err) {
+      console.warn('[baemin-layout] recommendation fallback:', err?.message || err);
+    }
+  }
+
+  const byIndex = new Map(recommendations.map(item => [item.cardIndex, item]));
+  return sourceCards.map((card, index) => {
+    const recommendation = byIndex.get(index) || fallbackRecommendations[index];
+    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType);
+    return clearGeneratedCache(normalizeBaeminGeneratedCardCopy(
+      applyBaeminLayoutRecommendation(card, layoutId, recommendation)
+    ));
+  });
+}
+
 const MAX_CARDS = 10;
 
 const DEFAULT_CARD = () => ({
@@ -245,16 +836,20 @@ const DEFAULT_CARD = () => ({
   title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
   subtitle: "부제목을 입력하세요", subtitleSize: 48, subtitleFont: "Pretendard-Regular.otf",
   body: "본문 내용을 입력하세요", bodySize: 44, bodyFont: "Pretendard-Regular.otf",
+  useBoxText: false,
+  boxText: DEFAULT_BOX_TEXT, boxTextSize: 32, boxTextFont: "Pretendard-Regular.otf",
   useBg: true, bgColor: "#121212", bgOpacity: 0.75,
   overlays: [],
-  titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2",
-  titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
-  subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
-  bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
+  titleColor: "#ffffff", subtitleColor: "#aaaaaa", bodyColor: "#d2d2d2", boxTextColor: "#111111",
+  titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0, titleAlign: 'left',
+  subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0, subtitleAlign: 'left',
+  bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0, bodyAlign: 'left',
+  boxTextLetterSpacing: 0, boxTextLetterSpacingUnit: LETTER_SPACING_UNIT_PX, boxTextLineHeight: 1.45, boxTextX: 0, boxTextY: 0, boxTextAlign: 'left',
   captureTime: "", videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0,
   textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxPadding: 20, textBoxRadius: 12,
   textBoxBgColor: "#000000", textBoxBgOpacity: 0.6,
   textBoxHeight: 0, textBoxBorderColor: "#ffffff", textBoxBorderWidth: 0,
+  brandGuideId: null, brandLayoutId: null,
   appliedStart: null, appliedEnd: null, clipThumbnail: null,
   // ── article 모드 전용 (기본 youtube) ──
   sourceType: 'youtube',     // 'youtube' | 'article'
@@ -267,13 +862,13 @@ const STYLE_COPY_GROUPS = [
     id: 'layout',
     label: '레이아웃·배경',
     shortLabel: '레이아웃',
-    keys: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
+    keys: ['brandGuideId', 'brandLayoutId', 'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
   },
   {
     id: 'text',
     label: '텍스트 스타일',
     shortLabel: '텍스트',
-    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY'],
+    keys: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign', 'titleLetterSpacing', 'titleLetterSpacingUnit', 'titleLineHeight', 'titleX', 'titleY', 'subtitleLetterSpacing', 'subtitleLetterSpacingUnit', 'subtitleLineHeight', 'subtitleX', 'subtitleY', 'bodyLetterSpacing', 'bodyLetterSpacingUnit', 'bodyLineHeight', 'bodyX', 'bodyY', 'boxTextLetterSpacing', 'boxTextLetterSpacingUnit', 'boxTextLineHeight', 'boxTextX', 'boxTextY'],
   },
   {
     id: 'video',
@@ -528,11 +1123,31 @@ function fmtMM(s) {
   return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
 }
 // Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
+const CLIP_TIME_STEP = 0.1;
+function snapClipTime(s) {
+  const n = Number(s);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.round(n / CLIP_TIME_STEP) * CLIP_TIME_STEP);
+}
 function fmtPrecise(s) {
-  if (s == null || isNaN(s)) return '--:--';
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
+  const snapped = snapClipTime(s);
+  if (snapped == null) return '--:--';
+  const m = Math.floor(snapped / 60);
+  const sec = snapped - m * 60;
   return m + ':' + sec.toFixed(1).padStart(4, '0');
+}
+function fmtClipTime(s) {
+  return fmtPrecise(s);
+}
+function fmtClipDuration(s) {
+  const snapped = snapClipTime(s);
+  if (snapped == null) return '--초';
+  return snapped.toFixed(1).replace(/\.0$/, '') + '초';
+}
+function normalizeClipTimeInput(value) {
+  const seconds = parseTime(value);
+  if (seconds == null) return null;
+  return fmtClipTime(seconds);
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
@@ -647,14 +1262,21 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const padX = Math.round(60 * s), padTop = Math.round(40 * s);
   const maxTextW = w - padX * 2;
 
-  const titleLS = (card.titleLetterSpacing ?? 0) * s;
+  const titleSizeBase = card.titleSize || 64;
+  const subtitleSizeBase = card.subtitleSize || 48;
+  const bodySizeBase = card.bodySize || 40;
+  const boxTextSizeBase = card.boxTextSize ?? 32;
+  const titleLS = resolveLetterSpacingPx(card.titleLetterSpacing, card.titleLetterSpacingUnit, titleSizeBase, s);
   const titleLH = card.titleLineHeight ?? 1.4;
-  const subtitleLS = (card.subtitleLetterSpacing ?? 0) * s;
+  const subtitleLS = resolveLetterSpacingPx(card.subtitleLetterSpacing, card.subtitleLetterSpacingUnit, subtitleSizeBase, s);
   const subtitleLH = card.subtitleLineHeight ?? 1.4;
-  const bodyLS = (card.bodyLetterSpacing ?? 0) * s;
+  const bodyLS = resolveLetterSpacingPx(card.bodyLetterSpacing, card.bodyLetterSpacingUnit, bodySizeBase, s);
   const bodyLH = card.bodyLineHeight ?? 1.4;
+  const boxTextLS = resolveLetterSpacingPx(card.boxTextLetterSpacing, card.boxTextLetterSpacingUnit, boxTextSizeBase, s);
+  const boxTextLH = card.boxTextLineHeight ?? 1.45;
 
   const fontMap = {
+    "BAEMINWORK.otf": "400 {s}px 'BAEMINWORK', Pretendard, sans-serif",
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
@@ -683,6 +1305,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   if (card.useTitle !== false && card.title) fontsToLoad.push({ font: getFont(card.titleFont, 48), text: card.title });
   if (card.useSubtitle !== false && card.subtitle) fontsToLoad.push({ font: getFont(card.subtitleFont, 48), text: card.subtitle });
   if (card.useBody !== false && card.body) fontsToLoad.push({ font: getFont(card.bodyFont, 48), text: card.body });
+  if (card.useBoxText !== false && card.boxText) fontsToLoad.push({ font: getFont(card.boxTextFont, 48), text: card.boxText });
   if (fontsToLoad.length > 0) {
     await Promise.all(fontsToLoad.map(({ font, text }) => document.fonts.load(font, text).catch(() => {})));
   }
@@ -743,15 +1366,23 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     return offset;
   }
 
-  const titleSz = Math.round(card.titleSize * s);
-  const subSz = Math.round(card.subtitleSize * s);
-  const bodySz = Math.round(card.bodySize * s);
+  const titleSz = Math.round(titleSizeBase * s);
+  const subSz = Math.round(subtitleSizeBase * s);
+  const bodySz = Math.round(bodySizeBase * s);
+  const boxTextSz = Math.round(boxTextSizeBase * s);
   const titleLh = Math.round(titleSz * titleLH);
   const subLh = Math.round(subSz * subtitleLH);
   const bodyLh = Math.round(bodySz * bodyLH);
+  const boxTextLh = Math.round(boxTextSz * boxTextLH);
   const titleOX = Math.round((card.titleX ?? 0) * s), titleOY = Math.round((card.titleY ?? 0) * s);
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
+  const boxTextOX = Math.round((card.boxTextX ?? 0) * s), boxTextOY = Math.round((card.boxTextY ?? 0) * s);
+  const isBaeminGuide = card.brandGuideId === BAEMIN_GUIDE_ID;
+  const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
+  const renderOverlays = renderableCardOverlays(card);
+  const guidePx = (value) => Math.round(Number(value) * s);
+  const hasGuideValue = (value) => Number.isFinite(Number(value));
 
   function loadOverlayImage(src) {
     return new Promise((resolve, reject) => {
@@ -763,7 +1394,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   }
 
   async function getLogoSafeInsets() {
-    const logos = (card.overlays || []).filter(ov =>
+    const logos = renderOverlays.filter(ov =>
       ov?.type === 'logo' &&
       ov.image &&
       ov.aboveLayout !== false &&
@@ -798,7 +1429,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   // Helper: draw overlay images filtered by aboveLayout flag
   async function drawOverlays(above) {
     if (skipOverlays) return;
-    for (const ov of (card.overlays || [])) {
+    for (const ov of renderOverlays) {
       if (!ov.image || !!ov.aboveLayout !== above) continue;
       try {
         const oImg = await loadOverlayImage(ov.image);
@@ -851,17 +1482,101 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       ctx.font = item.font; ctx.fillStyle = item.color;
       drawTextLS(item.text, alignX(item.text, item.align, item.ls) + (item.ox || 0), curY + getBaselineOffset(item.font, item.sz, item.lh) + (item.oy || 0), item.ls);
     }
+  } else if (layout === BAEMIN_BOX_BODY_LAYOUT) {
+    if (useBg) {
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    const contentPadX = Math.round(80 * s);
+    const contentW = w - contentPadX * 2;
+    const contentTop = Math.round(164 * s);
+    const topGap = Math.round(24 * s);
+    let curY = contentTop;
+    const drawInRect = (text, align, fieldLS, left, width, xOffset) => {
+      const tw = measureTextLS(text, fieldLS);
+      let x = left;
+      if (align === 'center') x = left + width / 2 - tw / 2;
+      else if (align === 'right') x = left + width - tw;
+      return x + (xOffset || 0);
+    };
+
+    const topTitleLines = card.title ? wrapText(card.title, titleSz, card.titleFont, titleLS, contentW) : [];
+    const topBodyLines = card.body ? wrapText(card.body, bodySz, card.bodyFont, bodyLS, contentW) : [];
+    if (topTitleLines.length > 0) {
+      const titleFont = getFont(card.titleFont, titleSz);
+      ctx.font = titleFont;
+      ctx.fillStyle = card.titleColor;
+      for (const ln of topTitleLines) {
+        drawTextLS(ln, drawInRect(ln, card.titleAlign || 'left', titleLS, contentPadX, contentW, titleOX), curY + getBaselineOffset(titleFont, titleSz, titleLh) + titleOY, titleLS);
+        curY += titleLh;
+      }
+    }
+    if (topBodyLines.length > 0) {
+      if (topTitleLines.length > 0) curY += topGap;
+      const bodyFont = getFont(card.bodyFont, bodySz);
+      ctx.font = bodyFont;
+      ctx.fillStyle = card.bodyColor;
+      for (const ln of topBodyLines) {
+        if (!ln) { curY += Math.round(bodySz * 0.55); continue; }
+        drawTextLS(ln, drawInRect(ln, card.bodyAlign || 'left', bodyLS, contentPadX, contentW, bodyOX), curY + getBaselineOffset(bodyFont, bodySz, bodyLh) + bodyOY, bodyLS);
+        curY += bodyLh;
+      }
+    }
+
+    const boxW = w * (card.textBoxWidth || 78) / 100;
+    const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
+    const boxY = (card.textBoxY || 60) / 100 * h;
+    const boxPadX = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 56) * s);
+    const boxPadY = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 56) * s);
+    const boxRad = Math.round((card.textBoxRadius || 0) * s);
+    const boxBgRgb = (card.textBoxBgColor || "#ffffff").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [255,255,255];
+    const boxBgOp = card.textBoxBgOpacity ?? 1;
+    const boxBorderW = Math.round((card.textBoxBorderWidth || 0) * s);
+    const boxTextContentW = boxW - boxPadX * 2;
+    const boxTextLines = (card.useBoxText !== false && card.boxText) ? wrapText(card.boxText, boxTextSz, card.boxTextFont, boxTextLS, boxTextContentW) : [];
+    const boxContentH = boxTextLines.reduce((sum, ln) => sum + (ln ? boxTextLh : Math.round(boxTextSz * 0.55)), 0);
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxContentH + boxPadY * 2;
+
+    ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxRad, boxY - boxH/2);
+    ctx.arcTo(boxX + boxW, boxY - boxH/2, boxX + boxW, boxY - boxH/2 + boxRad, boxRad);
+    ctx.arcTo(boxX + boxW, boxY + boxH/2, boxX + boxW - boxRad, boxY + boxH/2, boxRad);
+    ctx.arcTo(boxX, boxY + boxH/2, boxX, boxY + boxH/2 - boxRad, boxRad);
+    ctx.arcTo(boxX, boxY - boxH/2, boxX + boxRad, boxY - boxH/2, boxRad);
+    ctx.fill();
+    if (boxBorderW > 0) {
+      ctx.strokeStyle = card.textBoxBorderColor || '#ffffff';
+      ctx.lineWidth = boxBorderW;
+      ctx.stroke();
+    }
+
+    const boxTextFont = getFont(card.boxTextFont, boxTextSz);
+    ctx.font = boxTextFont;
+    ctx.fillStyle = card.boxTextColor || BAEMIN_INK;
+    let boxCurY = boxY - boxH / 2 + boxPadY;
+    for (const ln of boxTextLines) {
+      if (!ln) { boxCurY += Math.round(boxTextSz * 0.55); continue; }
+      drawTextLS(ln, drawInRect(ln, card.boxTextAlign || 'left', boxTextLS, boxX + boxPadX, boxTextContentW, boxTextOX), boxCurY + getBaselineOffset(boxTextFont, boxTextSz, boxTextLh) + boxTextOY, boxTextLS);
+      boxCurY += boxTextLh;
+    }
   } else if (layout === "text_box") {
     // Text box layout: rounded box with text inside
+    if (card.brandGuideId === BAEMIN_GUIDE_ID && useBg) {
+      ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${bgOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+    }
     const boxW = w * (card.textBoxWidth || 80) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     let boxY = (card.textBoxY || 70) / 100 * h;
-    const boxPad = Math.round((card.textBoxPadding || 20) * s);
+    const boxPadX = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 20) * s);
+    const boxPadY = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * s);
     const boxRad = Math.round((card.textBoxRadius || 12) * s);
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
     const boxBgOp = card.textBoxBgOpacity ?? 0.6;
     const boxBorderW = Math.round((card.textBoxBorderWidth || 0) * s);
-    const textContentBoxW = boxW - boxPad * 2;
+    const textContentBoxW = boxW - boxPadX * 2;
 
     // Pre-wrap text using box width constraint (not full canvas width)
     const titleLines = card.title ? wrapText(card.title, titleSz, card.titleFont, titleLS, textContentBoxW) : [];
@@ -874,7 +1589,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (subtitleLines.length > 0) { if (titleLines.length > 0) contentH += Math.round(10 * s); contentH += subtitleLines.length * subLh; }
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(15 * s); contentH += bodyLines.length * bodyLh; }
 
-    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPadY * 2;
     if (logoSafe.top > 0 || logoSafe.bottom > 0) {
       const boxSafePad = Math.round(10 * s);
       const minBoxY = logoSafe.top + boxSafePad + boxH / 2;
@@ -901,10 +1616,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const alignXForBox = (text, align, fieldLS) => {
       const tw = measureTextLS(text, fieldLS);
       if (align === 'center') return boxX + boxW/2 - tw/2;
-      if (align === 'right') return boxX + boxW - boxPad - tw;
-      return boxX + boxPad;
+      if (align === 'right') return boxX + boxW - boxPadX - tw;
+      return boxX + boxPadX;
     };
-    let curY = boxY - boxH/2 + boxPad;
+    let curY = boxY - boxH/2 + boxPadY;
     if (titleLines.length > 0) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of titleLines) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + getBaselineOffset(getFont(card.titleFont, titleSz), titleSz, titleLh) + titleOY, titleLS); curY += titleLh; } }
     if (subtitleLines.length > 0) { if (titleLines.length > 0) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of subtitleLines) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(15 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
@@ -912,17 +1627,24 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const textH = Math.round(h * (1 - photoRatio));
     const rawYStart = layout === "photo_top" ? h - textH : 0;
     const yStart = rawYStart;
-    const effectiveTextH = textH;
+    const seamOverlap = card.brandGuideId === BAEMIN_GUIDE_ID && layout === "photo_top" && videoFill === "split" && !useGradient
+      ? Math.max(1, Math.round(2 * s))
+      : 0;
+    const bgYStart = Math.max(0, yStart - seamOverlap);
+    const effectiveTextH = textH + (yStart - bgYStart);
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
-        const gradH = effectiveTextH + Math.round(h * 0.15);
+        const gradExtra = isBaeminPhotoCover ? h * 0.32 : h * 0.15;
+        const gradH = Math.min(h, effectiveTextH + Math.round(gradExtra));
         const gradStart = layout === "photo_top" ? h - gradH : 0;
         const gradEnd = layout === "photo_top" ? h : gradH;
         for (let y = gradStart; y < gradEnd; y++) {
           const progress = layout === "photo_top" ? (y - gradStart) / gradH : (gradEnd - y) / gradH;
           let alpha;
-          if (progress < 0.2) alpha = (progress / 0.2) ** 2 * bgOpacity * 0.5;
+          if (isBaeminPhotoCover) {
+            alpha = smoothGradientProgress(progress) * bgOpacity;
+          } else if (progress < 0.2) alpha = (progress / 0.2) ** 2 * bgOpacity * 0.5;
           else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * bgOpacity;
           else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * bgOpacity;
           ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, bgOpacity)})`;
@@ -931,7 +1653,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       } else {
         const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
         ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
-        ctx.fillRect(0, yStart, w, effectiveTextH);
+        ctx.fillRect(0, bgYStart, w, effectiveTextH);
       }
     }
     const textItems = [];
@@ -939,7 +1661,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       for (const ln of wrapText(card.title, titleSz, card.titleFont, titleLS)) textItems.push({ text: ln, font: getFont(card.titleFont, titleSz), color: card.titleColor, lh: titleLh, sz: titleSz, ls: titleLS, ox: titleOX, oy: titleOY, align: card.titleAlign || 'left' });
     }
     if (card.subtitle) {
-      if (card.title) textItems.push({ type: "gap", size: Math.round(10 * s) });
+      if (card.title) textItems.push({ type: "gap", size: isBaeminPhotoCover ? 0 : Math.round(10 * s) });
       for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) textItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' });
     }
     if (card.body) {
@@ -948,8 +1670,17 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     }
     const contentH = textItems.reduce((sum, item) => sum + (item.type === "gap" ? item.size : (item.text ? item.lh : bodySz / 2)), 0);
     const logoSafePad = Math.round(10 * s);
+    const hasBaeminTop = isBaeminGuide && hasGuideValue(card.baeminTextTop);
+    const hasBaeminTopRatio = isBaeminGuide && hasGuideValue(card.baeminTextTopRatio);
+    const hasBaeminBottom = isBaeminGuide && hasGuideValue(card.baeminTextBottom);
     let curY = yStart + padTop;
-    if (layout === "photo_bottom" && logoSafe.top > 0) {
+    if (hasBaeminTop) {
+      curY = guidePx(card.baeminTextTop);
+    } else if (hasBaeminTopRatio) {
+      curY = Math.round(h * Number(card.baeminTextTopRatio));
+    } else if (hasBaeminBottom) {
+      curY = h - guidePx(card.baeminTextBottom) - contentH;
+    } else if (layout === "photo_bottom" && logoSafe.top > 0) {
       curY = Math.max(curY, logoSafe.top + logoSafePad);
     } else if (layout === "photo_top" && logoSafe.bottom > 0) {
       const safeBottom = h - logoSafe.bottom - logoSafePad;
@@ -1478,11 +2209,26 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
 }
 
 /* ── Text Field Row (checkbox + input + size + color) ── */
-function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets }) {
+function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, color, onColorChange, rows, enabled, onToggle, inputId, presets, maxLength, limitLabel }) {
   const disabled = enabled === false;
+  const textValue = String(value || '');
+  const textLength = textValue.length;
+  useEffect(() => {
+    if (maxLength && textLength > maxLength) onTextChange(textValue);
+  }, [maxLength, textLength, textValue, onTextChange]);
+  const handleTextChange = (e) => {
+    onTextChange(e.target.value);
+  };
   const input = rows
-    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
-    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: (e) => onTextChange(e.target.value), style: { ...inputBase, flex: 1, opacity: disabled ? 0.35 : 1 } });
+    ? React.createElement("textarea", { id: inputId, value, placeholder, rows, disabled, onChange: handleTextChange, style: { ...inputBase, width: '100%', resize: 'vertical', minHeight: 64, opacity: disabled ? 0.35 : 1 } })
+    : React.createElement("input", { id: inputId, type: "text", value, placeholder, disabled, onChange: handleTextChange, style: { ...inputBase, width: '100%', opacity: disabled ? 0.35 : 1 } });
+  const inputWithLimit = React.createElement("div", { style: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4 } },
+    input,
+    maxLength && React.createElement("div", { style: { display: 'flex', justifyContent: 'flex-end', gap: 6, fontSize: 10, color: textLength >= maxLength ? T.accent : T.textMuted, lineHeight: 1.2 } },
+      limitLabel && React.createElement("span", { style: { color: T.textMuted } }, limitLabel),
+      React.createElement("span", null, `${Math.min(textLength, maxLength)}/${maxLength}자`)
+    )
+  );
 
   const PRESET_LABELS = ['S', 'M', 'L', 'XL'];
 
@@ -1520,7 +2266,7 @@ function TextFieldRow({ value, onTextChange, placeholder, size, onSizeChange, co
     },
       React.createElement("div", { style: { position: 'absolute', inset: -10 } }),
       enabled !== false && React.createElement("span", { style: { color: '#fff', fontSize: 12, lineHeight: 1 } }, "\u2713")),
-    input,
+    inputWithLimit,
     sizeControls,
   );
 }
@@ -1646,13 +2392,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setZDragTime(snapEndSec - 30); lastStartVal = snapEndSec - 30; if (onWarn) onWarn(); return; }
-        onStartChange(fmtMM(t));
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtClipTime(snapEndSec - 30)); setZDragTime(snapEndSec - 30); lastStartVal = snapEndSec - 30; if (onWarn) onWarn(); return; }
+        onStartChange(fmtClipTime(t));
         lastStartVal = t;
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
-        onEndChange(fmtMM(t));
+        if (t - snapStartSec > 30) { onEndChange(fmtClipTime(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
+        onEndChange(fmtClipTime(t));
       }
     };
     const onUp = () => {
@@ -1719,8 +2465,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
         lastRangePosRef.current = { start: newStart, end: newEnd };
         setZDragTime(newStart); setZDragX(r.x);
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+        if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+        else { onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
       };
 
       if (isTouch) {
@@ -1850,7 +2596,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
       React.createElement("span", null, fmtMM(zStart)),
-      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
+      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, fmtClipDuration(clipLen) + ' 선택됨') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
       React.createElement("span", null, fmtMM(zEnd)),
     ),
     React.createElement("div", {
@@ -1895,13 +2641,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + curPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 6, width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
       ),
-      curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(effectiveTime)),
+      curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtClipTime(effectiveTime)),
       // Drag tooltip — range drag shows dual labels on handles, others show single tooltip
       zDrag && zDragTime != null && zDragType === 'range' && lastRangePosRef.current && [
-        React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.start)),
-        React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.end)),
+        React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(lastRangePosRef.current.start)),
+        React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(lastRangePosRef.current.end)),
       ],
-      zDrag && zDragTime != null && (zDragType === 'start' || zDragType === 'end') && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : '\uC885\uB8CC ') + fmtMM(zDragTime)),
+      zDrag && zDragTime != null && (zDragType === 'start' || zDragType === 'end') && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : '\uC885\uB8CC ') + fmtClipTime(zDragTime)),
     ),
   );
 }
@@ -2101,8 +2847,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       }
     }
     var autoEnd = Math.min(15, duration);
-    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
-    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(autoEnd));
+    else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(autoEnd)); }
     var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
     if (z > 1) {
       setZoomLevel(z);
@@ -2258,8 +3004,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
         setDragTime(newStart); setDragX(mx);
         manualSeekOutside.current = false;
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+        if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+        else { onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
       };
 
       const startRangeDrag = () => {
@@ -2422,12 +3168,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       setDragTime(t); setDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
-        onStartChange(fmtMM(t));
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtClipTime(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
+        onStartChange(fmtClipTime(t));
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
-        onEndChange(fmtMM(t));
+        if (t - snapStartSec > 30) { onEndChange(fmtClipTime(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
+        onEndChange(fmtClipTime(t));
       }
     };
     const onUp = () => {
@@ -2487,10 +3233,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     setCurrent(newStart);
     // Update parent state atomically to avoid React batching issue
     if (onClipChange) {
-      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+      onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
     } else {
-      onStartChange(fmtMM(newStart));
-      if (newEnd !== es) onEndChange(fmtMM(newEnd));
+      onStartChange(fmtClipTime(newStart));
+      if (newEnd !== es) onEndChange(fmtClipTime(newEnd));
     }
     if (onClipConfirmed) onClipConfirmed();
   };
@@ -2517,10 +3263,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     manualSeekOutside.current = false;
     // Update parent state atomically
     if (onClipChange) {
-      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+      onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
     } else {
-      if (newStart !== ss) onStartChange(fmtMM(newStart));
-      onEndChange(fmtMM(newEnd));
+      if (newStart !== ss) onStartChange(fmtClipTime(newStart));
+      onEndChange(fmtClipTime(newEnd));
     }
     if (onClipConfirmed) onClipConfirmed();
   };
@@ -2663,7 +3409,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       vEndPct != null && vEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
       // Selected range fill
       vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
-        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, fmtClipDuration(clipLen))
       ),
       // ── Start bracket handle ──
       vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
@@ -2692,9 +3438,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         // Vertical line spanning track
         React.createElement("div", { style: { position: 'absolute', top: 17, left: 9, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
       ),
-      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtClipTime(currentTime)),
       // Drag tooltip
-      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
+      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(dragTime)),
     ),
     // Horizontal scrollbar (visible when zoomed)
     zoomLevel > 1 && duration > 0 && React.createElement("div", {
@@ -2735,14 +3481,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { padding: '4px 6px', borderRadius: 4, border: '1px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' },
         }, '\u25C9 \uC2DC\uC791'),
         React.createElement("input", {
-          type: 'text', value: start || '', placeholder: '0:00',
+          type: 'text', value: start || '', placeholder: '0:00.0',
           onChange: (e) => {
             onStartChange(e.target.value);
             var es = parseTime(end);
             var ss = parseTime(e.target.value);
             if (es != null && ss != null && es <= ss) onEndChange('');
           },
-          style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
+          style: { width: 60, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
       // End: capture btn + input
@@ -2752,14 +3498,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { padding: '4px 6px', borderRadius: 4, border: '1px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' },
         }, '\u25C9 \uC885\uB8CC'),
         React.createElement("input", {
-          type: 'text', value: end || '', placeholder: '0:00',
+          type: 'text', value: end || '', placeholder: '0:00.0',
           onChange: (e) => {
             var ss = parseTime(start);
             var es = parseTime(e.target.value);
-            if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); }
+            if (ss != null && es != null && es - ss > 30) { onEndChange(fmtClipTime(ss + 30)); }
             else { onEndChange(e.target.value); }
           },
-          style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
+          style: { width: 60, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
     ),
@@ -2799,7 +3545,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
   // Auto-set 0-15s immediately when opening with no selection
-  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } }, []);
+  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(15)); else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(15)); } } }, []);
   const handleClose = () => {
     if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} }
     setClosing(true);
@@ -2908,8 +3654,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }
     if (parseTime(start) != null) return;
     var autoEnd = Math.min(15, duration);
-    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
-    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(autoEnd));
+    else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(autoEnd)); }
     var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
     if (z > 1) {
       setZoomLevel(z);
@@ -3219,13 +3965,13 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         const r = calcSeekTime(lastCx);
         let t = Math.max(0, Math.min(duration, r.time));
         if (bracketType === 'start') {
-          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - 1;
+          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - CLIP_TIME_STEP;
           if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
-          onStartChange(fmtMM(Math.max(0, t)));
+          onStartChange(fmtClipTime(Math.max(0, t)));
         } else {
-          if (t <= snapStartSec) t = snapStartSec + 1;
+          if (t <= snapStartSec) t = snapStartSec + CLIP_TIME_STEP;
           if (t - snapStartSec > 30) t = snapStartSec + 30;
-          onEndChange(fmtMM(Math.min(duration, t)));
+          onEndChange(fmtClipTime(Math.min(duration, t)));
         }
       }
 
@@ -3236,8 +3982,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         let ns = snapStartSec + delta, ne = snapEndSec + delta;
         if (ns < 0) { ns = 0; ne = clipDur; }
         if (ne > duration) { ne = duration; ns = duration - clipDur; }
-        if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
-        else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+        if (onClipChange) onClipChange(fmtClipTime(ns), fmtClipTime(ne));
+        else { onStartChange(fmtClipTime(ns)); onEndChange(fmtClipTime(ne)); }
       }
 
       if (mode === 'range' && !rangeDragStarted) {
@@ -3322,8 +4068,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     manualSeekOutside.current = false;
     if (playerRef.current) playerRef.current.seekTo(newStart, true);
     setCurrent(newStart);
-    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-    else { onStartChange(fmtMM(newStart)); if (newEnd !== es) onEndChange(fmtMM(newEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+    else { onStartChange(fmtClipTime(newStart)); if (newEnd !== es) onEndChange(fmtClipTime(newEnd)); }
   };
 
   const markEnd = () => {
@@ -3336,8 +4082,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     else { newEnd = t; }
     startSecRef.current = newStart; endSecRef.current = newEnd; lastStartRef.current = newStart;
     manualSeekOutside.current = false;
-    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-    else { if (newStart !== ss) onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+    else { if (newStart !== ss) onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
   };
 
   if (!videoId) return null;
@@ -3378,7 +4124,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", {
-    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } setCollapsedAndNotify(false); },
+    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(15)); else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(15)); } } setCollapsedAndNotify(false); },
     style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
   },
     React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
@@ -3462,8 +4208,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
           // Selected range fill
           mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : rangeTouched ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
-            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtMM(rangeDragLabel.start) + ' ~ ' + fmtMM(rangeDragLabel.end))
-            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtClipTime(rangeDragLabel.start) + ' ~ ' + fmtClipTime(rangeDragLabel.end))
+            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, fmtClipDuration(clipLen))
           ),
           // First-time range drag tooltip
           showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
@@ -3497,9 +4243,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
             React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(currentTime)),
           // Playhead drag tooltip
-          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
+          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(mDragTime)),
         ),
         // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
@@ -3537,12 +4283,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Start: capture btn + input
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
             React.createElement("button", { onClick: markStart, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC2DC\uC791'),
-            React.createElement("input", { type: 'text', value: start || '', placeholder: '0:00', onChange: (e) => { onStartChange(e.target.value); var es = parseTime(end); var ss = parseTime(e.target.value); if (es != null && ss != null && es <= ss) onEndChange(''); }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+            React.createElement("input", { type: 'text', value: start || '', placeholder: '0:00.0', onChange: (e) => { onStartChange(e.target.value); var es = parseTime(end); var ss = parseTime(e.target.value); if (es != null && ss != null && es <= ss) onEndChange(''); }, style: { width: 54, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
           // End: capture btn + input
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
-            React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+            React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00.0', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtClipTime(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 54, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
         ),
         // Warning toast
@@ -3793,6 +4539,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const videoFill = card.videoFill || "full";
   const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
   const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
+  const useBaeminBackgroundPlaceholder = card.brandGuideId === BAEMIN_GUIDE_ID && !['full_bg', 'video_only', 'text_box', BAEMIN_BOX_BODY_LAYOUT, 'none'].includes(layout);
   const sc = previewW / 1080;
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
@@ -3839,9 +4586,10 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   }, [thumbnailId, card.clipThumbnail]);
 
   // Generate canvas overlay (debounced) — same engine as final render
-  const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+  const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '', boxText: card.useBoxText !== false ? card.boxText : '' };
+  const pvOverlays = renderableCardOverlays(pvCard);
   const { overlays: _ovSkip, uploadedImage: _uiSkip, ...cardTextProps } = pvCard;
-  const logoSafeKey = logoSafeOverlayFingerprint(pvCard.overlays || []);
+  const logoSafeKey = logoSafeOverlayFingerprint(pvOverlays);
   const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
   useEffect(() => {
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
@@ -3886,7 +4634,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     else setThumbSrc(null);
   };
 
-  const overlays = card.overlays || [];
+  const overlays = pvOverlays;
 
   const snapPx = Math.round(8 * sc);
   const centerOffset = Math.round(previewW / 2 - padX);
@@ -3984,7 +4732,9 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
         ? React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: baseImgStyle })
         : React.createElement("img", { src: baseImage, alt: "", referrerPolicy: "no-referrer", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: 'center', zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: 'center center' } })
     )
-    : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
+    : useBaeminBackgroundPlaceholder
+      ? React.createElement("img", { src: BAEMIN_BACKGROUND_PLACEHOLDER_SRC, alt: "", style: { position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", zIndex: 0, filter: brightFilter, transform: imgTransform, transformOrigin: "center center" } })
+      : React.createElement("div", { style: { position: "absolute", inset: 0, background: "linear-gradient(135deg, #1a1a2e, #16213e, #0f3460)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 0 } },
         React.createElement("div", { style: { width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
           React.createElement("span", { style: { color: "rgba(255,255,255,0.5)", fontSize: 18, marginLeft: 2 } }, "\u25B6")
         ));
@@ -4015,7 +4765,14 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     const photoRatio = (card.photoRatio ?? 50) / 100;
     const PAD = 40 / 1080;
     const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
-    const gap = (f) => (f === 'body' ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15) : 10) / 1080;
+    const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
+    const gap = (f) => (
+      isBaeminPhotoCover && f === 'subtitle'
+        ? 0
+        : f === 'body'
+          ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15)
+          : 10
+    ) / 1080;
 
     const centers = [];
     if (layout === 'full_bg' || layout === 'none') {
@@ -4028,7 +4785,17 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
       }
     } else {
       let y;
-      if (layout === 'photo_top') y = photoRatio + PAD;
+      const hasBaeminTop = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextTop));
+      const hasBaeminTopRatio = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextTopRatio));
+      const hasBaeminBottom = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextBottom));
+      const designH = previewH / sc;
+      if (hasBaeminTop) y = Number(card.baeminTextTop) / designH;
+      else if (hasBaeminTopRatio) y = Number(card.baeminTextTopRatio);
+      else if (hasBaeminBottom) {
+        const contentH = fields.reduce((sum, f, i) => sum + (i > 0 ? gap(f) : 0) + fh(f), 0);
+        y = 1 - Number(card.baeminTextBottom) / designH - contentH;
+      }
+      else if (layout === 'photo_top') y = photoRatio + PAD;
       else if (layout === 'photo_bottom') y = PAD;
       else y = PAD;
 
@@ -4060,7 +4827,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
 
     // Compute pixel positions within textbox using actual scale
     const s = previewW / 1080;
-    const padPx = (card.textBoxPadding || 20) * s;
+    const padPx = (card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * s;
     const fhPx = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) * s;
     const gapPx = (f) => (f === 'body' ? 15 : 10) * s;
 
@@ -4102,10 +4869,11 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const getTextBoxGeom = () => {
     const bW = previewW * (card.textBoxWidth || 80) / 100;
     const bX = (card.textBoxX || 50) / 100 * previewW - bW / 2;
-    const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const boxPadPx = Math.round((card.textBoxPadding || 20) * sc);
+    const boxPadXPx = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 20) * sc);
+    const boxPadYPx = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * sc);
+    const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
+    const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
+    const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
     const estH = (card.textBoxHeight || 0) > 0
       ? previewH * card.textBoxHeight / 100
       : (titleLineCount * Math.round((card.titleSize || 56) * sc * (card.titleLineHeight || 1.4))
@@ -4113,7 +4881,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
         + bodyLineCount * Math.round((card.bodySize || 36) * sc * (card.bodyLineHeight || 1.4))
         + (titleLineCount > 0 && subLineCount > 0 ? Math.round(10 * sc) : 0)
         + ((titleLineCount > 0 || subLineCount > 0) && bodyLineCount > 0 ? Math.round(15 * sc) : 0)
-        + boxPadPx * 2);
+        + boxPadYPx * 2);
     const bH = Math.max(20, estH);
     const bY = (card.textBoxY || 70) / 100 * previewH - bH / 2;
     return { bW, bH, bX, bY };
@@ -4200,12 +4968,24 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   });
 
   // Text box click target (z:6)
-  const textBoxClickTarget = card.layout === 'text_box' && onSelectHandle && (() => {
+  const isBoxTextClickLayout = card.layout === 'text_box' || card.layout === BAEMIN_BOX_BODY_LAYOUT;
+  const textBoxClickTarget = isBoxTextClickLayout && (onSelectHandle || onTextClick) && (() => {
     const { bW, bH, bX, bY } = getTextBoxGeom();
+    const openBoxText = (e) => {
+      e.stopPropagation();
+      if (card.layout === BAEMIN_BOX_BODY_LAYOUT && onTextClick) {
+        onTextClick('box');
+        return;
+      }
+      if (onSelectHandle) onSelectHandle('textbox');
+    };
     return React.createElement("div", {
-      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
-      onClick: (e) => { e.stopPropagation(); onSelectHandle('textbox'); },
-      onDoubleClick: (e) => { e.stopPropagation(); handleCardTextDblClick(e); },
+      style: { position: 'absolute', left: bX, top: bY, width: bW, height: bH, zIndex: 6, cursor: card.layout === BAEMIN_BOX_BODY_LAYOUT ? 'text' : 'pointer', borderRadius: Math.round((card.textBoxRadius || 12) * sc) },
+      onClick: openBoxText,
+      onDoubleClick: (e) => {
+        if (card.layout === BAEMIN_BOX_BODY_LAYOUT) openBoxText(e);
+        else { e.stopPropagation(); handleCardTextDblClick(e); }
+      },
     });
   })();
 
@@ -4457,7 +5237,10 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
   const [applied, setApplied] = useState(false);
   const hasClip = card.appliedStart && card.appliedEnd;
   const fieldLabel = field === 'subtitle' ? '\uBD80\uC81C\uBAA9' : field === 'body' ? '\uBCF8\uBB38' : '\uC81C\uBAA9';
-  const fieldHint = field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
+  const baeminLimit = baeminTextLimitFor(card, field);
+  const fieldHint = baeminLimit
+    ? `배민전용 레이아웃용. 최대 ${baeminLimit}자 이내, 짧은 핵심어 중심${field === 'title' ? ', 1~2줄 가능' : ', 개행 없이'}`
+    : field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
 
   if (!hasClip) return null;
 
@@ -4733,7 +5516,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
               React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -4743,7 +5526,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
               React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -4758,7 +5541,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 8 } },
               React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -4768,7 +5551,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                   [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
                 ),
               ),
-              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+              React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
               React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
               React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -4783,7 +5566,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                 React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
                 React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
               ),
-              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+              showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
             ),
             showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginLeft: 28, borderLeft: `2px solid ${T.border}`, paddingLeft: 8, marginBottom: 4 } },
               React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
@@ -5047,7 +5830,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
       React.createElement("div", { style: { flex:1, minHeight:0, overflowY:'auto', padding:16 } },
         React.createElement("div", { style: { display:'grid', gridTemplateColumns:'repeat(3, auto)', gap:12, justifyContent:'center' } },
           cards.map((card, i) => {
-            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '' };
+            const pvCard = { ...card, title: card.useTitle !== false ? card.title : '', subtitle: card.useSubtitle !== false ? card.subtitle : '', body: card.useBody !== false ? card.body : '', boxText: card.useBoxText !== false ? card.boxText : '' };
             const disabled = cardDisabled(card);
             const currentHash = clientCardHash(card, { aspectRatio, outputSize, outputFormat, globalUrl, globalBgImage, sourceType: projectSourceType });
             const isCached = card.lastGenHash && card.lastGenHash === currentHash;
@@ -5058,7 +5841,7 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
               onClick: () => toggle(i),
               style: { cursor: disabled ? 'not-allowed' : 'pointer', borderRadius:8, overflow:'hidden', border: selected[i] ? `2px solid ${T.accent}` : '2px solid transparent', opacity: disabled ? 0.4 : (selected[i] ? 1 : 0.45), transition:'all 0.2s', position:'relative' }
             },
-              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio: '1:1', globalBgImage, previewWidth: pvW, showVideo: false, projectSourceType }),
+              React.createElement(CardPreview, { card: pvCard, globalUrl, aspectRatio, globalBgImage, previewWidth: pvW, showVideo: false, projectSourceType }),
               // Disabled overlay + badge for unselected segment
               disabled && React.createElement("div", { style: { position:'absolute', inset:0, background:'rgba(220,38,38,0.18)', display:'flex', alignItems:'center', justifyContent:'center' } },
                 React.createElement("span", { style: { background:'rgba(220,38,38,0.85)', color:'#fff', fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:4, whiteSpace:'nowrap' } }, "\uAD6C\uAC04 \uBBF8\uC120\uD0DD"),
@@ -5340,15 +6123,16 @@ function normalizeLoadedProject(project) {
     sourceImages,
     sourceImageMeta: normalizeProjectSourceImageMeta(sourceImages, project.sourceImageMeta),
     cards: (project.cards || []).map(card => {
+      let nextCard = card;
       if (
         card &&
         card.bodySize === 40 &&
         card.body === '본문 내용을 입력하세요' &&
         card.sourceType !== 'article'
       ) {
-        return { ...card, bodySize: 44 };
+        nextCard = { ...card, bodySize: 44 };
       }
-      return card;
+      return normalizeBaeminCardOverlays(nextCard);
     }),
   };
 }
@@ -5395,6 +6179,11 @@ const CARD_KEY_MAP = {
   textBoxHeight:'3', textBoxBorderColor:'4', textBoxBorderWidth:'5',
   // ── article 모드 필드 (기존 '6'~'9' 숫자 슬롯은 모두 비어있었음) ──
   sourceType:'6', articleType:'7', articleMeta:'8',
+  brandGuideId:'9', brandLayoutId:'10',
+  baeminTextTop:'11', baeminTextTopRatio:'12', baeminTextBottom:'13',
+  textBoxPaddingX:'14', textBoxPaddingY:'15',
+  titleLetterSpacingUnit:'16', subtitleLetterSpacingUnit:'17',
+  bodyLetterSpacingUnit:'18', boxTextLetterSpacingUnit:'19',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
@@ -7436,6 +8225,198 @@ function TabPill({ label, active, onClick, dataTour }) {
   }, label);
 }
 
+const BAEMIN_LAYOUT_TAB = { id: 'baemin-layout', label: '배민전용 레이아웃', tour: 'tab-baemin-layout' };
+
+function withBaeminLayoutTab(tabs, enabled) {
+  if (!enabled) return tabs;
+  const layoutIndex = tabs.findIndex(t => t.id === 'layout');
+  const baseTabs = tabs.filter(t => t.id !== 'layout' && t.id !== BAEMIN_LAYOUT_TAB.id);
+  if (layoutIndex < 0) return [...baseTabs, BAEMIN_LAYOUT_TAB];
+  return [
+    ...baseTabs.slice(0, layoutIndex),
+    BAEMIN_LAYOUT_TAB,
+    ...baseTabs.slice(layoutIndex),
+  ];
+}
+
+function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }) {
+  const canApply = !!(card && updateMulti);
+  const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
+  const activePreset = BAEMIN_LAYOUT_PRESETS.find(preset => preset.id === activePresetId);
+  const groups = [
+    { label: '표지', sections: ['영상/사진 있는 표지', '영상/사진 없는 표지'] },
+    { label: '본문', sections: ['영상/사진 없는 본문', '영상/사진 있는 본문'] },
+  ];
+  const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
+  const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
+  const applyPresetNow = (preset) => {
+    updateMulti(baeminLayoutPatch(preset, card));
+    if (preset.aspectRatio && preset.aspectRatio !== aspectRatio && onBaeminAspectRatioChange) {
+      onBaeminAspectRatioChange(preset.aspectRatio);
+    }
+  };
+  const applyPreset = (preset) => {
+    if (!canApply) return;
+    const confirm = (message, confirmText) => {
+      if (!onBaeminPresetConfirm) {
+        applyPresetNow(preset);
+        return;
+      }
+      onBaeminPresetConfirm({
+        message,
+        confirmText,
+        confirmColor: T.accent,
+        onConfirm: () => applyPresetNow(preset),
+      });
+    };
+    if (activePreset?.group === '표지' && preset.group === '본문') {
+      confirm('지금 카드는 표지 카드입니다.\n본문 레이아웃으로 변경돼요.', '변경하기');
+      return;
+    }
+    if (preset.group === '표지' && preset.aspectRatio && preset.aspectRatio !== aspectRatio) {
+      confirm(`전체 카드 비율이 ${aspectRatio || '현재 비율'}에서 ${preset.aspectRatio}로 바뀝니다.\n바꾸시겠습니까?`, '바꾸기');
+      return;
+    }
+    applyPresetNow(preset);
+  };
+  const isBaeminNoPhoto = card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_LAYOUT_PRESETS.some(preset =>
+    preset.id === card?.brandLayoutId && (preset.badges || []).includes('사진 없음')
+  );
+  const renderPresetButton = (preset) => {
+    const active = activePresetId === preset.id;
+    const compactBadges = (preset.badges || []).filter(badge => !badge.startsWith('사진'));
+    return React.createElement("button", {
+      key: preset.id,
+      type: "button",
+      disabled: !canApply,
+      'aria-pressed': active,
+      onClick: () => applyPreset(preset),
+      style: {
+        width: '100%',
+        minHeight: compact ? 42 : 46,
+        border: '1px solid ' + (active ? BAEMIN_MINT : T.border),
+        borderRadius: 8,
+        background: active ? 'rgba(42,193,188,0.14)' : 'rgba(255,255,255,0.025)',
+        color: T.text,
+        padding: compact ? '7px 9px' : '8px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        textAlign: 'left',
+        cursor: canApply ? 'pointer' : 'not-allowed',
+        opacity: canApply ? 1 : 0.55,
+        boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.2) inset' : 'none',
+      },
+    },
+      React.createElement("span", {
+        style: {
+          color: active ? '#9ff3ee' : T.text,
+          fontSize: compact ? 11 : 12,
+          fontWeight: 800,
+          lineHeight: 1.2,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        },
+      }, preset.label.replace(/^사진 (없음|있음) · /, '')),
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
+        compactBadges.map((badge) => React.createElement("span", {
+          key: preset.id + '-badge-' + badge,
+          style: {
+            borderRadius: 999,
+            padding: compact ? '2px 4px' : '2px 6px',
+            background: active ? 'rgba(42,193,188,0.16)' : 'rgba(255,255,255,0.05)',
+            color: active ? '#9ff3ee' : T.textMuted,
+            fontSize: compact ? 8.5 : 9.5,
+            fontWeight: 800,
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+          },
+        }, badge)),
+        active && React.createElement("span", { style: { color: BAEMIN_MINT, fontSize: 10, fontWeight: 900, lineHeight: 1 } }, "적용")
+      )
+    );
+  };
+
+  return React.createElement("div", {
+    'data-bm-layout-panel': 'true',
+    style: { display: 'flex', flexDirection: 'column', gap: compact ? 8 : 9 },
+  },
+    React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
+      React.createElement("div", { style: { color: T.text, fontSize: 13, fontWeight: 900 } }, "배민전용"),
+      React.createElement("div", { style: { color: BAEMIN_MINT, fontSize: 10, fontWeight: 900 } }, "BM ONLY")
+    ),
+    groups.map(group => React.createElement("section", { key: group.label, style: { display: 'flex', flexDirection: 'column', gap: 5 } },
+      React.createElement("div", { style: sectionTitleStyle }, group.label),
+      React.createElement("div", {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: compact ? '1fr' : 'repeat(' + group.sections.length + ', minmax(0, 1fr))',
+          gap: compact ? 5 : 8,
+        },
+      },
+        group.sections.map(section => {
+          const presets = BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group.label && preset.section === section);
+          if (presets.length === 0) return null;
+          return React.createElement("div", {
+            key: section,
+            style: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 },
+          },
+            React.createElement("div", { style: subsectionTitleStyle }, section),
+            React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 5 } }, presets.map(renderPresetButton))
+          );
+        })
+      )
+    )),
+    card && card.layout !== "none" && card.layout !== "video_only" && React.createElement("div", {
+      style: {
+        borderTop: '1px solid ' + T.border,
+        paddingTop: compact ? 8 : 10,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: compact ? 7 : 8,
+      },
+    },
+      React.createElement(SectionTitleWithReset, {
+        title: "텍스트 배경 설정",
+        onReset: () => updateMulti({
+          useBg: true,
+          bgColor: card.bgColor || BAEMIN_CREAM,
+          bgOpacity: isBaeminNoPhoto ? 1 : 0.75,
+        }),
+      }),
+      React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => updateMulti({ useBg: v, ...(isBaeminNoPhoto && v ? { bgOpacity: 1 } : {}) }) }),
+      card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "색상"),
+        React.createElement("input", { type: "color", value: card.bgColor || BAEMIN_CREAM, onChange: (e) => updateMulti({ bgColor: e.target.value, ...(isBaeminNoPhoto ? { bgOpacity: 1 } : {}) }), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
+        React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor || BAEMIN_CREAM),
+      ),
+      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
+      card.useBg !== false && React.createElement(SliderRow, {
+        label: "투명도",
+        value: isBaeminNoPhoto ? 1 : (card.bgOpacity ?? 0.75),
+        min: 0,
+        max: 1,
+        step: 0.01,
+        onChange: (v) => updateMulti({ bgOpacity: isBaeminNoPhoto ? 1 : v }),
+        defaultValue: isBaeminNoPhoto ? 1 : 0.75,
+      }),
+      card.useBg !== false && !isBaeminNoPhoto && React.createElement(CheckboxRow, { label: "투명하게", checked: card.bgOpacity === 0, onChange: (v) => updateMulti({ bgOpacity: v ? 0 : 0.75 }) }),
+    ),
+    canApply && cards && onCardChange && React.createElement(ApplyToAllBtn, {
+      keysToApply: BAEMIN_STYLE_KEYS,
+      cards,
+      card,
+      activeIndex,
+      onCardChange,
+      mt: 0,
+      styleClipboardActions,
+    }),
+    !canApply && React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "카드를 선택하면 배민 전용 프리셋을 적용할 수 있습니다."),
+  );
+}
+
 /* ── Mobile Card Carousel ── */
 const MOBILE_TABS = [
   { id: 'fill', label: '클립 편집', tour: 'tab-fill' },
@@ -7578,7 +8559,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onBaeminAspectRatioChange, onBaeminPresetConfirm, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -7655,7 +8636,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   // article 모드에서는 "클립 조정" 탭 숨김 (영상 구간 개념이 없음)
   const isArticleMode = project?.sourceType === 'article' || card?.sourceType === 'article';
-  const tabs = isArticleMode ? MOBILE_TABS.filter(t => t.id !== 'clip-adjust') : MOBILE_TABS;
+  const baseTabs = isArticleMode ? MOBILE_TABS.filter(t => t.id !== 'clip-adjust') : MOBILE_TABS;
+  const tabs = withBaeminLayoutTab(baseTabs, isBmOnlyPage);
+
+  useEffect(() => {
+    if (isBmOnlyPage && activeTab === 'layout') setActiveTab(BAEMIN_LAYOUT_TAB.id);
+    if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
+  }, [activeTab, isBmOnlyPage]);
 
   if (!card) return null;
 
@@ -7708,14 +8695,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
-                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? es - ss : 0; return fmtClipTime(ss) + '~' + fmtClipTime(es) + ' (' + fmtClipDuration(dur) + ')'; })()
                   ),
                   React.createElement("button", {
                     onClick: () => { updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }); setClipReopenFlag(f => f + 1); },
                     style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
+              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var startStr = normalizeClipTimeInput(card.start); var endStr = normalizeClipTimeInput(card.end); if (!startStr || !endStr) return; var normalizedStart = parseTime(startStr); var vu = card.url || globalUrl; var frameUrl = vu && normalizedStart != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${normalizedStart}&_=${Date.now()}` : null; updateMulti({ start: startStr, end: endStr, appliedStart: startStr, appliedEnd: endStr, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
@@ -7804,34 +8791,37 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
-  const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align, boxTextAlign: align });
   const setAllFont = (fontId) => {
     const font = FONT_OPTIONS.find(f => f.id === fontId);
     if (!font) return;
     const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
-    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id, boxTextFont: regV.id });
   };
   const renderTextTab = () => {
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const titleLimit = baeminTextLimitFor(card, 'title');
+    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlign(v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlign(v) }, lb))
         ),
       ),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFont(id) }),
-        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id, boxTextFont: id }) }) : null; })(),
       ),
       // 카피 톤 (AI)
       React.createElement("div", { style: headerRowStyle },
@@ -7842,14 +8832,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -7859,7 +8849,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -7867,14 +8857,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -7884,7 +8874,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -7892,14 +8882,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [28, 36, 44, 52] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
@@ -7915,7 +8905,11 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
+      isBaeminBoxBody && React.createElement("div", { style: cardStyle },
+        React.createElement("div", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 700 } }, "박스 내용"),
+        React.createElement(TextFieldRow, { inputId: "mob-text-box", value: card.boxText || '', onTextChange: (v) => update("boxText", v), placeholder: "박스 내용", rows: 3, size: card.boxTextSize ?? 32, onSizeChange: (v) => update("boxTextSize", v), color: card.boxTextColor || BAEMIN_INK, onColorChange: (v) => update("boxTextColor", v), enabled: card.useBoxText !== false, onToggle: () => update("useBoxText", card.useBoxText === false ? true : false), presets: [28, 34, 38, 44] }),
+      ),
+      React.createElement(ApplyToAllBtn, { keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
     );
   };
 
@@ -7971,7 +8965,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
-  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { compact: true, card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }), text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -8067,7 +9061,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onBaeminAspectRatioChange, onBaeminPresetConfirm, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -8170,12 +9164,18 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   const commitName = () => { update('name', nameValue.trim()); setEditingName(false); };
   const pvCard = (c) => ({ ...c, title: c.useTitle !== false ? c.title : '', subtitle: c.useSubtitle !== false ? c.subtitle : '', body: c.useBody !== false ? c.body : '' });
   const goTo = (idx) => { if (idx >= 0 && idx < cards.length) { setSelectedHandle(null); onActiveChange(idx); } };
+  const desktopTabs = withBaeminLayoutTab(DESKTOP_TABS, isBmOnlyPage);
+
+  useEffect(() => {
+    if (isBmOnlyPage && activeTab === 'layout') setActiveTab(BAEMIN_LAYOUT_TAB.id);
+    if (!isBmOnlyPage && activeTab === BAEMIN_LAYOUT_TAB.id) setActiveTab('layout');
+  }, [activeTab, isBmOnlyPage]);
 
   const handlePreviewTextClick = (field) => {
     setActiveTab('text');
     setTimeout(() => {
       const el = document.getElementById('desk-text-' + field);
-      if (el) el.focus();
+      if (el) { el.focus(); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     }, 50);
   };
 
@@ -8233,7 +9233,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               ? React.createElement(React.Fragment, null,
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                     React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
-                      (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                      (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? es - ss : 0; return fmtClipTime(ss) + '~' + fmtClipTime(es) + ' (' + fmtClipDuration(dur) + ')'; })()
                     ),
                     React.createElement("button", {
                       onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
@@ -8254,7 +9254,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     if (s != null && e != null && e > s && e - s > 30) errors.push('\uAD6C\uAC04\uC774 30\uCD08\uB97C \uCD08\uACFC\uD569\uB2C8\uB2E4');
                     var valid = errors.length === 0;
                     return React.createElement("button", {
-                      onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
+                      onClick: () => { if (!valid) { setClipError(errors); return; } var startStr = normalizeClipTimeInput(card.start); var endStr = normalizeClipTimeInput(card.end); if (!startStr || !endStr) { setClipError(['구간 시간을 다시 확인해주세요']); return; } var normalizedStart = parseTime(startStr); var vu = card.url || globalUrl; var frameUrl = vu && normalizedStart != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${normalizedStart}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ start: startStr, end: endStr, appliedStart: startStr, appliedEnd: endStr, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
                     }, valid && React.createElement(SvgIcon, { path: ICON_CHECK, size: 16 }), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
@@ -8344,34 +9344,37 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], styleClipboardActions }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], styleClipboardActions }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500
-  const setAllAlignDesk = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align });
+  const setAllAlignDesk = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align, boxTextAlign: align });
   const setAllFontDesk = (fontId) => {
     const font = FONT_OPTIONS.find(f => f.id === fontId);
     if (!font) return;
     const boldV = font.variants.find(v => v.weight >= 700) || font.variants[0];
     const regV = font.variants.find(v => v.weight <= 400) || font.variants[0];
-    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id });
+    updateMulti({ titleFont: boldV.id, subtitleFont: regV.id, bodyFont: regV.id, boxTextFont: regV.id });
   };
   const renderText = () => {
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
+    const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const titleLimit = baeminTextLimitFor(card, 'title');
+    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v, onClick: () => setAllAlignDesk(v) }, lb))
+          [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlignDesk(v) }, lb))
         ),
       ),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
         React.createElement(FontDropdown, { options: FONT_OPTIONS, value: getFontFamily(card.titleFont), onChange: (id) => setAllFontDesk(id) }),
-        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id }) }) : null; })(),
+        (() => { const fo = FONT_OPTIONS.find(f => f.id === getFontFamily(card.titleFont)) || FONT_OPTIONS[0]; return fo.variants.length > 1 ? React.createElement(FontDropdown, { options: fo.variants.map(v => ({ id: v.id, label: v.label, family: fo.family, weight: v.weight })), value: (fo.variants.find(v => v.id === card.titleFont) || fo.variants[0]).id, onChange: (id) => updateMulti({ titleFont: id, subtitleFont: id, bodyFont: id, boxTextFont: id }) }) : null; })(),
       ),
       // 카피 톤 (AI)
       React.createElement("div", { style: headerRowStyle },
@@ -8382,14 +9385,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { update("title", v); update("name", v.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailTitle && React.createElement("button", { onClick: () => updateMulti({ titleFont: 'Pretendard-Bold.otf', titleAlign: 'left', titleLetterSpacing: 0, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.4, titleX: 0, titleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailTitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.titleFont, onChange: (v) => update("titleFont", v) }),
@@ -8399,7 +9402,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v, onClick: () => update("titleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.titleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("titleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'title'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.titleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("titleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.titleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("titleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.titleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("titleY", v), suffix: 'px', defaultValue: 0 }),
@@ -8407,14 +9410,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: v, useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailSubtitle && React.createElement("button", { onClick: () => updateMulti({ subtitleFont: 'Pretendard-Regular.otf', subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, subtitleLineHeight: 1.4, subtitleX: 0, subtitleY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailSubtitle && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.subtitleFont, onChange: (v) => update("subtitleFont", v) }),
@@ -8424,7 +9427,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.subtitleAlign || 'left') === v, onClick: () => update("subtitleAlign", v) }, lb))
             ),
           ),
-          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: 'px', defaultValue: 0 }),
+          React.createElement(SliderRow, { label: "\uC790\uAC04", value: card.subtitleLetterSpacing ?? 0, min: -5, max: 20, step: 0.5, onChange: (v) => update("subtitleLetterSpacing", v), suffix: letterSpacingSuffix(card, 'subtitle'), defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC904\uAC04", value: card.subtitleLineHeight ?? 1.4, min: 1.0, max: 3.0, step: 0.1, onChange: (v) => update("subtitleLineHeight", v), suffix: '', defaultValue: 1.4 }),
           React.createElement(SliderRow, { label: "\uC88C\uC6B0", value: card.subtitleX ?? 0, min: -540, max: 540, step: 1, onChange: (v) => update("subtitleX", v), suffix: 'px', defaultValue: 0 }),
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.subtitleY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("subtitleY", v), suffix: 'px', defaultValue: 0 }),
@@ -8432,14 +9435,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 본문 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [20, 26, 36, 44] }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-body", value: card.body, onTextChange: (v) => update("body", v), placeholder: "\uBCF8\uBB38 \uB0B4\uC6A9", rows: 3, size: card.bodySize, onSizeChange: (v) => update("bodySize", v), color: card.bodyColor, onColorChange: (v) => update("bodyColor", v), enabled: card.useBody !== false, onToggle: () => { const next = card.useBody === false; updateMulti({ useBody: next, photoRatio: calcAutoPhotoRatio(card, { useBody: next }) }); }, presets: [28, 36, 44, 52] }),
         React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'body', currentValue: card.body, onChange: (v) => updateMulti({ body: v, useBody: true, photoRatio: calcAutoPhotoRatio(card, { useBody: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailBody(!showDetailBody), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailBody ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
             React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, "\uC138\uBD80\uC870\uC815"),
           ),
-          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
+          showDetailBody && React.createElement("button", { onClick: () => updateMulti({ bodyFont: 'Pretendard-Regular.otf', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PX, bodyLineHeight: 1.4, bodyX: 0, bodyY: 0 }), style: resetBtnStyle }, "\uAE30\uBCF8\uAC12"),
         ),
         showDetailBody && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 8, borderLeft: `2px solid ${T.border}` } },
           React.createElement(FontSelectRow, { fontValue: card.bodyFont, onChange: (v) => update("bodyFont", v) }),
@@ -8455,7 +9458,11 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           React.createElement(SliderRow, { label: "\uC704\uC544\uB798", value: card.bodyY ?? 0, min: -1080, max: 1080, step: 1, onChange: (v) => update("bodyY", v), suffix: 'px', defaultValue: 0 }),
         ),
       ),
-      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'titleAlign', 'subtitleAlign', 'bodyAlign'], styleClipboardActions }),
+      isBaeminBoxBody && React.createElement("div", { style: cardStyle },
+        React.createElement("div", { style: { fontSize: 12, color: T.textSecondary, fontWeight: 700 } }, "박스 내용"),
+        React.createElement(TextFieldRow, { inputId: "desk-text-box", value: card.boxText || '', onTextChange: (v) => update("boxText", v), placeholder: "박스 내용", rows: 3, size: card.boxTextSize ?? 32, onSizeChange: (v) => update("boxTextSize", v), color: card.boxTextColor || BAEMIN_INK, onColorChange: (v) => update("boxTextColor", v), enabled: card.useBoxText !== false, onToggle: () => update("useBoxText", card.useBoxText === false ? true : false), presets: [28, 34, 38, 44] }),
+      ),
+      React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['titleSize', 'titleColor', 'useTitle', 'subtitleSize', 'subtitleColor', 'useSubtitle', 'bodySize', 'bodyColor', 'useBody', 'boxTextSize', 'boxTextColor', 'useBoxText', 'fontFamily', 'titleFont', 'subtitleFont', 'bodyFont', 'boxTextFont', 'titleAlign', 'subtitleAlign', 'bodyAlign', 'boxTextAlign'], styleClipboardActions }),
     );
   };
 
@@ -8516,7 +9523,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'], styleClipboardActions }),
   );
 
-  const tabRenderers = { fill: renderFill, layout: renderLayout, text: renderText, overlay: renderOverlay };
+  const tabRenderers = { fill: renderFill, layout: renderLayout, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }), text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
@@ -8635,7 +9642,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // Tab bar
       React.createElement("div", { style: { display: 'flex', gap: 4, padding: '8px 20px 8px', borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.surface } },
-        DESKTOP_TABS.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
+        desktopTabs.map(t => React.createElement(TabPill, { key: t.id, label: t.label, active: activeTab === t.id, dataTour: t.tour, onClick: () => { setActiveTab(t.id); setSelectedHandle(null); } }))
       ),
       React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: '16px 20px 24px' } },
         tabRenderers[activeTab] ? tabRenderers[activeTab]() : null
@@ -9243,6 +10250,7 @@ export default function App() {
     title: card.useTitle !== false ? card.title : '',
     subtitle: card.useSubtitle !== false ? card.subtitle : '',
     body: card.useBody !== false ? card.body : '',
+    boxText: card.useBoxText !== false ? card.boxText : '',
   });
 
   const buildConfig = (card) => {
@@ -9544,7 +10552,7 @@ export default function App() {
     // Close any previous SSE connection
     if (aiEventSourceRef.current) { aiEventSourceRef.current.close(); aiEventSourceRef.current = null; }
 
-    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking') + '&textMode=' + encodeURIComponent(wizardData.textMode || 'title'));
+    const es = new EventSource('/api/ai-edit?url=' + encodeURIComponent(url) + '&tone=' + encodeURIComponent(wizardData.copyTone || 'hooking') + '&textMode=' + encodeURIComponent(wizardData.textMode || 'title') + (isBmOnlyPage ? '&brandGuide=baemin-only' : ''));
     aiEventSourceRef.current = es;
 
     es.addEventListener('status', (e) => {
@@ -9561,17 +10569,15 @@ export default function App() {
       setAiEditRunning(false); setAiEditTargetId(null);
     });
 
-    es.addEventListener('result', (e) => {
+    es.addEventListener('result', async (e) => {
       es.close();
       aiEventSourceRef.current = null;
       try {
         const { highlights, videoInfo, transcript: _transcript } = JSON.parse(e.data);
         const wd = aiWizardDataRef.current || {};
         const _url = wd.url || url;
-        const _presetId = wd.presetId || presetId;
         const _aspectRatio = wd.aspectRatio || aspectRatio;
-        const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
-        const newCards = highlights.map((h, idx) => {
+        let newCards = highlights.map((h, idx) => {
           const card = DEFAULT_CARD();
           card.url = _url;
           card.start = h.start || '0:00';
@@ -9584,11 +10590,11 @@ export default function App() {
             card.clipThumbnail = `/api/frame?url=${encodeURIComponent(_url)}&t=${_startSec}`;
           }
           card.title = h.title || '';
-          card.subtitle = '';
-          card.useSubtitle = false;
+          card.subtitle = isBmOnlyPage ? (h.subtitle || '') : '';
+          card.useSubtitle = isBmOnlyPage ? !!card.subtitle : false;
           card.body = h.body || '';
           card.useBody = !!(h.body && h.body.trim());
-          card.name = (h.title || '').replace(/\n/g, ' ');
+          card.name = [card.title, card.subtitle].filter(Boolean).join(' ').replace(/\n/g, ' ');
 
           // All cards: gradient 레이아웃 (photo_top + useGradient), 투명도 55%
           card.layout = 'photo_top';
@@ -9620,6 +10626,14 @@ export default function App() {
           card.bodyAlign = 'left';
           return card;
         });
+        if (isBmOnlyPage) {
+          setAiEditStatus({ step: 'layout', message: '배민 전용 레이아웃을 고르는 중...' });
+          newCards = await applyBaeminGeneratedLayouts(newCards, {
+            aspectRatio: _aspectRatio,
+            sourceType: 'youtube',
+            useLLM: true,
+          });
+        }
 
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
@@ -9666,8 +10680,15 @@ export default function App() {
       return;
     }
     setWizardLoading(true);
-    setTimeout(() => {
-      const newCards = generateWizardCards(wizardData);
+    setTimeout(async () => {
+      let newCards = generateWizardCards(wizardData);
+      if (isBmOnlyPage) {
+        newCards = await applyBaeminGeneratedLayouts(newCards, {
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          sourceType: 'youtube',
+          useLLM: false,
+        });
+      }
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
@@ -9837,6 +10858,7 @@ export default function App() {
           aspectRatio: wizardData.aspectRatio || '1:1',
           copyTone: wizardData.copyTone || 'hooking',
           imageMode: wizardData.imageMode || 'reuse',
+          brandGuide: isBmOnlyPage ? 'baemin-only' : null,
         }),
         signal: abort.signal,
       });
@@ -9927,7 +10949,7 @@ export default function App() {
       let _srcImgs = doneData.sourceImages || [];
       let _srcMeta = normalizeProjectSourceImageMeta(_srcImgs, doneData.sourceImageMeta);
       const sourceImageProject = { sourceImages: _srcImgs, sourceImageMeta: _srcMeta };
-      const newCards = doneData.cards.map(c => {
+      let newCards = doneData.cards.map(c => {
         const base = { ...DEFAULT_CARD(), ...c, sourceType: 'article' };
         if (base.uploadedImage && base.articleMeta?.aiImageSource === 'ai') {
           const added = addProjectSourceImage(sourceImageProject, base.uploadedImage, sourceImageMetaFromCard(base, wizardData.presetId || 'stock_photo'));
@@ -9952,6 +10974,14 @@ export default function App() {
         }
         return base;
       });
+      if (isBmOnlyPage) {
+        setArticleGenStatus(s => ({ ...(s || {}), step: 'layout', message: '배민 전용 레이아웃을 고르는 중' }));
+        newCards = await applyBaeminGeneratedLayouts(newCards, {
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          sourceType: 'article',
+          useLLM: true,
+        });
+      }
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
@@ -10444,9 +11474,12 @@ export default function App() {
           onClipExpandChange: (open) => setMobilePreviewHidden(h => open ? 'auto' : (h === 'auto' ? false : h)),
           onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+          onBaeminAspectRatioChange: setAspectRatio,
+          onBaeminPresetConfirm: setPendingConfirm,
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           project: activeProject,
+          isBmOnlyPage,
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,
@@ -10470,10 +11503,13 @@ export default function App() {
           externalMuted: editorPreviewMuted,
           onMuteToggle: () => setEditorPreviewMuted(m => !m),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
+          onBaeminAspectRatioChange: setAspectRatio,
+          onBaeminPresetConfirm: setPendingConfirm,
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
           project: activeProject,
+          isBmOnlyPage,
           onOpenArticleGallery: setGalleryCardIdx,
           onNextArticleImage: handleNextArticleImage,
           onRegenerateArticleImage: handleRegenerateArticleImage,

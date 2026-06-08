@@ -1,0 +1,28 @@
+<svg width="1440" height="1440" viewBox="0 0 1440 1440" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1440" fill="#D7F7F2"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1440" y2="1440" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#CEFCF6"/>
+      <stop offset="0.52" stop-color="#A7EFE8"/>
+      <stop offset="1" stop-color="#F6FFFC"/>
+    </linearGradient>
+    <pattern id="diagonal" width="360" height="180" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">
+      <rect width="360" height="180" fill="transparent"/>
+      <text x="0" y="92" fill="#041F1C" fill-opacity="0.16" font-family="Pretendard, Arial, sans-serif" font-size="42" font-weight="800" letter-spacing="-1">배경예시이미지</text>
+    </pattern>
+    <mask id="slashes">
+      <rect width="1440" height="1440" fill="black"/>
+      <path d="M-240 1440L480 0H680L-40 1440H-240Z" fill="white"/>
+      <path d="M180 1440L900 0H1040L320 1440H180Z" fill="white" fill-opacity="0.72"/>
+      <path d="M760 1440L1480 0H1700L980 1440H760Z" fill="white"/>
+    </mask>
+  </defs>
+  <rect width="1440" height="1440" fill="url(#bg)"/>
+  <g mask="url(#slashes)">
+    <rect width="1440" height="1440" fill="#08F0D2" fill-opacity="0.22"/>
+    <rect width="1440" height="1440" fill="url(#diagonal)"/>
+  </g>
+  <rect x="80" y="80" width="1280" height="1280" rx="56" stroke="#041F1C" stroke-opacity="0.08" stroke-width="4"/>
+  <text x="720" y="704" text-anchor="middle" fill="#041F1C" fill-opacity="0.34" font-family="Pretendard, Arial, sans-serif" font-size="58" font-weight="900" letter-spacing="-1.2">배경예시이미지</text>
+  <text x="720" y="768" text-anchor="middle" fill="#041F1C" fill-opacity="0.2" font-family="Pretendard, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="0.4">SAMPLE BACKGROUND</text>
+</svg>
