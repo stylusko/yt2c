@@ -269,15 +269,35 @@ const baeminLogoOverlay = (position = 'solidBody') => ({
 
 const BAEMIN_LAYOUT_PRESETS = [
   {
+    id: 'bm-cover-text-square',
+    group: '표지',
+    section: '사진 없는 표지',
+    label: '사진 없음 · 1:1 텍스트 표지',
+    shortLabel: '1:1 텍스트 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 정방형 표지',
+    rule: '사진 없음 / 타이틀 중심',
+    badges: ['사진 없음', '타이틀 있음'],
+    aspectRatio: '1:1',
+    swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
+    patch: {
+      layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
+      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
+      useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
+      overlays: [baeminLogoOverlay('textCover')],
+    },
+  },
+  {
     id: 'bm-cover-feed',
     group: '표지',
     section: '사진 없는 표지',
-    label: '사진 없음 · 4:3 텍스트 표지',
-    shortLabel: '4:3 텍스트 표지',
-    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 4:3 표지',
+    label: '사진 없음 · 3:4 텍스트 표지',
+    shortLabel: '3:4 텍스트 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 세로형 표지',
     rule: '사진 없음 / 타이틀 중심',
     badges: ['사진 없음', '타이틀 있음'],
-    aspectRatio: '4:3',
+    aspectRatio: '3:4',
     swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
@@ -7681,19 +7701,45 @@ function withBaeminLayoutTab(tabs, enabled) {
   ];
 }
 
-function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions, onBaeminAspectRatioChange }) {
+function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }) {
   const canApply = !!(card && updateMulti);
   const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
+  const activePreset = BAEMIN_LAYOUT_PRESETS.find(preset => preset.id === activePresetId);
   const groups = [
     { label: '표지', sections: ['사진 있는 표지', '사진 없는 표지'] },
     { label: '본문', sections: ['사진 없는 본문', '사진 있는 본문'] },
   ];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
   const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
+  const applyPresetNow = (preset) => {
+    updateMulti(baeminLayoutPatch(preset));
+    if (preset.aspectRatio && preset.aspectRatio !== aspectRatio && onBaeminAspectRatioChange) {
+      onBaeminAspectRatioChange(preset.aspectRatio);
+    }
+  };
   const applyPreset = (preset) => {
     if (!canApply) return;
-    updateMulti(baeminLayoutPatch(preset));
-    if (preset.aspectRatio && onBaeminAspectRatioChange) onBaeminAspectRatioChange(preset.aspectRatio);
+    const confirm = (message, confirmText) => {
+      if (!onBaeminPresetConfirm) {
+        applyPresetNow(preset);
+        return;
+      }
+      onBaeminPresetConfirm({
+        message,
+        confirmText,
+        confirmColor: T.accent,
+        onConfirm: () => applyPresetNow(preset),
+      });
+    };
+    if (activePreset?.group === '표지' && preset.group === '본문') {
+      confirm('지금 카드는 표지 카드입니다.\n본문 레이아웃으로 변경돼요.', '변경하기');
+      return;
+    }
+    if (preset.group === '표지' && preset.aspectRatio && preset.aspectRatio !== aspectRatio) {
+      confirm('전체 카드 비율이 바뀝니다.\n바꾸시겠습니까?', '바꾸기');
+      return;
+    }
+    applyPresetNow(preset);
   };
   const isBaeminNoPhoto = card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_LAYOUT_PRESETS.some(preset =>
     preset.id === card?.brandLayoutId && (preset.badges || []).includes('사진 없음')
@@ -7975,7 +8021,7 @@ function ApplyToAllBtn({ keysToApply, cards, card, activeIndex, onCardChange, mt
   return React.createElement('button', { onClick: () => { if (!singleCard) setPhase('confirm'); }, disabled: singleCard, style: { marginTop: marginTop, padding: '8px 0', background: 'transparent', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: singleCard ? T.textMuted : T.accent, fontSize: 12, cursor: singleCard ? 'not-allowed' : 'pointer', width: '100%', opacity: singleCard ? 0.5 : 1 } }, '\uC774 \uC124\uC815\uC744 \uC804\uCCB4 \uCE74\uB4DC\uC5D0 \uC801\uC6A9');
 }
 
-function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onBaeminAspectRatioChange, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, hidePreview = false, onAspectRatioChange, onBaeminAspectRatioChange, onBaeminPresetConfirm, onClipExpandChange, onTabChange, onApplyOverlayToAll, onRemoveOverlayFromAll, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [touchStart, setTouchStart] = useState(null);
   const [touchDelta, setTouchDelta] = useState(0);
@@ -8373,7 +8419,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(ApplyToAllBtn, { keysToApply: ['overlays'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
-  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { compact: true, card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, onBaeminAspectRatioChange }), text: renderTextTab, overlay: renderOverlayTab };
+  const tabContent = { fill: renderFillTab, 'clip-adjust': renderClipAdjustTab, layout: renderLayoutTab, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { compact: true, card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }), text: renderTextTab, overlay: renderOverlayTab };
 
   return React.createElement("div", {
     style: { display: 'flex', flexDirection: 'column', gap: 0 },
@@ -8469,7 +8515,7 @@ const DESKTOP_TABS = [
   { id: 'overlay', label: '\uC774\uBBF8\uC9C0 \uC624\uBC84\uB808\uC774', tour: 'tab-overlay' },
 ];
 
-function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onBaeminAspectRatioChange, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
+function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, onRemove, onDuplicate, onAdd, globalUrl, aspectRatio, outputFormat, globalBgImage, onReorder, onAspectRatioChange, onBaeminAspectRatioChange, onBaeminPresetConfirm, onApplyOverlayToAll, onRemoveOverlayFromAll, onMoveCard, pausePreview = false, previewResetKey = 0, externalMuted, onMuteToggle, project, isBmOnlyPage = false, onOpenArticleGallery, onNextArticleImage, onRegenerateArticleImage, onSelectArticleImage, regeneratingCardIdx, styleClipboardActions }) {
   const [activeTab, setActiveTab] = useState('fill');
   const [showDetailTitle, setShowDetailTitle] = useState(false);
   const [showDetailSubtitle, setShowDetailSubtitle] = useState(false);
@@ -8923,7 +8969,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['overlays'], styleClipboardActions }),
   );
 
-  const tabRenderers = { fill: renderFill, layout: renderLayout, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, onBaeminAspectRatioChange }), text: renderText, overlay: renderOverlay };
+  const tabRenderers = { fill: renderFill, layout: renderLayout, 'baemin-layout': () => React.createElement(BaeminLayoutTabPanel, { card, updateMulti, cards, activeIndex, onCardChange, styleClipboardActions, aspectRatio, onBaeminAspectRatioChange, onBaeminPresetConfirm }), text: renderText, overlay: renderOverlay };
 
   // \u2500\u2500 Render \u2500\u2500
   return React.createElement("div", { style: { display: 'flex', background: T.surface, borderRadius: T.radius, boxShadow: T.shadow, overflow: 'hidden', minHeight: 'calc(100vh - 230px)' } },
@@ -10852,6 +10898,7 @@ export default function App() {
           onTabChange: () => setMobilePreviewHidden(h => h === 'auto' ? false : h),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
           onBaeminAspectRatioChange: setAspectRatio,
+          onBaeminPresetConfirm: setPendingConfirm,
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           project: activeProject,
@@ -10880,6 +10927,7 @@ export default function App() {
           onMuteToggle: () => setEditorPreviewMuted(m => !m),
           onAspectRatioChange: (v) => { setPendingConfirm({ message: '\uBAA8\uB4E0 \uCE74\uB4DC\uC758 \uBE44\uC728\uC774 \uBC14\uB01D\uB2C8\uB2E4.\n\uBC14\uAFB8\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?', confirmText: '\uBC14\uAFB8\uAE30', confirmColor: T.accent, onConfirm: () => setAspectRatio(v) }); },
           onBaeminAspectRatioChange: setAspectRatio,
+          onBaeminPresetConfirm: setPendingConfirm,
           onApplyOverlayToAll: applyOverlayToAll,
           onRemoveOverlayFromAll: removeOverlayFromAll,
           onMoveCard: moveCard,
