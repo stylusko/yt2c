@@ -245,6 +245,7 @@ const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
 const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
+const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
 const BAEMIN_TEXT_LIMITS = {
   photoCover: { title: 12, subtitle: 12 },
   textCover: { title: 24, subtitle: 0 },
@@ -253,7 +254,8 @@ const BAEMIN_TEXT_LIMITS = {
 const BAEMIN_STYLE_KEYS = [
   'brandGuideId', 'brandLayoutId',
   'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity',
-  'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth',
+  'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom',
+  'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth',
   'useTitle', 'titleSize', 'titleColor', 'titleFont', 'titleAlign', 'titleLetterSpacing', 'titleLineHeight', 'titleX', 'titleY',
   'useSubtitle', 'subtitleSize', 'subtitleColor', 'subtitleFont', 'subtitleAlign', 'subtitleLetterSpacing', 'subtitleLineHeight', 'subtitleX', 'subtitleY',
   'useBody', 'bodySize', 'bodyColor', 'bodyFont', 'bodyAlign', 'bodyLetterSpacing', 'bodyLineHeight', 'bodyX', 'bodyY',
@@ -291,7 +293,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('textCover')],
@@ -311,7 +313,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 40,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('textCover')],
@@ -329,9 +331,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     aspectRatio: '1:1',
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
-      layout: 'photo_top', photoRatio: 70, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
+      layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 78, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 78, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.6, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -348,9 +350,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     aspectRatio: '3:4',
     swatches: ['#101010', '#FFFFFF', BAEMIN_COVER_AQUA],
     patch: {
-      layout: 'photo_top', photoRatio: 70, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 68, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.2, titleX: 0, titleY: 0,
-      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 68, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.2, subtitleX: 0, subtitleY: -4,
+      layout: 'photo_top', photoRatio: 80, baeminTextBottom: 80, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.9, videoFill: 'full', videoBrightness: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 78, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
+      useSubtitle: true, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 78, subtitleColor: BAEMIN_COVER_AQUA, subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.6, subtitleX: 0, subtitleY: -4,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
@@ -405,11 +407,11 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
       layout: BAEMIN_BOX_BODY_LAYOUT, useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 60, textBoxWidth: 78, textBoxHeight: 25, textBoxPadding: 34, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 44, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.24, titleX: 0, titleY: 0,
+      textBoxX: 50, textBoxY: 63.1, textBoxWidth: 85.2, textBoxHeight: 28.3, textBoxPadding: 56, textBoxPaddingX: 80, textBoxPaddingY: 56, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 38, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.38, bodyX: 0, bodyY: 0,
-      useBoxText: true, boxTextFont: 'Pretendard-Regular.otf', boxTextSize: 38, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: 0, boxTextLineHeight: 1.36, boxTextX: 0, boxTextY: 0,
+      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.6, bodyX: 0, bodyY: 0,
+      useBoxText: true, boxTextFont: 'Pretendard-Regular.otf', boxTextSize: 46, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: 0, boxTextLineHeight: 1.6, boxTextX: 0, boxTextY: 0,
       overlays: [baeminLogoOverlay('solidBody')],
     },
   },
@@ -424,7 +426,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
     patch: {
-      layout: 'photo_top', photoRatio: 64, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
+      layout: 'photo_top', photoRatio: 68, baeminTextTopRatio: 1048 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
@@ -442,7 +444,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
-      layout: 'photo_top', photoRatio: 56, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
+      layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
       useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 36, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
@@ -460,7 +462,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     badges: ['사진 있음', '타이틀 없음'],
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
-      layout: 'photo_top', photoRatio: 58, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.68, videoFill: 'full', videoBrightness: -4,
+      layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.68, videoFill: 'full', videoBrightness: -4,
       useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 40, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
@@ -717,7 +719,7 @@ const STYLE_COPY_GROUPS = [
     id: 'layout',
     label: '레이아웃·배경',
     shortLabel: '레이아웃',
-    keys: ['brandGuideId', 'brandLayoutId', 'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
+    keys: ['brandGuideId', 'brandLayoutId', 'layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'],
   },
   {
     id: 'text',
@@ -1209,6 +1211,9 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
   const subOX = Math.round((card.subtitleX ?? 0) * s), subOY = Math.round((card.subtitleY ?? 0) * s);
   const bodyOX = Math.round((card.bodyX ?? 0) * s), bodyOY = Math.round((card.bodyY ?? 0) * s);
   const boxTextOX = Math.round((card.boxTextX ?? 0) * s), boxTextOY = Math.round((card.boxTextY ?? 0) * s);
+  const isBaeminGuide = card.brandGuideId === BAEMIN_GUIDE_ID;
+  const guidePx = (value) => Math.round(Number(value) * s);
+  const hasGuideValue = (value) => Number.isFinite(Number(value));
 
   function loadOverlayImage(src) {
     return new Promise((resolve, reject) => {
@@ -1314,10 +1319,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       ctx.fillRect(0, 0, w, h);
     }
 
-    const contentPadX = Math.round(132 * s);
+    const contentPadX = Math.round(80 * s);
     const contentW = w - contentPadX * 2;
-    const contentTop = Math.round(150 * s);
-    const topGap = Math.round(18 * s);
+    const contentTop = Math.round(164 * s);
+    const topGap = Math.round(24 * s);
     let curY = contentTop;
     const drawInRect = (text, align, fieldLS, left, width, xOffset) => {
       const tw = measureTextLS(text, fieldLS);
@@ -1353,15 +1358,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const boxW = w * (card.textBoxWidth || 78) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     const boxY = (card.textBoxY || 60) / 100 * h;
-    const boxPad = Math.round((card.textBoxPadding || 34) * s);
+    const boxPadX = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 56) * s);
+    const boxPadY = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 56) * s);
     const boxRad = Math.round((card.textBoxRadius || 0) * s);
     const boxBgRgb = (card.textBoxBgColor || "#ffffff").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [255,255,255];
     const boxBgOp = card.textBoxBgOpacity ?? 1;
     const boxBorderW = Math.round((card.textBoxBorderWidth || 0) * s);
-    const boxTextContentW = boxW - boxPad * 2;
+    const boxTextContentW = boxW - boxPadX * 2;
     const boxTextLines = (card.useBoxText !== false && card.boxText) ? wrapText(card.boxText, boxTextSz, card.boxTextFont, boxTextLS, boxTextContentW) : [];
     const boxContentH = boxTextLines.reduce((sum, ln) => sum + (ln ? boxTextLh : Math.round(boxTextSz * 0.55)), 0);
-    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxContentH + boxPad * 2;
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : boxContentH + boxPadY * 2;
 
     ctx.fillStyle = `rgba(${boxBgRgb[0]},${boxBgRgb[1]},${boxBgRgb[2]},${boxBgOp})`;
     ctx.beginPath();
@@ -1380,10 +1386,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const boxTextFont = getFont(card.boxTextFont, boxTextSz);
     ctx.font = boxTextFont;
     ctx.fillStyle = card.boxTextColor || BAEMIN_INK;
-    let boxCurY = boxY - boxH / 2 + boxPad;
+    let boxCurY = boxY - boxH / 2 + boxPadY;
     for (const ln of boxTextLines) {
       if (!ln) { boxCurY += Math.round(boxTextSz * 0.55); continue; }
-      drawTextLS(ln, drawInRect(ln, card.boxTextAlign || 'left', boxTextLS, boxX + boxPad, boxTextContentW, boxTextOX), boxCurY + getBaselineOffset(boxTextFont, boxTextSz, boxTextLh) + boxTextOY, boxTextLS);
+      drawTextLS(ln, drawInRect(ln, card.boxTextAlign || 'left', boxTextLS, boxX + boxPadX, boxTextContentW, boxTextOX), boxCurY + getBaselineOffset(boxTextFont, boxTextSz, boxTextLh) + boxTextOY, boxTextLS);
       boxCurY += boxTextLh;
     }
   } else if (layout === "text_box") {
@@ -1395,12 +1401,13 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const boxW = w * (card.textBoxWidth || 80) / 100;
     const boxX = (card.textBoxX || 50) / 100 * w - boxW / 2;
     let boxY = (card.textBoxY || 70) / 100 * h;
-    const boxPad = Math.round((card.textBoxPadding || 20) * s);
+    const boxPadX = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 20) * s);
+    const boxPadY = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * s);
     const boxRad = Math.round((card.textBoxRadius || 12) * s);
     const boxBgRgb = (card.textBoxBgColor || "#000000").replace("#","").match(/.{2}/g)?.map(h=>parseInt(h,16)) || [0,0,0];
     const boxBgOp = card.textBoxBgOpacity ?? 0.6;
     const boxBorderW = Math.round((card.textBoxBorderWidth || 0) * s);
-    const textContentBoxW = boxW - boxPad * 2;
+    const textContentBoxW = boxW - boxPadX * 2;
 
     // Pre-wrap text using box width constraint (not full canvas width)
     const titleLines = card.title ? wrapText(card.title, titleSz, card.titleFont, titleLS, textContentBoxW) : [];
@@ -1413,7 +1420,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (subtitleLines.length > 0) { if (titleLines.length > 0) contentH += Math.round(10 * s); contentH += subtitleLines.length * subLh; }
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) contentH += Math.round(15 * s); contentH += bodyLines.length * bodyLh; }
 
-    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPad * 2;
+    const boxH = (card.textBoxHeight || 0) > 0 ? h * card.textBoxHeight / 100 : contentH + boxPadY * 2;
     if (logoSafe.top > 0 || logoSafe.bottom > 0) {
       const boxSafePad = Math.round(10 * s);
       const minBoxY = logoSafe.top + boxSafePad + boxH / 2;
@@ -1440,10 +1447,10 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const alignXForBox = (text, align, fieldLS) => {
       const tw = measureTextLS(text, fieldLS);
       if (align === 'center') return boxX + boxW/2 - tw/2;
-      if (align === 'right') return boxX + boxW - boxPad - tw;
-      return boxX + boxPad;
+      if (align === 'right') return boxX + boxW - boxPadX - tw;
+      return boxX + boxPadX;
     };
-    let curY = boxY - boxH/2 + boxPad;
+    let curY = boxY - boxH/2 + boxPadY;
     if (titleLines.length > 0) { ctx.font = getFont(card.titleFont, titleSz); ctx.fillStyle = card.titleColor; for (const ln of titleLines) { drawTextLS(ln, alignXForBox(ln, card.titleAlign || 'left', titleLS) + titleOX, curY + getBaselineOffset(getFont(card.titleFont, titleSz), titleSz, titleLh) + titleOY, titleLS); curY += titleLh; } }
     if (subtitleLines.length > 0) { if (titleLines.length > 0) curY += Math.round(10 * s); ctx.font = getFont(card.subtitleFont, subSz); ctx.fillStyle = card.subtitleColor; for (const ln of subtitleLines) { drawTextLS(ln, alignXForBox(ln, card.subtitleAlign || 'left', subtitleLS) + subOX, curY + getBaselineOffset(getFont(card.subtitleFont, subSz), subSz, subLh) + subOY, subtitleLS); curY += subLh; } }
     if (bodyLines.length > 0) { if (titleLines.length > 0 || subtitleLines.length > 0) curY += Math.round(15 * s); ctx.font = getFont(card.bodyFont, bodySz); ctx.fillStyle = card.bodyColor; for (const ln of bodyLines) { if (!ln) { curY += bodySz / 2; continue; } drawTextLS(ln, alignXForBox(ln, card.bodyAlign || 'left', bodyLS) + bodyOX, curY + getBaselineOffset(getFont(card.bodyFont, bodySz), bodySz, bodyLh) + bodyOY, bodyLS); curY += bodyLh; } }
@@ -1491,8 +1498,17 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     }
     const contentH = textItems.reduce((sum, item) => sum + (item.type === "gap" ? item.size : (item.text ? item.lh : bodySz / 2)), 0);
     const logoSafePad = Math.round(10 * s);
+    const hasBaeminTop = isBaeminGuide && hasGuideValue(card.baeminTextTop);
+    const hasBaeminTopRatio = isBaeminGuide && hasGuideValue(card.baeminTextTopRatio);
+    const hasBaeminBottom = isBaeminGuide && hasGuideValue(card.baeminTextBottom);
     let curY = yStart + padTop;
-    if (layout === "photo_bottom" && logoSafe.top > 0) {
+    if (hasBaeminTop) {
+      curY = guidePx(card.baeminTextTop);
+    } else if (hasBaeminTopRatio) {
+      curY = Math.round(h * Number(card.baeminTextTopRatio));
+    } else if (hasBaeminBottom) {
+      curY = h - guidePx(card.baeminTextBottom) - contentH;
+    } else if (layout === "photo_bottom" && logoSafe.top > 0) {
       curY = Math.max(curY, logoSafe.top + logoSafePad);
     } else if (layout === "photo_top" && logoSafe.bottom > 0) {
       const safeBottom = h - logoSafe.bottom - logoSafePad;
@@ -4589,7 +4605,17 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
       }
     } else {
       let y;
-      if (layout === 'photo_top') y = photoRatio + PAD;
+      const hasBaeminTop = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextTop));
+      const hasBaeminTopRatio = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextTopRatio));
+      const hasBaeminBottom = card.brandGuideId === BAEMIN_GUIDE_ID && Number.isFinite(Number(card.baeminTextBottom));
+      const designH = previewH / sc;
+      if (hasBaeminTop) y = Number(card.baeminTextTop) / designH;
+      else if (hasBaeminTopRatio) y = Number(card.baeminTextTopRatio);
+      else if (hasBaeminBottom) {
+        const contentH = fields.reduce((sum, f, i) => sum + (i > 0 ? gap(f) : 0) + fh(f), 0);
+        y = 1 - Number(card.baeminTextBottom) / designH - contentH;
+      }
+      else if (layout === 'photo_top') y = photoRatio + PAD;
       else if (layout === 'photo_bottom') y = PAD;
       else y = PAD;
 
@@ -4621,7 +4647,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
 
     // Compute pixel positions within textbox using actual scale
     const s = previewW / 1080;
-    const padPx = (card.textBoxPadding || 20) * s;
+    const padPx = (card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * s;
     const fhPx = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) * s;
     const gapPx = (f) => (f === 'body' ? 15 : 10) * s;
 
@@ -4663,10 +4689,11 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const getTextBoxGeom = () => {
     const bW = previewW * (card.textBoxWidth || 80) / 100;
     const bX = (card.textBoxX || 50) / 100 * previewW - bW / 2;
-    const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - Math.round((card.textBoxPadding || 20) * sc) * 2))) : 0;
-    const boxPadPx = Math.round((card.textBoxPadding || 20) * sc);
+    const boxPadXPx = Math.round((card.textBoxPaddingX ?? card.textBoxPadding ?? 20) * sc);
+    const boxPadYPx = Math.round((card.textBoxPaddingY ?? card.textBoxPadding ?? 20) * sc);
+    const titleLineCount = card.title ? Math.max(1, Math.ceil(card.title.length * (card.titleSize || 56) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
+    const subLineCount = card.subtitle ? Math.max(1, Math.ceil(card.subtitle.length * (card.subtitleSize || 44) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
+    const bodyLineCount = card.body ? Math.max(1, Math.ceil(card.body.length * (card.bodySize || 36) * sc * 0.55 / (bW - boxPadXPx * 2))) : 0;
     const estH = (card.textBoxHeight || 0) > 0
       ? previewH * card.textBoxHeight / 100
       : (titleLineCount * Math.round((card.titleSize || 56) * sc * (card.titleLineHeight || 1.4))
@@ -4674,7 +4701,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
         + bodyLineCount * Math.round((card.bodySize || 36) * sc * (card.bodyLineHeight || 1.4))
         + (titleLineCount > 0 && subLineCount > 0 ? Math.round(10 * sc) : 0)
         + ((titleLineCount > 0 || subLineCount > 0) && bodyLineCount > 0 ? Math.round(15 * sc) : 0)
-        + boxPadPx * 2);
+        + boxPadYPx * 2);
     const bH = Math.max(20, estH);
     const bY = (card.textBoxY || 70) / 100 * previewH - bH / 2;
     return { bW, bH, bX, bY };
@@ -5972,6 +5999,8 @@ const CARD_KEY_MAP = {
   // ── article 모드 필드 (기존 '6'~'9' 숫자 슬롯은 모두 비어있었음) ──
   sourceType:'6', articleType:'7', articleMeta:'8',
   brandGuideId:'9', brandLayoutId:'10',
+  baeminTextTop:'11', baeminTextTopRatio:'12', baeminTextBottom:'13',
+  textBoxPaddingX:'14', textBoxPaddingY:'15',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
@@ -8579,7 +8608,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
+    React.createElement(ApplyToAllBtn, { keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
 
   const setAllAlign = (align) => updateMulti({ titleAlign: align, subtitleAlign: align, bodyAlign: align, boxTextAlign: align });
@@ -9132,7 +9161,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
-    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], styleClipboardActions }),
+    React.createElement(ApplyToAllBtn, { mt: 8, cards, card, activeIndex, onCardChange: onCardChange, keysToApply: ['layout', 'useGradient', 'photoRatio', 'videoFill', 'useBg', 'bgColor', 'bgOpacity', 'baeminTextTop', 'baeminTextTopRatio', 'baeminTextBottom', 'textBoxX', 'textBoxY', 'textBoxWidth', 'textBoxHeight', 'textBoxPadding', 'textBoxPaddingX', 'textBoxPaddingY', 'textBoxRadius', 'textBoxBgColor', 'textBoxBgOpacity', 'textBoxBorderColor', 'textBoxBorderWidth'], styleClipboardActions }),
   );
 
   // \u2500\u2500 Text Tab \u2500\u2500

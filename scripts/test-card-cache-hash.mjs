@@ -148,4 +148,31 @@ assert.notEqual(
   'logo color value must be part of the cache hash',
 );
 
+const baeminCard = {
+  ...articleCard,
+  brandGuideId: 'baemin-only',
+  brandLayoutId: 'bm-cover-square',
+  baeminTextBottom: 80,
+  textBoxPaddingX: 80,
+  textBoxPaddingY: 56,
+};
+
+assert.notEqual(
+  computeCardCacheHash(baeminCard, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, baeminTextBottom: 96 }, cfg, 5),
+  'Baemin text anchor must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash(baeminCard, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, textBoxPaddingX: 96 }, cfg, 5),
+  'Baemin text box padding must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash(baeminCard, cfg, 5),
+  computeCardCacheHash({ ...baeminCard, brandLayoutId: 'bm-cover-reels' }, cfg, 5),
+  'Baemin layout preset id must be part of the cache hash',
+);
+
 console.log('card cache hash tests passed');
