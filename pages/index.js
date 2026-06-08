@@ -251,6 +251,7 @@ const LETTER_SPACING_UNIT_PX = 'px';
 const LETTER_SPACING_UNIT_PERCENT = 'percent';
 const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5;
 const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
+const BAEMIN_AI_HEADLINE_LINE_LIMIT = 10;
 const BAEMIN_TEXT_LIMITS = {
   photoCover: { title: 12, subtitle: 12 },
   textCover: { title: 24, subtitle: 0 },
@@ -583,12 +584,82 @@ function clampBaeminTextField(card, field, value) {
   return sliced;
 }
 
+function normalizeBaeminGeneratedHeadlineLine(value, limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text || text.length <= limit) return text;
+  const sliced = text.slice(0, limit).trimEnd();
+  const lastSpace = sliced.lastIndexOf(' ');
+  if (lastSpace >= Math.floor(limit * 0.6)) return sliced.slice(0, lastSpace).trimEnd();
+  return sliced;
+}
+
+function splitBaeminGeneratedHeadline(titleValue, subtitleValue = '', limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
+  const explicitSubtitle = normalizeBaeminGeneratedHeadlineLine(subtitleValue, limit);
+  const titleLines = String(titleValue || '').split(/\n+/).map(line => line.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (explicitSubtitle) {
+    return {
+      title: normalizeBaeminGeneratedHeadlineLine(titleLines[0] || titleValue, limit),
+      subtitle: explicitSubtitle,
+    };
+  }
+
+  const sourceLines = titleLines.length ? titleLines : [String(titleValue || '').replace(/\s+/g, ' ').trim()].filter(Boolean);
+  const lines = [];
+  for (const sourceLine of sourceLines) {
+    const words = sourceLine.split(/\s+/).filter(Boolean);
+    let current = '';
+    for (let word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (next.length <= limit) {
+        current = next;
+        continue;
+      }
+      if (current) {
+        lines.push(current);
+        current = '';
+        if (lines.length >= 2) break;
+      }
+      while (word.length > limit && lines.length < 2) {
+        lines.push(word.slice(0, limit));
+        word = word.slice(limit);
+      }
+      if (lines.length >= 2) break;
+      current = word;
+    }
+    if (current && lines.length < 2) lines.push(current);
+    if (lines.length >= 2) break;
+  }
+
+  return {
+    title: normalizeBaeminGeneratedHeadlineLine(lines[0] || '', limit),
+    subtitle: normalizeBaeminGeneratedHeadlineLine(lines[1] || '', limit),
+  };
+}
+
 function clampBaeminCardCopy(card) {
   if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return card;
   const next = { ...card };
   next.title = clampBaeminTextField(next, 'title', next.title);
   next.subtitle = clampBaeminTextField(next, 'subtitle', next.subtitle);
   return next;
+}
+
+function normalizeBaeminGeneratedCardCopy(card) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return card;
+  const next = { ...card };
+
+  if (isBaeminPhotoCoverLayout(next)) {
+    const pair = splitBaeminGeneratedHeadline(next.title, next.subtitle);
+    next.title = pair.title;
+    next.subtitle = pair.subtitle;
+    next.useSubtitle = !!pair.subtitle;
+  } else {
+    next.title = normalizeBaeminGeneratedHeadlineLine(next.title);
+    next.subtitle = normalizeBaeminGeneratedHeadlineLine(next.subtitle);
+  }
+
+  next.name = [next.title, next.subtitle].filter(Boolean).join(' ');
+  return clampBaeminCardCopy(next);
 }
 
 function cleanBaeminText(value) {
@@ -745,7 +816,9 @@ async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceT
   return sourceCards.map((card, index) => {
     const recommendation = byIndex.get(index) || fallbackRecommendations[index];
     const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType);
-    return applyBaeminLayoutRecommendation(card, layoutId, recommendation);
+    return clearGeneratedCache(normalizeBaeminGeneratedCardCopy(
+      applyBaeminLayoutRecommendation(card, layoutId, recommendation)
+    ));
   });
 }
 
@@ -10496,11 +10569,11 @@ export default function App() {
             card.clipThumbnail = `/api/frame?url=${encodeURIComponent(_url)}&t=${_startSec}`;
           }
           card.title = h.title || '';
-          card.subtitle = '';
-          card.useSubtitle = false;
+          card.subtitle = isBmOnlyPage ? (h.subtitle || '') : '';
+          card.useSubtitle = isBmOnlyPage ? !!card.subtitle : false;
           card.body = h.body || '';
           card.useBody = !!(h.body && h.body.trim());
-          card.name = (h.title || '').replace(/\n/g, ' ');
+          card.name = [card.title, card.subtitle].filter(Boolean).join(' ').replace(/\n/g, ' ');
 
           // All cards: gradient 레이아웃 (photo_top + useGradient), 투명도 55%
           card.layout = 'photo_top';
