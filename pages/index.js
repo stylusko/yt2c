@@ -13,7 +13,7 @@ const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 8;
+const ARTICLE_IMAGE_RENDER_VERSION = 9;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
 const BM_ONLY_MODE_PATHS = {
   home: '/bmonly',
@@ -555,6 +555,11 @@ function resolveLetterSpacingPx(value, unit, fontSize, scale = 1) {
 
 function letterSpacingSuffix(card, field) {
   return card?.[`${field}LetterSpacingUnit`] === LETTER_SPACING_UNIT_PERCENT ? '%' : 'px';
+}
+
+function smoothGradientProgress(progress) {
+  const p = Math.max(0, Math.min(1, progress));
+  return p * p * (3 - 2 * p);
 }
 
 function baeminTextLimitFor(card, field) {
@@ -1536,13 +1541,16 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
-        const gradH = effectiveTextH + Math.round(h * 0.15);
+        const gradExtra = isBaeminPhotoCover ? h * 0.32 : h * 0.15;
+        const gradH = Math.min(h, effectiveTextH + Math.round(gradExtra));
         const gradStart = layout === "photo_top" ? h - gradH : 0;
         const gradEnd = layout === "photo_top" ? h : gradH;
         for (let y = gradStart; y < gradEnd; y++) {
           const progress = layout === "photo_top" ? (y - gradStart) / gradH : (gradEnd - y) / gradH;
           let alpha;
-          if (progress < 0.2) alpha = (progress / 0.2) ** 2 * bgOpacity * 0.5;
+          if (isBaeminPhotoCover) {
+            alpha = smoothGradientProgress(progress) * bgOpacity;
+          } else if (progress < 0.2) alpha = (progress / 0.2) ** 2 * bgOpacity * 0.5;
           else if (progress < 0.4) alpha = (0.5 + 0.4 * ((progress - 0.2) / 0.2)) * bgOpacity;
           else alpha = (0.9 + 0.1 * ((progress - 0.4) / 0.6)) * bgOpacity;
           ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${Math.min(alpha, bgOpacity)})`;
