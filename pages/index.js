@@ -481,6 +481,168 @@ function baeminLayoutPatch(preset, card = {}) {
   return patch;
 }
 
+const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-cover-square', 'bm-cover-reels'];
+const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
+const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+
+function cleanBaeminText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function isBaeminEmptyText(value) {
+  const text = cleanBaeminText(value);
+  return !text || text === '제목을 입력하세요' || text === '부제목을 입력하세요' || text === '본문 내용을 입력하세요' || text === DEFAULT_BOX_TEXT;
+}
+
+function getBaeminVisibleText(card, field) {
+  const flag = field === 'title' ? 'useTitle' : field === 'subtitle' ? 'useSubtitle' : field === 'body' ? 'useBody' : 'useBoxText';
+  if (card?.[flag] === false) return '';
+  const text = cleanBaeminText(card?.[field]);
+  return isBaeminEmptyText(text) ? '' : text;
+}
+
+function cardHasBaeminVisual(card) {
+  const fillSource = card?.fillSource || (card?.uploadedImage ? 'image' : 'video');
+  if (card?.uploadedImage || card?.clipThumbnail) return true;
+  if (fillSource === 'image') return true;
+  return fillSource === 'video' && !!(card?.url || card?.appliedStart || card?.start || card?.end);
+}
+
+function baeminCoverLayoutId(card, aspectRatio) {
+  const vertical = aspectRatio === '3:4';
+  const hasVisual = cardHasBaeminVisual(card);
+  if (hasVisual) return vertical ? 'bm-cover-reels' : 'bm-cover-square';
+  return vertical ? 'bm-cover-feed' : 'bm-cover-text-square';
+}
+
+function hasBaeminBoxSignal(text) {
+  const body = String(text || '');
+  if (!body.trim()) return false;
+  if (/(\n|^)\s*(?:[-•*]|[0-9]+[.)]|[①-⑳]|✅|✔|✓|📌|🎁|🎉)/m.test(body)) return true;
+  return /(기간|날짜|일정|혜택|조건|가격|금액|할인|쿠폰|포인트|준비물|유의|주의|체크|단계|방법|신청|당첨|발표|오전|오후|[0-9]+\s*원|[0-9]+\s*%|[0-9]{1,2}[./-][0-9]{1,2})/.test(body);
+}
+
+function deriveBaeminBoxText(card, recommendation = {}) {
+  const llmText = cleanBaeminText(recommendation.boxText);
+  if (!isBaeminEmptyText(llmText)) return llmText;
+
+  const raw = String(card?.body || card?.subtitle || card?.title || '').trim();
+  if (!raw) return '';
+  const lines = raw.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const markedLines = lines.filter(line => /^(\s*(?:[-•*]|[0-9]+[.)]|[①-⑳]|✅|✔|✓|📌|🎁|🎉))/.test(line));
+  if (markedLines.length >= 2) return markedLines.slice(0, 5).join('\n');
+  if (lines.length >= 2) return lines.slice(-Math.min(4, lines.length)).join('\n');
+  const sentences = raw.match(/[^.!?。？！]+[.!?。？！]?/g)?.map(s => s.trim()).filter(Boolean) || [];
+  if (sentences.length >= 2) return sentences.slice(-Math.min(3, sentences.length)).join('\n');
+  return cleanBaeminText(raw).slice(0, 180);
+}
+
+function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType) {
+  if (index === 0) return baeminCoverLayoutId(card, aspectRatio);
+
+  const hasVisual = cardHasBaeminVisual(card);
+  const title = getBaeminVisibleText(card, 'title');
+  const body = getBaeminVisibleText(card, 'body');
+  const allText = [title, getBaeminVisibleText(card, 'subtitle'), body, card?.boxText].filter(Boolean).join('\n');
+
+  if (hasVisual) {
+    if (!title && body) return 'bm-photo-body-only';
+    if (sourceType === 'article' && (title || body)) return 'bm-photo-frame';
+    return body ? 'bm-photo-body' : 'bm-photo-body-only';
+  }
+
+  if (hasBaeminBoxSignal(allText) && deriveBaeminBoxText(card)) return 'bm-solid-box';
+  if (title && body) return 'bm-solid-title-body';
+  return 'bm-solid-body';
+}
+
+function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType) {
+  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType);
+  const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
+  if (!preset) return fallback;
+
+  const isCover = index === 0;
+  const hasVisual = cardHasBaeminVisual(card);
+  if (isCover) {
+    return BAEMIN_COVER_LAYOUT_IDS.includes(layoutId) ? baeminCoverLayoutId(card, aspectRatio) : fallback;
+  }
+  if (BAEMIN_COVER_LAYOUT_IDS.includes(layoutId)) return fallback;
+  if (hasVisual && BAEMIN_NO_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
+  if (!hasVisual && BAEMIN_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
+  return layoutId;
+}
+
+function summarizeCardForBaeminRecommendation(card, index) {
+  const title = getBaeminVisibleText(card, 'title');
+  const subtitle = getBaeminVisibleText(card, 'subtitle');
+  const body = getBaeminVisibleText(card, 'body');
+  return {
+    cardIndex: index,
+    articleType: card?.articleType || null,
+    hasVisual: cardHasBaeminVisual(card),
+    hasTitle: !!title,
+    hasSubtitle: !!subtitle,
+    hasBody: !!body,
+    title,
+    subtitle,
+    body,
+    boxText: getBaeminVisibleText(card, 'boxText'),
+  };
+}
+
+function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
+  const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
+  if (!preset) return card;
+  const patch = baeminLayoutPatch(preset, card);
+  if (layoutId === 'bm-solid-box') {
+    const boxText = deriveBaeminBoxText(card, recommendation);
+    if (boxText) patch.boxText = boxText;
+  }
+  return clearGeneratedCache({ ...card, ...patch });
+}
+
+async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true } = {}) {
+  const sourceCards = Array.isArray(cards) ? cards : [];
+  const fallbackRecommendations = sourceCards.map((card, index) => ({
+    cardIndex: index,
+    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType),
+    confidence: 0.5,
+    reason: 'fallback',
+  }));
+  let recommendations = fallbackRecommendations;
+
+  if (useLLM) {
+    try {
+      const res = await fetch('/api/recommend-baemin-layouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          aspectRatio,
+          sourceType,
+          cards: sourceCards.map(summarizeCardForBaeminRecommendation),
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok && Array.isArray(json.recommendations) && json.recommendations.length > 0) {
+        const fallbackByIndex = new Map(fallbackRecommendations.map(item => [item.cardIndex, item]));
+        recommendations = sourceCards.map((_, index) => {
+          const found = json.recommendations.find(item => item?.cardIndex === index);
+          return found || fallbackByIndex.get(index);
+        });
+      }
+    } catch (err) {
+      console.warn('[baemin-layout] recommendation fallback:', err?.message || err);
+    }
+  }
+
+  const byIndex = new Map(recommendations.map(item => [item.cardIndex, item]));
+  return sourceCards.map((card, index) => {
+    const recommendation = byIndex.get(index) || fallbackRecommendations[index];
+    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType);
+    return applyBaeminLayoutRecommendation(card, layoutId, recommendation);
+  });
+}
+
 const MAX_CARDS = 10;
 
 const DEFAULT_CARD = () => ({
@@ -10138,17 +10300,15 @@ export default function App() {
       setAiEditRunning(false); setAiEditTargetId(null);
     });
 
-    es.addEventListener('result', (e) => {
+    es.addEventListener('result', async (e) => {
       es.close();
       aiEventSourceRef.current = null;
       try {
         const { highlights, videoInfo, transcript: _transcript } = JSON.parse(e.data);
         const wd = aiWizardDataRef.current || {};
         const _url = wd.url || url;
-        const _presetId = wd.presetId || presetId;
         const _aspectRatio = wd.aspectRatio || aspectRatio;
-        const preset = STYLE_PRESETS.find(p => p.id === _presetId) || STYLE_PRESETS[0];
-        const newCards = highlights.map((h, idx) => {
+        let newCards = highlights.map((h, idx) => {
           const card = DEFAULT_CARD();
           card.url = _url;
           card.start = h.start || '0:00';
@@ -10197,6 +10357,14 @@ export default function App() {
           card.bodyAlign = 'left';
           return card;
         });
+        if (isBmOnlyPage) {
+          setAiEditStatus({ step: 'layout', message: '배민 전용 레이아웃을 고르는 중...' });
+          newCards = await applyBaeminGeneratedLayouts(newCards, {
+            aspectRatio: _aspectRatio,
+            sourceType: 'youtube',
+            useLLM: true,
+          });
+        }
 
         const targetId = pendingProjectId || activeProjectId;
         setProjects(prev => prev.map(p => {
@@ -10243,8 +10411,15 @@ export default function App() {
       return;
     }
     setWizardLoading(true);
-    setTimeout(() => {
-      const newCards = generateWizardCards(wizardData);
+    setTimeout(async () => {
+      let newCards = generateWizardCards(wizardData);
+      if (isBmOnlyPage) {
+        newCards = await applyBaeminGeneratedLayouts(newCards, {
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          sourceType: 'youtube',
+          useLLM: false,
+        });
+      }
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
@@ -10504,7 +10679,7 @@ export default function App() {
       let _srcImgs = doneData.sourceImages || [];
       let _srcMeta = normalizeProjectSourceImageMeta(_srcImgs, doneData.sourceImageMeta);
       const sourceImageProject = { sourceImages: _srcImgs, sourceImageMeta: _srcMeta };
-      const newCards = doneData.cards.map(c => {
+      let newCards = doneData.cards.map(c => {
         const base = { ...DEFAULT_CARD(), ...c, sourceType: 'article' };
         if (base.uploadedImage && base.articleMeta?.aiImageSource === 'ai') {
           const added = addProjectSourceImage(sourceImageProject, base.uploadedImage, sourceImageMetaFromCard(base, wizardData.presetId || 'stock_photo'));
@@ -10529,6 +10704,14 @@ export default function App() {
         }
         return base;
       });
+      if (isBmOnlyPage) {
+        setArticleGenStatus(s => ({ ...(s || {}), step: 'layout', message: '배민 전용 레이아웃을 고르는 중' }));
+        newCards = await applyBaeminGeneratedLayouts(newCards, {
+          aspectRatio: wizardData.aspectRatio || '1:1',
+          sourceType: 'article',
+          useLLM: true,
+        });
+      }
       const targetId = pendingProjectId || activeProjectId;
       setProjects(prev => prev.map(p => {
         if (p.id !== targetId) return p;
