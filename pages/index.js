@@ -254,10 +254,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-feed',
     group: '표지',
-    label: '표지 피드형',
-    shortLabel: '피드 표지',
-    desc: '게시글 피드에서 제목이 먼저 읽히는 민트 표지',
-    rule: '타이틀 2줄, 윗줄 가이드 고정',
+    section: '사진 없는 표지',
+    label: '사진 없음 · 표지',
+    shortLabel: '사진 없음 표지',
+    desc: '이미지 없이 민트 배경과 큰 제목으로 시작하는 표지',
+    rule: '사진 없음 / 타이틀 중심',
+    badges: ['사진 없음', '타이틀 있음'],
     swatches: [BAEMIN_MINT, BAEMIN_INK],
     patch: {
       layout: 'full_bg', useGradient: false, useBg: true, bgColor: BAEMIN_MINT, bgOpacity: 0.94, videoFill: 'full', videoBrightness: -12,
@@ -269,10 +271,12 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-cover-reels',
     group: '표지',
-    label: '표지 릴스형',
-    shortLabel: '릴스 표지',
-    desc: '릴스 썸네일을 피드 기준 타이틀 높이로 정리',
-    rule: '릴스도 게시글 피드 기준으로 타이틀 배치',
+    section: '사진 있는 표지',
+    label: '사진 있음 · 표지',
+    shortLabel: '사진 있음 표지',
+    desc: '사진이나 영상 위에 제목을 얹어 시작하는 표지',
+    rule: '사진 있음 / 타이틀 중심',
+    badges: ['사진 있음', '타이틀 있음'],
     swatches: ['#101010', '#FFFFFF', BAEMIN_MINT],
     patch: {
       layout: 'full_bg', useGradient: false, useBg: true, bgColor: '#101010', bgOpacity: 0.46, videoFill: 'full', videoBrightness: -8,
@@ -284,6 +288,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-body',
     group: '본문',
+    section: '사진 없는 본문',
     label: '사진 없음 · 본문만',
     shortLabel: '본문',
     desc: '이미지 없이 공지나 설명을 안정적으로 넣는 기본 본문',
@@ -300,6 +305,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-title-body',
     group: '본문',
+    section: '사진 없는 본문',
     label: '사진 없음 · 타이틀+본문',
     shortLabel: '타이틀+본문',
     desc: '짧은 제목과 본문을 함께 쓰는 표준 정보 카드',
@@ -316,6 +322,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-solid-box',
     group: '본문',
+    section: '사진 없는 본문',
     label: '사진 없음 · 박스 강조',
     shortLabel: '박스 강조',
     desc: '핵심 문장, 가격, 체크포인트를 박스로 고정',
@@ -333,6 +340,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-frame',
     group: '본문',
+    section: '사진 있는 본문',
     label: '사진 있음 · 하단 타이틀+본문',
     shortLabel: '사진 프레임',
     desc: '사진을 위에 두고 하단을 배민 톤 정보 영역으로 분리',
@@ -349,6 +357,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-body',
     group: '본문',
+    section: '사진 있는 본문',
     label: '사진 있음 · 오버레이 타이틀+본문',
     shortLabel: '사진 본문',
     desc: '실사 이미지 위에 하단 본문을 얹는 설명형 카드',
@@ -365,6 +374,7 @@ const BAEMIN_LAYOUT_PRESETS = [
   {
     id: 'bm-photo-body-only',
     group: '본문',
+    section: '사진 있는 본문',
     label: '사진 있음 · 오버레이 본문만',
     shortLabel: '사진 본문만',
     desc: '사진은 살리고 제목 없이 설명 문장만 얹는 카드',
@@ -1074,7 +1084,11 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     const textH = Math.round(h * (1 - photoRatio));
     const rawYStart = layout === "photo_top" ? h - textH : 0;
     const yStart = rawYStart;
-    const effectiveTextH = textH;
+    const seamOverlap = card.brandGuideId === BAEMIN_GUIDE_ID && layout === "photo_top" && videoFill === "split" && !useGradient
+      ? Math.max(1, Math.round(2 * s))
+      : 0;
+    const bgYStart = Math.max(0, yStart - seamOverlap);
+    const effectiveTextH = textH + (yStart - bgYStart);
     if (useBg) {
       if (useGradient) {
         // Gradient mode for photo_top/photo_bottom
@@ -1093,7 +1107,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       } else {
         const effectiveOpacity = videoFill === "split" ? 1 : bgOpacity;
         ctx.fillStyle = `rgba(${bgColor[0]},${bgColor[1]},${bgColor[2]},${effectiveOpacity})`;
-        ctx.fillRect(0, yStart, w, effectiveTextH);
+        ctx.fillRect(0, bgYStart, w, effectiveTextH);
       }
     }
     const textItems = [];
@@ -7615,8 +7629,12 @@ function withBaeminLayoutTab(tabs, enabled) {
 function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardChange, compact = false, styleClipboardActions }) {
   const canApply = !!(card && updateMulti);
   const activePresetId = card?.brandGuideId === BAEMIN_GUIDE_ID ? card?.brandLayoutId : null;
-  const groups = ['표지', '본문'];
+  const groups = [
+    { label: '표지', sections: ['사진 없는 표지', '사진 있는 표지'] },
+    { label: '본문', sections: ['사진 없는 본문', '사진 있는 본문'] },
+  ];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 800, letterSpacing: 0.4 };
+  const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 900, letterSpacing: 0.35 };
   const applyPreset = (preset) => {
     if (!canApply) return;
     updateMulti(baeminLayoutPatch(preset));
@@ -7702,17 +7720,33 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
       React.createElement("div", { style: { color: T.text, fontSize: compact ? 15 : 16, fontWeight: 800 } }, "배민전용 레이아웃"),
       React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.5 } }, "피그마 가이드의 표지/본문 규칙을 현재 카드에 바로 적용합니다."),
     ),
-    groups.map(group => React.createElement("section", { key: group, style: { display: 'flex', flexDirection: 'column', gap: 8 } },
-      React.createElement("div", { style: sectionTitleStyle }, group),
-      React.createElement("div", {
-        style: {
-          display: 'grid',
-          gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
-          gap: 8,
+    groups.map(group => React.createElement("section", { key: group.label, style: { display: 'flex', flexDirection: 'column', gap: 9 } },
+      React.createElement("div", { style: sectionTitleStyle }, group.label),
+      group.sections.map(section => {
+        const presets = BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group.label && preset.section === section);
+        if (presets.length === 0) return null;
+        return React.createElement("div", {
+          key: section,
+          style: {
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 8,
+            padding: compact ? '10px 10px 11px' : '11px 12px 12px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            background: 'rgba(255,255,255,0.025)',
+          },
         },
-      },
-        BAEMIN_LAYOUT_PRESETS.filter(preset => preset.group === group).map(renderPresetButton)
-      )
+          React.createElement("div", { style: subsectionTitleStyle }, section),
+          React.createElement("div", {
+            style: {
+              display: 'grid',
+              gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+              gap: 8,
+            },
+          }, presets.map(renderPresetButton))
+        );
+      })
     )),
     canApply && cards && onCardChange && React.createElement(ApplyToAllBtn, {
       keysToApply: BAEMIN_STYLE_KEYS,
