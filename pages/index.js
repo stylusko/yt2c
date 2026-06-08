@@ -1123,11 +1123,31 @@ function fmtMM(s) {
   return String(m).padStart(1,'0') + ':' + String(sec).padStart(2,'0');
 }
 // Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
+const CLIP_TIME_STEP = 0.1;
+function snapClipTime(s) {
+  const n = Number(s);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.round(n / CLIP_TIME_STEP) * CLIP_TIME_STEP);
+}
 function fmtPrecise(s) {
-  if (s == null || isNaN(s)) return '--:--';
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
+  const snapped = snapClipTime(s);
+  if (snapped == null) return '--:--';
+  const m = Math.floor(snapped / 60);
+  const sec = snapped - m * 60;
   return m + ':' + sec.toFixed(1).padStart(4, '0');
+}
+function fmtClipTime(s) {
+  return fmtPrecise(s);
+}
+function fmtClipDuration(s) {
+  const snapped = snapClipTime(s);
+  if (snapped == null) return '--초';
+  return snapped.toFixed(1).replace(/\.0$/, '') + '초';
+}
+function normalizeClipTimeInput(value) {
+  const seconds = parseTime(value);
+  if (seconds == null) return null;
+  return fmtClipTime(seconds);
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
@@ -2372,13 +2392,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       setZDragTime(t); setZDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setZDragTime(snapEndSec - 30); lastStartVal = snapEndSec - 30; if (onWarn) onWarn(); return; }
-        onStartChange(fmtMM(t));
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtClipTime(snapEndSec - 30)); setZDragTime(snapEndSec - 30); lastStartVal = snapEndSec - 30; if (onWarn) onWarn(); return; }
+        onStartChange(fmtClipTime(t));
         lastStartVal = t;
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
-        onEndChange(fmtMM(t));
+        if (t - snapStartSec > 30) { onEndChange(fmtClipTime(snapStartSec + 30)); setZDragTime(snapStartSec + 30); if (onWarn) onWarn(); return; }
+        onEndChange(fmtClipTime(t));
       }
     };
     const onUp = () => {
@@ -2445,8 +2465,8 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
         lastRangePosRef.current = { start: newStart, end: newEnd };
         setZDragTime(newStart); setZDragX(r.x);
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+        if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+        else { onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
       };
 
       if (isTouch) {
@@ -2576,7 +2596,7 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
   return React.createElement("div", { style: { padding: '4px 8px 6px', background: T.surface, borderTop: '1px solid ' + T.border } },
     React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 4, display: 'flex', justifyContent: 'space-between' } },
       React.createElement("span", null, fmtMM(zStart)),
-      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, Math.round(clipLen) + '\uCD08 \uC120\uD0DD\uB428') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
+      clipLen ? React.createElement("span", { style: { display: 'inline-block', padding: '1px 7px', borderRadius: 10, fontSize: 10, fontWeight: 600, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.12)', color: overLimit ? dangerC : accentC } }, fmtClipDuration(clipLen) + ' 선택됨') : React.createElement("span", { style: { fontWeight: 500 } }, '\uAD6C\uAC04 \uD0D0\uC0C9'),
       React.createElement("span", null, fmtMM(zEnd)),
     ),
     React.createElement("div", {
@@ -2621,13 +2641,13 @@ function ZoomedSeekbar({ startSec, endSec, currentTime, duration, overLimit, onS
       React.createElement("div", { onPointerDown: startPlayheadDrag, style: { position: 'absolute', top: 0, left: 'calc(' + curPct + '% - 10px)', width: 20, height: 28, cursor: 'grab', zIndex: 2, touchAction: 'none' } },
         React.createElement("div", { style: { position: 'absolute', top: 8, left: 6, width: 8, height: 12, background: '#fff', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.4)', pointerEvents: 'none' } })
       ),
-      curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(effectiveTime)),
+      curPct > 0 && curPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 22, left: curPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtClipTime(effectiveTime)),
       // Drag tooltip — range drag shows dual labels on handles, others show single tooltip
       zDrag && zDragTime != null && zDragType === 'range' && lastRangePosRef.current && [
-        React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.start)),
-        React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(lastRangePosRef.current.end)),
+        React.createElement("div", { key: 'rt-s', style: { position: 'absolute', top: -16, left: sPct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(lastRangePosRef.current.start)),
+        React.createElement("div", { key: 'rt-e', style: { position: 'absolute', top: -16, left: ePct + '%', transform: 'translateX(-50%)', background: 'rgba(99,102,241,0.9)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(lastRangePosRef.current.end)),
       ],
-      zDrag && zDragTime != null && (zDragType === 'start' || zDragType === 'end') && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : '\uC885\uB8CC ') + fmtMM(zDragTime)),
+      zDrag && zDragTime != null && (zDragType === 'start' || zDragType === 'end') && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(zDragX, (zoomRef.current ? zoomRef.current.offsetWidth - 16 : 200))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 10, fontWeight: 600, padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, (zDragType === 'start' ? '\uC2DC\uC791 ' : '\uC885\uB8CC ') + fmtClipTime(zDragTime)),
     ),
   );
 }
@@ -2827,8 +2847,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       }
     }
     var autoEnd = Math.min(15, duration);
-    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
-    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(autoEnd));
+    else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(autoEnd)); }
     var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
     if (z > 1) {
       setZoomLevel(z);
@@ -2984,8 +3004,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
         setDragTime(newStart); setDragX(mx);
         manualSeekOutside.current = false;
-        if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-        else { onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+        if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+        else { onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
       };
 
       const startRangeDrag = () => {
@@ -3148,12 +3168,12 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       setDragTime(t); setDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtMM(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
-        onStartChange(fmtMM(t));
+        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtClipTime(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
+        onStartChange(fmtClipTime(t));
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtMM(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
-        onEndChange(fmtMM(t));
+        if (t - snapStartSec > 30) { onEndChange(fmtClipTime(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
+        onEndChange(fmtClipTime(t));
       }
     };
     const onUp = () => {
@@ -3213,10 +3233,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     setCurrent(newStart);
     // Update parent state atomically to avoid React batching issue
     if (onClipChange) {
-      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+      onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
     } else {
-      onStartChange(fmtMM(newStart));
-      if (newEnd !== es) onEndChange(fmtMM(newEnd));
+      onStartChange(fmtClipTime(newStart));
+      if (newEnd !== es) onEndChange(fmtClipTime(newEnd));
     }
     if (onClipConfirmed) onClipConfirmed();
   };
@@ -3243,10 +3263,10 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     manualSeekOutside.current = false;
     // Update parent state atomically
     if (onClipChange) {
-      onClipChange(fmtMM(newStart), fmtMM(newEnd));
+      onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
     } else {
-      if (newStart !== ss) onStartChange(fmtMM(newStart));
-      onEndChange(fmtMM(newEnd));
+      if (newStart !== ss) onStartChange(fmtClipTime(newStart));
+      onEndChange(fmtClipTime(newEnd));
     }
     if (onClipConfirmed) onClipConfirmed();
   };
@@ -3389,7 +3409,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       vEndPct != null && vEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: vEndPct + '%', right: 0, height: 36, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
       // Selected range fill
       vStartPct != null && vEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: vStartPct + '%', width: Math.max(0, vEndPct - vStartPct) + '%', height: 36, background: overLimit ? 'rgba(239,68,68,0.15)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
-        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+        clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, fmtClipDuration(clipLen))
       ),
       // ── Start bracket handle ──
       vStartPct != null && vStartPct >= -2 && vStartPct <= 102 && React.createElement("div", { style: { position: 'absolute', top: 18, left: 'calc(' + vStartPct + '% - 8px)', pointerEvents: 'none', zIndex: 3 } },
@@ -3418,9 +3438,9 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         // Vertical line spanning track
         React.createElement("div", { style: { position: 'absolute', top: 17, left: 9, width: 2, height: 38, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
       ),
-      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtMM(currentTime)),
+      !dragging && playing && vPct >= 0 && vPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: 54, left: vPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, fmtClipTime(currentTime)),
       // Drag tooltip
-      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(dragTime)),
+      dragging && dragTime != null && React.createElement("div", { style: { position: 'absolute', bottom: -16, left: Math.max(16, Math.min(dragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))) , transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(dragTime)),
     ),
     // Horizontal scrollbar (visible when zoomed)
     zoomLevel > 1 && duration > 0 && React.createElement("div", {
@@ -3461,14 +3481,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { padding: '4px 6px', borderRadius: 4, border: '1px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' },
         }, '\u25C9 \uC2DC\uC791'),
         React.createElement("input", {
-          type: 'text', value: start || '', placeholder: '0:00',
+          type: 'text', value: start || '', placeholder: '0:00.0',
           onChange: (e) => {
             onStartChange(e.target.value);
             var es = parseTime(end);
             var ss = parseTime(e.target.value);
             if (es != null && ss != null && es <= ss) onEndChange('');
           },
-          style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
+          style: { width: 60, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
       // End: capture btn + input
@@ -3478,14 +3498,14 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           style: { padding: '4px 6px', borderRadius: 4, border: '1px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 10, fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' },
         }, '\u25C9 \uC885\uB8CC'),
         React.createElement("input", {
-          type: 'text', value: end || '', placeholder: '0:00',
+          type: 'text', value: end || '', placeholder: '0:00.0',
           onChange: (e) => {
             var ss = parseTime(start);
             var es = parseTime(e.target.value);
-            if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); }
+            if (ss != null && es != null && es - ss > 30) { onEndChange(fmtClipTime(ss + 30)); }
             else { onEndChange(e.target.value); }
           },
-          style: { width: 48, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
+          style: { width: 60, padding: '3px 5px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' },
         }),
       ),
     ),
@@ -3525,7 +3545,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const [mDragX, setMDragX] = useState(0);
   const setCollapsedAndNotify = (v) => { setCollapsed(v); if (onExpandChange) onExpandChange(!v); };
   // Auto-set 0-15s immediately when opening with no selection
-  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } }, []);
+  useEffect(() => { if (initialOpen && parseTime(start) == null) { if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(15)); else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(15)); } } }, []);
   const handleClose = () => {
     if (playerRef.current) { try { playerRef.current.pauseVideo(); } catch(e){} }
     setClosing(true);
@@ -3634,8 +3654,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     }
     if (parseTime(start) != null) return;
     var autoEnd = Math.min(15, duration);
-    if (onClipChange) onClipChange(fmtMM(0), fmtMM(autoEnd));
-    else { onStartChange(fmtMM(0)); onEndChange(fmtMM(autoEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(autoEnd));
+    else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(autoEnd)); }
     var z = Math.max(1, Math.min(mz, Math.round(duration / 60)));
     if (z > 1) {
       setZoomLevel(z);
@@ -3945,13 +3965,13 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         const r = calcSeekTime(lastCx);
         let t = Math.max(0, Math.min(duration, r.time));
         if (bracketType === 'start') {
-          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - 1;
+          if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - CLIP_TIME_STEP;
           if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
-          onStartChange(fmtMM(Math.max(0, t)));
+          onStartChange(fmtClipTime(Math.max(0, t)));
         } else {
-          if (t <= snapStartSec) t = snapStartSec + 1;
+          if (t <= snapStartSec) t = snapStartSec + CLIP_TIME_STEP;
           if (t - snapStartSec > 30) t = snapStartSec + 30;
-          onEndChange(fmtMM(Math.min(duration, t)));
+          onEndChange(fmtClipTime(Math.min(duration, t)));
         }
       }
 
@@ -3962,8 +3982,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         let ns = snapStartSec + delta, ne = snapEndSec + delta;
         if (ns < 0) { ns = 0; ne = clipDur; }
         if (ne > duration) { ne = duration; ns = duration - clipDur; }
-        if (onClipChange) onClipChange(fmtMM(ns), fmtMM(ne));
-        else { onStartChange(fmtMM(ns)); onEndChange(fmtMM(ne)); }
+        if (onClipChange) onClipChange(fmtClipTime(ns), fmtClipTime(ne));
+        else { onStartChange(fmtClipTime(ns)); onEndChange(fmtClipTime(ne)); }
       }
 
       if (mode === 'range' && !rangeDragStarted) {
@@ -4048,8 +4068,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     manualSeekOutside.current = false;
     if (playerRef.current) playerRef.current.seekTo(newStart, true);
     setCurrent(newStart);
-    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-    else { onStartChange(fmtMM(newStart)); if (newEnd !== es) onEndChange(fmtMM(newEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+    else { onStartChange(fmtClipTime(newStart)); if (newEnd !== es) onEndChange(fmtClipTime(newEnd)); }
   };
 
   const markEnd = () => {
@@ -4062,8 +4082,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     else { newEnd = t; }
     startSecRef.current = newStart; endSecRef.current = newEnd; lastStartRef.current = newStart;
     manualSeekOutside.current = false;
-    if (onClipChange) onClipChange(fmtMM(newStart), fmtMM(newEnd));
-    else { if (newStart !== ss) onStartChange(fmtMM(newStart)); onEndChange(fmtMM(newEnd)); }
+    if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
+    else { if (newStart !== ss) onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
   };
 
   if (!videoId) return null;
@@ -4104,7 +4124,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
 
   // Collapsed: just a toggle button
   if (collapsed) return React.createElement("div", {
-    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtMM(0), fmtMM(15)); else { onStartChange(fmtMM(0)); onEndChange(fmtMM(15)); } } setCollapsedAndNotify(false); },
+    onClick: () => { if (parseTime(start) == null) { if (onClipChange) onClipChange(fmtClipTime(0), fmtClipTime(15)); else { onStartChange(fmtClipTime(0)); onEndChange(fmtClipTime(15)); } } setCollapsedAndNotify(false); },
     style: { marginBottom: 8, padding: '20px 16px', borderRadius: 12, border: '1.5px dashed ' + accentC, background: 'rgba(99,102,241,0.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
   },
     React.createElement("span", { style: { fontSize: 13, color: T.textSecondary, textAlign: 'center', lineHeight: 1.5 } }, '\uC601\uC0C1\uC5D0\uC11C \uC0AC\uC6A9\uD560 \uAD6C\uAC04\uC744 \uC120\uD0DD\uD574\uC8FC\uC138\uC694'),
@@ -4188,8 +4208,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           mvEndPct != null && mvEndPct < 100 && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvEndPct + '%', right: 0, height: 62, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' } }),
           // Selected range fill
           mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', top: 18, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', height: 62, background: overLimit ? 'rgba(239,68,68,0.15)' : rangeTouched ? 'rgba(99,102,241,0.35)' : 'rgba(99,102,241,0.18)', borderTop: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), borderBottom: '1px solid ' + (overLimit ? 'rgba(239,68,68,0.5)' : rangeTouched ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.5)'), pointerEvents: 'none', transition: rangeDragActive ? 'none' : 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' } },
-            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtMM(rangeDragLabel.start) + ' ~ ' + fmtMM(rangeDragLabel.end))
-            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, Math.round(clipLen) + '\uCD08')
+            rangeDragLabel ? React.createElement("span", { style: { fontSize: 10, color: '#fff', fontWeight: 700, whiteSpace: 'nowrap', letterSpacing: 0.5, textShadow: '0 1px 3px rgba(0,0,0,0.5)' } }, fmtClipTime(rangeDragLabel.start) + ' ~ ' + fmtClipTime(rangeDragLabel.end))
+            : clipLen != null && React.createElement("span", { style: { fontSize: 10, color: 'rgba(255,255,255,0.3)', fontWeight: 600, whiteSpace: 'nowrap', letterSpacing: 0.5 } }, fmtClipDuration(clipLen))
           ),
           // First-time range drag tooltip
           showRangeTip && mvStartPct != null && mvEndPct != null && React.createElement("div", { style: { position: 'absolute', bottom: 70, left: mvStartPct + '%', width: Math.max(0, mvEndPct - mvStartPct) + '%', display: 'flex', justifyContent: 'center', pointerEvents: 'none', zIndex: 10 } },
@@ -4223,9 +4243,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             React.createElement("div", { style: { position: 'absolute', top: 12, left: 9, width: 0, height: 0, borderLeft: '3px solid transparent', borderRight: '3px solid transparent', borderTop: '5px solid #fff', pointerEvents: 'none' } }),
             React.createElement("div", { style: { position: 'absolute', top: 17, left: 11, width: 2, height: 64, background: '#fff', borderRadius: 1, boxShadow: '0 0 4px rgba(0,0,0,0.5)', pointerEvents: 'none' } })
           ),
-          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(currentTime)),
+          !mDragging && playing && mvPct >= 0 && mvPct <= 100 && React.createElement("div", { style: { position: 'absolute', top: -14, left: mvPct + '%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.75)', color: '#fff', fontSize: 9, fontWeight: 600, padding: '1px 4px', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(currentTime)),
           // Playhead drag tooltip
-          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtMM(mDragTime)),
+          mDragging && mDragTime != null && React.createElement("div", { style: { position: 'absolute', top: -16, left: Math.max(16, Math.min(mDragX, (seekRef.current ? seekRef.current.offsetWidth - 16 : 300))), transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: 10 } }, fmtClipTime(mDragTime)),
         ),
         // Horizontal scrollbar (visible when zoomed)
         zoomLevel > 1 && duration > 0 && React.createElement("div", {
@@ -4263,12 +4283,12 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           // Start: capture btn + input
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
             React.createElement("button", { onClick: markStart, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: startSec != null ? accentC : 'transparent', color: startSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC2DC\uC791'),
-            React.createElement("input", { type: 'text', value: start || '', placeholder: '0:00', onChange: (e) => { onStartChange(e.target.value); var es = parseTime(end); var ss = parseTime(e.target.value); if (es != null && ss != null && es <= ss) onEndChange(''); }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+            React.createElement("input", { type: 'text', value: start || '', placeholder: '0:00.0', onChange: (e) => { onStartChange(e.target.value); var es = parseTime(end); var ss = parseTime(e.target.value); if (es != null && ss != null && es <= ss) onEndChange(''); }, style: { width: 54, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
           // End: capture btn + input
           React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 3 } },
             React.createElement("button", { onClick: markEnd, style: { padding: '5px 8px', borderRadius: 6, border: '1.5px solid ' + accentC, background: endSec != null ? accentC : 'transparent', color: endSec != null ? '#fff' : accentC, fontSize: 11, fontWeight: 600, cursor: 'pointer', flexShrink: 0 } }, '\u25C9 \uC885\uB8CC'),
-            React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtMM(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 44, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
+            React.createElement("input", { type: 'text', value: end || '', placeholder: '0:00.0', onChange: (e) => { var ss = parseTime(start); var es = parseTime(e.target.value); if (ss != null && es != null && es - ss > 30) { onEndChange(fmtClipTime(ss + 30)); showWarn(); } else { onEndChange(e.target.value); } }, style: { width: 54, padding: '4px 4px', background: T.surface, border: '1px solid ' + T.border, borderRadius: 4, fontSize: 11, color: T.text, textAlign: 'center', outline: 'none' } }),
           ),
         ),
         // Warning toast
@@ -8675,14 +8695,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             card.appliedStart
               ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 4, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                   React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
-                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                    (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? es - ss : 0; return fmtClipTime(ss) + '~' + fmtClipTime(es) + ' (' + fmtClipDuration(dur) + ')'; })()
                   ),
                   React.createElement("button", {
                     onClick: () => { updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }); setClipReopenFlag(f => f + 1); },
                     style: { padding: '6px 12px', minHeight: 32, background: 'rgba(255,255,255,0.08)', border: '1px solid ' + T.border, borderRadius: T.radiusSm, color: T.textSecondary, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' },
                   }, '\uB2E4\uC2DC \uC120\uD0DD'),
                 )
-              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
+              : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var startStr = normalizeClipTimeInput(card.start); var endStr = normalizeClipTimeInput(card.end); if (!startStr || !endStr) return; var normalizedStart = parseTime(startStr); var vu = card.url || globalUrl; var frameUrl = vu && normalizedStart != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${normalizedStart}&_=${Date.now()}` : null; updateMulti({ start: startStr, end: endStr, appliedStart: startStr, appliedEnd: endStr, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
     (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
@@ -9213,7 +9233,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
               ? React.createElement(React.Fragment, null,
                   React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '8px 12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: T.radiusSm } },
                     React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 500, flex: 1 } },
-                      (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? Math.round(es - ss) : 0; return fmtMM(ss) + '~' + fmtMM(es) + ' (' + dur + '\uCD08)'; })()
+                      (() => { const ss = parseTime(card.appliedStart) ?? 0; const es = parseTime(card.appliedEnd); const dur = es != null ? es - ss : 0; return fmtClipTime(ss) + '~' + fmtClipTime(es) + ' (' + fmtClipDuration(dur) + ')'; })()
                     ),
                     React.createElement("button", {
                       onClick: () => updateMulti({ appliedStart: null, appliedEnd: null, clipThumbnail: null }),
@@ -9234,7 +9254,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                     if (s != null && e != null && e > s && e - s > 30) errors.push('\uAD6C\uAC04\uC774 30\uCD08\uB97C \uCD08\uACFC\uD569\uB2C8\uB2E4');
                     var valid = errors.length === 0;
                     return React.createElement("button", {
-                      onClick: () => { if (!valid) { setClipError(errors); return; } var vu = card.url || globalUrl; var frameUrl = vu && s != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${s}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ appliedStart: card.start, appliedEnd: card.end, clipThumbnail: frameUrl }); },
+                      onClick: () => { if (!valid) { setClipError(errors); return; } var startStr = normalizeClipTimeInput(card.start); var endStr = normalizeClipTimeInput(card.end); if (!startStr || !endStr) { setClipError(['구간 시간을 다시 확인해주세요']); return; } var normalizedStart = parseTime(startStr); var vu = card.url || globalUrl; var frameUrl = vu && normalizedStart != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${normalizedStart}&_=${Date.now()}` : null; setVideoLoading(true); updateMulti({ start: startStr, end: endStr, appliedStart: startStr, appliedEnd: endStr, clipThumbnail: frameUrl }); },
                       style: { marginTop: 8, padding: '8px 16px', background: valid ? T.accent : 'rgba(99,102,241,0.3)', color: '#fff', border: 'none', borderRadius: T.radiusSm, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: valid ? 1 : 0.6, transition: 'opacity 0.15s, background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
                     }, valid && React.createElement(SvgIcon, { path: ICON_CHECK, size: 16 }), '\uC774 \uAD6C\uAC04\uC73C\uB85C \uC124\uC815');
                   })(),
