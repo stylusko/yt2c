@@ -252,9 +252,9 @@ const LETTER_SPACING_UNIT_PX = 'px';
 const LETTER_SPACING_UNIT_PERCENT = 'percent';
 const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5;
 const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
-const BAEMIN_AI_HEADLINE_LINE_LIMIT = 10;
+const BAEMIN_AI_HEADLINE_LINE_LIMIT = 14;
 const BAEMIN_TEXT_LIMITS = {
-  photoCover: { title: 12, subtitle: 12 },
+  photoCover: { title: 14, subtitle: 14 },
   textCover: { title: 24, subtitle: 0 },
   content: { title: 24, subtitle: 20 },
 };
