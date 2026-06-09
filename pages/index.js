@@ -8,12 +8,12 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0609';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 9;
+const ARTICLE_IMAGE_RENDER_VERSION = 10;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
 const BM_ONLY_MODE_PATHS = {
   home: '/bmonly',
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
   '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
   '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
   '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
   '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
   '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
-  '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
 ];
 
 /* ── Icons ── */
