@@ -19,7 +19,7 @@ process.env.AWS_ACCESS_KEY_ID = '';
 process.env.BUCKET_SECRET_ACCESS_KEY = '';
 process.env.AWS_SECRET_ACCESS_KEY = '';
 
-const { processCard } = await import('../lib/worker.js');
+const { processCard, buildFilterChain } = await import('../lib/worker.js');
 
 function run(cmd, args, opts = {}) {
   return execFileSync(cmd, args, { stdio: opts.stdio || 'pipe', maxBuffer: 16 * 1024 * 1024 });
@@ -161,7 +161,26 @@ function assertSamePixels(fileA, fileB, label) {
   console.log(`PASS ${label}: RGB hash ${a.slice(0, 12)}`);
 }
 
+function assertIncludes(value, expected, label) {
+  if (!value.includes(expected)) throw new Error(`${label} expected filter to include ${expected}, got ${value}`);
+  console.log(`PASS ${label}: ${expected}`);
+}
+
 try {
+  const scaledVideoFilter = buildFilterChain(
+    1080, 1920, OUT, OUT,
+    [0, 0],
+    70,
+    'full',
+    'photo_top',
+    0.5,
+    0,
+    undefined,
+    false
+  );
+  assertIncludes(scaledVideoFilter, 'scale=756:1344', 'video output keeps preview scale');
+  assertIncludes(scaledVideoFilter, 'overlay=162:-132', 'video output keeps preview position');
+
   const source = path.join(tmpRoot, 'source.png');
   const overlay = path.join(tmpRoot, 'overlay.png');
 

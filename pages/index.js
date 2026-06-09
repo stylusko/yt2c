@@ -7,7 +7,7 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0604';
+const BUILD_DATE = '2026.0609';
 const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
@@ -53,15 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
+  '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
   '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
   '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
   '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
   '🏷️ 로고 세이프영역 보정 — 로고와 텍스트가 실제로 겹칠 때만 레이아웃을 피하도록 조정',
-  '🎨 로고 색상 변경 — 투명 로고를 원본/흰색/검정/직접 선택 색상으로 변환',
-  '🔠 본문 기본 글자 크기 확대 — 새 카드/아티클 카드 본문을 기존보다 약 10% 크게 표시',
-  '🏷️ 로고 세이프영역 — 로고가 올라간 카드에서만 본문 영역을 자동으로 피해 배치',
-  '🏷️ 로고 추가 — 하단 중앙 기본 배치와 전체 카드 적용을 갖춘 전용 로고 오버레이',
 ];
 
 /* ── Icons ── */
@@ -585,6 +583,12 @@ function clampBaeminTextField(card, field, value) {
   return sliced;
 }
 
+function baeminAiTextLimitFor(card, field) {
+  if (card?.brandGuideId !== BAEMIN_GUIDE_ID) return null;
+  if (field !== 'title' && field !== 'subtitle') return null;
+  return BAEMIN_AI_HEADLINE_LINE_LIMIT;
+}
+
 function normalizeBaeminGeneratedHeadlineLine(value, limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
   const text = String(value || '').replace(/\s+/g, ' ').trim();
   if (!text || text.length <= limit) return text;
@@ -592,6 +596,12 @@ function normalizeBaeminGeneratedHeadlineLine(value, limit = BAEMIN_AI_HEADLINE_
   const lastSpace = sliced.lastIndexOf(' ');
   if (lastSpace >= Math.floor(limit * 0.6)) return sliced.slice(0, lastSpace).trimEnd();
   return sliced;
+}
+
+function normalizeBaeminAiTextSuggestion(card, field, value) {
+  const limit = baeminAiTextLimitFor(card, field);
+  if (!limit) return String(value || '');
+  return normalizeBaeminGeneratedHeadlineLine(value, limit);
 }
 
 function splitBaeminGeneratedHeadline(titleValue, subtitleValue = '', limit = BAEMIN_AI_HEADLINE_LINE_LIMIT) {
@@ -1124,6 +1134,7 @@ function fmtMM(s) {
 }
 // Sub-second precision format for smooth drag (0:05.3 → parseTime compatible)
 const CLIP_TIME_STEP = 0.1;
+const CLIP_END_PREVIEW_LEAD = 1;
 function snapClipTime(s) {
   const n = Number(s);
   if (!Number.isFinite(n)) return null;
@@ -1148,6 +1159,12 @@ function normalizeClipTimeInput(value) {
   const seconds = parseTime(value);
   if (seconds == null) return null;
   return fmtClipTime(seconds);
+}
+function clipEndPreviewTime(startSec, endSec) {
+  const s = Number(startSec);
+  const e = Number(endSec);
+  if (!Number.isFinite(s) || !Number.isFinite(e)) return null;
+  return Math.max(0, Math.max(s, e - CLIP_END_PREVIEW_LEAD));
 }
 function hexToRgb(hex) { return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)]; }
 
@@ -2917,12 +2934,29 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     manualSeekOutside.current = !inRange;
   };
 
-  const handleRangeDragEnd = (startTime) => {
-    if (!playerRef.current) return;
-    playerRef.current.seekTo(startTime, true);
-    setCurrent(startTime);
+  const playClipFrom = (sec) => {
+    if (!playerRef.current || sec == null) return;
+    const target = Math.max(0, sec);
+    playerRef.current.seekTo(target, true);
+    setCurrent(target);
     manualSeekOutside.current = false;
     playerRef.current.playVideo();
+  };
+
+  const keepPlaybackInsideClipRange = (nextStart, nextEnd) => {
+    if (!playerRef.current || manualSeekOutside.current) return;
+    if (nextStart == null || nextEnd == null || nextEnd <= nextStart) return;
+    const isActuallyPlaying = window.YT && playerRef.current.getPlayerState && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING;
+    if (!playing && !isActuallyPlaying) return;
+    const t = playerRef.current.getCurrentTime ? playerRef.current.getCurrentTime() : currentTime;
+    if (t < nextStart || t >= nextEnd - 0.15) {
+      playerRef.current.seekTo(Math.max(0, nextStart), true);
+      setCurrent(Math.max(0, nextStart));
+    }
+  };
+
+  const handleRangeDragEnd = (startTime) => {
+    playClipFrom(startTime);
   };
 
   // Zoom helpers
@@ -2965,6 +2999,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       const snapEnd = endSec;
       const clipDur = snapEnd - snapStart;
       const startClientX = isTouch ? e.touches[0].clientX : e.clientX;
+      let finalRangeStart = snapStart;
       let isDragging = false;
       let longPressTriggered = false;
       let longPressTimer = null;
@@ -3004,6 +3039,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         if (newEnd > duration) { newEnd = duration; newStart = duration - clipDur; }
         setDragTime(newStart); setDragX(mx);
         manualSeekOutside.current = false;
+        finalRangeStart = newStart;
+        keepPlaybackInsideClipRange(newStart, newEnd);
         if (onClipChange) onClipChange(fmtClipTime(newStart), fmtClipTime(newEnd));
         else { onStartChange(fmtClipTime(newStart)); onEndChange(fmtClipTime(newEnd)); }
       };
@@ -3043,6 +3080,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           clearTimeout(longPressTimer);
           stopDeskAutoPan();
           if (!longPressTriggered && !isDragging) seekTo(time);
+          else if (isDragging) handleRangeDragEnd(finalRangeStart);
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('touchmove', onMove); window.removeEventListener('touchend', onUp); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         };
@@ -3058,6 +3096,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
         const onUp = () => {
           stopDeskAutoPan();
           if (!isDragging) { manualSeekOutside.current = false; seekTo(time); }
+          else { handleRangeDragEnd(finalRangeStart); }
           setRangeDragActive(false); setDragging(false); setDragTime(null);
           window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp);
         };
@@ -3160,6 +3199,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     const snapEndSec = endSec;
     const snapStartSec = startSec;
     const { time, x } = calcSeekTime(e);
+    let finalStart = snapStartSec;
+    let finalEnd = snapEndSec;
     setDragging(true); setDragTime(time); setDragX(x);
     const onMove = (ev) => {
       if (ev.cancelable) ev.preventDefault();
@@ -3168,16 +3209,29 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       setDragTime(t); setDragX(r.x);
       if (type === 'start') {
         if (snapEndSec != null && t >= snapEndSec) return;
-        if (snapEndSec != null && snapEndSec - t > 30) { onStartChange(fmtClipTime(snapEndSec - 30)); setDragTime(snapEndSec - 30); showWarn(); return; }
-        onStartChange(fmtClipTime(t));
+        let nextStart = t;
+        if (snapEndSec != null && snapEndSec - t > 30) { nextStart = snapEndSec - 30; setDragTime(nextStart); showWarn(); }
+        finalStart = Math.max(0, nextStart);
+        finalEnd = snapEndSec;
+        keepPlaybackInsideClipRange(finalStart, finalEnd);
+        onStartChange(fmtClipTime(finalStart));
       } else {
         if (t <= snapStartSec) return;
-        if (t - snapStartSec > 30) { onEndChange(fmtClipTime(snapStartSec + 30)); setDragTime(snapStartSec + 30); showWarn(); return; }
-        onEndChange(fmtClipTime(t));
+        let nextEnd = t;
+        if (t - snapStartSec > 30) { nextEnd = snapStartSec + 30; setDragTime(nextEnd); showWarn(); }
+        finalStart = snapStartSec;
+        finalEnd = Math.min(duration, nextEnd);
+        keepPlaybackInsideClipRange(finalStart, finalEnd);
+        onEndChange(fmtClipTime(finalEnd));
       }
     };
     const onUp = () => {
       setDragging(false); setDragTime(null);
+      if (type === 'start') {
+        playClipFrom(finalStart);
+      } else {
+        playClipFrom(clipEndPreviewTime(finalStart, finalEnd));
+      }
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
       window.removeEventListener('touchmove', onMove);
@@ -3717,12 +3771,29 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     manualSeekOutside.current = !inRange;
   };
 
-  const handleRangeDragEnd = (startTime) => {
-    if (!playerRef.current) return;
-    playerRef.current.seekTo(startTime, true);
-    setCurrent(startTime);
+  const playClipFrom = (sec) => {
+    if (!playerRef.current || sec == null) return;
+    const target = Math.max(0, sec);
+    playerRef.current.seekTo(target, true);
+    setCurrent(target);
     manualSeekOutside.current = false;
     playerRef.current.playVideo();
+  };
+
+  const keepPlaybackInsideClipRange = (nextStart, nextEnd) => {
+    if (!playerRef.current || manualSeekOutside.current) return;
+    if (nextStart == null || nextEnd == null || nextEnd <= nextStart) return;
+    const isActuallyPlaying = window.YT && playerRef.current.getPlayerState && playerRef.current.getPlayerState() === window.YT.PlayerState.PLAYING;
+    if (!playing && !isActuallyPlaying) return;
+    const t = playerRef.current.getCurrentTime ? playerRef.current.getCurrentTime() : currentTime;
+    if (t < nextStart || t >= nextEnd - 0.15) {
+      playerRef.current.seekTo(Math.max(0, nextStart), true);
+      setCurrent(Math.max(0, nextStart));
+    }
+  };
+
+  const handleRangeDragEnd = (startTime) => {
+    playClipFrom(startTime);
   };
 
   // Zoom helpers
@@ -3846,6 +3917,8 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
     let lastCx = startClientX;
     let autoPanId = null;
     let autoPanTimeOffset = 0; // accumulated time shift from auto-pan
+    let finalStart = snapStartSec;
+    let finalEnd = snapEndSec;
 
     // Auto-pan: when dragging range/bracket near seekbar edge while zoomed, scroll timeline
     // Compensates drag position so the range stays pinned under the finger
@@ -3886,10 +3959,16 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
           if (bracketType === 'start') {
             if (snapEndSec != null && t >= snapEndSec - 0.5) return;
             if (snapEndSec != null && snapEndSec - t > 30) { t = snapEndSec - 30; showWarn(); }
+            finalStart = Math.max(0, t);
+            finalEnd = snapEndSec;
+            keepPlaybackInsideClipRange(finalStart, finalEnd);
             onStartChange(fmtPrecise(t));
           } else {
             if (t <= snapStartSec + 0.5) return;
             if (t - snapStartSec > 30) { t = snapStartSec + 30; showWarn(); }
+            finalStart = snapStartSec;
+            finalEnd = Math.min(duration, t);
+            keepPlaybackInsideClipRange(finalStart, finalEnd);
             onEndChange(fmtPrecise(t));
           }
         });
@@ -3909,6 +3988,9 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
             if (ns < 0) { ns = 0; ne = clipDur; }
             if (ne > duration) { ne = duration; ns = duration - clipDur; }
             manualSeekOutside.current = false;
+            finalStart = ns;
+            finalEnd = ne;
+            keepPlaybackInsideClipRange(ns, ne);
             setRangeDragLabel({ start: ns, end: ne });
             if (onClipChange) onClipChange(fmtPrecise(ns), fmtPrecise(ne));
             else { onStartChange(fmtPrecise(ns)); onEndChange(fmtPrecise(ne)); }
@@ -3967,11 +4049,17 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         if (bracketType === 'start') {
           if (snapEndSec != null && t >= snapEndSec) t = snapEndSec - CLIP_TIME_STEP;
           if (snapEndSec != null && snapEndSec - t > 30) t = snapEndSec - 30;
-          onStartChange(fmtClipTime(Math.max(0, t)));
+          finalStart = Math.max(0, t);
+          finalEnd = snapEndSec;
+          onStartChange(fmtClipTime(finalStart));
+          playClipFrom(finalStart);
         } else {
           if (t <= snapStartSec) t = snapStartSec + CLIP_TIME_STEP;
           if (t - snapStartSec > 30) t = snapStartSec + 30;
-          onEndChange(fmtClipTime(Math.min(duration, t)));
+          finalStart = snapStartSec;
+          finalEnd = Math.min(duration, t);
+          onEndChange(fmtClipTime(finalEnd));
+          playClipFrom(clipEndPreviewTime(finalStart, finalEnd));
         }
       }
 
@@ -3984,6 +4072,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
         if (ne > duration) { ne = duration; ns = duration - clipDur; }
         if (onClipChange) onClipChange(fmtClipTime(ns), fmtClipTime(ne));
         else { onStartChange(fmtClipTime(ns)); onEndChange(fmtClipTime(ne)); }
+        handleRangeDragEnd(ns);
       }
 
       if (mode === 'range' && !rangeDragStarted) {
@@ -5237,9 +5326,9 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
   const [applied, setApplied] = useState(false);
   const hasClip = card.appliedStart && card.appliedEnd;
   const fieldLabel = field === 'subtitle' ? '\uBD80\uC81C\uBAA9' : field === 'body' ? '\uBCF8\uBB38' : '\uC81C\uBAA9';
-  const baeminLimit = baeminTextLimitFor(card, field);
-  const fieldHint = baeminLimit
-    ? `배민전용 레이아웃용. 최대 ${baeminLimit}자 이내, 짧은 핵심어 중심${field === 'title' ? ', 1~2줄 가능' : ', 개행 없이'}`
+  const baeminAiLimit = baeminAiTextLimitFor(card, field);
+  const fieldHint = baeminAiLimit
+    ? `배민전용 레이아웃용. ${fieldLabel}은 개행 없이 1줄, 띄어쓰기 포함 최대 ${baeminAiLimit}자. 짧은 핵심어 중심`
     : field === 'subtitle' ? '1\uC904, 20\uC790 \uC774\uB0B4' : field === 'body' ? '1~2\uC904, 40\uC790 \uC774\uB0B4' : '2\uC904(\\n\uAD6C\uBD84), \uAC01 12\uC790 \uC774\uB0B4';
 
   if (!hasClip) return null;
@@ -5274,7 +5363,11 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error || '\uC11C\uBC84 \uC624\uB958'); setLoading(false); return; }
       const data = await res.json();
-      setSuggestions(data.suggestions || []);
+      const nextSuggestions = (data.suggestions || [])
+        .map(s => normalizeBaeminAiTextSuggestion(card, field, s))
+        .filter(Boolean)
+        .filter((s, i, arr) => arr.indexOf(s) === i);
+      setSuggestions(nextSuggestions);
     } catch (e) {
       setError(e.message || '\uC624\uB958 \uBC1C\uC0DD');
     }
@@ -5294,7 +5387,7 @@ function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange 
     error && React.createElement("p", { style: { fontSize: 11, color: T.danger, margin: '4px 0 0' } }, error),
     suggestions && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 } },
       suggestions.map((s, i) => React.createElement("button", {
-        key: i, onClick: () => { onChange(s); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
+        key: i, onClick: () => { onChange(normalizeBaeminAiTextSuggestion(card, field, s)); setSuggestions(null); setApplied(true); setTimeout(() => setApplied(false), 1500); },
         style: { padding: '8px 12px', borderRadius: 8, border: `1px solid ${T.border}`, background: 'rgba(255,255,255,0.03)', color: T.text, fontSize: 12, lineHeight: 1.4, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', whiteSpace: 'pre-line' },
         onMouseEnter: (e) => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.background = 'rgba(16,185,129,0.06)'; },
         onMouseLeave: (e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; },
@@ -8809,8 +8902,6 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
-    const titleLimit = baeminTextLimitFor(card, 'title');
-    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
@@ -8835,8 +8926,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = normalizeBaeminAiTextSuggestion(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -8860,8 +8951,8 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "mob-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: normalizeBaeminAiTextSuggestion(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -9363,8 +9454,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
-    const titleLimit = baeminTextLimitFor(card, 'title');
-    const subtitleLimit = baeminTextLimitFor(card, 'subtitle');
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
@@ -9388,8 +9477,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", clampBaeminTextField(card, 'title', v)), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80], maxLength: titleLimit, limitLabel: titleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = clampBaeminTextField(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-title", value: card.title, onTextChange: (v) => update("title", v), placeholder: "\uC81C\uBAA9", rows: 2, size: card.titleSize, onSizeChange: (v) => update("titleSize", v), color: card.titleColor, onColorChange: (v) => update("titleColor", v), enabled: card.useTitle !== false, onToggle: () => update("useTitle", card.useTitle === false ? true : false), presets: [36, 48, 64, 80] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'title', currentValue: card.title, onChange: (v) => { const next = normalizeBaeminAiTextSuggestion(card, 'title', v); update("title", next); update("name", next.replace(/\n/g, ' ')); } }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailTitle(!showDetailTitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailTitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -9413,8 +9502,8 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       ),
       // 부제목 카드
       React.createElement("div", { style: cardStyle },
-        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", clampBaeminTextField(card, 'subtitle', v)), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48], maxLength: subtitleLimit, limitLabel: subtitleLimit ? "\uBC30\uBBFC\uC804\uC6A9" : null }),
-        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: clampBaeminTextField(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
+        React.createElement(TextFieldRow, { inputId: "desk-text-subtitle", value: card.subtitle, onTextChange: (v) => update("subtitle", v), placeholder: "\uBD80\uC81C\uBAA9", rows: 2, size: card.subtitleSize, onSizeChange: (v) => update("subtitleSize", v), color: card.subtitleColor, onColorChange: (v) => update("subtitleColor", v), enabled: card.useSubtitle !== false, onToggle: () => { const next = card.useSubtitle === false; updateMulti({ useSubtitle: next, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: next }) }); }, presets: [24, 32, 40, 48] }),
+        React.createElement(AiRewriteBtn, { card, globalUrl, project, field: 'subtitle', currentValue: card.subtitle, onChange: (v) => updateMulti({ subtitle: normalizeBaeminAiTextSuggestion(card, 'subtitle', v), useSubtitle: true, photoRatio: calcAutoPhotoRatio(card, { useSubtitle: true }) }) }),
         React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
           React.createElement("div", { onClick: () => setShowDetailSubtitle(!showDetailSubtitle), style: { display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', userSelect: 'none', flex: 1 } },
             React.createElement("span", { style: { fontSize: 10, color: T.textMuted, transition: 'transform 0.2s', transform: showDetailSubtitle ? 'rotate(90deg)' : 'rotate(0deg)' } }, "\u25B6"),
@@ -11085,15 +11174,19 @@ export default function App() {
       if (!segText) continue;
       const cardId = c.id;
       try {
+        const titleAiLimit = baeminAiTextLimitFor(c, 'title');
+        const fieldHint = titleAiLimit
+          ? `배민전용 레이아웃용. 제목은 개행 없이 1줄, 띄어쓰기 포함 최대 ${titleAiLimit}자. 짧은 핵심어 중심`
+          : undefined;
         const res = await fetch('/api/ai-rewrite', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ transcript: segText, tone: newTone, currentTitle: c.title || '\uC81C\uBAA9 \uC5C6\uC74C', videoTitle: proj.videoTitle || '' }),
+          body: JSON.stringify({ transcript: segText, tone: newTone, currentTitle: c.title || '\uC81C\uBAA9 \uC5C6\uC74C', videoTitle: proj.videoTitle || '', field: 'title', fieldHint }),
         });
         if (res.ok) {
           const data = await res.json();
           if (data.suggestions && data.suggestions[0]) {
-            const newTitle = data.suggestions[0];
+            const newTitle = normalizeBaeminAiTextSuggestion(c, 'title', data.suggestions[0]);
             setCards(prev => prev.map(card => card.id === cardId ? { ...card, title: newTitle, name: newTitle.replace(/\n/g, ' ') } : card));
           }
         } else { failCount++; }
