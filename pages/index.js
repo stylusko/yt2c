@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0609';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
   '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
   '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
   '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
   '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
   '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
-  '🧩 텍스트 카드 분할 — Claude fallback 응답 카드 배열 정규화',
 ];
 
 /* ── Icons ── */
@@ -5983,57 +5983,121 @@ function CardSelectModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose
   );
 }
 
-function formatEtaLabel(seconds) {
-  const sec = Math.max(0, Math.round(seconds || 0));
-  if (sec < 60) return `${sec}초`;
-  const min = Math.floor(sec / 60);
-  const rem = sec % 60;
-  if (min < 60) return rem ? `${min}분 ${rem}초` : `${min}분`;
-  const hour = Math.floor(min / 60);
-  const remMin = min % 60;
-  return remMin ? `${hour}시간 ${remMin}분` : `${hour}시간`;
-}
-
-function getTrafficUi(queueStatus) {
+function getServerStatusUi(queueStatus) {
   const eta = Number(queueStatus?.estimatedWaitSeconds || 0);
   if (eta >= 300) {
     return {
-      level: '바쁨',
+      label: '서버 혼잡',
       color: '#ef4444',
-      bg: 'rgba(239,68,68,0.12)',
-      border: 'rgba(239,68,68,0.35)',
-      etaLabel: '5분 이상',
-      message: '현재 요청이 많아 처리 시간이 길어질 수 있어요. 자동으로 순서대로 진행됩니다.',
-      wave: [0.9, 0.75, 0.95, 0.6, 0.85, 0.7, 0.92, 0.65, 0.82, 0.72],
-      speed: '0.75s',
+      bg: 'rgba(239,68,68,0.10)',
     };
   }
   if (eta >= 60) {
     return {
-      level: '중간',
+      label: '서버 보통',
       color: '#f59e0b',
-      bg: 'rgba(245,158,11,0.12)',
-      border: 'rgba(245,158,11,0.35)',
-      etaLabel: '약 1~5분',
-      message: '요청이 조금 몰려 있어 평소보다 시간이 더 걸릴 수 있어요.',
-      wave: [0.55, 0.35, 0.6, 0.45, 0.52, 0.4, 0.62, 0.33, 0.5, 0.42],
-      speed: '1s',
+      bg: 'rgba(245,158,11,0.10)',
     };
   }
   return {
-    level: '여유',
+    label: '서버 여유',
     color: '#22c55e',
-    bg: 'rgba(34,197,94,0.12)',
-    border: 'rgba(34,197,94,0.35)',
-    etaLabel: '1분 이내',
-    message: '바로 시작합니다. 잠시만 기다려주세요.',
-    wave: [0.2, 0.32, 0.28, 0.24, 0.3, 0.22, 0.35, 0.25, 0.3, 0.26],
-    speed: '1.3s',
+    bg: 'rgba(34,197,94,0.10)',
   };
 }
 
 
-function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, onDownloadAll, onClose }) {
+function GenerationThumbGrid({ items = [], globalUrl, aspectRatio, globalBgImage, projectSourceType }) {
+  if (!items.length) return null;
+  const activeItems = items.filter(item => item.status === 'active');
+  const doneCount = items.filter(item => item.status === 'completed' || item.status === 'cached').length;
+  const failedCount = items.filter(item => item.status === 'failed').length;
+  const previewW = items.length > 6 ? 58 : 68;
+  const gridCols = items.length <= 4 ? items.length : 4;
+  const activeLabel = activeItems.length
+    ? activeItems.map(item => item.originalIndex + 1).join(', ')
+    : '';
+
+  const ringBg = (item) => {
+    if (item.status === 'completed' || item.status === 'cached') return `conic-gradient(${T.success} 360deg, ${T.success} 0deg)`;
+    if (item.status === 'failed') return `conic-gradient(#ef4444 360deg, #ef4444 0deg)`;
+    if (item.status === 'active') {
+      const angle = Math.max(24, Math.min(360, Math.round((Number(item.progress) || 0) * 3.6)));
+      return `conic-gradient(${T.accent} ${angle}deg, rgba(255,255,255,0.18) ${angle}deg)`;
+    }
+    return 'rgba(255,255,255,0.12)';
+  };
+
+  return React.createElement("div", {
+    style: { width: '100%', borderRadius: 14, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', padding: 12, boxSizing: 'border-box' }
+  },
+    React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginBottom: 10 } },
+      React.createElement("span", { style: { color: '#fff', fontSize: 12, fontWeight: 700 } }, activeLabel ? `생성 중: 카드 ${activeLabel}` : '생성 준비 중'),
+      React.createElement("span", { style: { color: failedCount ? '#f87171' : T.textMuted, fontSize: 11, fontWeight: 600 } }, failedCount ? `실패 ${failedCount}` : `완료 ${doneCount}/${items.length}`)
+    ),
+    React.createElement("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${gridCols}, ${previewW + 10}px)`,
+        justifyContent: 'center',
+        gap: 8,
+      }
+    },
+      items.map((item) => {
+        const active = item.status === 'active';
+        const completed = item.status === 'completed' || item.status === 'cached';
+        const failed = item.status === 'failed';
+        return React.createElement("div", {
+          key: item.originalIndex,
+          style: {
+            position: 'relative',
+            width: previewW + 10,
+            padding: 3,
+            borderRadius: 9,
+            background: ringBg(item),
+            opacity: item.status === 'waiting' || item.status === 'queued' ? 0.48 : 1,
+            boxShadow: active ? `0 0 0 1px rgba(255,255,255,0.18), 0 0 18px ${T.accent}66` : 'none',
+            transition: 'opacity 0.25s ease, box-shadow 0.25s ease, background 0.25s ease',
+          }
+        },
+          React.createElement("div", { style: { borderRadius: 6, overflow: 'hidden', background: '#050505' } },
+            React.createElement(CardPreview, {
+              card: item.card,
+              globalUrl,
+              aspectRatio,
+              globalBgImage,
+              previewWidth: previewW,
+              showVideo: false,
+              mountVideo: false,
+              projectSourceType,
+            })
+          ),
+          React.createElement("div", {
+            style: {
+              position: 'absolute',
+              right: 6,
+              bottom: 6,
+              minWidth: 18,
+              height: 18,
+              padding: '0 5px',
+              borderRadius: 999,
+              background: completed ? T.success : failed ? '#ef4444' : active ? T.accent : 'rgba(0,0,0,0.62)',
+              color: '#fff',
+              fontSize: 10,
+              fontWeight: 800,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 1px 5px rgba(0,0,0,0.45)',
+            }
+          }, completed ? '✓' : item.originalIndex + 1)
+        );
+      })
+    )
+  );
+}
+
+function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading, generationItems, globalUrl, aspectRatio, globalBgImage, projectSourceType, onDownloadAll, onClose }) {
   const pctMatch = genProgress && genProgress.match(/(\d+)%/);
   const pct = pctMatch ? parseInt(pctMatch[1], 10) : (generating ? 0 : (results.length > 0 ? 100 : 0));
   const done = !generating && (results.length > 0 || (genProgress && genProgress.includes('\uC644\uB8CC')));
@@ -6043,7 +6107,7 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
     style: { position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }
   },
     React.createElement("div", {
-      style: { maxWidth: 400, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }
+      style: { maxWidth: 440, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }
     },
       // Close / cancel button (always visible)
       React.createElement("button", {
@@ -6070,6 +6134,14 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
             React.createElement("div", { style: { position: 'absolute', bottom: 6, right: 10, fontSize: 9, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em' } }, "Ad"),
           ),
 
+      React.createElement(GenerationThumbGrid, {
+        items: generationItems,
+        globalUrl,
+        aspectRatio,
+        globalBgImage,
+        projectSourceType,
+      }),
+
       // Progress area
       React.createElement("div", { style: { width: '100%', display: 'flex', flexDirection: 'column', gap: 10 } },
         // Progress bar
@@ -6088,40 +6160,20 @@ function GeneratingModal({ mob, generating, genProgress, genStatusMsg, queueStat
           style: { textAlign: 'center', fontSize: 12, color: '#fbbf24', background: genStatusMsg ? 'rgba(251,191,36,0.08)' : 'transparent', border: genStatusMsg ? '1px solid rgba(251,191,36,0.2)' : '1px solid transparent', borderRadius: 8, padding: '8px 12px', lineHeight: 1.5, opacity: genStatusMsg ? 1 : 0, transition: 'opacity 0.3s ease, background 0.3s ease, border 0.3s ease' }
         }, genStatusMsg || '\u00A0'),
         queueStatus && (() => {
-          const traffic = getTrafficUi(queueStatus);
+          const serverStatus = getServerStatusUi(queueStatus);
           return React.createElement("div", {
             style: {
-              width: '100%',
-              borderRadius: 12,
-              border: `1px solid ${traffic.border}`,
-              background: `linear-gradient(135deg, ${traffic.bg}, rgba(255,255,255,0.02))`,
-              padding: '10px 12px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
+              alignSelf: 'center',
+              borderRadius: 999,
+              background: serverStatus.bg,
+              padding: '5px 10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
             }
           },
-            React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
-              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                React.createElement("span", { style: { width: 10, height: 10, borderRadius: '50%', background: traffic.color, boxShadow: `0 0 14px ${traffic.color}` } }),
-                React.createElement("span", { style: { fontSize: 12, color: '#fff', fontWeight: 600 } }, `현재 서버 상태: ${traffic.level}`),
-              ),
-              React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, `예상 대기 ${traffic.etaLabel}`),
-            ),
-            React.createElement("div", { style: { height: 24, display: 'flex', alignItems: 'flex-end', gap: 4 } },
-              traffic.wave.map((h, i) => React.createElement("span", {
-                key: i,
-                style: {
-                  flex: 1,
-                  height: `${Math.round(8 + h * 16)}px`,
-                  borderRadius: 999,
-                  background: `linear-gradient(180deg, ${traffic.color}, rgba(255,255,255,0.18))`,
-                  opacity: 0.9,
-                  animation: `trafficPulse ${traffic.speed} ease-in-out ${i * 0.08}s infinite alternate`,
-                }
-              }))
-            ),
-            React.createElement("div", { style: { textAlign: 'left', color: T.textSecondary, fontSize: 12, lineHeight: 1.45 } }, traffic.message),
+            React.createElement("span", { style: { width: 7, height: 7, borderRadius: '50%', background: serverStatus.color, boxShadow: `0 0 10px ${serverStatus.color}` } }),
+            React.createElement("span", { style: { fontSize: 11, color: T.textSecondary, fontWeight: 700 } }, serverStatus.label),
           );
         })(),
       ),
@@ -9889,6 +9941,7 @@ export default function App() {
   const [generating, setGenerating] = useState(false);
   const [genProgress, setGenProgress] = useState("");
   const [genStatusMsg, setGenStatusMsg] = useState("");
+  const [generationItems, setGenerationItems] = useState([]);
   const [results, setResults] = useState([]);
   const [downloading, setDownloading] = useState(false);
   const [confirmClose, setConfirmClose] = useState(null);
@@ -10468,6 +10521,13 @@ export default function App() {
 
     const targetCards = indices.map(i => cards[i]);
     setShowCardSelect(false);
+    setGenerationItems(indices.map(i => ({
+      originalIndex: i,
+      serverIdx: null,
+      card: effectiveCard(cards[i]),
+      status: 'queued',
+      progress: 0,
+    })));
     setGenerating(true); setResults([]); setQueueStatus(null); setGenProgress("오버레이 생성 중..."); setGenStatusMsg(""); setShowGeneratingModal(true);
     try {
       // 캐시된 카드: presigned URL 즉시 획득
@@ -10481,12 +10541,15 @@ export default function App() {
             if (dlRes.ok) {
               const { url: presignedUrl } = await dlRes.json();
               cachedResults.push({ url: presignedUrl, cardIdx: ci, bucketKey: c.lastGenKey });
+              setGenerationItems(prev => prev.map(item => item.originalIndex === ci ? { ...item, status: 'cached', progress: 100 } : item));
             } else {
               // 캐시 파일이 없으면 새로 생성 대상으로 이동
               newIndices.push(ci);
+              setGenerationItems(prev => prev.map(item => item.originalIndex === ci ? { ...item, status: 'waiting', progress: 0 } : item));
             }
           } catch (_) {
             newIndices.push(ci);
+            setGenerationItems(prev => prev.map(item => item.originalIndex === ci ? { ...item, status: 'waiting', progress: 0 } : item));
           }
         }
       }
@@ -10500,6 +10563,12 @@ export default function App() {
       }
 
       // 새로 생성할 카드만 오버레이 생성
+      const serverIndexByOriginal = new Map(newIndices.map((originalIndex, serverIdx) => [originalIndex, serverIdx]));
+      setGenerationItems(prev => prev.map(item => (
+        serverIndexByOriginal.has(item.originalIndex)
+          ? { ...item, serverIdx: serverIndexByOriginal.get(item.originalIndex), status: 'waiting', progress: 0 }
+          : item
+      )));
       const newTargetCards = newIndices.map(i => cards[i]);
       const overlays = [];
       for (let j = 0; j < newTargetCards.length; j++) {
@@ -10551,10 +10620,26 @@ export default function App() {
           let completedCards = 0, failedCards = 0, totalProgress = 0;
           const downloadUrls = [];
           let statusMsg = "";
+          const generationUpdates = new Map();
           for (const c of (status.cards || [])) {
+            const originalIndex = newIndices[c.cardIdx];
+            const progressValue = typeof c.progress === 'number' ? c.progress : 0;
+            if (originalIndex != null) {
+              generationUpdates.set(originalIndex, {
+                status: c.status,
+                progress: c.status === 'completed' || c.status === 'failed' ? 100 : progressValue,
+              });
+            }
             if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx, bucketKey: c.bucketKey || '' }); }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
-            else { totalProgress += (c.progress || 0); if (c.statusMessage) statusMsg = c.statusMessage; }
+            else { totalProgress += progressValue; if (c.statusMessage) statusMsg = c.statusMessage; }
+          }
+          if (generationUpdates.size > 0) {
+            setGenerationItems(prev => prev.map(item => (
+              generationUpdates.has(item.originalIndex)
+                ? { ...item, ...generationUpdates.get(item.originalIndex) }
+                : item
+            )));
           }
           setGenStatusMsg(statusMsg);
           const cachedDone = cachedResults.length;
@@ -11664,13 +11749,14 @@ export default function App() {
     showCardSelect && React.createElement(CardSelectModal, { cards, globalUrl, aspectRatio, globalBgImage, onClose: () => setShowCardSelect(false), onGenerate: handleGenerate, outputSize, outputFormat, projectSourceType: activeProject?.sourceType }),
     showGeneratingModal && React.createElement(GeneratingModal, {
       mob, generating, genProgress, genStatusMsg, queueStatus, results, downloading,
+      generationItems, globalUrl, aspectRatio, globalBgImage, projectSourceType: activeProject?.sourceType,
       onDownloadAll: handleDownloadAll,
       onClose: () => {
         if (generating) {
           if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; }
           if (activeJobIdRef.current) { fetch(`/api/jobs/${activeJobIdRef.current}`, { method: 'DELETE' }).catch(() => {}); activeJobIdRef.current = null; }
         }
-        setGenerating(false); setShowGeneratingModal(false); setGenProgress(""); setGenStatusMsg("");
+        setGenerating(false); setShowGeneratingModal(false); setGenProgress(""); setGenStatusMsg(""); setGenerationItems([]);
       }
     }),
     confirmClose && React.createElement(ConfirmDialog, {
@@ -11758,7 +11844,7 @@ export default function App() {
       React.createElement("span", { style: { opacity: 0.7 } }, VERSION),
     ),
 
-    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } @keyframes trafficPulse { from { transform: translateY(0); opacity: 0.55; } to { transform: translateY(-2px); opacity: 1; } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    React.createElement("style", null, `@keyframes spin { to { transform: rotate(360deg); } } .preview-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.15); border-top-color: rgba(255,255,255,0.8); border-radius: 50%; animation: spin 0.7s linear infinite; }
 @media (pointer: coarse) {
   input[type=range] { height: 44px; padding: 0; }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #ffffff 10px, rgba(255,255,255,0.9) 11px, transparent 12px); border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.4); transition: transform 0.15s ease, box-shadow 0.15s ease; margin-top: -21px; }
