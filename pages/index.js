@@ -7,8 +7,8 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0609';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_DATE = '2026.0617';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
   '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
   '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
   '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
   '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
   '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
   '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
-  '🎨 AI 이미지 품질 기본값 — OpenAI gpt-image-2 medium으로 비용·품질 균형 조정',
 ];
 
 /* ── Icons ── */
@@ -6241,6 +6241,13 @@ function JsonModal({ json, onClose }) {
 
 /* ── Project Helpers ── */
 const STORAGE_KEY = 'yt2c_projects';
+const STORAGE_META_KEY = 'yt2c_projects_meta';
+const PROJECT_DB_NAME = 'yt2c_project_store';
+const PROJECT_DB_VERSION = 1;
+const PROJECT_STORE_NAME = 'snapshots';
+const PROJECT_SNAPSHOT_KEY = 'latest';
+let projectSaveQueue = Promise.resolve();
+let projectSaveSeq = 0;
 const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
   name,
@@ -6282,23 +6289,140 @@ function normalizeLoadedProject(project) {
   };
 }
 
-function loadProjects() {
+function normalizeProjectsPayload(data) {
+  if (!data || !Array.isArray(data.projects) || data.projects.length === 0) return null;
+  return {
+    ...data,
+    activeId: data.activeId || data.projects[0]?.id,
+    updatedAt: Number(data.updatedAt) || 0,
+    projects: data.projects.map(normalizeLoadedProject),
+  };
+}
+
+function openProjectDb() {
+  if (typeof window === 'undefined' || !window.indexedDB) return Promise.resolve(null);
+  return new Promise((resolve, reject) => {
+    const req = window.indexedDB.open(PROJECT_DB_NAME, PROJECT_DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(PROJECT_STORE_NAME)) {
+        db.createObjectStore(PROJECT_STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error || new Error('IndexedDB open failed'));
+    req.onblocked = () => reject(new Error('IndexedDB open blocked'));
+  });
+}
+
+async function withProjectStore(mode, run) {
+  const db = await openProjectDb();
+  if (!db) return null;
+  return new Promise((resolve, reject) => {
+    let req = null;
+    const tx = db.transaction(PROJECT_STORE_NAME, mode);
+    const done = (fn, value) => {
+      try { db.close(); } catch (e) {}
+      fn(value);
+    };
+    tx.oncomplete = () => done(resolve, req ? req.result : null);
+    tx.onerror = () => done(reject, tx.error || req?.error || new Error('IndexedDB transaction failed'));
+    tx.onabort = () => done(reject, tx.error || req?.error || new Error('IndexedDB transaction aborted'));
+    try {
+      req = run(tx.objectStore(PROJECT_STORE_NAME));
+      if (req) req.onerror = () => {};
+    } catch (e) {
+      try { tx.abort(); } catch (_) {}
+      done(reject, e);
+    }
+  });
+}
+
+function loadProjectsFromLocalStorage() {
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data.projects?.length > 0) {
-        return { ...data, projects: data.projects.map(normalizeLoadedProject) };
-      }
+      return normalizeProjectsPayload(data);
     }
   } catch (e) {}
   return null;
 }
 
+async function loadProjectsFromIndexedDB() {
+  try {
+    return normalizeProjectsPayload(await withProjectStore('readonly', store => store.get(PROJECT_SNAPSHOT_KEY)));
+  } catch (e) {
+    console.warn('[projects] IndexedDB load failed:', e?.message || e);
+    return null;
+  }
+}
+
+function newerProjectSnapshot(a, b) {
+  if (!a) return b || null;
+  if (!b) return a;
+  const aUpdatedAt = Number(a.updatedAt) || 0;
+  const bUpdatedAt = Number(b.updatedAt) || 0;
+  if (bUpdatedAt !== aUpdatedAt) return bUpdatedAt > aUpdatedAt ? b : a;
+  return (Number(b.saveSeq) || 0) > (Number(a.saveSeq) || 0) ? b : a;
+}
+
+async function loadProjects() {
+  const local = loadProjectsFromLocalStorage();
+  const indexed = await loadProjectsFromIndexedDB();
+  return newerProjectSnapshot(local, indexed);
+}
+
+function saveProjectsToIndexedDB(payload) {
+  return withProjectStore('readwrite', store => store.put(payload, PROJECT_SNAPSHOT_KEY));
+}
+
+function hasInlineDataUrl(value, seen = new Set()) {
+  if (!value) return false;
+  if (typeof value === 'string') return value.startsWith('data:');
+  if (typeof value !== 'object') return false;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) return value.some(item => hasInlineDataUrl(item, seen));
+  return Object.keys(value).some(key => hasInlineDataUrl(value[key], seen));
+}
+
 function saveProjects(projects, activeId) {
   if (typeof window === 'undefined') return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects, activeId })); } catch (e) {}
+  const payload = { projects, activeId, updatedAt: Date.now(), saveSeq: ++projectSaveSeq };
+  const skipLocalStorage = !!window.indexedDB && hasInlineDataUrl(projects);
+  if (!skipLocalStorage) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      try { localStorage.removeItem(STORAGE_META_KEY); } catch (e) {}
+    } catch (e) {
+      console.warn('[projects] localStorage save skipped:', e?.message || e);
+      try {
+        localStorage.setItem(STORAGE_META_KEY, JSON.stringify({
+          activeId,
+          updatedAt: payload.updatedAt,
+          saveSeq: payload.saveSeq,
+          projectCount: projects.length,
+          localStorageFull: true,
+        }));
+      } catch (_) {}
+    }
+  } else {
+    try {
+      localStorage.setItem(STORAGE_META_KEY, JSON.stringify({
+        activeId,
+        updatedAt: payload.updatedAt,
+        saveSeq: payload.saveSeq,
+        projectCount: projects.length,
+        indexedDbOnly: true,
+      }));
+    } catch (_) {}
+  }
+  projectSaveQueue = projectSaveQueue
+    .catch(() => {})
+    .then(() => saveProjectsToIndexedDB(payload))
+    .catch(e => console.warn('[projects] IndexedDB save failed:', e?.message || e));
 }
 
 /* ── Project Share Helpers ── */
@@ -10058,43 +10182,28 @@ export default function App() {
 
   // Load from localStorage on mount + URL-based initial mode
   useEffect(() => {
-    const saved = loadProjects();
-    if (saved) {
-      setProjects(saved.projects);
-      setActiveProjectId(saved.activeId || saved.projects[0]?.id);
-    } else {
-      const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
-      setProjects([first]);
-      setActiveProjectId(first.id);
-      setPendingProjectId(first.id);
-    }
-    const path = window.location.pathname;
-    const shortRoute = parseShortShareRoute(path);
-    const bmOnlyRoute = parseBmOnlyRoute(path);
-    if (bmOnlyRoute) {
-      applyBmOnlyMode(bmOnlyRoute, { setRouteShareId, setPageVariant, setAiMode, setWizardStep, setWizardData, setEditorMode });
-    } else if (shortRoute) {
-      const shareId = shortRoute.shareId;
-      setRouteShareId(shareId);
-      setPageVariant(shortRoute.variant);
-      setImportLoading(true);
-      fetch(`/api/share/${shareId}`)
-        .then(r => r.ok ? r.json() : Promise.reject())
-        .then(({ data }) => {
-          const decoded = decodeProject(data);
-          if (decoded) setImportProject(decoded);
-          else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
-        })
-        .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
-        .finally(() => setImportLoading(false));
-      setEditorMode('editor');
-    } else if (path === '/share') {
-      setRouteShareId(null);
-      setPageVariant(PAGE_VARIANTS.DEFAULT);
-      const params = new URLSearchParams(window.location.search);
-      const shareId = params.get('id');
-      const d = params.get('d');
-      if (shareId) {
+    let alive = true;
+    const init = async () => {
+      const saved = await loadProjects();
+      if (!alive) return;
+      if (saved) {
+        setProjects(saved.projects);
+        setActiveProjectId(saved.activeId || saved.projects[0]?.id);
+      } else {
+        const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
+        setProjects([first]);
+        setActiveProjectId(first.id);
+        setPendingProjectId(first.id);
+      }
+      const path = window.location.pathname;
+      const shortRoute = parseShortShareRoute(path);
+      const bmOnlyRoute = parseBmOnlyRoute(path);
+      if (bmOnlyRoute) {
+        applyBmOnlyMode(bmOnlyRoute, { setRouteShareId, setPageVariant, setAiMode, setWizardStep, setWizardData, setEditorMode });
+      } else if (shortRoute) {
+        const shareId = shortRoute.shareId;
+        setRouteShareId(shareId);
+        setPageVariant(shortRoute.variant);
         setImportLoading(true);
         fetch(`/api/share/${shareId}`)
           .then(r => r.ok ? r.json() : Promise.reject())
@@ -10105,35 +10214,56 @@ export default function App() {
           })
           .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
           .finally(() => setImportLoading(false));
-      } else if (d) {
-        try {
-          const decoded = decodeProject(d);
-          if (decoded) { setImportProject(decoded); }
-          else { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
-        } catch (e) { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+        setEditorMode('editor');
+      } else if (path === '/share') {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        const params = new URLSearchParams(window.location.search);
+        const shareId = params.get('id');
+        const d = params.get('d');
+        if (shareId) {
+          setImportLoading(true);
+          fetch(`/api/share/${shareId}`)
+            .then(r => r.ok ? r.json() : Promise.reject())
+            .then(({ data }) => {
+              const decoded = decodeProject(data);
+              if (decoded) setImportProject(decoded);
+              else setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694');
+            })
+            .catch(() => setAlertMsg('\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8\uB97C \uBD88\uB7EC\uC62C \uC218 \uC5C6\uC5B4\uC694'))
+            .finally(() => setImportLoading(false));
+        } else if (d) {
+          try {
+            const decoded = decodeProject(d);
+            if (decoded) { setImportProject(decoded); }
+            else { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+          } catch (e) { setAlertMsg('\uC798\uBABB\uB41C \uACF5\uC720 \uB9C1\uD06C\uC608\uC694'); }
+        }
+        setEditorMode('editor');
+      } else if (path === '/easy') {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        setEditorMode('wizard');
+        setWizardStep(1);
+      } else if (path === '/ai-edit') {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        setEditorMode('ai-wizard');
+        setAiMode(true);
+        setWizardStep(1);
+      } else if (path === '/edit') {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        setEditorMode('editor');
+      } else {
+        setRouteShareId(null);
+        setPageVariant(PAGE_VARIANTS.DEFAULT);
+        setEditorMode(null);
       }
-      setEditorMode('editor');
-    } else if (path === '/easy') {
-      setRouteShareId(null);
-      setPageVariant(PAGE_VARIANTS.DEFAULT);
-      setEditorMode('wizard');
-      setWizardStep(1);
-    } else if (path === '/ai-edit') {
-      setRouteShareId(null);
-      setPageVariant(PAGE_VARIANTS.DEFAULT);
-      setEditorMode('ai-wizard');
-      setAiMode(true);
-      setWizardStep(1);
-    } else if (path === '/edit') {
-      setRouteShareId(null);
-      setPageVariant(PAGE_VARIANTS.DEFAULT);
-      setEditorMode('editor');
-    } else {
-      setRouteShareId(null);
-      setPageVariant(PAGE_VARIANTS.DEFAULT);
-      setEditorMode(null);
-    }
-    setRouteReady(true);
+      setRouteReady(true);
+    };
+    init();
+    return () => { alive = false; };
   }, []);
 
   // Sync editorMode → URL (shallow)
