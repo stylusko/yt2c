@@ -7,8 +7,8 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0617';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_DATE = '2026.0618';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
   '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
   '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
   '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
   '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
   '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
-  '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
 ];
 
 /* ── Icons ── */
@@ -10760,6 +10760,33 @@ export default function App() {
     setGenProgress(''); setResults([]);
   };
 
+  const applyGeneratedProject = useCallback((projectName, projectPatch) => {
+    const name = normalizeProjectNameFromSource(projectName, '새 프로젝트');
+    const patch = { ...projectPatch, name };
+    const pendingExists = pendingProjectId && projects.some(p => p.id === pendingProjectId);
+    const reusableProject = projects.find(p => p.id === activeProjectId) || projects[0];
+    let targetId = pendingExists
+      ? pendingProjectId
+      : isReusableBlankProject(reusableProject)
+        ? reusableProject.id
+        : null;
+
+    if (targetId) {
+      setProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...patch } : p));
+    } else {
+      const nextProject = { ...DEFAULT_PROJECT(name), ...patch };
+      targetId = nextProject.id;
+      setProjects(prev => [...prev, nextProject]);
+    }
+
+    setActiveProjectId(targetId);
+    setPendingProjectId(null);
+    setActiveCardIdx(0);
+    setGenProgress('');
+    setResults([]);
+    return targetId;
+  }, [activeProjectId, pendingProjectId, projects]);
+
   const shareProject = async () => {
     if (!activeProject || shareLoading) return;
     setShareLoading(true);
@@ -11227,28 +11254,22 @@ export default function App() {
           });
         }
 
-        const targetId = pendingProjectId || activeProjectId;
-        setProjects(prev => prev.map(p => {
-          if (p.id !== targetId) return p;
-          return {
-            ...p,
-            sourceType: 'youtube',
-            sourceUrl: '',
-            sourceTitle: '',
-            sourceImages: [],
-            sourceImageMeta: [],
-            globalUrl: _url,
-            aspectRatio: _aspectRatio,
-            outputFormat: 'video',
-            outputFormatTouched: false,
-            globalBgImage: null,
-            cards: newCards,
-            copyTone: wd.copyTone || wizardData.copyTone || 'hooking',
-            transcript: _transcript || '',
-            videoTitle: videoInfo?.title || '',
-          };
-        }));
-        setActiveProjectId(targetId);
+        applyGeneratedProject(videoInfo?.title || '영상 프로젝트', {
+          sourceType: 'youtube',
+          sourceUrl: '',
+          sourceTitle: '',
+          sourceImages: [],
+          sourceImageMeta: [],
+          globalUrl: _url,
+          aspectRatio: _aspectRatio,
+          outputFormat: 'video',
+          outputFormatTouched: false,
+          globalBgImage: null,
+          cards: newCards,
+          copyTone: wd.copyTone || wizardData.copyTone || 'hooking',
+          transcript: _transcript || '',
+          videoTitle: videoInfo?.title || '',
+        });
         setAiEditRunning(false); setAiEditTargetId(null);
         setAiMode(false);
         setEditorMode('editor');
@@ -11281,25 +11302,21 @@ export default function App() {
           useLLM: false,
         });
       }
-      const targetId = pendingProjectId || activeProjectId;
-      setProjects(prev => prev.map(p => {
-        if (p.id !== targetId) return p;
-        return {
-          ...p,
-          sourceType: 'youtube',
-          sourceUrl: '',
-          sourceTitle: '',
-          sourceImages: [],
-          sourceImageMeta: [],
-          globalUrl: wizardData.url,
-          aspectRatio: wizardData.aspectRatio,
-          outputFormat: 'video',
-          outputFormatTouched: false,
-          globalBgImage: null,
-          cards: newCards,
-        };
-      }));
-      setActiveProjectId(targetId);
+      applyGeneratedProject(wizardData.videoTitle || '쉬운편집 프로젝트', {
+        sourceType: 'youtube',
+        sourceUrl: '',
+        sourceTitle: '',
+        sourceImages: [],
+        sourceImageMeta: [],
+        globalUrl: wizardData.url,
+        aspectRatio: wizardData.aspectRatio,
+        outputFormat: 'video',
+        outputFormatTouched: false,
+        globalBgImage: null,
+        cards: newCards,
+        copyTone: wizardData.copyTone || 'hooking',
+        videoTitle: wizardData.videoTitle || '',
+      });
       setTimeout(() => {
         setWizardLoading(false);
         setEditorMode('editor');
@@ -11591,24 +11608,7 @@ export default function App() {
         copyTone: wizardData.copyTone || 'hooking',
         videoTitle: doneData.sourceTitle || '',
       };
-      const existingTargetId = pendingProjectId && projects.some(p => p.id === pendingProjectId)
-        ? pendingProjectId
-        : isReusableBlankProject(activeProject)
-          ? activeProject.id
-          : null;
-      let targetId = existingTargetId;
-      if (targetId) {
-        setProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...articleProjectPatch } : p));
-      } else {
-        const nextProject = { ...DEFAULT_PROJECT(articleProjectName), ...articleProjectPatch };
-        targetId = nextProject.id;
-        setProjects(prev => [...prev, nextProject]);
-      }
-      setActiveProjectId(targetId);
-      setPendingProjectId(null);
-      setActiveCardIdx(0);
-      setGenProgress('');
-      setResults([]);
+      applyGeneratedProject(articleProjectName, articleProjectPatch);
 
       setTimeout(() => {
         setWizardLoading(false);
@@ -11728,9 +11728,9 @@ export default function App() {
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
       onLogoClick: isBmOnlyPage ? undefined : handleHomeLogoClick,
-      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
+      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
       onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
-      onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+      onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
 
