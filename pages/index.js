@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0617';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
+  '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
   '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
   '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
   '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
   '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
   '🤖 배민 AI 제목 제안 — 제안 결과만 14자·1줄 규칙으로 정리',
-  '📋 카드 스타일 복사 — 팝업에서 그룹 선택 후 여러 카드에 붙여넣기',
-  '🖼️ AI 이미지 자산화 — 생성 이미지를 목록/공유 링크에 함께 보존',
 ];
 
 /* ── Icons ── */
@@ -242,8 +242,31 @@ const BAEMIN_CREAM = '#CEFCF6';
 const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
 const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
+const BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT = 'baemin_video_post_title_top';
+const BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT = 'baemin_video_post_title_bottom';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
 const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
+const BAEMIN_VIDEO_POST_DESIGN_WIDTH = 1080;
+const BAEMIN_VIDEO_POST_DESIGN_HEIGHT = 1440;
+const BAEMIN_VIDEO_POST_VIDEO_HEIGHT = 906;
+const BAEMIN_VIDEO_POST_LOGO_WIDTH = 308;
+const BAEMIN_VIDEO_POST_LOGO_HEIGHT = 52;
+const BAEMIN_VIDEO_POST_LOGO_SCALE = 308 / BAEMIN_VIDEO_POST_DESIGN_WIDTH * 100;
+const BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING = -1.44;
+const BAEMIN_VIDEO_POST_SPECS = {
+  [BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT]: {
+    videoTop: 320,
+    videoHeight: BAEMIN_VIDEO_POST_VIDEO_HEIGHT,
+    titleTop: 70,
+    logoTop: 1306,
+  },
+  [BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT]: {
+    videoTop: 200,
+    videoHeight: BAEMIN_VIDEO_POST_VIDEO_HEIGHT,
+    titleTop: 1178,
+    logoTop: 74,
+  },
+};
 const BAEMIN_PHOTO_COVER_SQUARE_TITLE_SIZE = 88;
 const BAEMIN_PHOTO_COVER_TITLE_SIZE = 108;
 const LETTER_SPACING_UNIT_PX = 'px';
@@ -284,6 +307,25 @@ const baeminLogoOverlay = (position = 'solidBody') => ({
   logoColorMode: 'solid',
   ...(BAEMIN_LOGO_POSITIONS[position] || BAEMIN_LOGO_POSITIONS.solidBody),
 });
+
+const baeminVideoPostLogoOverlay = (layout) => {
+  const spec = BAEMIN_VIDEO_POST_SPECS[layout] || BAEMIN_VIDEO_POST_SPECS[BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT];
+  return {
+    type: 'logo',
+    image: BAEMIN_LOGO_SRC,
+    brandOverlayId: 'baemin-logo',
+    aboveLayout: true,
+    applyToAll: false,
+    logoColorMode: 'solid',
+    logoColor: '#FFFFFF',
+    designWidth: BAEMIN_VIDEO_POST_LOGO_WIDTH,
+    designHeight: BAEMIN_VIDEO_POST_LOGO_HEIGHT,
+    x: 50,
+    y: (spec.logoTop + 26) / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100,
+    scale: BAEMIN_VIDEO_POST_LOGO_SCALE,
+    opacity: 0.5,
+  };
+};
 
 const BAEMIN_LAYOUT_PRESETS = [
   {
@@ -423,6 +465,44 @@ const BAEMIN_LAYOUT_PRESETS = [
     },
   },
   {
+    id: 'bm-video-post-title-top',
+    group: '본문',
+    section: '영상카드뉴스 전용',
+    label: '영상 전용 · 타이틀 상단',
+    shortLabel: '타이틀 상단',
+    desc: '상단 검은 영역에 제목, 하단에 배민외식업광장 로고를 두는 영상 게시글',
+    rule: '영상 전용 / 타이틀 상단',
+    badges: ['영상 전용', '타이틀 상단'],
+    aspectRatio: '3:4',
+    swatches: ['#000000', '#FFFFFF', '#808080'],
+    patch: {
+      layout: BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT, photoRatio: BAEMIN_VIDEO_POST_VIDEO_HEIGHT / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100, useGradient: false, useBg: true, bgColor: '#000000', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.26, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Regular.otf', subtitleSize: 32, subtitleColor: '#FFFFFF', subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'center', bodyLetterSpacing: 0, bodyLineHeight: 1.3, bodyX: 0, bodyY: 0,
+      overlays: [baeminVideoPostLogoOverlay(BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT)],
+    },
+  },
+  {
+    id: 'bm-video-post-title-bottom',
+    group: '본문',
+    section: '영상카드뉴스 전용',
+    label: '영상 전용 · 타이틀 하단',
+    shortLabel: '타이틀 하단',
+    desc: '상단에 로고, 하단 검은 영역에 제목을 두는 영상 게시글',
+    rule: '영상 전용 / 타이틀 하단',
+    badges: ['영상 전용', '타이틀 하단'],
+    aspectRatio: '3:4',
+    swatches: ['#000000', '#FFFFFF', '#808080'],
+    patch: {
+      layout: BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT, photoRatio: BAEMIN_VIDEO_POST_VIDEO_HEIGHT / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100, useGradient: false, useBg: true, bgColor: '#000000', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
+      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.26, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Regular.otf', subtitleSize: 32, subtitleColor: '#FFFFFF', subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'center', bodyLetterSpacing: 0, bodyLineHeight: 1.3, bodyX: 0, bodyY: 0,
+      overlays: [baeminVideoPostLogoOverlay(BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT)],
+    },
+  },
+  {
     id: 'bm-photo-frame',
     group: '본문',
     section: '영상/사진 있는 본문',
@@ -498,8 +578,27 @@ function baeminLayoutPatch(preset, card = {}) {
 
 const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-cover-square', 'bm-cover-reels'];
 const BAEMIN_PHOTO_COVER_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels'];
-const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
+const BAEMIN_VIDEO_POST_LAYOUT_IDS = ['bm-video-post-title-top', 'bm-video-post-title-bottom'];
+const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', ...BAEMIN_VIDEO_POST_LAYOUT_IDS, 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
 const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+
+function isBaeminVideoPostLayout(layout) {
+  return layout === BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT || layout === BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT;
+}
+
+function getBaeminVideoPostSpec(layout, width = BAEMIN_VIDEO_POST_DESIGN_WIDTH, height = BAEMIN_VIDEO_POST_DESIGN_HEIGHT) {
+  const spec = BAEMIN_VIDEO_POST_SPECS[layout];
+  if (!spec) return null;
+  const sx = width / BAEMIN_VIDEO_POST_DESIGN_WIDTH;
+  const sy = height / BAEMIN_VIDEO_POST_DESIGN_HEIGHT;
+  return {
+    videoTop: Math.round(spec.videoTop * sy),
+    videoHeight: Math.round(spec.videoHeight * sy),
+    titleTop: Math.round(spec.titleTop * sy),
+    logoTop: Math.round(spec.logoTop * sy),
+    titleMaxWidth: Math.round((BAEMIN_VIDEO_POST_DESIGN_WIDTH - 120) * sx),
+  };
+}
 
 function isBaeminPhotoCoverLayout(card) {
   return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
@@ -1327,31 +1426,101 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     await Promise.all(fontsToLoad.map(({ font, text }) => document.fonts.load(font, text).catch(() => {})));
   }
 
+  // Helper to draw text with letter spacing
+  function measureTextLS(text, fieldLS) {
+    const ls = Number(fieldLS) || 0;
+    if (ls === 0) return ctx.measureText(text).width;
+    let w2 = 0;
+    for (const ch of text) w2 += ctx.measureText(ch).width + ls;
+    return w2 - (text.length > 0 ? ls : 0);
+  }
+
   function wrapText(text, fontSize, fontName, fieldLS, customMaxW) {
     if (!text) return [];
     ctx.font = getFont(fontName, fontSize);
     const effectiveMaxW = customMaxW || maxTextW;
+    const fits = (value) => measureTextLS(value, fieldLS) <= effectiveMaxW;
+    const charsOf = (value) => Array.from(String(value || ""));
+    const compactLen = (value) => charsOf(String(value || "").replace(/\s+/g, "")).length;
+
+    const rebalanceShortLastLines = (sourceLines) => {
+      const next = [...sourceLines];
+      for (let i = 1; i < next.length; i++) {
+        const line = next[i] || "";
+        const lineLen = compactLen(line);
+        if (lineLen === 0 || lineLen > 2) continue;
+        const prev = (next[i - 1] || "").trimEnd();
+        if (compactLen(prev) <= 4) continue;
+
+        const words = prev.split(/\s+/);
+        if (words.length > 1) {
+          const movingWord = words[words.length - 1];
+          const prevCandidate = words.slice(0, -1).join(" ");
+          const lineCandidate = `${movingWord} ${line.trimStart()}`.trim();
+          if (prevCandidate && fits(lineCandidate)) {
+            next[i - 1] = prevCandidate;
+            next[i] = lineCandidate;
+            continue;
+          }
+        }
+
+        const prevChars = charsOf(prev);
+        const moveCount = Math.min(2, Math.max(1, 3 - lineLen));
+        if (prevChars.length <= moveCount + 2) continue;
+        const movingChars = prevChars.slice(-moveCount).join("");
+        const prevCandidate = prevChars.slice(0, -moveCount).join("").trimEnd();
+        const lineCandidate = `${movingChars}${line.trimStart()}`;
+        if (prevCandidate && fits(lineCandidate)) {
+          next[i - 1] = prevCandidate;
+          next[i] = lineCandidate;
+        }
+      }
+      return next;
+    };
+
+    const splitLongToken = (token) => {
+      const chunks = [];
+      let cur = "";
+      for (const ch of charsOf(token)) {
+        const test = cur + ch;
+        if (cur && !fits(test)) {
+          chunks.push(cur);
+          cur = ch;
+        } else {
+          cur = test;
+        }
+      }
+      if (cur) chunks.push(cur);
+      return rebalanceShortLastLines(chunks);
+    };
+
     const lines = [];
     for (const para of text.split("\n")) {
       if (!para.trim()) { lines.push(""); continue; }
+      const paraLines = [];
       let cur = "";
-      for (const ch of para) {
-        const test = cur + ch;
-        const extraLS = fieldLS * test.length;
-        if (ctx.measureText(test).width + extraLS > effectiveMaxW && cur) { lines.push(cur); cur = ch; }
-        else cur = test;
+      for (const word of para.trim().split(/\s+/)) {
+        const test = cur ? `${cur} ${word}` : word;
+        if (fits(test)) {
+          cur = test;
+          continue;
+        }
+        if (cur) {
+          paraLines.push(cur);
+          cur = "";
+        }
+        if (fits(word)) {
+          cur = word;
+        } else {
+          const chunks = splitLongToken(word);
+          paraLines.push(...chunks.slice(0, -1));
+          cur = chunks[chunks.length - 1] || "";
+        }
       }
-      if (cur) lines.push(cur);
+      if (cur) paraLines.push(cur);
+      lines.push(...rebalanceShortLastLines(paraLines));
     }
     return lines;
-  }
-
-  // Helper to draw text with letter spacing
-  function measureTextLS(text, fieldLS) {
-    if (fieldLS === 0) return ctx.measureText(text).width;
-    let w2 = 0;
-    for (const ch of text) w2 += ctx.measureText(ch).width + fieldLS;
-    return w2 - (text.length > 0 ? fieldLS : 0);
   }
 
   function drawTextLS(text, x, y, fieldLS) {
@@ -1410,6 +1579,32 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     });
   }
 
+  function getOverlayDrawSize(ov, img) {
+    const oScale = (ov.scale || 100) / 100;
+    const imgW = Number(ov.designWidth) || img.naturalWidth || img.width;
+    const imgH = Number(ov.designHeight) || img.naturalHeight || img.height;
+    if (!imgW || !imgH) return { oW: 0, oH: 0 };
+    const fitRatio = w / imgW;
+    return {
+      oW: imgW * fitRatio * oScale,
+      oH: imgH * fitRatio * oScale,
+    };
+  }
+
+  function canvasToImageDataUrl() {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        } else {
+          resolve(canvas.toDataURL("image/png"));
+        }
+      }, 'image/webp', 1.0);
+    });
+  }
+
   async function getLogoSafeInsets() {
     const logos = renderOverlays.filter(ov =>
       ov?.type === 'logo' &&
@@ -1424,9 +1619,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     for (const ov of logos) {
       try {
         const oImg = await loadOverlayImage(ov.image);
-        const oScale = (ov.scale || 100) / 100;
-        const fitRatio = w / oImg.width;
-        const oH = oImg.height * fitRatio * oScale;
+        const { oH } = getOverlayDrawSize(ov, oImg);
+        if (!oH) continue;
         const oY = (ov.y ?? 50) / 100 * h - oH / 2;
         const centerY = oY + oH / 2;
         const pad = Math.max(Math.round(18 * s), Math.min(Math.round(42 * s), Math.round(oH * 0.24)));
@@ -1453,12 +1647,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
         const drawImg = isSolidLogoOverlay(ov)
           ? colorizeImageWithAlphaMask(oImg, ov.logoColor)
           : oImg;
-        const oScale = (ov.scale || 100) / 100;
-        const imgW = oImg.naturalWidth || oImg.width;
-        const imgH = oImg.naturalHeight || oImg.height;
-        const fitRatio = w / imgW;
-        const oW = imgW * fitRatio * oScale;
-        const oH = imgH * fitRatio * oScale;
+        const { oW, oH } = getOverlayDrawSize(ov, oImg);
+        if (!oW || !oH) continue;
         const oX = (ov.x ?? 50) / 100 * w - oW / 2;
         const oY = (ov.y ?? 50) / 100 * h - oH / 2;
         ctx.globalAlpha = ov.opacity ?? 1;
@@ -1472,6 +1662,30 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
 
   // Draw below-layout overlays
   await drawOverlays(false);
+
+  if (isBaeminVideoPostLayout(layout)) {
+    const spec = getBaeminVideoPostSpec(layout, w, h);
+    if (card.title) {
+      const titleLines = wrapText(card.title, titleSz, card.titleFont, titleLS, spec.titleMaxWidth);
+      const titleFont = getFont(card.titleFont, titleSz);
+      ctx.font = titleFont;
+      ctx.fillStyle = card.titleColor || '#FFFFFF';
+      let curY = spec.titleTop;
+      for (const ln of titleLines) {
+        if (!ln) { curY += Math.round(titleSz * 0.55); continue; }
+        drawTextLS(ln, alignX(ln, card.titleAlign || 'center', titleLS) + titleOX, curY + getBaselineOffset(titleFont, titleSz, titleLh) + titleOY, titleLS);
+        curY += titleLh;
+      }
+    }
+
+    await drawOverlays(true);
+    if (!skipBorder) {
+      ctx.fillStyle = "rgba(0,0,0,0.78)";
+      ctx.fillRect(0, 0, w, 2); ctx.fillRect(0, h - 2, w, 2);
+      ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
+    }
+    return canvasToImageDataUrl();
+  }
 
   if (layout === "video_only") {
     // 영상만: 텍스트/배경 없이 오버레이만
@@ -1722,17 +1936,7 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     ctx.fillRect(0, 0, 2, h); ctx.fillRect(w - 2, 0, 2, h);
   }
   // Use lossless WebP for smaller payload with alpha, fallback to PNG
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      } else {
-        resolve(canvas.toDataURL("image/png"));
-      }
-    }, 'image/webp', 1.0);
-  });
+  return canvasToImageDataUrl();
 }
 
 /* ── Pill Button ── */
@@ -1787,6 +1991,9 @@ function LogoColorControls({ overlay, onChange }) {
 
 function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
   const [src, setSrc] = useState(ov.image || null);
+  const overlayRatioHeight = Number(ov.designWidth) > 0 && Number(ov.designHeight) > 0
+    ? previewW * Number(ov.designHeight) / Number(ov.designWidth)
+    : null;
   useEffect(() => {
     let alive = true;
     if (!ov.image) {
@@ -1815,7 +2022,7 @@ function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
       top: '50%',
       left: '50%',
       width: previewW,
-      height: 'auto',
+      height: overlayRatioHeight || 'auto',
       transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`,
       opacity: ov.opacity ?? 1,
       pointerEvents: 'none',
@@ -4620,13 +4827,16 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const previewW = (_arW >= _arH) ? _base : Math.round(_base * _arW / _arH);
   const previewH = (_arH >= _arW) ? _base : Math.round(_base * _arH / _arW);
   const layout = card.layout || "photo_top";
+  const baeminVideoPostSpec = getBaeminVideoPostSpec(layout, previewW, previewH);
   const pRatio = (card.photoRatio ?? 50) / 100;
-  const textH = (layout === "full_bg" || layout === "video_only" || layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
+  const textH = baeminVideoPostSpec
+    ? previewH - baeminVideoPostSpec.videoHeight
+    : (layout === "full_bg" || layout === "video_only" || layout === "none") ? previewH : Math.round(previewH * (1 - pRatio));
   const isTop = layout === "photo_top";
-  const videoAreaH = previewH - textH;
+  const videoAreaH = baeminVideoPostSpec ? baeminVideoPostSpec.videoHeight : previewH - textH;
   const fillSource = card.fillSource || 'video';
   const videoFill = card.videoFill || "full";
-  const splitMediaInPhotoArea = videoFill === "split" && layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== "none";
+  const splitMediaInPhotoArea = videoFill === "split" && (baeminVideoPostSpec || (layout !== "full_bg" && layout !== "video_only" && layout !== "text_box" && layout !== BAEMIN_BOX_BODY_LAYOUT && layout !== "none"));
   const mediaAreaH = splitMediaInPhotoArea ? videoAreaH : previewH;
   const useBaeminBackgroundPlaceholder = card.brandGuideId === BAEMIN_GUIDE_ID && !['full_bg', 'video_only', 'text_box', BAEMIN_BOX_BODY_LAYOUT, 'none'].includes(layout);
   const sc = previewW / 1080;
@@ -4681,17 +4891,19 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const logoSafeKey = logoSafeOverlayFingerprint(pvOverlays);
   const cardKey = JSON.stringify({ ...cardTextProps, logoSafeKey });
   useEffect(() => {
+    let alive = true;
     if (overlayTimer.current) clearTimeout(overlayTimer.current);
+    setOverlayUrl(null);
     overlayTimer.current = setTimeout(async () => {
       try {
         const dpr = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
         const canvasW = Math.max(Math.round(previewW * dpr), 720);
         const url = await generateOverlayPng(pvCard, canvasW, aspectRatio, { skipOverlays: true, skipBorder: true });
-        setOverlayUrl(url);
+        if (alive) setOverlayUrl(url);
       } catch (e) {}
     }, 30);
-    return () => { if (overlayTimer.current) clearTimeout(overlayTimer.current); };
-  }, [cardKey, previewW, aspectRatio]);
+    return () => { alive = false; if (overlayTimer.current) clearTimeout(overlayTimer.current); };
+  }, [cardKey, layout, previewW, previewH, aspectRatio]);
 
   // Center guides
   const titleOX = Math.round((card.titleX ?? 0) * sc);
@@ -4884,6 +5096,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
         const contentH = fields.reduce((sum, f, i) => sum + (i > 0 ? gap(f) : 0) + fh(f), 0);
         y = 1 - Number(card.baeminTextBottom) / designH - contentH;
       }
+      else if (baeminVideoPostSpec) y = baeminVideoPostSpec.titleTop / previewH;
       else if (layout === 'photo_top') y = photoRatio + PAD;
       else if (layout === 'photo_bottom') y = PAD;
       else y = PAD;
@@ -5219,7 +5432,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   // Split mode: constrain video to video area
   if (splitMediaInPhotoArea) {
     return React.createElement("div", { style: wrapper },
-      React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: videoAreaH, ...(isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
+      React.createElement("div", { style: { position: "absolute", left: 0, right: 0, height: mediaAreaH, ...(baeminVideoPostSpec ? { top: baeminVideoPostSpec.videoTop } : isTop ? { top: 0 } : { bottom: 0 }), overflow: "hidden" } },
         React.createElement(BgImage),
         videoPreview,
       ),
@@ -5547,7 +5760,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
-            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
             // 텍스트 박스 설정
             card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -5573,14 +5786,14 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
             ),
             // 영상 채우기
-            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { marginTop: 8 } },
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { marginTop: 8 } },
               React.createElement("label", { style: labelBase }, "영상 채우기"),
               React.createElement("div", { style: { display: 'flex', gap: 6 } },
                 VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
               )
             ),
             // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-            card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
+            card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "텍스트 배경 설정", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
               React.createElement(CheckboxRow, { label: "배경색 사용", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
               card.useBg !== false && React.createElement(React.Fragment, null,
@@ -6266,6 +6479,57 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
   sourceImageMeta: [],      // sourceImages와 같은 인덱스의 출처 메타 ({ source:'article'|'ai', ... })
 });
+
+function normalizeProjectNameFromSource(title, fallback = '새 프로젝트') {
+  const compact = String(title || '').replace(/\s+/g, ' ').trim();
+  return compact ? compact.slice(0, 48) : fallback;
+}
+
+function isUntouchedDefaultCard(card) {
+  if (!card) return true;
+  if (
+    card.name ||
+    card.url ||
+    card.uploadedImage ||
+    card.clipThumbnail ||
+    card.appliedStart ||
+    card.appliedEnd ||
+    card.captureTime ||
+    card.articleType ||
+    card.articleMeta ||
+    card.brandGuideId ||
+    card.brandLayoutId ||
+    card.lastGenHash ||
+    card.lastGenKey
+  ) return false;
+  if (Array.isArray(card.overlays) && card.overlays.some(ov => ov && (ov.image || ov.type !== 'image'))) return false;
+  return (
+    (card.title || '') === '제목을 입력하세요' &&
+    (card.subtitle || '') === '부제목을 입력하세요' &&
+    (card.body || '') === '본문 내용을 입력하세요' &&
+    (card.boxText || DEFAULT_BOX_TEXT) === DEFAULT_BOX_TEXT &&
+    (card.layout || 'photo_top') === 'photo_top' &&
+    (card.fillSource || 'video') === 'video' &&
+    (card.start || '0:00') === '0:00' &&
+    (card.end || '0:10') === '0:10'
+  );
+}
+
+function isReusableBlankProject(project) {
+  if (!project) return false;
+  if (
+    project.globalUrl ||
+    project.globalBgImage ||
+    project.sourceUrl ||
+    project.sourceTitle ||
+    project.videoTitle ||
+    project.transcript
+  ) return false;
+  if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) return false;
+  if (Array.isArray(project.sourceImageMeta) && project.sourceImageMeta.length > 0) return false;
+  const projectCards = Array.isArray(project.cards) ? project.cards : [];
+  return projectCards.length <= 1 && isUntouchedDefaultCard(projectCards[0]);
+}
 
 function normalizeLoadedProject(project) {
   if (!project) return project;
@@ -8517,7 +8781,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
   const activePreset = BAEMIN_LAYOUT_PRESETS.find(preset => preset.id === activePresetId);
   const groups = [
     { label: '표지', sections: ['영상/사진 있는 표지', '영상/사진 없는 표지'] },
-    { label: '본문', sections: ['영상/사진 없는 본문', '영상/사진 있는 본문'] },
+    { label: '본문', sections: ['영상카드뉴스 전용', '영상/사진 없는 본문', '영상/사진 있는 본문'] },
   ];
   const sectionTitleStyle = { color: T.textSecondary, fontSize: 11, fontWeight: 900, letterSpacing: 0.2 };
   const subsectionTitleStyle = { color: T.textMuted, fontSize: 10, fontWeight: 800, letterSpacing: 0.15 };
@@ -8641,7 +8905,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
         })
       )
     )),
-    card && card.layout !== "none" && card.layout !== "video_only" && React.createElement("div", {
+    card && card.layout !== "none" && card.layout !== "video_only" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", {
       style: {
         borderTop: '1px solid ' + T.border,
         paddingTop: compact ? 8 : 10,
@@ -8664,7 +8928,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
         React.createElement("input", { type: "color", value: card.bgColor || BAEMIN_CREAM, onChange: (e) => updateMulti({ bgColor: e.target.value, ...(isBaeminNoPhoto ? { bgOpacity: 1 } : {}) }), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor || BAEMIN_CREAM),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, {
         label: "투명도",
         value: isBaeminNoPhoto ? 1 : (card.bgOpacity ?? 0.75),
@@ -9044,14 +9308,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
       React.createElement(SliderRow, { label: "테두리 두께", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
       ),
     ),
     // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+    card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
       React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
       React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
       card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -9059,7 +9323,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
@@ -9595,14 +9859,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
       React.createElement(SliderRow, { label: "\ud14c\ub450\ub9ac \ub450\uaed8", value: card.textBoxBorderWidth ?? 0, min: 0, max: 10, step: 1, onChange: (v) => update("textBoxBorderWidth", v), suffix: 'px', defaultValue: 0 }),
     ),
     // 영상 채우기
-    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
       React.createElement("span", { style: { fontSize: 12, color: T.textMuted, minWidth: 52, whiteSpace: 'nowrap' } }, "\uC601\uC0C1 \uCC44\uC6B0\uAE30"),
       React.createElement("div", { style: { display: 'flex', gap: 6, flex: 1 } },
         VIDEO_FILL_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.videoFill || "full") === opt.id, onClick: () => update("videoFill", opt.id) }, opt.label))
       ),
     ),
     // 텍스트 배경 설정 (text_box는 박스 설정에서 관리)
-    card.layout !== "text_box" && card.layout !== "none" && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
+    card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 } },
       React.createElement(SectionTitleWithReset, { title: "\uD14D\uC2A4\uD2B8 \uBC30\uACBD \uC124\uC815", onReset: () => updateMulti({ useBg: true, bgColor: '#121212', bgOpacity: 0.75 }) }),
       React.createElement(CheckboxRow, { label: "\uBC30\uACBD\uC0C9 \uC0AC\uC6A9", checked: card.useBg !== false, onChange: (v) => update("useBg", v) }),
       card.useBg !== false && React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -9610,7 +9874,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
@@ -10193,7 +10457,6 @@ export default function App() {
         const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
         setProjects([first]);
         setActiveProjectId(first.id);
-        setPendingProjectId(first.id);
       }
       const path = window.location.pathname;
       const shortRoute = parseShortShareRoute(path);
@@ -11311,26 +11574,41 @@ export default function App() {
           useLLM: true,
         });
       }
-      const targetId = pendingProjectId || activeProjectId;
-      setProjects(prev => prev.map(p => {
-        if (p.id !== targetId) return p;
-        return {
-          ...p,
-          sourceType: 'article',
-          sourceUrl: doneData.sourceUrl || '',
-          sourceTitle: doneData.sourceTitle || '',
-          sourceImages: _srcImgs,
-          sourceImageMeta: _srcMeta,
-          globalUrl: '',
-          aspectRatio: wizardData.aspectRatio || '1:1',
-          outputFormat: 'image',
-          outputFormatTouched: false,
-          cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
-          copyTone: wizardData.copyTone || 'hooking',
-          videoTitle: doneData.sourceTitle || '',
-        };
-      }));
+      const articleProjectName = normalizeProjectNameFromSource(doneData.sourceTitle || article.title, '텍스트 프로젝트');
+      const articleProjectPatch = {
+        name: articleProjectName,
+        sourceType: 'article',
+        sourceUrl: doneData.sourceUrl || '',
+        sourceTitle: doneData.sourceTitle || '',
+        sourceImages: _srcImgs,
+        sourceImageMeta: _srcMeta,
+        globalUrl: '',
+        aspectRatio: wizardData.aspectRatio || '1:1',
+        outputFormat: 'image',
+        outputFormatTouched: false,
+        globalBgImage: null,
+        cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
+        copyTone: wizardData.copyTone || 'hooking',
+        videoTitle: doneData.sourceTitle || '',
+      };
+      const existingTargetId = pendingProjectId && projects.some(p => p.id === pendingProjectId)
+        ? pendingProjectId
+        : isReusableBlankProject(activeProject)
+          ? activeProject.id
+          : null;
+      let targetId = existingTargetId;
+      if (targetId) {
+        setProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...articleProjectPatch } : p));
+      } else {
+        const nextProject = { ...DEFAULT_PROJECT(articleProjectName), ...articleProjectPatch };
+        targetId = nextProject.id;
+        setProjects(prev => [...prev, nextProject]);
+      }
       setActiveProjectId(targetId);
+      setPendingProjectId(null);
+      setActiveCardIdx(0);
+      setGenProgress('');
+      setResults([]);
 
       setTimeout(() => {
         setWizardLoading(false);
@@ -11451,7 +11729,7 @@ export default function App() {
       mob, aiEditRunning,
       onLogoClick: isBmOnlyPage ? undefined : handleHomeLogoClick,
       onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
-      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
+      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
@@ -11480,7 +11758,7 @@ export default function App() {
       onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
       onComplete: handleArticleWizardComplete,
-      onCancel: () => { setEditorMode(null); setWizardStep(1); if (articleAbortRef.current) { articleAbortRef.current.abort(); articleAbortRef.current = null; } },
+      onCancel: () => { setPendingProjectId(null); setEditorMode(null); setWizardStep(1); if (articleAbortRef.current) { articleAbortRef.current.abort(); articleAbortRef.current = null; } },
     }),
 
     // AI edit overlay — 자유편집 모드에서 AI 진행 중일 때 블러 + 진행률 표시
