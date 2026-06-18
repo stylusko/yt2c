@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
   '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
   '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
   '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
-  '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
 ];
 
 /* ── Icons ── */
@@ -7911,43 +7911,72 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
     }
   };
 
+  const renderBaeminExampleThumb = (thumb, width, compact = false) => React.createElement("div", {
+    style: { width, aspectRatio: '3 / 4', borderRadius: 5, background: T.bg, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', position: 'relative' },
+  },
+    React.createElement("img", {
+      src: thumb,
+      alt: "",
+      loading: "lazy",
+      style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+    }),
+    React.createElement("div", {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: compact ? 1 : 2,
+        background: 'rgba(0,0,0,0.45)',
+        color: '#fff',
+        textAlign: 'center',
+        pointerEvents: 'none',
+      },
+    },
+      React.createElement("span", {
+        style: { fontSize: compact ? 7 : 8, lineHeight: 1.05, fontWeight: 900, letterSpacing: 0, textShadow: '0 1px 3px rgba(0,0,0,0.7)' },
+      }, "예시", React.createElement("br"), "이미지", React.createElement("br"), "입니다"),
+    ),
+  );
+
   const renderBaeminLayoutOption = ({ active, onClick, thumb, title, desc, disabled = false }) => React.createElement("button", {
     onClick,
     disabled,
+    'aria-pressed': active,
     style: {
-      padding: 0,
+      display: 'grid',
+      gridTemplateColumns: mob ? '38px 1fr' : '42px 1fr',
+      alignItems: 'center',
+      gap: mob ? 7 : 8,
+      minHeight: mob ? 54 : 58,
+      padding: mob ? '7px 8px' : '8px 10px',
       borderRadius: T.radiusSm,
       border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
       background: active ? 'rgba(42,193,188,0.1)' : T.surface,
       cursor: disabled ? 'not-allowed' : 'pointer',
-      overflow: 'hidden',
       textAlign: 'left',
       opacity: disabled ? 0.45 : 1,
       boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.3)' : 'none',
     },
   },
-    React.createElement("div", { style: { width: '100%', aspectRatio: '3 / 4', background: T.bg, overflow: 'hidden' } },
-      React.createElement("img", {
-        src: thumb,
-        alt: "",
-        loading: "lazy",
-        style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-      }),
-    ),
-    React.createElement("div", { style: { padding: '10px 12px' } },
-      React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 3 } }, title),
-      React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.35 } }, desc),
+    renderBaeminExampleThumb(thumb, mob ? 38 : 42),
+    React.createElement("div", { style: { minWidth: 0 } },
+      React.createElement("div", { style: { fontSize: mob ? 11 : 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, title),
+      React.createElement("div", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, desc),
     ),
   );
 
   const renderBaeminLayoutMiniOption = ({ active, onClick, thumb, title, desc }) => React.createElement("button", {
     onClick,
+    'aria-pressed': active,
     style: {
       display: 'grid',
-      gridTemplateColumns: '62px 1fr',
+      gridTemplateColumns: mob ? '34px 1fr' : '38px 1fr',
       alignItems: 'center',
-      gap: 10,
-      padding: 8,
+      gap: 7,
+      minHeight: mob ? 48 : 52,
+      padding: mob ? 6 : 7,
       borderRadius: T.radiusSm,
       border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
       background: active ? 'rgba(42,193,188,0.1)' : T.surface,
@@ -7955,21 +7984,23 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       textAlign: 'left',
     },
   },
-    React.createElement("div", { style: { width: 62, aspectRatio: '3 / 4', borderRadius: 6, overflow: 'hidden', background: T.bg } },
-      React.createElement("img", { src: thumb, alt: "", loading: "lazy", style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }),
-    ),
+    renderBaeminExampleThumb(thumb, mob ? 34 : 38, true),
     React.createElement("div", { style: { minWidth: 0 } },
-      React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 3 } }, title),
-      React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.35 } }, desc),
+      React.createElement("div", { style: { fontSize: mob ? 11 : 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, title),
+      React.createElement("div", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, desc),
     ),
   );
 
+  const renderBaeminLayoutTitle = (label) => React.createElement("div", {
+    style: { fontSize: mob ? 15 : 17, color: T.text, fontWeight: 900, letterSpacing: 0, marginBottom: 8, lineHeight: 1.2 },
+  }, label);
+
   const renderBaeminArticleLayoutPicker = () => {
     if (!isBmOnlyPage) return null;
-    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "레이아웃 선택"),
-        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 } },
+        renderBaeminLayoutTitle("표지 레이아웃"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: mob ? 6 : 8 } },
           renderBaeminLayoutOption({
             active: bmLayoutPreference.cover === 'photo',
             onClick: () => updateBmLayoutPreference({ cover: 'photo' }),
@@ -7987,8 +8018,8 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         ),
       ),
       React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "본문 레이아웃"),
-        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 } },
+        renderBaeminLayoutTitle("본문 레이아웃"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: mob ? 6 : 8 } },
           renderBaeminLayoutOption({
             active: bmLayoutPreference.body === 'text',
             onClick: () => updateBmLayoutPreference({ body: 'text' }),
@@ -8006,8 +8037,8 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         ),
       ),
       bmLayoutPreference.body === 'photo' && React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "사진 배경 방식"),
-        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 } },
+        React.createElement("div", { style: { fontSize: mob ? 13 : 14, color: T.textSecondary, fontWeight: 800, marginBottom: 7, lineHeight: 1.2 } }, "사진 배경 방식"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: mob ? 6 : 8 } },
           renderBaeminLayoutMiniOption({
             active: bmLayoutPreference.photoTreatment === 'gradient',
             onClick: () => updateBmLayoutPreference({ photoTreatment: 'gradient' }),
