@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 12; // same-day deploy count
+const BUILD_NUM = 13; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
   '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
   '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
   '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
-  '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
 ];
 
 /* ── Icons ── */
@@ -7053,7 +7053,7 @@ function restoreDefaults(obj) {
 
 const PROJ_DEFAULTS = { outputFormat: 'video', outputFormatTouched: false, outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
-function encodeProject(project, options = {}) {
+function buildProjectSharePayload(project, options = {}) {
   const s = { n: project.name, u: project.globalUrl };
   if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
   if (project.outputFormatTouched) s.ot = 1;
@@ -7069,7 +7069,16 @@ function encodeProject(project, options = {}) {
   if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) s.m = project.sourceImages;
   if (Array.isArray(project.sourceImageMeta) && project.sourceImageMeta.length > 0) s.q = normalizeProjectSourceImageMeta(project.sourceImages || [], project.sourceImageMeta);
   s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS, options));
+  return s;
+}
+
+function encodeProject(project, options = {}) {
+  const s = buildProjectSharePayload(project, options);
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
+}
+
+function encodeProjectForServer(project, options = SHARE_ENCODE_OPTIONS) {
+  return JSON.stringify(buildProjectSharePayload(project, options));
 }
 
 // 네이버 pstatic.net 이미지 URL 정규화 (클라이언트용 헬퍼, lib/article-extractor.js와 동일 로직)
@@ -7087,7 +7096,8 @@ function normalizeNaverImageUrl(src) {
 }
 
 function decodeProject(encoded) {
-  const json = LZString.decompressFromEncodedURIComponent(encoded);
+  const raw = typeof encoded === 'string' ? encoded.trim() : '';
+  const json = raw.startsWith('{') ? raw : LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) return null;
   const s = JSON.parse(json);
   const proj = {
@@ -11428,7 +11438,7 @@ export default function App() {
     const projectToShare = getLatestActiveProject();
     if (!projectToShare || shareLoading) return;
     setShareLoading(true);
-    const serverEncoded = encodeProject(projectToShare, SHARE_ENCODE_OPTIONS);
+    const serverEncoded = encodeProjectForServer(projectToShare);
     // Try Supabase short URL first
     try {
       const res = await fetch('/api/share', {
@@ -11658,7 +11668,7 @@ export default function App() {
           const projectForShare = effectiveOutputFormat === outputFormat
             ? projectBaseForShare
             : { ...projectBaseForShare, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
-          const serverEncoded = encodeProject(projectForShare, SHARE_ENCODE_OPTIONS);
+          const serverEncoded = encodeProjectForServer(projectForShare);
           try {
             const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: serverEncoded }) });
             if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`; }
