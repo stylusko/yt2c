@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 9; // same-day deploy count
+const BUILD_NUM = 10; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
   '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
   '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
   '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
   '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
-  '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
 ];
 
 /* ── Icons ── */
@@ -6899,13 +6899,16 @@ function hasInlineDataUrl(value, seen = new Set()) {
 }
 
 function saveProjects(projects, activeId) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return Promise.resolve({ ok: false, skipped: true });
   const payload = { projects, activeId, updatedAt: Date.now(), saveSeq: ++projectSaveSeq };
   const skipLocalStorage = !!window.indexedDB && hasInlineDataUrl(projects);
+  let localStored = false;
+  let metaStored = false;
   if (!skipLocalStorage) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       try { localStorage.removeItem(STORAGE_META_KEY); } catch (e) {}
+      localStored = true;
     } catch (e) {
       console.warn('[projects] localStorage save skipped:', e?.message || e);
       try {
@@ -6916,6 +6919,7 @@ function saveProjects(projects, activeId) {
           projectCount: projects.length,
           localStorageFull: true,
         }));
+        metaStored = true;
       } catch (_) {}
     }
   } else {
@@ -6927,12 +6931,28 @@ function saveProjects(projects, activeId) {
         projectCount: projects.length,
         indexedDbOnly: true,
       }));
+      metaStored = true;
     } catch (_) {}
   }
-  projectSaveQueue = projectSaveQueue
+  const indexedSave = projectSaveQueue
     .catch(() => {})
-    .then(() => saveProjectsToIndexedDB(payload))
-    .catch(e => console.warn('[projects] IndexedDB save failed:', e?.message || e));
+    .then(() => saveProjectsToIndexedDB(payload));
+  projectSaveQueue = indexedSave.catch(e => {
+    console.warn('[projects] IndexedDB save failed:', e?.message || e);
+    return null;
+  });
+  return indexedSave
+    .then((indexedResult) => {
+      const indexedStored = indexedResult !== null;
+      if (!localStored && !indexedStored) throw new Error('No persistent project storage available');
+      return { ok: true, payload, localStored, metaStored, indexedStored, indexedDbOnly: skipLocalStorage };
+    })
+    .catch(error => {
+      if (localStored) {
+        return { ok: true, payload, localStored, metaStored, indexedStored: false, indexedDbOnly: skipLocalStorage, warning: 'indexeddb_failed', error };
+      }
+      throw error;
+    });
 }
 
 /* ── Project Share Helpers ── */
@@ -10838,6 +10858,7 @@ export default function App() {
   const [pendingConfirm, setPendingConfirm] = useState(null); // { message, confirmText, confirmColor, onConfirm }
   const [shareUrl, setShareUrl] = useState(null);
   const [shareLoading, setShareLoading] = useState(false);
+  const [manualSaveState, setManualSaveState] = useState({ status: 'idle', message: '' });
   const [importLoading, setImportLoading] = useState(false);
   const [importProject, setImportProject] = useState(null);
   const [pageVariant, setPageVariant] = useState(PAGE_VARIANTS.DEFAULT);
@@ -10899,6 +10920,7 @@ export default function App() {
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
   const homeLogoTapRef = useRef({ count: 0, timer: null });
+  const manualSaveTimerRef = useRef(null);
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
 
   const handleHomeLogoClick = useCallback(() => {
@@ -10920,6 +10942,7 @@ export default function App() {
 
   useEffect(() => () => {
     if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
+    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
   }, []);
 
   // Tutorial auto-start on first editor entry
@@ -11094,7 +11117,7 @@ export default function App() {
     const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
     const latestActiveId = activeProjectIdRef.current || activeProjectId;
     if (projects !== latestProjects || activeProjectId !== latestActiveId) return;
-    if (latestProjects.length > 0 && latestActiveId) saveProjects(latestProjects, latestActiveId);
+    if (latestProjects.length > 0 && latestActiveId) saveProjects(latestProjects, latestActiveId).catch(() => {});
   }, [projects, activeProjectId]);
 
   // Report card count per session
@@ -11307,6 +11330,32 @@ export default function App() {
     return latestProjects.find(p => p.id === latestActiveId) || latestProjects[0] || activeProject;
   }, [activeProject, activeProjectId, projects]);
 
+  const handleManualSave = useCallback(async () => {
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    if (!latestProjects.length || !latestActiveId || manualSaveState.status === 'saving') return;
+    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
+    setManualSaveState({ status: 'saving', message: '저장 중' });
+    try {
+      try {
+        if (navigator.storage?.persist) await navigator.storage.persist();
+      } catch (_) {}
+      const result = await saveProjects(latestProjects, latestActiveId);
+      const savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      setManualSaveState({
+        status: 'saved',
+        message: result.warning === 'indexeddb_failed' ? '저장 완료' : `저장 완료 ${savedAt}`,
+      });
+      manualSaveTimerRef.current = setTimeout(() => {
+        setManualSaveState(prev => prev.status === 'saved' ? { status: 'idle', message: '' } : prev);
+      }, 6000);
+    } catch (error) {
+      console.warn('[projects] manual save failed:', error?.message || error);
+      setManualSaveState({ status: 'error', message: '저장 실패' });
+      setAlertMsg('프로젝트 저장에 실패했어요.\n브라우저 저장소가 가득 찼거나 사이트 데이터 접근이 막혔을 수 있어요.\n공유하기로 백업 링크를 만들어 주세요.');
+    }
+  }, [activeProjectId, manualSaveState.status, projects]);
+
   const shareProject = async () => {
     const projectToShare = getLatestActiveProject();
     if (!projectToShare || shareLoading) return;
@@ -11350,7 +11399,7 @@ export default function App() {
     setRouteShareId(null);
     const nextProjects = commitProjects(prev => [importedProject, ...prev.filter(p => p.id !== importedProject.id)]);
     commitActiveProjectId(importedProject.id);
-    saveProjects(nextProjects, importedProject.id);
+    saveProjects(nextProjects, importedProject.id).catch(() => {});
     setActiveCardIdx(0);
     setShowProjectSelector(false);
     setPendingProjectId(null);
@@ -12236,6 +12285,34 @@ export default function App() {
     if (failCount > 0) window.alert(`${failCount}\uAC1C \uCE74\uB4DC\uC758 \uCE74\uD53C \uBCC0\uD658\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.`);
   };
 
+  const manualSaveBusy = manualSaveState.status === 'saving';
+  const manualSaveLabel = manualSaveState.status === 'saving'
+    ? '저장 중...'
+    : manualSaveState.status === 'saved'
+      ? (manualSaveState.message || '저장 완료')
+      : manualSaveState.status === 'error'
+        ? '저장 실패'
+        : '저장';
+  const manualSaveMobileLabel = manualSaveState.status === 'saving'
+    ? '저장중'
+    : manualSaveState.status === 'saved'
+      ? '완료'
+      : manualSaveState.status === 'error'
+        ? '실패'
+        : '저장';
+  const manualSaveBg = manualSaveState.status === 'saved'
+    ? 'rgba(34,197,94,0.14)'
+    : manualSaveState.status === 'error'
+      ? 'rgba(239,68,68,0.16)'
+      : manualSaveBusy
+        ? T.surfaceHover
+        : 'rgba(255,255,255,0.05)';
+  const manualSaveColor = manualSaveState.status === 'saved'
+    ? '#4ade80'
+    : manualSaveState.status === 'error'
+      ? '#f87171'
+      : T.textSecondary;
+
   return React.createElement("div", {
     'data-page-variant': pageVariant,
     'data-bm-only-page': isBmOnlyPage ? 'true' : undefined,
@@ -12459,8 +12536,8 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
+              React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '6px 8px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 11, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: !projects.length ? 0.5 : 1, minWidth: 44 } }, manualSaveMobileLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
-              null,
               React.createElement("button", {
                 'data-tour': 'generate',
                 onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
@@ -12469,8 +12546,8 @@ export default function App() {
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
+              React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '8px 14px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: !projects.length ? 0.5 : 1, minWidth: 78 } }, manualSaveLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uACF5\uC720\uD558\uAE30"),
-              null,
               React.createElement("button", {
                 'data-tour': 'generate',
                 onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
