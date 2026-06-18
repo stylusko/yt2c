@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 7; // same-day deploy count
+const BUILD_NUM = 8; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
   '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
   '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
   '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
-  '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
 ];
 
 /* ── Icons ── */
@@ -1331,6 +1331,41 @@ function calcAutoPhotoRatio(card, overrides = {}) {
   return 70; // title only
 }
 
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizePhotoRatioPercent(value, fallback = 50) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return fallback;
+  return raw > 1 ? raw : raw * 100;
+}
+
+function roundTo(value, decimals = 2) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function buildTextAreaPatch(card, textAreaPct) {
+  const rawTextAreaPct = Number(textAreaPct);
+  const nextTextAreaPct = clampNumber(Number.isFinite(rawTextAreaPct) ? rawTextAreaPct : 50, 10, 80);
+  const prevPhotoRatio = normalizePhotoRatioPercent(card?.photoRatio, 50);
+  const nextPhotoRatio = roundTo(100 - nextTextAreaPct, 1);
+  const patch = { photoRatio: nextPhotoRatio };
+  const isBaeminPhotoTop = card?.brandGuideId === BAEMIN_GUIDE_ID && (card?.layout || 'photo_top') === 'photo_top';
+
+  if (isBaeminPhotoTop && Number.isFinite(Number(card?.baeminTextTopRatio))) {
+    const anchorOffset = Number(card.baeminTextTopRatio) - prevPhotoRatio / 100;
+    patch.baeminTextTopRatio = roundTo(clampNumber(nextPhotoRatio / 100 + anchorOffset, 0.02, 0.95), 4);
+  } else if (isBaeminPhotoTop && Number.isFinite(Number(card?.baeminTextTop))) {
+    const currentTopPct = Number(card.baeminTextTop) / BAEMIN_FIGMA_CARD_HEIGHT * 100;
+    const anchorOffsetPct = currentTopPct - prevPhotoRatio;
+    patch.baeminTextTop = Math.round(clampNumber((nextPhotoRatio + anchorOffsetPct) / 100 * BAEMIN_FIGMA_CARD_HEIGHT, 0, BAEMIN_FIGMA_CARD_HEIGHT));
+  }
+
+  return patch;
+}
+
 function extractSegmentTranscript(transcript, startStr, endStr) {
   if (!transcript) return '';
   const startSec = parseTime(startStr);
@@ -2490,6 +2525,20 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
   const sliderMax = max;
   const defPct = ((sliderDef - sliderMin) / (sliderMax - sliderMin)) * 100;
   const fillPct = ((sliderVal - sliderMin) / (sliderMax - sliderMin)) * 100;
+  const stepSize = Number(step) || 1;
+  const domainMin = toSlider ? min : sliderMin;
+  const domainMax = toSlider ? max : sliderMax;
+  const numericValue = Number.isFinite(Number(value)) ? Number(value) : defVal;
+  const roundedStepValue = (next) => {
+    const stepText = String(stepSize);
+    const decimals = stepText.includes('.') ? stepText.split('.')[1].length : 0;
+    return roundTo(clampNumber(next, domainMin, domainMax), Math.min(6, decimals + 2));
+  };
+  const nudge = (delta) => onChange(roundedStepValue(numericValue + delta * stepSize));
+  const atMin = numericValue <= domainMin;
+  const atMax = numericValue >= domainMax;
+  const stepSuffix = typeof suffix === 'string' && suffix.includes('자동') ? '%' : suffix;
+  const stepLabel = stepSuffix === '%' && domainMax <= 1 ? `${roundTo(stepSize * 100, 2)}%` : `${stepSize}${stepSuffix}`;
 
   useEffect(() => { injectSliderStyle(); }, []);
 
@@ -2568,6 +2617,33 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, `${displayVal}${suffix}`)
+    ,
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 } },
+      React.createElement("button", {
+        type: "button",
+        disabled: atMax,
+        onClick: () => nudge(1),
+        title: `${stepLabel} 증가`,
+        style: {
+          width: 18, height: 14, padding: 0, borderRadius: 4, border: `1px solid ${T.border}`,
+          background: atMax ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)',
+          color: atMax ? T.textMuted : T.textSecondary,
+          fontSize: 9, lineHeight: '12px', cursor: atMax ? 'default' : 'pointer',
+        },
+      }, "\u25B2"),
+      React.createElement("button", {
+        type: "button",
+        disabled: atMin,
+        onClick: () => nudge(-1),
+        title: `${stepLabel} 감소`,
+        style: {
+          width: 18, height: 14, padding: 0, borderRadius: 4, border: `1px solid ${T.border}`,
+          background: atMin ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)',
+          color: atMin ? T.textMuted : T.textSecondary,
+          fontSize: 9, lineHeight: '12px', cursor: atMin ? 'default' : 'pointer',
+        },
+      }, "\u25BC"),
+    )
   );
 }
 
@@ -5930,7 +6006,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
-            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
             // 텍스트 박스 설정
             card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -9308,7 +9384,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
         React.createElement("input", { type: "color", value: card.bgColor || BAEMIN_CREAM, onChange: (e) => updateMulti({ bgColor: e.target.value, ...(isBaeminNoPhoto ? { bgOpacity: 1 } : {}) }), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor || BAEMIN_CREAM),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, {
         label: "투명도",
         value: isBaeminNoPhoto ? 1 : (card.bgOpacity ?? 0.75),
@@ -9711,7 +9787,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
@@ -10270,7 +10346,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
