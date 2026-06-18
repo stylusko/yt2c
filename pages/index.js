@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -52,14 +52,17 @@ function buildBmOnlyPath(editorMode) {
   if (editorMode === 'editor') return BM_ONLY_MODE_PATHS.editor;
   return BM_ONLY_MODE_PATHS.home;
 }
+function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
+  return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
+}
 const RECENT_FEATURES = [
+  '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
   '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
-  '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
 ];
 
 /* ── Icons ── */
@@ -7258,7 +7261,7 @@ function ShareModal({ url, onClose }) {
         React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: copied ? '#22c55e' : T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' } }, copied ? "\uBCF5\uC0AC\uB428!" : "\uBCF5\uC0AC"),
       ),
       React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, textAlign: 'center', marginBottom: 20 } },
-        "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC2E4\uC2DC\uAC04 \uACF5\uB3D9\uD3B8\uC9D1\uC740 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC73C\uBA70, \uAC01\uC790 \uB3C5\uB9BD\uC801\uC73C\uB85C \uD3B8\uC9D1\uB429\uB2C8\uB2E4."
+        "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC218\uC815 \uD6C4\uC5D0\uB294 \uACF5\uC720\uD558\uAE30\uB97C \uB2E4\uC2DC \uB20C\uB7EC \uCD5C\uC2E0 \uB9C1\uD06C\uB97C \uBCF5\uC0AC\uD574 \uC8FC\uC138\uC694."
       ),
       React.createElement("div", { style: { textAlign: 'center' } },
         React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uB2EB\uAE30"),
@@ -11016,9 +11019,19 @@ export default function App() {
   const globalBgImage = activeProject?.globalBgImage || null;
   const cards = activeProject?.cards || [];
 
+  const clearSharedRouteForLocalEdit = useCallback(() => {
+    if (!routeShareId || editorMode !== 'editor') return;
+    setRouteShareId(null);
+    const targetPath = buildEditorPathForVariant(pageVariant);
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.replaceState(window.history.state, '', targetPath);
+    }
+  }, [editorMode, pageVariant, routeShareId]);
+
   const updateProject = useCallback((updates) => {
+    clearSharedRouteForLocalEdit();
     setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
-  }, [activeProjectId]);
+  }, [activeProjectId, clearSharedRouteForLocalEdit]);
 
   const setGlobalUrl = (v) => {
     const prev = activeProject?.globalUrl || '';
@@ -11033,6 +11046,7 @@ export default function App() {
   const setGlobalImageSource = (v) => updateProject({ globalImageSource: v });
   const setGlobalBgImage = (v) => updateProject({ globalBgImage: v });
   const setCards = (updater) => {
+    clearSharedRouteForLocalEdit();
     setProjects(prev => prev.map(p => {
       if (p.id !== activeProjectId) return p;
       const newCards = typeof updater === 'function' ? updater(p.cards) : updater;
@@ -11203,7 +11217,12 @@ export default function App() {
       });
       if (res.ok) {
         const { id } = await res.json();
-        const url = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`;
+        const sharePath = buildShortSharePath(id, pageVariant);
+        const url = `${window.location.origin}${sharePath}`;
+        if (isBmOnlyPage) {
+          setRouteShareId(id);
+          window.history.replaceState(window.history.state, '', sharePath);
+        }
         if (navigator.clipboard) navigator.clipboard.writeText(url);
         setShareLoading(false);
         setShareUrl(url);
@@ -11223,13 +11242,14 @@ export default function App() {
 
   const handleImport = () => {
     if (!importProject) return;
+    setRouteShareId(null);
     setProjects(prev => [...prev, importProject]);
     setActiveProjectId(importProject.id);
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
-    if (isBmOnlyPage && routeShareId) {
-      window.history.replaceState(window.history.state, '', buildShortSharePath(routeShareId, pageVariant));
+    if (isBmOnlyPage) {
+      window.history.replaceState(window.history.state, '', buildEditorPathForVariant(pageVariant));
     } else {
       router.push('/edit', undefined, { shallow: true });
     }
