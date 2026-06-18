@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
   '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
-  '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
 ];
 
 /* ── Icons ── */
@@ -239,7 +239,9 @@ const BAEMIN_MINT = '#2AC1BC';
 const BAEMIN_COVER_AQUA = '#08F0D2';
 const BAEMIN_INK = '#111111';
 const BAEMIN_CREAM = '#CEFCF6';
-const BAEMIN_LOGO_SRC = '/baemin/baemin-logo.svg';
+const BAEMIN_LOGO_BLACK_SRC = '/baemin/baemin-logo.svg';
+const BAEMIN_LOGO_WHITE_SRC = '/baemin/baemin-logo-white.png';
+const BAEMIN_LOGO_SRC = BAEMIN_LOGO_BLACK_SRC;
 const BAEMIN_BACKGROUND_PLACEHOLDER_SRC = '/baemin/background-placeholder.svg';
 const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT = 'baemin_video_post_title_top';
@@ -253,6 +255,13 @@ const BAEMIN_VIDEO_POST_LOGO_WIDTH = 308;
 const BAEMIN_VIDEO_POST_LOGO_HEIGHT = 52;
 const BAEMIN_VIDEO_POST_LOGO_SCALE = 308 / BAEMIN_VIDEO_POST_DESIGN_WIDTH * 100;
 const BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING = -1.44;
+const BAEMIN_LOGO_DEFAULT_VARIANT = 'white';
+const BAEMIN_LOGO_DEFAULT_OPACITY = 0.5;
+const BAEMIN_LOGO_ASSET_VERSION = 2;
+const BAEMIN_LOGO_VARIANTS = [
+  { id: 'white', label: '흰색', src: BAEMIN_LOGO_WHITE_SRC, previewBg: '#101010', swatch: '#ffffff' },
+  { id: 'black', label: '검정', src: BAEMIN_LOGO_BLACK_SRC, previewBg: '#f3f4f6', swatch: '#111111' },
+];
 const BAEMIN_VIDEO_POST_SPECS = {
   [BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT]: {
     videoTop: 320,
@@ -291,20 +300,20 @@ const BAEMIN_STYLE_KEYS = [
   'videoBrightness', 'overlays',
 ];
 
-const BAEMIN_PHOTO_COVER_LOGO_COLOR = '#9a9a9a';
 const BAEMIN_LOGO_POSITIONS = {
-  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: 1, logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR },
-  solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: 0.3, logoColor: BAEMIN_INK },
-  textCover: { x: 82.1, y: 93.1, scale: 21, opacity: 0.3, logoColor: '#041F1C' },
+  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
+  solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
+  textCover: { x: 82.1, y: 93.1, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
 };
 
 const baeminLogoOverlay = (position = 'solidBody') => ({
   type: 'logo',
-  image: BAEMIN_LOGO_SRC,
+  image: BAEMIN_LOGO_WHITE_SRC,
   brandOverlayId: 'baemin-logo',
   aboveLayout: true,
   applyToAll: false,
-  logoColorMode: 'solid',
+  logoVariant: BAEMIN_LOGO_DEFAULT_VARIANT,
+  logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
   ...(BAEMIN_LOGO_POSITIONS[position] || BAEMIN_LOGO_POSITIONS.solidBody),
 });
 
@@ -312,12 +321,12 @@ const baeminVideoPostLogoOverlay = (layout) => {
   const spec = BAEMIN_VIDEO_POST_SPECS[layout] || BAEMIN_VIDEO_POST_SPECS[BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT];
   return {
     type: 'logo',
-    image: BAEMIN_LOGO_SRC,
+    image: BAEMIN_LOGO_WHITE_SRC,
     brandOverlayId: 'baemin-logo',
     aboveLayout: true,
     applyToAll: false,
-    logoColorMode: 'solid',
-    logoColor: '#FFFFFF',
+    logoVariant: BAEMIN_LOGO_DEFAULT_VARIANT,
+    logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
     designWidth: BAEMIN_VIDEO_POST_LOGO_WIDTH,
     designHeight: BAEMIN_VIDEO_POST_LOGO_HEIGHT,
     x: 50,
@@ -629,43 +638,101 @@ function isBaeminPhotoCoverLayout(card) {
   return card?.brandGuideId === BAEMIN_GUIDE_ID && BAEMIN_PHOTO_COVER_LAYOUT_IDS.includes(card?.brandLayoutId);
 }
 
-function isBaeminPresetLogoOverlay(overlay = {}) {
-  return overlay.type === 'logo' && overlay.image === BAEMIN_LOGO_SRC;
+function isBaeminLogoAsset(src) {
+  return src === BAEMIN_LOGO_BLACK_SRC || src === BAEMIN_LOGO_WHITE_SRC || src === BAEMIN_LOGO_SRC;
 }
 
-function isLegacyWhiteBaeminPhotoCoverLogo(card, overlay = {}) {
-  if (!isBaeminPhotoCoverLayout(card) || !isBaeminPresetLogoOverlay(overlay)) return false;
-  if (overlay.logoColorMode !== 'solid' || normalizeLogoColor(overlay.logoColor) !== '#ffffff') return false;
-  if (overlay.brandOverlayId === 'baemin-logo') return true;
-  return Math.abs((overlay.x ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.x) < 1 &&
-    Math.abs((overlay.y ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.y) < 1 &&
-    Math.abs((overlay.scale ?? 0) - BAEMIN_LOGO_POSITIONS.photoCover.scale) < 2;
+function isBaeminPresetLogoOverlay(overlay = {}) {
+  return overlay.type === 'logo' && (overlay.brandOverlayId === 'baemin-logo' || isBaeminLogoAsset(overlay.image));
+}
+
+function normalizeLegacyHexColor(color, fallback = '#ffffff') {
+  const raw = String(color || '').trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+    return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
+  }
+  return fallback;
+}
+
+function getBaeminLogoVariantConfig(variantId = BAEMIN_LOGO_DEFAULT_VARIANT) {
+  return BAEMIN_LOGO_VARIANTS.find(variant => variant.id === variantId) || BAEMIN_LOGO_VARIANTS[0];
+}
+
+function inferBaeminLogoVariant(overlay = {}) {
+  if (overlay.logoVariant === 'white' || overlay.image === BAEMIN_LOGO_WHITE_SRC) return 'white';
+  if (overlay.logoVariant === 'black') return 'black';
+  if (overlay.logoColorMode === 'solid') {
+    const color = normalizeLegacyHexColor(overlay.logoColor);
+    return ['#000000', '#111111', '#041f1c'].includes(color) ? 'black' : 'white';
+  }
+  if (overlay.image === BAEMIN_LOGO_BLACK_SRC || overlay.image === BAEMIN_LOGO_SRC) return 'black';
+  return BAEMIN_LOGO_DEFAULT_VARIANT;
+}
+
+function shouldMigrateBaeminLogoOpacity(overlay = {}) {
+  if (overlay.logoAssetVersion === BAEMIN_LOGO_ASSET_VERSION) return false;
+  const opacity = Number(overlay.opacity);
+  if (!Number.isFinite(opacity)) return true;
+  return Math.abs(opacity - 0.3) < 0.001 || Math.abs(opacity - 1) < 0.001;
+}
+
+function normalizeBaeminLogoOverlayForAsset(overlay = {}) {
+  if (!isBaeminPresetLogoOverlay(overlay)) return overlay;
+  const variant = getBaeminLogoVariantConfig(inferBaeminLogoVariant(overlay));
+  const migrateOpacity = shouldMigrateBaeminLogoOpacity(overlay);
+  const needsUpdate =
+    overlay.image !== variant.src ||
+    overlay.logoVariant !== variant.id ||
+    overlay.logoAssetVersion !== BAEMIN_LOGO_ASSET_VERSION ||
+    overlay.brandOverlayId !== 'baemin-logo' ||
+    migrateOpacity ||
+    Object.prototype.hasOwnProperty.call(overlay, 'logoColorMode') ||
+    Object.prototype.hasOwnProperty.call(overlay, 'logoColor');
+  if (!needsUpdate) return overlay;
+  const { logoColorMode, logoColor, ...rest } = overlay;
+  return {
+    ...rest,
+    brandOverlayId: 'baemin-logo',
+    image: variant.src,
+    logoVariant: variant.id,
+    logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
+    opacity: migrateOpacity ? BAEMIN_LOGO_DEFAULT_OPACITY : overlay.opacity,
+  };
+}
+
+function logoUploadPatch(src) {
+  if (isBaeminLogoAsset(src)) {
+    return {
+      image: src,
+      brandOverlayId: 'baemin-logo',
+      logoVariant: src === BAEMIN_LOGO_BLACK_SRC || src === BAEMIN_LOGO_SRC ? 'black' : 'white',
+      logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
+      logoColorMode: undefined,
+      logoColor: undefined,
+    };
+  }
+  return {
+    image: src,
+    brandOverlayId: null,
+    logoVariant: null,
+    logoAssetVersion: null,
+    logoColorMode: undefined,
+    logoColor: undefined,
+  };
 }
 
 function renderableCardOverlays(card) {
-  return (card?.overlays || []).map(overlay => {
-    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
-    return {
-      ...overlay,
-      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
-      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
-      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
-    };
-  });
+  return (card?.overlays || []).map(normalizeBaeminLogoOverlayForAsset);
 }
 
 function normalizeBaeminCardOverlays(card) {
   if (!card?.overlays?.length) return card;
   let changed = false;
   const overlays = card.overlays.map(overlay => {
-    if (!isLegacyWhiteBaeminPhotoCoverLogo(card, overlay)) return overlay;
-    changed = true;
-    return {
-      ...overlay,
-      brandOverlayId: overlay.brandOverlayId || 'baemin-logo',
-      logoColor: BAEMIN_PHOTO_COVER_LOGO_COLOR,
-      opacity: BAEMIN_LOGO_POSITIONS.photoCover.opacity,
-    };
+    const nextOverlay = normalizeBaeminLogoOverlayForAsset(overlay);
+    if (nextOverlay !== overlay) changed = true;
+    return nextOverlay;
   });
   return changed ? { ...card, overlays } : card;
 }
@@ -1151,20 +1218,33 @@ const createImageOverlay = () => ({
 
 const createLogoOverlay = () => ({
   type: 'logo',
-  image: null,
+  image: BAEMIN_LOGO_WHITE_SRC,
+  brandOverlayId: 'baemin-logo',
+  logoVariant: BAEMIN_LOGO_DEFAULT_VARIANT,
+  logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
   x: 50,
   y: 92,
   scale: 16,
-  opacity: 1,
+  opacity: BAEMIN_LOGO_DEFAULT_OPACITY,
   aboveLayout: true,
   applyToAll: true,
-  logoColorMode: 'original',
-  logoColor: '#ffffff',
 });
 
 const resetOverlayProps = (overlay = {}) => (
   overlay.type === 'logo'
-    ? { x: 50, y: 92, scale: 16, opacity: 1, aboveLayout: true, logoColorMode: 'original', logoColor: '#ffffff' }
+    ? {
+      image: BAEMIN_LOGO_WHITE_SRC,
+      brandOverlayId: 'baemin-logo',
+      logoVariant: BAEMIN_LOGO_DEFAULT_VARIANT,
+      logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
+      x: 50,
+      y: 92,
+      scale: 16,
+      opacity: BAEMIN_LOGO_DEFAULT_OPACITY,
+      aboveLayout: true,
+      logoColorMode: undefined,
+      logoColor: undefined,
+    }
     : { x: 50, y: 50, scale: 100, opacity: 1 }
 );
 
@@ -1174,60 +1254,6 @@ const LOGO_POSITION_PRESETS = [
   ['상단 우측', 86, 8],
   ['상단 좌측', 14, 8],
 ];
-
-const LOGO_COLOR_PRESETS = [
-  ['white', '흰색', '#ffffff'],
-  ['black', '검정', '#000000'],
-];
-
-function normalizeLogoColor(color, fallback = '#ffffff') {
-  const raw = String(color || '').trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
-  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
-    return '#' + raw.slice(1).split('').map(ch => ch + ch).join('').toLowerCase();
-  }
-  return fallback;
-}
-
-function isSolidLogoOverlay(overlay = {}) {
-  return overlay.type === 'logo' && overlay.logoColorMode === 'solid';
-}
-
-function colorizeImageWithAlphaMask(img, color) {
-  if (typeof document === 'undefined') return img;
-  const c = document.createElement('canvas');
-  const iw = img.naturalWidth || img.width;
-  const ih = img.naturalHeight || img.height;
-  if (!iw || !ih) return img;
-  c.width = iw;
-  c.height = ih;
-  const cx = c.getContext('2d');
-  cx.drawImage(img, 0, 0, iw, ih);
-  cx.globalCompositeOperation = 'source-in';
-  cx.fillStyle = normalizeLogoColor(color);
-  cx.fillRect(0, 0, iw, ih);
-  cx.globalCompositeOperation = 'source-over';
-  return c;
-}
-
-function colorizedLogoDataUrl(src, color) {
-  return new Promise((resolve, reject) => {
-    if (!src || typeof document === 'undefined') {
-      resolve(src);
-      return;
-    }
-    const img = new Image();
-    img.onload = () => {
-      try {
-        resolve(colorizeImageWithAlphaMask(img, color).toDataURL('image/png'));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    img.onerror = reject;
-    img.src = src;
-  });
-}
 
 /* ── Responsive Hook ── */
 function useIsMobile(breakpoint = 768) {
@@ -1757,15 +1783,12 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       if (!ov.image || !!ov.aboveLayout !== above) continue;
       try {
         const oImg = await loadOverlayImage(ov.image);
-        const drawImg = isSolidLogoOverlay(ov)
-          ? colorizeImageWithAlphaMask(oImg, ov.logoColor)
-          : oImg;
         const { oW, oH } = getOverlayDrawSize(ov, oImg);
         if (!oW || !oH) continue;
         const oX = (ov.x ?? 50) / 100 * w - oW / 2;
         const oY = (ov.y ?? 50) / 100 * h - oH / 2;
         ctx.globalAlpha = ov.opacity ?? 1;
-        ctx.drawImage(drawImg, oX, oY, oW, oH);
+        ctx.drawImage(oImg, oX, oY, oW, oH);
         ctx.globalAlpha = 1;
       } catch (e) { /* ignore */ }
     }
@@ -2066,68 +2089,68 @@ function PillBtn({ active, children, onClick, style }) {
   }, children);
 }
 
-function LogoColorControls({ overlay, onChange }) {
-  const mode = overlay.logoColorMode === 'solid' ? 'solid' : 'original';
-  const color = normalizeLogoColor(overlay.logoColor);
-  const setSolid = (nextColor) => onChange({ logoColorMode: 'solid', logoColor: normalizeLogoColor(nextColor) });
+function LogoVariantControls({ overlay, onChange }) {
+  if (!isBaeminPresetLogoOverlay(overlay)) return null;
+  const currentVariant = inferBaeminLogoVariant(overlay);
+  const selectVariant = (variant) => onChange({
+    image: variant.src,
+    brandOverlayId: 'baemin-logo',
+    logoVariant: variant.id,
+    logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
+    logoColorMode: undefined,
+    logoColor: undefined,
+  });
 
   return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0' } },
     React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
-      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "색상"),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "로고 색상"),
       React.createElement("div", { style: { display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' } },
-        React.createElement(PillBtn, { active: mode === 'original', onClick: () => onChange({ logoColorMode: 'original' }), style: { padding: '5px 10px', fontSize: 11 } }, "원본"),
-        LOGO_COLOR_PRESETS.map(([id, label, presetColor]) => React.createElement(PillBtn, {
-          key: id,
-          active: mode === 'solid' && color === presetColor,
-          onClick: () => setSolid(presetColor),
-          style: { padding: '5px 10px', fontSize: 11 },
-        }, label)),
+        BAEMIN_LOGO_VARIANTS.map((variant) => React.createElement("button", {
+          key: variant.id,
+          onClick: () => selectVariant(variant),
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            minHeight: 28,
+            padding: '5px 10px',
+            borderRadius: T.radiusPill,
+            border: `1px solid ${currentVariant === variant.id ? T.accent : T.border}`,
+            background: currentVariant === variant.id ? 'rgba(99,102,241,0.16)' : T.surface,
+            color: currentVariant === variant.id ? '#fff' : T.textSecondary,
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+          },
+        },
+          React.createElement("span", {
+            style: {
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: variant.swatch,
+              border: variant.id === 'white' ? '1px solid rgba(0,0,0,0.25)' : '1px solid rgba(255,255,255,0.25)',
+              boxShadow: variant.id === 'white' ? '0 0 0 1px rgba(255,255,255,0.35)' : 'none',
+            },
+          }),
+          variant.label,
+        )),
       ),
-    ),
-    React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 36 } },
-      React.createElement("input", {
-        type: "color",
-        value: color,
-        onChange: (e) => setSolid(e.target.value),
-        style: { width: 34, height: 28, borderRadius: 6, border: `1px solid ${T.border}`, background: 'transparent', cursor: 'pointer', padding: 2 },
-        title: "직접 색상 선택",
-      }),
-      React.createElement("button", {
-        onClick: () => setSolid(color),
-        style: { width: 24, height: 24, borderRadius: T.radiusPill, border: `1px solid ${T.border}`, background: color, cursor: 'pointer', flexShrink: 0 },
-        title: "선택 색상 적용",
-      }),
-      React.createElement("span", { style: { fontSize: 11, color: mode === 'solid' ? T.textSecondary : T.textMuted } }, mode === 'solid' ? color : '직접 선택 시 단색 적용')
     )
   );
 }
 
 function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
-  const [src, setSrc] = useState(ov.image || null);
-  const overlayRatioHeight = Number(ov.designWidth) > 0 && Number(ov.designHeight) > 0
-    ? previewW * Number(ov.designHeight) / Number(ov.designWidth)
+  const displayOverlay = normalizeBaeminLogoOverlayForAsset(ov);
+  const src = displayOverlay.image || null;
+  const overlayRatioHeight = Number(displayOverlay.designWidth) > 0 && Number(displayOverlay.designHeight) > 0
+    ? previewW * Number(displayOverlay.designHeight) / Number(displayOverlay.designWidth)
     : null;
-  useEffect(() => {
-    let alive = true;
-    if (!ov.image) {
-      setSrc(null);
-      return () => { alive = false; };
-    }
-    if (!isSolidLogoOverlay(ov)) {
-      setSrc(ov.image);
-      return () => { alive = false; };
-    }
-    setSrc(ov.image);
-    colorizedLogoDataUrl(ov.image, ov.logoColor)
-      .then(next => { if (alive) setSrc(next || ov.image); })
-      .catch(() => { if (alive) setSrc(ov.image); });
-    return () => { alive = false; };
-  }, [ov.image, ov.logoColorMode, ov.logoColor]);
 
-  if (!ov.image) return null;
+  if (!src) return null;
   return React.createElement("img", {
     key: index,
-    src: src || ov.image,
+    src,
     alt: "",
     style: {
       position: "absolute",
@@ -2136,8 +2159,8 @@ function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
       left: '50%',
       width: previewW,
       height: overlayRatioHeight || 'auto',
-      transform: `translate(-50%, -50%) translate(${((ov.x ?? 50) - 50) * previewW / 100}px, ${((ov.y ?? 50) - 50) * previewH / 100}px) scale(${(ov.scale || 100) / 100})`,
-      opacity: ov.opacity ?? 1,
+      transform: `translate(-50%, -50%) translate(${((displayOverlay.x ?? 50) - 50) * previewW / 100}px, ${((displayOverlay.y ?? 50) - 50) * previewH / 100}px) scale(${(displayOverlay.scale || 100) / 100})`,
+      opacity: displayOverlay.opacity ?? 1,
       pointerEvents: 'none',
     }
   });
@@ -6060,13 +6083,13 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                     React.createElement("button", { onClick: () => { if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
                   ),
                 ),
-                React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlay1(oi, { image: v }), maxMb: 5 }),
+                React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlay1(oi, logoUploadPatch(v)), maxMb: 5 }),
                 ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
                   React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlay1(oi, resetOverlayProps(ov)) }),
                   ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
                     LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlay1(oi, { x, y }) }, label))
                   ),
-                  ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlay1(oi, props) }),
+                  ov.type === 'logo' && React.createElement(LogoVariantControls, { overlay: ov, onChange: (props) => updateOverlay1(oi, props) }),
                   React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { x: v }) }),
                   React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlay1(oi, { y: v }) }),
                   React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlay1(oi, { scale: v }), suffix: '%' }),
@@ -9831,13 +9854,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("button", { onClick: () => { setSelectedHandle(null); if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "삭제"),
           ),
         ),
-        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayMob(oi, { image: v }), maxMb: 5 }),
+        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayMob(oi, logoUploadPatch(v)), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
           React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateOverlayMob(oi, resetOverlayProps(ov)) }),
           ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
             LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayMob(oi, { x, y }) }, label))
           ),
-          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayMob(oi, props) }),
+          ov.type === 'logo' && React.createElement(LogoVariantControls, { overlay: ov, onChange: (props) => updateOverlayMob(oi, props) }),
           React.createElement(SliderRow, { label: "좌우", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "위아래", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayMob(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "크기", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayMob(oi, { scale: v }), suffix: '%' }),
@@ -10391,13 +10414,13 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("button", { onClick: () => { setSelectedHandle(null); if (ov.applyToAll && onRemoveOverlayFromAll) { onRemoveOverlayFromAll(oi); } else { const ovs = [...(card.overlays||[])]; ovs.splice(oi, 1); update("overlays", ovs); } }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: T.radiusPill } }, "\uc0ad\uc81c"),
           ),
         ),
-        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayDesk(oi, { image: v }), maxMb: 5 }),
+        React.createElement(ImageUploadField, { value: ov.image, onChange: (v) => updateOverlayDesk(oi, logoUploadPatch(v)), maxMb: 5 }),
         ov.image && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 } },
           React.createElement(SectionTitleWithReset, { title: ov.type === 'logo' ? "로고 조정" : "이미지 조정", onReset: () => updateOverlayDesk(oi, resetOverlayProps(ov)) }),
           ov.type === 'logo' && React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 4 } },
             LOGO_POSITION_PRESETS.map(([label, x, y]) => React.createElement(PillBtn, { key: label, active: Math.round(ov.x ?? 50) === x && Math.round(ov.y ?? 92) === y, onClick: () => updateOverlayDesk(oi, { x, y }) }, label))
           ),
-          ov.type === 'logo' && React.createElement(LogoColorControls, { overlay: ov, onChange: (props) => updateOverlayDesk(oi, props) }),
+          ov.type === 'logo' && React.createElement(LogoVariantControls, { overlay: ov, onChange: (props) => updateOverlayDesk(oi, props) }),
           React.createElement(SliderRow, { label: "\uc88c\uc6b0", value: ov.x ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { x: v }) }),
           React.createElement(SliderRow, { label: "\uc704\uc544\ub798", value: ov.y ?? 50, min: 0, max: 100, step: 1, onChange: (v) => updateOverlayDesk(oi, { y: v }) }),
           React.createElement(SliderRow, { label: "\ud06c\uae30", value: ov.scale ?? 100, min: 10, max: 300, step: 1, onChange: (v) => updateOverlayDesk(oi, { scale: v }), suffix: '%' }),
