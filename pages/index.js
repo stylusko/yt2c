@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 8; // same-day deploy count
+const BUILD_NUM = 9; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
   '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
   '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
   '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
   '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
-  '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
 ];
 
 /* ── Icons ── */
@@ -10811,6 +10811,19 @@ export default function App() {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const projectsRef = useRef([]);
+  const activeProjectIdRef = useRef(null);
+  const commitProjects = useCallback((updater) => {
+    const prev = projectsRef.current || [];
+    const next = typeof updater === 'function' ? updater(prev) : updater;
+    projectsRef.current = next;
+    setProjects(next);
+    return next;
+  }, []);
+  const commitActiveProjectId = useCallback((id) => {
+    activeProjectIdRef.current = id;
+    setActiveProjectId(id);
+  }, []);
   const [showJson, setShowJson] = useState(false);
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -10938,12 +10951,12 @@ export default function App() {
       const saved = await loadProjects();
       if (!alive) return;
       if (saved) {
-        setProjects(saved.projects);
-        setActiveProjectId(saved.activeId || saved.projects[0]?.id);
+        commitProjects(saved.projects);
+        commitActiveProjectId(saved.activeId || saved.projects[0]?.id);
       } else {
         const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
-        setProjects([first]);
-        setActiveProjectId(first.id);
+        commitProjects([first]);
+        commitActiveProjectId(first.id);
       }
       const path = window.location.pathname;
       const shortRoute = parseShortShareRoute(path);
@@ -11078,7 +11091,10 @@ export default function App() {
 
   // Auto-save to localStorage
   useEffect(() => {
-    if (projects.length > 0 && activeProjectId) saveProjects(projects, activeProjectId);
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    if (projects !== latestProjects || activeProjectId !== latestActiveId) return;
+    if (latestProjects.length > 0 && latestActiveId) saveProjects(latestProjects, latestActiveId);
   }, [projects, activeProjectId]);
 
   // Report card count per session
@@ -11111,8 +11127,8 @@ export default function App() {
 
   const updateProject = useCallback((updates) => {
     clearSharedRouteForLocalEdit();
-    setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
-  }, [activeProjectId, clearSharedRouteForLocalEdit]);
+    commitProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
+  }, [activeProjectId, clearSharedRouteForLocalEdit, commitProjects]);
 
   const setGlobalUrl = (v) => {
     const prev = activeProject?.globalUrl || '';
@@ -11128,7 +11144,7 @@ export default function App() {
   const setGlobalBgImage = (v) => updateProject({ globalBgImage: v });
   const setCards = (updater) => {
     clearSharedRouteForLocalEdit();
-    setProjects(prev => prev.map(p => {
+    commitProjects(prev => prev.map(p => {
       if (p.id !== activeProjectId) return p;
       const newCards = typeof updater === 'function' ? updater(p.cards) : updater;
       return { ...p, cards: newCards };
@@ -11229,8 +11245,8 @@ export default function App() {
   const confirmNewProject = (name) => {
     setShowNewProject(false);
     const proj = DEFAULT_PROJECT(name);
-    setProjects(prev => [...prev, proj]);
-    setActiveProjectId(proj.id);
+    commitProjects(prev => [...prev, proj]);
+    commitActiveProjectId(proj.id);
     setGenProgress(''); setResults([]);
   };
 
@@ -11239,10 +11255,10 @@ export default function App() {
   const confirmCloseProject = () => {
     const id = confirmClose;
     setConfirmClose(null);
-    setProjects(prev => {
+    commitProjects(prev => {
       const next = prev.filter(p => p.id !== id);
       if (activeProjectId === id && next.length > 0) {
-        setActiveProjectId(next[0].id);
+        commitActiveProjectId(next[0].id);
       }
       return next;
     });
@@ -11250,11 +11266,11 @@ export default function App() {
   };
 
   const renameProject = (id, name) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+    commitProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
   };
 
   const switchProject = (id) => {
-    setActiveProjectId(id);
+    commitActiveProjectId(id);
     setGenProgress(''); setResults([]);
   };
 
@@ -11270,25 +11286,32 @@ export default function App() {
         : null;
 
     if (targetId) {
-      setProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...patch } : p));
+      commitProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...patch } : p));
     } else {
       const nextProject = { ...DEFAULT_PROJECT(name), ...patch };
       targetId = nextProject.id;
-      setProjects(prev => [...prev, nextProject]);
+      commitProjects(prev => [...prev, nextProject]);
     }
 
-    setActiveProjectId(targetId);
+    commitActiveProjectId(targetId);
     setPendingProjectId(null);
     setActiveCardIdx(0);
     setGenProgress('');
     setResults([]);
     return targetId;
-  }, [activeProjectId, pendingProjectId, projects]);
+  }, [activeProjectId, commitActiveProjectId, commitProjects, pendingProjectId, projects]);
+
+  const getLatestActiveProject = useCallback(() => {
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    return latestProjects.find(p => p.id === latestActiveId) || latestProjects[0] || activeProject;
+  }, [activeProject, activeProjectId, projects]);
 
   const shareProject = async () => {
-    if (!activeProject || shareLoading) return;
+    const projectToShare = getLatestActiveProject();
+    if (!projectToShare || shareLoading) return;
     setShareLoading(true);
-    const encoded = encodeProject(activeProject);
+    const encoded = encodeProject(projectToShare);
     // Try Supabase short URL first
     try {
       const res = await fetch('/api/share', {
@@ -11325,8 +11348,9 @@ export default function App() {
     if (!importProject) return;
     const importedProject = importProject;
     setRouteShareId(null);
-    setProjects(prev => [importedProject, ...prev.filter(p => p.id !== importedProject.id)]);
-    setActiveProjectId(importedProject.id);
+    const nextProjects = commitProjects(prev => [importedProject, ...prev.filter(p => p.id !== importedProject.id)]);
+    commitActiveProjectId(importedProject.id);
+    saveProjects(nextProjects, importedProject.id);
     setActiveCardIdx(0);
     setShowProjectSelector(false);
     setPendingProjectId(null);
@@ -11505,11 +11529,12 @@ export default function App() {
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
-      if (activeProject) {
+      const projectBaseForShare = getLatestActiveProject();
+      if (projectBaseForShare) {
         try {
           const projectForShare = effectiveOutputFormat === outputFormat
-            ? activeProject
-            : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
+            ? projectBaseForShare
+            : { ...projectBaseForShare, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
           const encoded = encodeProject(projectForShare);
           try {
             const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
@@ -11845,7 +11870,7 @@ export default function App() {
     const currentIdx = sourceImages.indexOf(currentSrc);
     const nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % sourceImages.length;
     const nextSrc = sourceImages[nextIdx];
-    setProjects(prev => prev.map(p => {
+    commitProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
       newCards[cardIdx] = clearGeneratedCache({
@@ -11864,7 +11889,7 @@ export default function App() {
     if (!proj) return;
     const target = proj.cards?.[cardIdx];
     if (!target) return;
-    setProjects(prev => prev.map(p => {
+    commitProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
       newCards[cardIdx] = clearGeneratedCache({
@@ -11916,7 +11941,7 @@ export default function App() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || '재생성 실패');
 
-      setProjects(prev => prev.map(p => {
+      commitProjects(prev => prev.map(p => {
         if (p.id !== proj.id) return p;
         const added = addProjectSourceImage(p, json.url, {
           source: 'ai',
