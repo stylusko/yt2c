@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_NUM = 7; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
   '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
   '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
   '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
-  '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
 ];
 
 /* ── Icons ── */
@@ -9035,8 +9035,13 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, a
     setEditingId(null);
   };
 
-  const visibleProjects = projects.slice(0, MAX_VISIBLE);
-  const overflowProjects = projects.slice(MAX_VISIBLE);
+  const activeProjectIndex = projects.findIndex(p => p.id === activeId);
+  const activeProjectInOverflow = activeProjectIndex >= MAX_VISIBLE ? projects[activeProjectIndex] : null;
+  const visibleProjects = activeProjectInOverflow
+    ? [activeProjectInOverflow, ...projects.filter(p => p.id !== activeId).slice(0, MAX_VISIBLE - 1)]
+    : projects.slice(0, MAX_VISIBLE);
+  const visibleProjectIds = new Set(visibleProjects.map(p => p.id));
+  const overflowProjects = projects.filter(p => !visibleProjectIds.has(p.id));
   const tabW = 140;
 
   const renderTab = (proj, opts = {}) => {
@@ -11242,9 +11247,13 @@ export default function App() {
 
   const handleImport = () => {
     if (!importProject) return;
+    const importedProject = importProject;
     setRouteShareId(null);
-    setProjects(prev => [...prev, importProject]);
-    setActiveProjectId(importProject.id);
+    setProjects(prev => [importedProject, ...prev.filter(p => p.id !== importedProject.id)]);
+    setActiveProjectId(importedProject.id);
+    setActiveCardIdx(0);
+    setShowProjectSelector(false);
+    setPendingProjectId(null);
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
