@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
   '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
   '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
   '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
   '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
-  '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
 ];
 
 /* ── Icons ── */
@@ -1016,12 +1016,30 @@ function clearArticleCardVisualForBaeminLayout(card = {}) {
   });
 }
 
-function applyBaeminArticleLayoutMediaPolicy(cards, layoutPreference = null) {
+function prepareArticleCardVisualPlaceholderForBaeminLayout(card = {}) {
+  if (card.uploadedImage) return card;
+  return clearGeneratedCache({
+    ...card,
+    clipThumbnail: null,
+    fillSource: 'image',
+    articleMeta: {
+      ...(card.articleMeta || {}),
+      aiImageSource: 'none',
+      sourceImageIndex: null,
+    },
+  });
+}
+
+function applyBaeminArticleLayoutMediaPolicy(cards, layoutPreference = null, imageMode = 'reuse') {
   const preference = normalizeBaeminArticleLayoutPreference(layoutPreference);
+  const manualImageMode = imageMode === 'manual';
   return (Array.isArray(cards) ? cards : []).map((card, index) => {
     const isCover = index === 0;
     if ((isCover && preference.cover === 'text') || (!isCover && preference.body === 'text')) {
       return clearArticleCardVisualForBaeminLayout(card);
+    }
+    if (manualImageMode) {
+      return prepareArticleCardVisualPlaceholderForBaeminLayout(card);
     }
     return card;
   });
@@ -5626,6 +5644,37 @@ function ImageUploadField({ value, onChange, label = "이미지 업로드", maxM
   );
 }
 
+function ImageAiGenerateButton({ onClick, loading = false, hasImage = false }) {
+  if (!onClick) return null;
+  return React.createElement("button", {
+    type: "button",
+    onClick,
+    disabled: loading,
+    style: {
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      minHeight: 40,
+      padding: '9px 12px',
+      borderRadius: T.radiusSm,
+      border: '1px solid rgba(249,115,22,0.35)',
+      background: loading ? 'rgba(249,115,22,0.08)' : 'rgba(249,115,22,0.12)',
+      color: '#fdba74',
+      fontSize: 12,
+      fontWeight: 800,
+      cursor: loading ? 'wait' : 'pointer',
+      opacity: loading ? 0.72 : 1,
+    },
+  },
+    loading
+      ? React.createElement("span", { style: { width: 13, height: 13, border: '2px solid rgba(253,186,116,0.35)', borderTopColor: '#fdba74', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 } })
+      : React.createElement("span", null, "\u2728"),
+    loading ? "\uC774\uBBF8\uC9C0 \uC0DD\uC131 \uC911..." : (hasImage ? "AI\uB85C \uC0C8 \uC774\uBBF8\uC9C0 \uC0DD\uC131" : "AI\uB85C \uC774\uBBF8\uC9C0 \uC0DD\uC131"),
+  );
+}
+
 /* ── AI Rewrite Button ── */
 function AiRewriteBtn({ card, globalUrl, project, field, currentValue, onChange }) {
   const [loading, setLoading] = useState(false);
@@ -7847,7 +7896,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const bmNeedsVisuals = isBmOnlyPage && (bmLayoutPreference.cover === 'photo' || bmLayoutPreference.body === 'photo');
   // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
   const currentImageMode = data.imageMode || 'reuse';
-  const bmManualImageModeDisabled = bmNeedsVisuals;
+  const bmManualImageModeDisabled = isBmOnlyPage && !bmNeedsVisuals;
   // 카드 수 선택지는 모드 무관 동일 (이전엔 reuse 모드에서 이미지 수로 제한했으나,
   // 이제 부족분은 자동 AI 생성으로 보충하므로 제한 불필요)
   const cardCountOptions = ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
@@ -7871,9 +7920,10 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
 
   const updateBmLayoutPreference = (patch) => {
     const nextPreference = normalizeBaeminArticleLayoutPreference({ ...bmLayoutPreference, ...patch });
+    const nextNeedsVisuals = nextPreference.cover === 'photo' || nextPreference.body === 'photo';
     mergeWizardData({
       baeminLayoutPreference: nextPreference,
-      ...(data.imageMode === 'manual' && (nextPreference.cover === 'photo' || nextPreference.body === 'photo') ? { imageMode: 'reuse' } : {}),
+      ...(data.imageMode === 'manual' && !nextNeedsVisuals ? { imageMode: 'reuse' } : {}),
     });
   };
 
@@ -7923,20 +7973,22 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
     React.createElement("div", {
       style: {
         position: 'absolute',
-        inset: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: compact ? 1 : 2,
-        background: 'rgba(0,0,0,0.45)',
+        padding: compact ? '2px 3px' : '3px 4px',
+        background: 'linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.62) 28%, rgba(0,0,0,0.78) 100%)',
         color: '#fff',
         textAlign: 'center',
         pointerEvents: 'none',
       },
     },
       React.createElement("span", {
-        style: { fontSize: compact ? 7 : 8, lineHeight: 1.05, fontWeight: 900, letterSpacing: 0, textShadow: '0 1px 3px rgba(0,0,0,0.7)' },
-      }, "예시", React.createElement("br"), "이미지", React.createElement("br"), "입니다"),
+        style: { fontSize: compact ? 7 : 8, lineHeight: 1.1, fontWeight: 800, letterSpacing: 0, textShadow: '0 1px 3px rgba(0,0,0,0.7)', whiteSpace: 'nowrap' },
+      }, "예시 이미지 입니다"),
     ),
   );
 
@@ -7946,11 +7998,11 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
     'aria-pressed': active,
     style: {
       display: 'grid',
-      gridTemplateColumns: mob ? '38px 1fr' : '42px 1fr',
+      gridTemplateColumns: mob ? '76px 1fr' : '84px 1fr',
       alignItems: 'center',
       gap: mob ? 7 : 8,
-      minHeight: mob ? 54 : 58,
-      padding: mob ? '7px 8px' : '8px 10px',
+      minHeight: mob ? 106 : 116,
+      padding: mob ? '8px 9px' : '9px 11px',
       borderRadius: T.radiusSm,
       border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
       background: active ? 'rgba(42,193,188,0.1)' : T.surface,
@@ -7960,7 +8012,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.3)' : 'none',
     },
   },
-    renderBaeminExampleThumb(thumb, mob ? 38 : 42),
+    renderBaeminExampleThumb(thumb, mob ? 76 : 84),
     React.createElement("div", { style: { minWidth: 0 } },
       React.createElement("div", { style: { fontSize: mob ? 11 : 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, title),
       React.createElement("div", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, desc),
@@ -7972,11 +8024,11 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
     'aria-pressed': active,
     style: {
       display: 'grid',
-      gridTemplateColumns: mob ? '34px 1fr' : '38px 1fr',
+      gridTemplateColumns: mob ? '68px 1fr' : '76px 1fr',
       alignItems: 'center',
       gap: 7,
-      minHeight: mob ? 48 : 52,
-      padding: mob ? 6 : 7,
+      minHeight: mob ? 94 : 104,
+      padding: mob ? 7 : 8,
       borderRadius: T.radiusSm,
       border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
       background: active ? 'rgba(42,193,188,0.1)' : T.surface,
@@ -7984,7 +8036,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       textAlign: 'left',
     },
   },
-    renderBaeminExampleThumb(thumb, mob ? 34 : 38, true),
+    renderBaeminExampleThumb(thumb, mob ? 68 : 76, true),
     React.createElement("div", { style: { minWidth: 0 } },
       React.createElement("div", { style: { fontSize: mob ? 11 : 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, title),
       React.createElement("div", { style: { fontSize: 9, color: T.textMuted, lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, desc),
@@ -8263,7 +8315,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
             ),
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
               bmManualImageModeDisabled
-                ? "사진형 레이아웃은 자동 보충"
+                ? "텍스트 레이아웃은 이미지 삽입 없음"
                 : articleImageCount === 0
                 ? "\uc774\ubbf8\uc9c0 \uc5c6\uc74c \u2192 \uc804\ubd80 \ube48 \uacf5\ubc31"
                 : `\ubcf8\ubb38 ${articleImageCount}\uc7a5 \ud65c\uc6a9 \u00B7 \ubd80\uc871\ubd84 \ube48 \uacf5\ubc31`
@@ -9500,6 +9552,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     React.createElement(SliderRow, { label: "밝기", value: card.videoBrightness || 0, min: -100, max: 100, step: 1, onChange: (v) => update("videoBrightness", v), suffix: '%', defaultValue: 0 }),
     React.createElement(ApplyToAllBtn, { keysToApply: ['videoX', 'videoY', 'videoScale', 'videoBrightness'], cards, card, activeIndex, onCardChange, styleClipboardActions }),
   );
+  const showStandaloneAiImageButton = !(card.sourceType === 'article' || project?.sourceType === 'article');
   const renderFillTab = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !mobHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
@@ -9538,7 +9591,14 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
               : React.createElement(MobileClipSelector, { key: 'mcs-' + clipReopenFlag, videoUrl: card.url || globalUrl, start: card.start, end: card.end, onStartChange: (v) => update("start", v), onEndChange: (v) => update("end", v), onClipChange: (s, e) => updateMulti({ start: s, end: e }), onExpandChange: (open) => { setClipSelectorOpen(open); if (onClipExpandChange) onClipExpandChange(open); }, onApply: () => { var s = parseTime(card.start), e = parseTime(card.end); if (s == null || e == null || e <= s) return; var startStr = normalizeClipTimeInput(card.start); var endStr = normalizeClipTimeInput(card.end); if (!startStr || !endStr) return; var normalizedStart = parseTime(startStr); var vu = card.url || globalUrl; var frameUrl = vu && normalizedStart != null ? `/api/frame?url=${encodeURIComponent(vu)}&t=${normalizedStart}&_=${Date.now()}` : null; updateMulti({ start: startStr, end: endStr, appliedStart: startStr, appliedEnd: endStr, clipThumbnail: frameUrl }); }, onTitleFetch: (title) => { if (!card.name) update('name', title); }, initialOpen: clipReopenFlag > 0 }),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8 } }, React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } })),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { marginBottom: 8, display: 'flex', flexDirection: 'column', gap: 8 } },
+      React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+      showStandaloneAiImageButton && React.createElement(ImageAiGenerateButton, {
+        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+        loading: regeneratingCardIdx === activeIndex,
+        hasImage: !!card.uploadedImage,
+      }),
+    ),
     // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합)
     (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
       card, project,
@@ -10033,6 +10093,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
   // \u2500\u2500 Fill Tab \u2500\u2500
   const deskVideoUrl = card.url || globalUrl || '';
   const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
+  const showStandaloneAiImageButton = !(card.sourceType === 'article' || project?.sourceType === 'article');
   const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !deskHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
       FILL_SOURCE_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: (card.fillSource || 'video') === opt.id, onClick: () => update("fillSource", opt.id) }, opt.label))
@@ -10092,7 +10153,14 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                 ),
           ),
     ),
-    (card.fillSource || 'video') === 'image' && React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+    (card.fillSource || 'video') === 'image' && React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8 } },
+      React.createElement(ImageUploadField, { value: card.uploadedImage, onChange: (v) => { if (v && card.appliedStart && !card.uploadedImage) { setPendingImageUpload(v); return; } updateMulti({ uploadedImage: v, ...(v ? { videoScale: 100, videoX: 0, videoY: 0 } : {}) }); } }),
+      showStandaloneAiImageButton && React.createElement(ImageAiGenerateButton, {
+        onClick: () => onRegenerateArticleImage && onRegenerateArticleImage(activeIndex),
+        loading: regeneratingCardIdx === activeIndex,
+        hasImage: !!card.uploadedImage,
+      }),
+    ),
     // Article 카드 전용 이미지 썸네일 캐러셀 (본문 이미지 + AI 재생성 통합) — Desktop
     (card.sourceType === 'article' || project?.sourceType === 'article') && React.createElement(ArticleImageCarousel, {
       card, project,
@@ -11768,7 +11836,7 @@ export default function App() {
 	    const bmNeedsVisuals = isBmOnlyPage && (bmArticleLayoutPreference.cover === 'photo' || bmArticleLayoutPreference.body === 'photo');
 	    const articleImageMode = isBmOnlyPage && !bmNeedsVisuals
 	      ? 'manual'
-	      : (bmNeedsVisuals && requestedImageMode === 'manual' ? 'reuse' : requestedImageMode);
+	      : requestedImageMode;
 
 	    setArticleGenError(null);
 	    setArticleGenStatus({ step: 'analyzing', message: '본문을 분석하는 중', current: 0, total: 0, cards: [] });
@@ -11907,7 +11975,7 @@ export default function App() {
 	      });
 	      if (isBmOnlyPage) {
 	        setArticleGenStatus(s => ({ ...(s || {}), step: 'layout', message: '배민 전용 레이아웃을 고르는 중' }));
-	        newCards = applyBaeminArticleLayoutMediaPolicy(newCards, bmArticleLayoutPreference);
+	        newCards = applyBaeminArticleLayoutMediaPolicy(newCards, bmArticleLayoutPreference, articleImageMode);
 	        newCards = await applyBaeminGeneratedLayouts(newCards, {
 	          aspectRatio: articleAspectRatio,
 	          sourceType: 'article',
