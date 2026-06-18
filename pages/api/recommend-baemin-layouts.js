@@ -11,14 +11,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { cards, aspectRatio, sourceType } = req.body || {};
+  const { cards, aspectRatio, sourceType, layoutPreference } = req.body || {};
   if (!Array.isArray(cards) || cards.length === 0) {
     res.status(400).json({ ok: false, error: 'cards 배열이 필요합니다.' });
     return;
   }
 
   try {
-    const result = await recommendBaeminLayouts(cards, { aspectRatio, sourceType });
+    const result = await recommendBaeminLayouts(cards, { aspectRatio, sourceType, layoutPreference });
     res.status(200).json({ ok: true, ...result });
   } catch (err) {
     console.error('[recommend-baemin-layouts] error:', err);
