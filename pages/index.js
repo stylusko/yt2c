@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -53,13 +53,13 @@ function buildBmOnlyPath(editorMode) {
   return BM_ONLY_MODE_PATHS.home;
 }
 const RECENT_FEATURES = [
+  '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
   '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
   '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
   '📰 텍스트 모드 프로젝트 생성 — 홈에서 만든 결과를 새 프로젝트로 보존',
   '💾 BM ONLY 프로젝트 저장 — 큰 이미지 프로젝트를 IndexedDB에 자동 보존',
   '⏱️ 생성 진행 표시 — 카드 썸네일 테두리와 서버 상태 배지로 단순화',
   '🧹 생성 캐시 갱신 — 프리뷰와 다른 이전 영상 출력물 재사용 방지',
-  '🎬 클립 구간 재조정 — 드래그 중에도 선택 구간 안에서 반복 재생',
 ];
 
 /* ── Icons ── */
@@ -581,6 +581,31 @@ const BAEMIN_PHOTO_COVER_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels'];
 const BAEMIN_VIDEO_POST_LAYOUT_IDS = ['bm-video-post-title-top', 'bm-video-post-title-bottom'];
 const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', ...BAEMIN_VIDEO_POST_LAYOUT_IDS, 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
 const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+const BAEMIN_ARTICLE_TEXT_LAYOUT_IDS = ['bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
+const BAEMIN_ARTICLE_PHOTO_GRADIENT_LAYOUT_IDS = ['bm-photo-body', 'bm-photo-body-only'];
+const BAEMIN_ARTICLE_PHOTO_FRAME_LAYOUT_IDS = ['bm-photo-frame'];
+const BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF = Object.freeze({
+  cover: 'photo',
+  body: 'text',
+  photoTreatment: 'gradient',
+});
+
+function normalizeBaeminArticleLayoutPreference(value = {}) {
+  const cover = value.cover === 'text' || value.cover === 'photo'
+    ? value.cover
+    : BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF.cover;
+  const body = value.body === 'photo' ? 'photo' : BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF.body;
+  const photoTreatment = value.photoTreatment === 'frame' ? 'frame' : BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF.photoTreatment;
+  return { cover, body, photoTreatment };
+}
+
+function defaultBaeminArticleLayoutPreference(articleData = null) {
+  const imageCount = Array.isArray(articleData?.images) ? articleData.images.length : 0;
+  return {
+    ...BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF,
+    cover: imageCount > 0 ? BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF.cover : 'text',
+  };
+}
 
 function isBaeminVideoPostLayout(layout) {
   return layout === BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT || layout === BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT;
@@ -802,6 +827,15 @@ function baeminCoverLayoutId(card, aspectRatio) {
   return vertical ? 'bm-cover-feed' : 'bm-cover-text-square';
 }
 
+function baeminPreferredCoverLayoutId(card, aspectRatio, layoutPreference = null) {
+  const vertical = aspectRatio === '3:4';
+  const preference = layoutPreference ? normalizeBaeminArticleLayoutPreference(layoutPreference) : null;
+  if (!preference) return baeminCoverLayoutId(card, aspectRatio);
+  if (preference.cover === 'text') return vertical ? 'bm-cover-feed' : 'bm-cover-text-square';
+  if (cardHasBaeminVisual(card)) return vertical ? 'bm-cover-reels' : 'bm-cover-square';
+  return vertical ? 'bm-cover-feed' : 'bm-cover-text-square';
+}
+
 function hasBaeminBoxSignal(text) {
   const body = String(text || '');
   if (!body.trim()) return false;
@@ -824,13 +858,28 @@ function deriveBaeminBoxText(card, recommendation = {}) {
   return cleanBaeminText(raw).slice(0, 180);
 }
 
-function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType) {
-  if (index === 0) return baeminCoverLayoutId(card, aspectRatio);
+function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference = null) {
+  const articlePreference = sourceType === 'article' && layoutPreference
+    ? normalizeBaeminArticleLayoutPreference(layoutPreference)
+    : null;
+
+  if (index === 0) return baeminPreferredCoverLayoutId(card, aspectRatio, articlePreference);
 
   const hasVisual = cardHasBaeminVisual(card);
   const title = getBaeminVisibleText(card, 'title');
   const body = getBaeminVisibleText(card, 'body');
   const allText = [title, getBaeminVisibleText(card, 'subtitle'), body, card?.boxText].filter(Boolean).join('\n');
+
+  if (articlePreference?.body === 'text') {
+    if (hasBaeminBoxSignal(allText) && deriveBaeminBoxText(card)) return 'bm-solid-box';
+    if (title && body) return 'bm-solid-title-body';
+    return 'bm-solid-body';
+  }
+
+  if (articlePreference?.body === 'photo' && hasVisual) {
+    if (articlePreference.photoTreatment === 'frame') return 'bm-photo-frame';
+    return title ? 'bm-photo-body' : 'bm-photo-body-only';
+  }
 
   if (hasVisual) {
     if (!title && body) return 'bm-photo-body-only';
@@ -843,17 +892,34 @@ function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType) {
   return 'bm-solid-body';
 }
 
-function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType) {
-  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType);
+function baeminAllowedArticleLayoutIds(card, index, aspectRatio, layoutPreference = null) {
+  if (!layoutPreference) return null;
+  const preference = normalizeBaeminArticleLayoutPreference(layoutPreference);
+  if (index === 0) return [baeminPreferredCoverLayoutId(card, aspectRatio, preference)];
+  if (preference.body === 'text') return BAEMIN_ARTICLE_TEXT_LAYOUT_IDS;
+  if (!cardHasBaeminVisual(card)) return BAEMIN_ARTICLE_TEXT_LAYOUT_IDS;
+  return preference.photoTreatment === 'frame'
+    ? BAEMIN_ARTICLE_PHOTO_FRAME_LAYOUT_IDS
+    : BAEMIN_ARTICLE_PHOTO_GRADIENT_LAYOUT_IDS;
+}
+
+function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType, layoutPreference = null) {
+  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference);
   const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
   if (!preset) return fallback;
 
   const isCover = index === 0;
   const hasVisual = cardHasBaeminVisual(card);
   if (isCover) {
-    return BAEMIN_COVER_LAYOUT_IDS.includes(layoutId) ? baeminCoverLayoutId(card, aspectRatio) : fallback;
+    return BAEMIN_COVER_LAYOUT_IDS.includes(layoutId) ? baeminPreferredCoverLayoutId(card, aspectRatio, layoutPreference) : fallback;
   }
   if (BAEMIN_COVER_LAYOUT_IDS.includes(layoutId)) return fallback;
+
+  const allowedArticleLayoutIds = sourceType === 'article'
+    ? baeminAllowedArticleLayoutIds(card, index, aspectRatio, layoutPreference)
+    : null;
+  if (allowedArticleLayoutIds && !allowedArticleLayoutIds.includes(layoutId)) return fallback;
+
   if (hasVisual && BAEMIN_NO_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
   if (!hasVisual && BAEMIN_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
   return layoutId;
@@ -888,11 +954,14 @@ function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
   return clearGeneratedCache(clampBaeminCardCopy({ ...card, ...patch }));
 }
 
-async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true } = {}) {
+async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true, layoutPreference = null } = {}) {
   const sourceCards = Array.isArray(cards) ? cards : [];
+  const normalizedLayoutPreference = sourceType === 'article' && layoutPreference
+    ? normalizeBaeminArticleLayoutPreference(layoutPreference)
+    : null;
   const fallbackRecommendations = sourceCards.map((card, index) => ({
     cardIndex: index,
-    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType),
+    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, normalizedLayoutPreference),
     confidence: 0.5,
     reason: 'fallback',
   }));
@@ -906,6 +975,7 @@ async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceT
         body: JSON.stringify({
           aspectRatio,
           sourceType,
+          layoutPreference: normalizedLayoutPreference,
           cards: sourceCards.map(summarizeCardForBaeminRecommendation),
         }),
       });
@@ -925,10 +995,35 @@ async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceT
   const byIndex = new Map(recommendations.map(item => [item.cardIndex, item]));
   return sourceCards.map((card, index) => {
     const recommendation = byIndex.get(index) || fallbackRecommendations[index];
-    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType);
+    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType, normalizedLayoutPreference);
     return clearGeneratedCache(normalizeBaeminGeneratedCardCopy(
       applyBaeminLayoutRecommendation(card, layoutId, recommendation)
     ));
+  });
+}
+
+function clearArticleCardVisualForBaeminLayout(card = {}) {
+  return clearGeneratedCache({
+    ...card,
+    uploadedImage: null,
+    clipThumbnail: null,
+    fillSource: 'color',
+    articleMeta: {
+      ...(card.articleMeta || {}),
+      aiImageSource: 'none',
+      sourceImageIndex: null,
+    },
+  });
+}
+
+function applyBaeminArticleLayoutMediaPolicy(cards, layoutPreference = null) {
+  const preference = normalizeBaeminArticleLayoutPreference(layoutPreference);
+  return (Array.isArray(cards) ? cards : []).map((card, index) => {
+    const isCover = index === 0;
+    if ((isCover && preference.cover === 'text') || (!isCover && preference.body === 'text')) {
+      return clearArticleCardVisualForBaeminLayout(card);
+    }
+    return card;
   });
 }
 
@@ -7726,8 +7821,16 @@ const ARTICLE_TONE_OPTIONS = [
   { id: 'summary',   label: '정보',   desc: '담백·신뢰감' },
   { id: 'emotional', label: '감성',   desc: '따뜻·공감' },
 ];
+const BAEMIN_ARTICLE_LAYOUT_THUMBS = {
+  coverText: '/baemin/layout-thumbs/bm-cover-feed.png',
+  coverPhoto: '/baemin/layout-thumbs/bm-cover-reels.png',
+  bodyText: '/baemin/layout-thumbs/bm-solid-mix.png',
+  bodyPhoto: '/baemin/layout-thumbs/bm-photo-preview.png',
+  bodyGradient: '/baemin/layout-thumbs/bm-photo-body.png',
+  bodyFrame: '/baemin/layout-thumbs/bm-photo-frame.png',
+};
 
-function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel }) {
+function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, isBmOnlyPage = false }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [showRawInput, setShowRawInput] = useState(false);
@@ -7738,10 +7841,13 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const currentPreset = data.presetId || 'stock_photo';
   const currentTone = data.copyTone || 'hooking';
   const currentCardCount = data.cardCount || 'auto';
-  const currentAr = data.aspectRatio || '1:1';
+  const currentAr = isBmOnlyPage ? '3:4' : (data.aspectRatio || '1:1');
   const articleImageCount = (data.articleData?.images || []).length;
+  const bmLayoutPreference = normalizeBaeminArticleLayoutPreference(data.baeminLayoutPreference || defaultBaeminArticleLayoutPreference(data.articleData));
+  const bmNeedsVisuals = isBmOnlyPage && (bmLayoutPreference.cover === 'photo' || bmLayoutPreference.body === 'photo');
   // reuse 모드 기본, 단 이미지가 0장이면 강제로 generate
   const currentImageMode = data.imageMode || 'reuse';
+  const bmManualImageModeDisabled = bmNeedsVisuals;
   // 카드 수 선택지는 모드 무관 동일 (이전엔 reuse 모드에서 이미지 수로 제한했으나,
   // 이제 부족분은 자동 AI 생성으로 보충하므로 제한 불필요)
   const cardCountOptions = ['auto', 1, 2, 3, 5, 6, 7, 8, 9, 10, 12];
@@ -7753,6 +7859,23 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
   const generateCount = currentImageMode === 'reuse' && numericCardCount != null
     ? Math.max(0, numericCardCount - articleImageCount)
     : null;
+
+  const mergeWizardData = (patch) => {
+    const next = { ...data, ...patch };
+    if (isBmOnlyPage) {
+      next.aspectRatio = '3:4';
+      next.baeminLayoutPreference = normalizeBaeminArticleLayoutPreference(next.baeminLayoutPreference || bmLayoutPreference);
+    }
+    onDataChange(next);
+  };
+
+  const updateBmLayoutPreference = (patch) => {
+    const nextPreference = normalizeBaeminArticleLayoutPreference({ ...bmLayoutPreference, ...patch });
+    mergeWizardData({
+      baeminLayoutPreference: nextPreference,
+      ...(data.imageMode === 'manual' && (nextPreference.cover === 'photo' || nextPreference.body === 'photo') ? { imageMode: 'reuse' } : {}),
+    });
+  };
 
   const handleLoadArticle = async () => {
     setLoading(true);
@@ -7774,13 +7897,134 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         throw new Error(json.error || '추출 실패');
       }
       const suggestion = suggestCardCount(json.article);
-      onDataChange({ ...data, articleData: json.article, cardCount: suggestion.count, cardCountSuggestion: suggestion });
+      mergeWizardData({
+        articleData: json.article,
+        cardCount: suggestion.count,
+        cardCountSuggestion: suggestion,
+        ...(isBmOnlyPage ? { baeminLayoutPreference: defaultBaeminArticleLayoutPreference(json.article) } : {}),
+      });
       onNext();
     } catch (e) {
       setErrorMsg(e.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const renderBaeminLayoutOption = ({ active, onClick, thumb, title, desc, disabled = false }) => React.createElement("button", {
+    onClick,
+    disabled,
+    style: {
+      padding: 0,
+      borderRadius: T.radiusSm,
+      border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
+      background: active ? 'rgba(42,193,188,0.1)' : T.surface,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      overflow: 'hidden',
+      textAlign: 'left',
+      opacity: disabled ? 0.45 : 1,
+      boxShadow: active ? '0 0 0 1px rgba(42,193,188,0.3)' : 'none',
+    },
+  },
+    React.createElement("div", { style: { width: '100%', aspectRatio: '3 / 4', background: T.bg, overflow: 'hidden' } },
+      React.createElement("img", {
+        src: thumb,
+        alt: "",
+        loading: "lazy",
+        style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+      }),
+    ),
+    React.createElement("div", { style: { padding: '10px 12px' } },
+      React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 3 } }, title),
+      React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.35 } }, desc),
+    ),
+  );
+
+  const renderBaeminLayoutMiniOption = ({ active, onClick, thumb, title, desc }) => React.createElement("button", {
+    onClick,
+    style: {
+      display: 'grid',
+      gridTemplateColumns: '62px 1fr',
+      alignItems: 'center',
+      gap: 10,
+      padding: 8,
+      borderRadius: T.radiusSm,
+      border: `1px solid ${active ? BAEMIN_MINT : T.border}`,
+      background: active ? 'rgba(42,193,188,0.1)' : T.surface,
+      cursor: 'pointer',
+      textAlign: 'left',
+    },
+  },
+    React.createElement("div", { style: { width: 62, aspectRatio: '3 / 4', borderRadius: 6, overflow: 'hidden', background: T.bg } },
+      React.createElement("img", { src: thumb, alt: "", loading: "lazy", style: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } }),
+    ),
+    React.createElement("div", { style: { minWidth: 0 } },
+      React.createElement("div", { style: { fontSize: 12, fontWeight: 800, color: active ? BAEMIN_MINT : T.text, marginBottom: 3 } }, title),
+      React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.35 } }, desc),
+    ),
+  );
+
+  const renderBaeminArticleLayoutPicker = () => {
+    if (!isBmOnlyPage) return null;
+    return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "레이아웃 선택"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 } },
+          renderBaeminLayoutOption({
+            active: bmLayoutPreference.cover === 'photo',
+            onClick: () => updateBmLayoutPreference({ cover: 'photo' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.coverPhoto,
+            title: '사진 표지',
+            desc: 'bm-cover-reels',
+          }),
+          renderBaeminLayoutOption({
+            active: bmLayoutPreference.cover === 'text',
+            onClick: () => updateBmLayoutPreference({ cover: 'text' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.coverText,
+            title: '텍스트 표지',
+            desc: 'bm-cover-feed',
+          }),
+        ),
+      ),
+      React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "본문 레이아웃"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 } },
+          renderBaeminLayoutOption({
+            active: bmLayoutPreference.body === 'text',
+            onClick: () => updateBmLayoutPreference({ body: 'text' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.bodyText,
+            title: '텍스트 위주',
+            desc: 'bm-solid 계열 자동 혼합',
+          }),
+          renderBaeminLayoutOption({
+            active: bmLayoutPreference.body === 'photo',
+            onClick: () => updateBmLayoutPreference({ body: 'photo' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.bodyPhoto,
+            title: '사진 배경',
+            desc: '사진형 본문 레이아웃',
+          }),
+        ),
+      ),
+      bmLayoutPreference.body === 'photo' && React.createElement("div", null,
+        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 700 } }, "사진 배경 방식"),
+        React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 8 } },
+          renderBaeminLayoutMiniOption({
+            active: bmLayoutPreference.photoTreatment === 'gradient',
+            onClick: () => updateBmLayoutPreference({ photoTreatment: 'gradient' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.bodyGradient,
+            title: '그라데이션',
+            desc: 'bm-photo-body 계열',
+          }),
+          renderBaeminLayoutMiniOption({
+            active: bmLayoutPreference.photoTreatment === 'frame',
+            onClick: () => updateBmLayoutPreference({ photoTreatment: 'frame' }),
+            thumb: BAEMIN_ARTICLE_LAYOUT_THUMBS.bodyFrame,
+            title: '텍스트 박스',
+            desc: 'bm-photo-frame',
+          }),
+        ),
+      ),
+    );
   };
 
   // ── Step 1: 입력 ──
@@ -7806,7 +8050,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           React.createElement("input", {
             type: 'url',
             value: data.url || '',
-            onChange: (e) => onDataChange({ ...data, url: e.target.value }),
+            onChange: (e) => mergeWizardData({ url: e.target.value }),
             placeholder: 'https://blog.naver.com/...',
             style: { width: '100%', padding: '12px 14px', background: T.surface, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 14, outline: 'none', boxSizing: 'border-box' },
           }),
@@ -7824,7 +8068,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 6, fontWeight: 500 } }, "\uBCF8\uBB38 \uC9C1\uC811 \uBD99\uC5EC\uB123\uAE30 (\uCD5C\uC18C 50\uC790)"),
           React.createElement("textarea", {
             value: data.rawText || '',
-            onChange: (e) => onDataChange({ ...data, rawText: e.target.value }),
+            onChange: (e) => mergeWizardData({ rawText: e.target.value }),
             placeholder: '\uAE30\uC0AC \uBCF8\uBB38\uC744 \uC5EC\uAE30\uC5D0 \uBD99\uC5EC\uB123\uC73C\uC138\uC694...',
             rows: 8,
             style: { width: '100%', padding: '12px 14px', background: T.surface, color: T.text, border: `1px solid ${T.border}`, borderRadius: T.radiusSm, fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 },
@@ -7880,7 +8124,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         previewExpanded && React.createElement("div", { style: { marginTop: 8 } },
           React.createElement("textarea", {
             value: article.body || '',
-            onChange: (e) => onDataChange({ ...data, articleData: { ...article, body: e.target.value } }),
+            onChange: (e) => mergeWizardData({ articleData: { ...article, body: e.target.value } }),
             rows: 10,
             style: {
               width: '100%',
@@ -7904,27 +8148,36 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         ),
       ),
       // 비율 선택
-      React.createElement("div", null,
-        React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDCD0 \uBE44\uC728"),
-        React.createElement("div", { style: { display: 'flex', gap: 8 } },
-          ['1:1', '4:5', '9:16'].map(ar => React.createElement("button", {
-            key: ar,
-            onClick: () => onDataChange({ ...data, aspectRatio: ar }),
-            style: {
-              flex: 1, padding: '10px 14px', borderRadius: T.radiusSm, border: `1px solid ${currentAr === ar ? T.accent : T.border}`,
-              background: currentAr === ar ? 'rgba(99,102,241,0.12)' : T.surface,
-              color: currentAr === ar ? T.accent : T.text, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            },
-          }, ar)),
+      isBmOnlyPage
+        ? React.createElement("div", null,
+          React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDCD0 \uBE44\uC728"),
+          React.createElement("div", { style: { padding: '11px 14px', borderRadius: T.radiusSm, border: `1px solid ${BAEMIN_MINT}`, background: 'rgba(42,193,188,0.1)', color: BAEMIN_MINT, fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
+            React.createElement("span", null, "3:4"),
+            React.createElement("span", { style: { color: T.textMuted, fontSize: 11, fontWeight: 600 } }, "세로 고정"),
+          ),
+        )
+        : React.createElement("div", null,
+          React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDCD0 \uBE44\uC728"),
+          React.createElement("div", { style: { display: 'flex', gap: 8 } },
+            ['1:1', '4:5', '9:16'].map(ar => React.createElement("button", {
+              key: ar,
+              onClick: () => mergeWizardData({ aspectRatio: ar }),
+              style: {
+                flex: 1, padding: '10px 14px', borderRadius: T.radiusSm, border: `1px solid ${currentAr === ar ? T.accent : T.border}`,
+                background: currentAr === ar ? 'rgba(99,102,241,0.12)' : T.surface,
+                color: currentAr === ar ? T.accent : T.text, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              },
+            }, ar)),
+          ),
         ),
-      ),
+      renderBaeminArticleLayoutPicker(),
       // 이미지 소스 선택
       React.createElement("div", null,
         React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, marginBottom: 8, fontWeight: 500 } }, "\uD83D\uDDBC \uC774\uBBF8\uC9C0 \uC18C\uC2A4"),
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : '1fr 1fr 1fr', gap: 8 } },
           // 본문 이미지 우선 (부족 시 AI 자동 보충)
           React.createElement("button", {
-            onClick: () => onDataChange({ ...data, imageMode: 'reuse' }),
+            onClick: () => mergeWizardData({ imageMode: 'reuse' }),
             style: {
               padding: '12px 14px', borderRadius: T.radiusSm,
               border: `1px solid ${currentImageMode === 'reuse' ? T.accent : T.border}`,
@@ -7945,7 +8198,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           ),
           // AI 생성
           React.createElement("button", {
-            onClick: () => onDataChange({ ...data, imageMode: 'generate' }),
+            onClick: () => mergeWizardData({ imageMode: 'generate' }),
             style: {
               padding: '12px 14px', borderRadius: T.radiusSm,
               border: `1px solid ${currentImageMode === 'generate' ? T.accent : T.border}`,
@@ -7962,13 +8215,15 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           ),
           // 직접 삽입
           React.createElement("button", {
-            onClick: () => onDataChange({ ...data, imageMode: 'manual' }),
+            onClick: () => { if (!bmManualImageModeDisabled) mergeWizardData({ imageMode: 'manual' }); },
+            disabled: bmManualImageModeDisabled,
             style: {
               padding: '12px 14px', borderRadius: T.radiusSm,
               border: `1px solid ${currentImageMode === 'manual' ? '#f59e0b' : T.border}`,
               background: currentImageMode === 'manual' ? 'rgba(245,158,11,0.12)' : T.surface,
-              cursor: 'pointer',
+              cursor: bmManualImageModeDisabled ? 'not-allowed' : 'pointer',
               textAlign: 'left',
+              opacity: bmManualImageModeDisabled ? 0.45 : 1,
             },
           },
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
@@ -7976,7 +8231,9 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
               React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'manual' ? '#f59e0b' : T.text } }, "\uc9c1\uc811 \uc0bd\uc785"),
             ),
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
-              articleImageCount === 0
+              bmManualImageModeDisabled
+                ? "사진형 레이아웃은 자동 보충"
+                : articleImageCount === 0
                 ? "\uc774\ubbf8\uc9c0 \uc5c6\uc74c \u2192 \uc804\ubd80 \ube48 \uacf5\ubc31"
                 : `\ubcf8\ubb38 ${articleImageCount}\uc7a5 \ud65c\uc6a9 \u00B7 \ubd80\uc871\ubd84 \ube48 \uacf5\ubc31`
             ),
@@ -7989,7 +8246,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
           React.createElement("label", { style: { display: 'block', fontSize: 12, color: T.textSecondary, fontWeight: 500, margin: 0 } }, "\uD83D\uDD22 \uCE74\uB4DC \uC218"),
           data.cardCountSuggestion && React.createElement("span", {
             style: { fontSize: 10, color: '#a78bfa', background: 'rgba(167,139,250,0.12)', border: '1px solid rgba(167,139,250,0.3)', borderRadius: 99, padding: '2px 8px', fontWeight: 600, cursor: 'pointer' },
-            onClick: () => onDataChange({ ...data, cardCount: data.cardCountSuggestion.count }),
+            onClick: () => mergeWizardData({ cardCount: data.cardCountSuggestion.count }),
           },
             data.cardCountSuggestion.reason === 'listicle'
               ? `\uD83D\uDCCB ${data.cardCountSuggestion.label} \u2192 ${data.cardCountSuggestion.count}\uC7A5 \uCD94\uCC9C`
@@ -8002,7 +8259,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
             const isSelected = currentCardCount === n;
             return React.createElement("button", {
               key: String(n),
-              onClick: () => onDataChange({ ...data, cardCount: n }),
+              onClick: () => mergeWizardData({ cardCount: n }),
               style: {
                 position: 'relative',
                 padding: '8px 12px', borderRadius: T.radiusSm,
@@ -8023,7 +8280,16 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
       (() => {
         let msg = null;
         let variant = 'info';
-        if (currentImageMode === 'manual') {
+        if (isBmOnlyPage && bmLayoutPreference.body === 'text') {
+          msg = bmLayoutPreference.cover === 'photo'
+            ? '표지 이미지만 사용 · 본문은 텍스트 레이아웃'
+            : '이미지 없이 텍스트 레이아웃';
+          variant = 'ok';
+        } else if (isBmOnlyPage && bmLayoutPreference.body === 'photo') {
+          msg = bmLayoutPreference.photoTreatment === 'frame'
+            ? '본문 이미지를 텍스트 박스 레이아웃으로 구성'
+            : '본문 이미지를 그라데이션 레이아웃으로 구성';
+        } else if (currentImageMode === 'manual') {
           msg = numericCardCount != null
             ? `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${Math.min(numericCardCount, articleImageCount)}\uC7A5 \ud65c\uc6a9 \u00B7 \ub098\uba38\uc9c0 ${Math.max(0, numericCardCount - articleImageCount)}\uC7A5 \ube48 \uacf5\ubc31 (\uc9c1\uc811 \uc0bd\uc785)`
             : `\uBCF8\uBB38 \uC774\uBBF8\uC9C0 ${articleImageCount}\uC7A5 \ud65c\uc6a9 \u00B7 \ub098\uba38\uc9c0 \ube48 \uacf5\ubc31 (\uc9c1\uc811 \uc0bd\uc785)`;
@@ -8060,7 +8326,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 8 } },
           ARTICLE_STYLE_PRESETS.map(p => React.createElement("button", {
             key: p.id,
-            onClick: () => onDataChange({ ...data, presetId: p.id }),
+            onClick: () => mergeWizardData({ presetId: p.id }),
             style: {
               padding: '10px 12px', borderRadius: T.radiusSm, border: `1px solid ${currentPreset === p.id ? T.accent : T.border}`,
               background: currentPreset === p.id ? 'rgba(99,102,241,0.12)' : T.surface,
@@ -8078,7 +8344,7 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
         React.createElement("div", { style: { display: 'flex', gap: 8 } },
           ARTICLE_TONE_OPTIONS.map(t => React.createElement("button", {
             key: t.id,
-            onClick: () => onDataChange({ ...data, copyTone: t.id }),
+            onClick: () => mergeWizardData({ copyTone: t.id }),
             style: {
               flex: 1, padding: '10px 8px', borderRadius: T.radiusSm, border: `1px solid ${currentTone === t.id ? T.accent : T.border}`,
               background: currentTone === t.id ? 'rgba(99,102,241,0.12)' : T.surface,
@@ -10295,6 +10561,21 @@ function BmOnlyBadge({ mob }) {
   }, "BM ONLY");
 }
 
+function defaultArticleWizardData(isBmOnly = false) {
+  return {
+    sourceType: 'article',
+    url: '',
+    rawText: '',
+    articleData: null,
+    aspectRatio: isBmOnly ? '3:4' : '1:1',
+    cardCount: 'auto',
+    presetId: 'stock_photo',
+    copyTone: 'hooking',
+    imageMode: 'reuse',
+    ...(isBmOnly ? { baeminLayoutPreference: defaultBaeminArticleLayoutPreference() } : {}),
+  };
+}
+
 function applyBmOnlyMode(route, setters) {
   setters.setRouteShareId(null);
   setters.setPageVariant(PAGE_VARIANTS.BM_ONLY);
@@ -10309,7 +10590,7 @@ function applyBmOnlyMode(route, setters) {
     setters.setEditorMode('ai-wizard');
   } else if (route.mode === 'article-wizard') {
     setters.setWizardStep(1);
-    setters.setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' });
+    setters.setWizardData(defaultArticleWizardData(true));
     setters.setEditorMode('article-wizard');
   } else if (route.mode === 'editor') {
     setters.setEditorMode('editor');
@@ -11445,12 +11726,21 @@ export default function App() {
     }
   };
 
-  const handleArticleWizardComplete = async () => {
-    const article = wizardData.articleData;
-    if (!article) { setArticleGenError('기사 데이터가 없습니다. 다시 시도해주세요.'); return; }
+	  const handleArticleWizardComplete = async () => {
+	    const article = wizardData.articleData;
+	    if (!article) { setArticleGenError('기사 데이터가 없습니다. 다시 시도해주세요.'); return; }
+	    const bmArticleLayoutPreference = isBmOnlyPage
+	      ? normalizeBaeminArticleLayoutPreference(wizardData.baeminLayoutPreference || defaultBaeminArticleLayoutPreference(article))
+	      : null;
+	    const articleAspectRatio = isBmOnlyPage ? '3:4' : (wizardData.aspectRatio || '1:1');
+	    const requestedImageMode = wizardData.imageMode || 'reuse';
+	    const bmNeedsVisuals = isBmOnlyPage && (bmArticleLayoutPreference.cover === 'photo' || bmArticleLayoutPreference.body === 'photo');
+	    const articleImageMode = isBmOnlyPage && !bmNeedsVisuals
+	      ? 'manual'
+	      : (bmNeedsVisuals && requestedImageMode === 'manual' ? 'reuse' : requestedImageMode);
 
-    setArticleGenError(null);
-    setArticleGenStatus({ step: 'analyzing', message: '본문을 분석하는 중', current: 0, total: 0, cards: [] });
+	    setArticleGenError(null);
+	    setArticleGenStatus({ step: 'analyzing', message: '본문을 분석하는 중', current: 0, total: 0, cards: [] });
     setWizardLoading(true);
 
     const abort = new AbortController();
@@ -11461,14 +11751,15 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          article,
-          presetId: wizardData.presetId || 'warm_illust',
-          cardCount: wizardData.cardCount,
-          aspectRatio: wizardData.aspectRatio || '1:1',
-          copyTone: wizardData.copyTone || 'hooking',
-          imageMode: wizardData.imageMode || 'reuse',
-          brandGuide: isBmOnlyPage ? 'baemin-only' : null,
-        }),
+	          article,
+	          presetId: wizardData.presetId || 'warm_illust',
+	          cardCount: wizardData.cardCount,
+	          aspectRatio: articleAspectRatio,
+	          copyTone: wizardData.copyTone || 'hooking',
+	          imageMode: articleImageMode,
+	          brandGuide: isBmOnlyPage ? 'baemin-only' : null,
+	          layoutPreference: bmArticleLayoutPreference,
+	        }),
         signal: abort.signal,
       });
 
@@ -11582,15 +11873,17 @@ export default function App() {
           return { ...base, uploadedImage: _srcImgs[idx], fillSource: 'image' };
         }
         return base;
-      });
-      if (isBmOnlyPage) {
-        setArticleGenStatus(s => ({ ...(s || {}), step: 'layout', message: '배민 전용 레이아웃을 고르는 중' }));
-        newCards = await applyBaeminGeneratedLayouts(newCards, {
-          aspectRatio: wizardData.aspectRatio || '1:1',
-          sourceType: 'article',
-          useLLM: true,
-        });
-      }
+	      });
+	      if (isBmOnlyPage) {
+	        setArticleGenStatus(s => ({ ...(s || {}), step: 'layout', message: '배민 전용 레이아웃을 고르는 중' }));
+	        newCards = applyBaeminArticleLayoutMediaPolicy(newCards, bmArticleLayoutPreference);
+	        newCards = await applyBaeminGeneratedLayouts(newCards, {
+	          aspectRatio: articleAspectRatio,
+	          sourceType: 'article',
+	          useLLM: true,
+	          layoutPreference: bmArticleLayoutPreference,
+	        });
+	      }
       const articleProjectName = normalizeProjectNameFromSource(doneData.sourceTitle || article.title, '텍스트 프로젝트');
       const articleProjectPatch = {
         name: articleProjectName,
@@ -11599,15 +11892,16 @@ export default function App() {
         sourceTitle: doneData.sourceTitle || '',
         sourceImages: _srcImgs,
         sourceImageMeta: _srcMeta,
-        globalUrl: '',
-        aspectRatio: wizardData.aspectRatio || '1:1',
-        outputFormat: 'image',
+	        globalUrl: '',
+	        aspectRatio: articleAspectRatio,
+	        outputFormat: 'image',
         outputFormatTouched: false,
         globalBgImage: null,
-        cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
-        copyTone: wizardData.copyTone || 'hooking',
-        videoTitle: doneData.sourceTitle || '',
-      };
+	        cards: newCards.length > 0 ? newCards : [DEFAULT_CARD()],
+	        copyTone: wizardData.copyTone || 'hooking',
+	        videoTitle: doneData.sourceTitle || '',
+	        ...(isBmOnlyPage ? { baeminLayoutPreference: bmArticleLayoutPreference } : {}),
+	      };
       applyGeneratedProject(articleProjectName, articleProjectPatch);
 
       setTimeout(() => {
@@ -11729,7 +12023,7 @@ export default function App() {
       mob, aiEditRunning,
       onLogoClick: isBmOnlyPage ? undefined : handleHomeLogoClick,
       onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
-      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData({ sourceType: 'article', url: '', rawText: '', articleData: null, aspectRatio: '1:1', cardCount: 'auto', presetId: 'stock_photo', copyTone: 'hooking', imageMode: 'reuse' }); },
+      onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData(defaultArticleWizardData(isBmOnlyPage)); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
     }),
@@ -11754,6 +12048,7 @@ export default function App() {
 
     editorMode === 'article-wizard' && !wizardLoading && React.createElement(ArticleWizardScreen, {
       mob, step: wizardStep, data: wizardData,
+      isBmOnlyPage,
       onDataChange: setWizardData,
       onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
