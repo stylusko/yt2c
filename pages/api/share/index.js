@@ -21,6 +21,14 @@ export default async function handler(req, res) {
   }
 
   const id = crypto.randomBytes(4).toString('base64url');
+
+  try {
+    const saved = await saveShareToRedis(id, data);
+    if (saved) return res.status(200).json({ id, storage: 'redis' });
+  } catch (redisErr) {
+    console.error('Redis share save error:', redisErr);
+  }
+
   const supabase = getSupabase();
 
   if (supabase) {
@@ -30,13 +38,6 @@ export default async function handler(req, res) {
 
     if (!error) return res.status(200).json({ id });
     console.error('Supabase insert error:', error);
-  }
-
-  try {
-    const saved = await saveShareToRedis(id, data);
-    if (saved) return res.status(200).json({ id, fallback: 'redis' });
-  } catch (redisErr) {
-    console.error('Redis share fallback error:', redisErr);
   }
 
   return res.status(500).json({ error: 'Failed to save project' });
