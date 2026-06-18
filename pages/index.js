@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 11; // same-day deploy count
+const BUILD_NUM = 12; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
   '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
   '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
   '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
   '🔗 BM ONLY 공유 링크 — 수정 후 오래된 스냅샷 주소 공유 방지',
-  '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
 ];
 
 /* ── Icons ── */
@@ -6933,6 +6933,13 @@ function hasInlineDataUrl(value, seen = new Set()) {
   return Object.keys(value).some(key => hasInlineDataUrl(value[key], seen));
 }
 
+function needsServerShareSnapshot(project) {
+  if (!project) return false;
+  if (project.globalBgImage) return true;
+  if (hasInlineDataUrl(project.sourceImages)) return true;
+  return (project.cards || []).some(card => !!card?.uploadedImage || hasInlineDataUrl(card?.overlays));
+}
+
 function saveProjects(projects, activeId) {
   if (typeof window === 'undefined') return Promise.resolve({ ok: false, skipped: true });
   const payload = { projects, activeId, updatedAt: Date.now(), saveSeq: ++projectSaveSeq };
@@ -6993,6 +7000,7 @@ function saveProjects(projects, activeId) {
 /* ── Project Share Helpers ── */
 const CARD_DEFAULTS = DEFAULT_CARD();
 const SKIP_CARD_KEYS = new Set(['id', 'uploadedImage']);
+const SHARE_ENCODE_OPTIONS = { includeInlineAssets: true };
 const CARD_KEY_MAP = {
   name:'a', url:'b', start:'c', end:'d',
   layout:'e', photoRatio:'f', useGradient:'g',
@@ -7018,13 +7026,14 @@ const CARD_KEY_MAP = {
   textBoxPaddingX:'14', textBoxPaddingY:'15',
   titleLetterSpacingUnit:'16', subtitleLetterSpacingUnit:'17',
   bodyLetterSpacingUnit:'18', boxTextLetterSpacingUnit:'19',
+  uploadedImage:'20',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
-function stripDefaults(obj, defaults) {
+function stripDefaults(obj, defaults, options = {}) {
   const out = {};
   for (const k of Object.keys(obj)) {
-    if (SKIP_CARD_KEYS.has(k)) continue;
+    if (SKIP_CARD_KEYS.has(k) && !(options.includeInlineAssets && k === 'uploadedImage')) continue;
     if (k === 'overlays') {
       if (obj.overlays?.length > 0) {
         out[CARD_KEY_MAP['overlays'] || 'overlays'] = obj.overlays.map(o => { const oc = {...o}; delete oc.imageData; return oc; });
@@ -7044,13 +7053,14 @@ function restoreDefaults(obj) {
 
 const PROJ_DEFAULTS = { outputFormat: 'video', outputFormatTouched: false, outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
-function encodeProject(project) {
+function encodeProject(project, options = {}) {
   const s = { n: project.name, u: project.globalUrl };
   if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
   if (project.outputFormatTouched) s.ot = 1;
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
+  if (options.includeInlineAssets && project.globalBgImage) s.g = project.globalBgImage;
   if (project.copyTone && project.copyTone !== PROJ_DEFAULTS.copyTone) s.ct = project.copyTone;
   // article 모드 필드 (값이 있을 때만 직렬화 — 기존 YouTube 공유 URL 사이즈 영향 없음)
   if (project.sourceType && project.sourceType !== PROJ_DEFAULTS.sourceType) s.t = project.sourceType;
@@ -7058,7 +7068,7 @@ function encodeProject(project) {
   if (project.sourceTitle) s.h = project.sourceTitle;
   if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) s.m = project.sourceImages;
   if (Array.isArray(project.sourceImageMeta) && project.sourceImageMeta.length > 0) s.q = normalizeProjectSourceImageMeta(project.sourceImages || [], project.sourceImageMeta);
-  s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
+  s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS, options));
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
 }
 
@@ -7090,7 +7100,7 @@ function decodeProject(encoded) {
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
     copyTone: s.ct || PROJ_DEFAULTS.copyTone,
-    globalBgImage: null,
+    globalBgImage: s.g || null,
     cards: (s.c || []).map(c => restoreDefaults(c)),
     // article 모드 필드 (없으면 기본값 — 기존 YouTube 공유 URL 호환성 보장)
     sourceType: s.t || PROJ_DEFAULTS.sourceType,
@@ -7105,6 +7115,7 @@ function decodeProject(encoded) {
   if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
     proj.cards = proj.cards.map(c => {
       const articleCard = { ...c, sourceType: 'article' };
+      if (articleCard.uploadedImage) return { ...articleCard, fillSource: 'image' };
       const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
         ? c.articleMeta.sourceImageIndex
         : null;
@@ -11417,13 +11428,13 @@ export default function App() {
     const projectToShare = getLatestActiveProject();
     if (!projectToShare || shareLoading) return;
     setShareLoading(true);
-    const encoded = encodeProject(projectToShare);
+    const serverEncoded = encodeProject(projectToShare, SHARE_ENCODE_OPTIONS);
     // Try Supabase short URL first
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: encoded }),
+        body: JSON.stringify({ data: serverEncoded }),
       });
       if (res.ok) {
         const { id } = await res.json();
@@ -11440,6 +11451,12 @@ export default function App() {
       }
     } catch (e) { /* fallback to d= method */ }
     // Fallback: embed data in URL directly
+    if (needsServerShareSnapshot(projectToShare)) {
+      setShareLoading(false);
+      setAlertMsg('이미지가 포함된 프로젝트는 서버 저장이 필요해요.\n공유 서버 저장에 실패해서 링크를 만들 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    const encoded = encodeProject(projectToShare);
     const url = `${window.location.origin}/share?d=${encoded}`;
     setShareLoading(false);
     if (url.length > 8000) {
@@ -11641,12 +11658,15 @@ export default function App() {
           const projectForShare = effectiveOutputFormat === outputFormat
             ? projectBaseForShare
             : { ...projectBaseForShare, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
-          const encoded = encodeProject(projectForShare);
+          const serverEncoded = encodeProject(projectForShare, SHARE_ENCODE_OPTIONS);
           try {
-            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: serverEncoded }) });
             if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`; }
           } catch (_) {}
-          if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          if (!projectShareUrl && !needsServerShareSnapshot(projectForShare)) {
+            const encoded = encodeProject(projectForShare);
+            projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          }
         } catch (shareErr) {
           console.warn('[generate] project share link skipped:', shareErr);
         }
