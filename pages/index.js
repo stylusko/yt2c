@@ -52,14 +52,17 @@ function buildBmOnlyPath(editorMode) {
   if (editorMode === 'editor') return BM_ONLY_MODE_PATHS.editor;
   return BM_ONLY_MODE_PATHS.home;
 }
+function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
+  return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
+}
 const RECENT_FEATURES = [
-  '✨ AI 이미지 품질 향상 — 고품질 생성·내용 충실 프롬프트·텍스트 영역 고려 구도',
-  '🏷️ BM ONLY 로고 오버레이 — 흰색/검정 실제 로고 에셋 선택',
-  '🖼️ BM ONLY·자유편집 이미지 흐름 — 큰 예시 썸네일·직접 삽입·AI 이미지 생성',
-  '🖼️ BM ONLY 레이아웃 선택 UI — 작은 셀렉터와 예시 이미지 마스킹',
-  '🧩 BM ONLY 기사 레이아웃 선택 — 3:4 고정·표지/본문 프리셋 기반 생성',
-  '🗂️ 프로젝트 생성 공통화 — 영상·쉬운편집·텍스트 결과를 새 프로젝트로 보존',
-  '📝 텍스트 줄바꿈 개선 — 어절 우선 렌더링으로 프리뷰와 출력 정렬',
+  '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
+  '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
+  '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
+  '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
+  '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
+  '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
+  '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
 ];
 
 /* ── Icons ── */
@@ -1173,6 +1176,41 @@ const STYLE_COPY_GROUPS = [
   },
 ];
 const STYLE_COPY_GROUP_IDS = STYLE_COPY_GROUPS.map(g => g.id);
+const TEXT_GROUP_MOVE_STEP = 12;
+const TEXT_OFFSET_X_MIN = -540;
+const TEXT_OFFSET_X_MAX = 540;
+const TEXT_OFFSET_Y_MIN = -1080;
+const TEXT_OFFSET_Y_MAX = 1080;
+const TEXT_GROUP_MOVE_CONTROLS = [
+  ['up', '↑', 0, -TEXT_GROUP_MOVE_STEP],
+  ['down', '↓', 0, TEXT_GROUP_MOVE_STEP],
+  ['left', '←', -TEXT_GROUP_MOVE_STEP, 0],
+  ['right', '→', TEXT_GROUP_MOVE_STEP, 0],
+];
+
+function clampTextOffsetValue(value, min, max) {
+  const next = Number(value);
+  if (!Number.isFinite(next)) return 0;
+  return Math.max(min, Math.min(max, next));
+}
+
+function addTextOffsetValue(value, delta, min, max) {
+  return clampTextOffsetValue((Number(value) || 0) + delta, min, max);
+}
+
+function buildTextGroupMovePatch(card = {}, { dx = 0, dy = 0, includeBoxText = false } = {}) {
+  const patch = {};
+  const addField = (prefix) => {
+    if (dx) patch[`${prefix}X`] = addTextOffsetValue(card[`${prefix}X`], dx, TEXT_OFFSET_X_MIN, TEXT_OFFSET_X_MAX);
+    if (dy) patch[`${prefix}Y`] = addTextOffsetValue(card[`${prefix}Y`], dy, TEXT_OFFSET_Y_MIN, TEXT_OFFSET_Y_MAX);
+  };
+
+  if (card.useTitle !== false) addField('title');
+  if (card.useSubtitle !== false) addField('subtitle');
+  if (card.useBody !== false) addField('body');
+  if (includeBoxText && card.useBoxText !== false) addField('boxText');
+  return patch;
+}
 
 function cloneStyleValue(value) {
   if (Array.isArray(value) || (value && typeof value === 'object')) return JSON.parse(JSON.stringify(value));
@@ -1326,6 +1364,41 @@ function calcAutoPhotoRatio(card, overrides = {}) {
   if (count >= 3) return 45;
   if (count === 2) return 55;
   return 70; // title only
+}
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function normalizePhotoRatioPercent(value, fallback = 50) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return fallback;
+  return raw > 1 ? raw : raw * 100;
+}
+
+function roundTo(value, decimals = 2) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function buildTextAreaPatch(card, textAreaPct) {
+  const rawTextAreaPct = Number(textAreaPct);
+  const nextTextAreaPct = clampNumber(Number.isFinite(rawTextAreaPct) ? rawTextAreaPct : 50, 10, 80);
+  const prevPhotoRatio = normalizePhotoRatioPercent(card?.photoRatio, 50);
+  const nextPhotoRatio = roundTo(100 - nextTextAreaPct, 1);
+  const patch = { photoRatio: nextPhotoRatio };
+  const isBaeminPhotoTop = card?.brandGuideId === BAEMIN_GUIDE_ID && (card?.layout || 'photo_top') === 'photo_top';
+
+  if (isBaeminPhotoTop && Number.isFinite(Number(card?.baeminTextTopRatio))) {
+    const anchorOffset = Number(card.baeminTextTopRatio) - prevPhotoRatio / 100;
+    patch.baeminTextTopRatio = roundTo(clampNumber(nextPhotoRatio / 100 + anchorOffset, 0.02, 0.95), 4);
+  } else if (isBaeminPhotoTop && Number.isFinite(Number(card?.baeminTextTop))) {
+    const currentTopPct = Number(card.baeminTextTop) / BAEMIN_FIGMA_CARD_HEIGHT * 100;
+    const anchorOffsetPct = currentTopPct - prevPhotoRatio;
+    patch.baeminTextTop = Math.round(clampNumber((nextPhotoRatio + anchorOffsetPct) / 100 * BAEMIN_FIGMA_CARD_HEIGHT, 0, BAEMIN_FIGMA_CARD_HEIGHT));
+  }
+
+  return patch;
 }
 
 function extractSegmentTranscript(transcript, startStr, endStr) {
@@ -2487,6 +2560,20 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
   const sliderMax = max;
   const defPct = ((sliderDef - sliderMin) / (sliderMax - sliderMin)) * 100;
   const fillPct = ((sliderVal - sliderMin) / (sliderMax - sliderMin)) * 100;
+  const stepSize = Number(step) || 1;
+  const domainMin = toSlider ? min : sliderMin;
+  const domainMax = toSlider ? max : sliderMax;
+  const numericValue = Number.isFinite(Number(value)) ? Number(value) : defVal;
+  const roundedStepValue = (next) => {
+    const stepText = String(stepSize);
+    const decimals = stepText.includes('.') ? stepText.split('.')[1].length : 0;
+    return roundTo(clampNumber(next, domainMin, domainMax), Math.min(6, decimals + 2));
+  };
+  const nudge = (delta) => onChange(roundedStepValue(numericValue + delta * stepSize));
+  const atMin = numericValue <= domainMin;
+  const atMax = numericValue >= domainMax;
+  const stepSuffix = typeof suffix === 'string' && suffix.includes('자동') ? '%' : suffix;
+  const stepLabel = stepSuffix === '%' && domainMax <= 1 ? `${roundTo(stepSize * 100, 2)}%` : `${stepSize}${stepSuffix}`;
 
   useEffect(() => { injectSliderStyle(); }, []);
 
@@ -2565,6 +2652,33 @@ function SliderRow({ label, value, min, max, step, onChange, suffix = '%', defau
       onMouseLeave: (e) => e.currentTarget.style.background = 'transparent',
       title: '\uB354\uBE14\uD074\uB9AD: \uAE30\uBCF8\uAC12 \uBCF5\uC6D0',
     }, `${displayVal}${suffix}`)
+    ,
+    React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 } },
+      React.createElement("button", {
+        type: "button",
+        disabled: atMax,
+        onClick: () => nudge(1),
+        title: `${stepLabel} 증가`,
+        style: {
+          width: 18, height: 14, padding: 0, borderRadius: 4, border: `1px solid ${T.border}`,
+          background: atMax ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)',
+          color: atMax ? T.textMuted : T.textSecondary,
+          fontSize: 9, lineHeight: '12px', cursor: atMax ? 'default' : 'pointer',
+        },
+      }, "\u25B2"),
+      React.createElement("button", {
+        type: "button",
+        disabled: atMin,
+        onClick: () => nudge(-1),
+        title: `${stepLabel} 감소`,
+        style: {
+          width: 18, height: 14, padding: 0, borderRadius: 4, border: `1px solid ${T.border}`,
+          background: atMin ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.06)',
+          color: atMin ? T.textMuted : T.textSecondary,
+          fontSize: 9, lineHeight: '12px', cursor: atMin ? 'default' : 'pointer',
+        },
+      }, "\u25BC"),
+    )
   );
 }
 
@@ -5927,7 +6041,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uCE74\uB4DC \uBE44\uC728"),
               ASPECT_OPTIONS.map(opt => React.createElement(PillBtn, { key: opt.id, active: aspectRatio === opt.id, onClick: () => onAspectRatioChange(opt.id) }, opt.label))
             ),
-            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+            card.layout !== "full_bg" && card.layout !== "video_only" && card.layout !== "text_box" && card.layout !== "none" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
             // 텍스트 박스 설정
             card.layout === "text_box" && React.createElement("div", { style: { borderTop: `1px solid ${T.border}`, paddingTop: 12, marginTop: 8 } },
               React.createElement(SectionTitleWithReset, { title: "\uBC15\uC2A4 \uC124\uC815", onReset: () => updateMulti({ textBoxX: 50, textBoxY: 70, textBoxWidth: 80, textBoxHeight: 0, textBoxPadding: 20, textBoxRadius: 12, textBoxBgColor: '#000000', textBoxBgOpacity: 0.6, textBoxBorderColor: '#ffffff', textBoxBorderWidth: 0 }) }),
@@ -6819,14 +6933,24 @@ function hasInlineDataUrl(value, seen = new Set()) {
   return Object.keys(value).some(key => hasInlineDataUrl(value[key], seen));
 }
 
+function needsServerShareSnapshot(project) {
+  if (!project) return false;
+  if (project.globalBgImage) return true;
+  if (hasInlineDataUrl(project.sourceImages)) return true;
+  return (project.cards || []).some(card => !!card?.uploadedImage || hasInlineDataUrl(card?.overlays));
+}
+
 function saveProjects(projects, activeId) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return Promise.resolve({ ok: false, skipped: true });
   const payload = { projects, activeId, updatedAt: Date.now(), saveSeq: ++projectSaveSeq };
   const skipLocalStorage = !!window.indexedDB && hasInlineDataUrl(projects);
+  let localStored = false;
+  let metaStored = false;
   if (!skipLocalStorage) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       try { localStorage.removeItem(STORAGE_META_KEY); } catch (e) {}
+      localStored = true;
     } catch (e) {
       console.warn('[projects] localStorage save skipped:', e?.message || e);
       try {
@@ -6837,6 +6961,7 @@ function saveProjects(projects, activeId) {
           projectCount: projects.length,
           localStorageFull: true,
         }));
+        metaStored = true;
       } catch (_) {}
     }
   } else {
@@ -6848,17 +6973,34 @@ function saveProjects(projects, activeId) {
         projectCount: projects.length,
         indexedDbOnly: true,
       }));
+      metaStored = true;
     } catch (_) {}
   }
-  projectSaveQueue = projectSaveQueue
+  const indexedSave = projectSaveQueue
     .catch(() => {})
-    .then(() => saveProjectsToIndexedDB(payload))
-    .catch(e => console.warn('[projects] IndexedDB save failed:', e?.message || e));
+    .then(() => saveProjectsToIndexedDB(payload));
+  projectSaveQueue = indexedSave.catch(e => {
+    console.warn('[projects] IndexedDB save failed:', e?.message || e);
+    return null;
+  });
+  return indexedSave
+    .then((indexedResult) => {
+      const indexedStored = indexedResult !== null;
+      if (!localStored && !indexedStored) throw new Error('No persistent project storage available');
+      return { ok: true, payload, localStored, metaStored, indexedStored, indexedDbOnly: skipLocalStorage };
+    })
+    .catch(error => {
+      if (localStored) {
+        return { ok: true, payload, localStored, metaStored, indexedStored: false, indexedDbOnly: skipLocalStorage, warning: 'indexeddb_failed', error };
+      }
+      throw error;
+    });
 }
 
 /* ── Project Share Helpers ── */
 const CARD_DEFAULTS = DEFAULT_CARD();
 const SKIP_CARD_KEYS = new Set(['id', 'uploadedImage']);
+const SHARE_ENCODE_OPTIONS = { includeInlineAssets: true };
 const CARD_KEY_MAP = {
   name:'a', url:'b', start:'c', end:'d',
   layout:'e', photoRatio:'f', useGradient:'g',
@@ -6884,13 +7026,14 @@ const CARD_KEY_MAP = {
   textBoxPaddingX:'14', textBoxPaddingY:'15',
   titleLetterSpacingUnit:'16', subtitleLetterSpacingUnit:'17',
   bodyLetterSpacingUnit:'18', boxTextLetterSpacingUnit:'19',
+  uploadedImage:'20',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
-function stripDefaults(obj, defaults) {
+function stripDefaults(obj, defaults, options = {}) {
   const out = {};
   for (const k of Object.keys(obj)) {
-    if (SKIP_CARD_KEYS.has(k)) continue;
+    if (SKIP_CARD_KEYS.has(k) && !(options.includeInlineAssets && k === 'uploadedImage')) continue;
     if (k === 'overlays') {
       if (obj.overlays?.length > 0) {
         out[CARD_KEY_MAP['overlays'] || 'overlays'] = obj.overlays.map(o => { const oc = {...o}; delete oc.imageData; return oc; });
@@ -6910,13 +7053,14 @@ function restoreDefaults(obj) {
 
 const PROJ_DEFAULTS = { outputFormat: 'video', outputFormatTouched: false, outputSize: 1080, aspectRatio: '1:1', globalImageSource: 'thumbnail', copyTone: 'hooking', sourceType: 'youtube' };
 
-function encodeProject(project) {
+function buildProjectSharePayload(project, options = {}) {
   const s = { n: project.name, u: project.globalUrl };
   if (project.outputFormat !== PROJ_DEFAULTS.outputFormat) s.f = project.outputFormat;
   if (project.outputFormatTouched) s.ot = 1;
   if (project.outputSize !== PROJ_DEFAULTS.outputSize) s.s = project.outputSize;
   if (project.aspectRatio !== PROJ_DEFAULTS.aspectRatio) s.a = project.aspectRatio;
   if (project.globalImageSource !== PROJ_DEFAULTS.globalImageSource) s.i = project.globalImageSource;
+  if (options.includeInlineAssets && project.globalBgImage) s.g = project.globalBgImage;
   if (project.copyTone && project.copyTone !== PROJ_DEFAULTS.copyTone) s.ct = project.copyTone;
   // article 모드 필드 (값이 있을 때만 직렬화 — 기존 YouTube 공유 URL 사이즈 영향 없음)
   if (project.sourceType && project.sourceType !== PROJ_DEFAULTS.sourceType) s.t = project.sourceType;
@@ -6924,8 +7068,17 @@ function encodeProject(project) {
   if (project.sourceTitle) s.h = project.sourceTitle;
   if (Array.isArray(project.sourceImages) && project.sourceImages.length > 0) s.m = project.sourceImages;
   if (Array.isArray(project.sourceImageMeta) && project.sourceImageMeta.length > 0) s.q = normalizeProjectSourceImageMeta(project.sourceImages || [], project.sourceImageMeta);
-  s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS));
+  s.c = (project.cards || []).map(c => stripDefaults(c, CARD_DEFAULTS, options));
+  return s;
+}
+
+function encodeProject(project, options = {}) {
+  const s = buildProjectSharePayload(project, options);
   return LZString.compressToEncodedURIComponent(JSON.stringify(s));
+}
+
+function encodeProjectForServer(project, options = SHARE_ENCODE_OPTIONS) {
+  return JSON.stringify(buildProjectSharePayload(project, options));
 }
 
 // 네이버 pstatic.net 이미지 URL 정규화 (클라이언트용 헬퍼, lib/article-extractor.js와 동일 로직)
@@ -6943,7 +7096,8 @@ function normalizeNaverImageUrl(src) {
 }
 
 function decodeProject(encoded) {
-  const json = LZString.decompressFromEncodedURIComponent(encoded);
+  const raw = typeof encoded === 'string' ? encoded.trim() : '';
+  const json = raw.startsWith('{') ? raw : LZString.decompressFromEncodedURIComponent(encoded);
   if (!json) return null;
   const s = JSON.parse(json);
   const proj = {
@@ -6956,7 +7110,7 @@ function decodeProject(encoded) {
     aspectRatio: s.a || PROJ_DEFAULTS.aspectRatio,
     globalImageSource: s.i || PROJ_DEFAULTS.globalImageSource,
     copyTone: s.ct || PROJ_DEFAULTS.copyTone,
-    globalBgImage: null,
+    globalBgImage: s.g || null,
     cards: (s.c || []).map(c => restoreDefaults(c)),
     // article 모드 필드 (없으면 기본값 — 기존 YouTube 공유 URL 호환성 보장)
     sourceType: s.t || PROJ_DEFAULTS.sourceType,
@@ -6971,6 +7125,7 @@ function decodeProject(encoded) {
   if (proj.sourceType === 'article' && proj.sourceImages.length > 0) {
     proj.cards = proj.cards.map(c => {
       const articleCard = { ...c, sourceType: 'article' };
+      if (articleCard.uploadedImage) return { ...articleCard, fillSource: 'image' };
       const idx = c.articleMeta && typeof c.articleMeta.sourceImageIndex === 'number'
         ? c.articleMeta.sourceImageIndex
         : null;
@@ -7258,7 +7413,7 @@ function ShareModal({ url, onClose }) {
         React.createElement("button", { onClick: copyLink, style: { padding: '8px 14px', background: copied ? '#22c55e' : T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' } }, copied ? "\uBCF5\uC0AC\uB428!" : "\uBCF5\uC0AC"),
       ),
       React.createElement("p", { style: { color: T.textSecondary, fontSize: 12, lineHeight: 1.6, textAlign: 'center', marginBottom: 20 } },
-        "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC2E4\uC2DC\uAC04 \uACF5\uB3D9\uD3B8\uC9D1\uC740 \uC9C0\uC6D0\uB418\uC9C0 \uC54A\uC73C\uBA70, \uAC01\uC790 \uB3C5\uB9BD\uC801\uC73C\uB85C \uD3B8\uC9D1\uB429\uB2C8\uB2E4."
+        "\uC774 \uB9C1\uD06C\uB97C \uBC1B\uC740 \uC0AC\uB78C\uC740 \uD504\uB85C\uC81D\uD2B8\uB97C \uC790\uC2E0\uC758 \uD3B8\uC9D1 \uD654\uBA74\uC73C\uB85C \uAC00\uC838\uC62C \uC218 \uC788\uC5B4\uC694.\n\uC218\uC815 \uD6C4\uC5D0\uB294 \uACF5\uC720\uD558\uAE30\uB97C \uB2E4\uC2DC \uB20C\uB7EC \uCD5C\uC2E0 \uB9C1\uD06C\uB97C \uBCF5\uC0AC\uD574 \uC8FC\uC138\uC694."
       ),
       React.createElement("div", { style: { textAlign: 'center' } },
         React.createElement("button", { onClick: onClose, style: { padding: '9px 24px', background: 'rgba(255,255,255,0.06)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: 'pointer' } }, "\uB2EB\uAE30"),
@@ -9032,8 +9187,13 @@ function ProjectTabs({ projects, activeId, onSwitch, onAdd, onClose, onRename, a
     setEditingId(null);
   };
 
-  const visibleProjects = projects.slice(0, MAX_VISIBLE);
-  const overflowProjects = projects.slice(MAX_VISIBLE);
+  const activeProjectIndex = projects.findIndex(p => p.id === activeId);
+  const activeProjectInOverflow = activeProjectIndex >= MAX_VISIBLE ? projects[activeProjectIndex] : null;
+  const visibleProjects = activeProjectInOverflow
+    ? [activeProjectInOverflow, ...projects.filter(p => p.id !== activeId).slice(0, MAX_VISIBLE - 1)]
+    : projects.slice(0, MAX_VISIBLE);
+  const visibleProjectIds = new Set(visibleProjects.map(p => p.id));
+  const overflowProjects = projects.filter(p => !visibleProjectIds.has(p.id));
   const tabW = 140;
 
   const renderTab = (proj, opts = {}) => {
@@ -9300,7 +9460,7 @@ function BaeminLayoutTabPanel({ card, updateMulti, cards, activeIndex, onCardCha
         React.createElement("input", { type: "color", value: card.bgColor || BAEMIN_CREAM, onChange: (e) => updateMulti({ bgColor: e.target.value, ...(isBaeminNoPhoto ? { bgOpacity: 1 } : {}) }), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor || BAEMIN_CREAM),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti({ photoRatio: 100 - v }), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && card.layout !== "text_box" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "배경 영역", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, {
         label: "투명도",
         value: isBaeminNoPhoto ? 1 : (card.bgOpacity ?? 0.75),
@@ -9703,7 +9863,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
@@ -9722,6 +9882,10 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const moveAllText = (dx, dy) => {
+      const patch = buildTextGroupMovePatch(card, { dx, dy, includeBoxText: isBaeminBoxBody });
+      if (Object.keys(patch).length) updateMulti(patch);
+    };
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
@@ -9729,6 +9893,13 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlign(v) }, lb))
+        ),
+      ),
+      // 전체 이동
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC774\uB3D9"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          TEXT_GROUP_MOVE_CONTROLS.map(([key, lb, dx, dy]) => React.createElement(PillBtn, { key, active: false, onClick: () => moveAllText(dx, dy) }, lb))
         ),
       ),
       // 전체 폰트
@@ -10262,7 +10433,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
         React.createElement("input", { type: "color", value: card.bgColor, onChange: (e) => update("bgColor", e.target.value), style: { width: 32, height: 28, borderRadius: 6, border: '1px solid ' + T.border, cursor: 'pointer' } }),
         React.createElement("span", { style: { fontSize: 11, color: T.textMuted } }, card.bgColor),
       ),
-      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - (card.photoRatio ?? 50), min: 10, max: 80, step: 1, onChange: (v) => update("photoRatio", 100 - v), suffix: '%' }),
+      card.useBg !== false && card.layout !== "full_bg" && !isBaeminVideoPostLayout(card.layout) && React.createElement(SliderRow, { label: "\uBC30\uACBD \uC601\uC5ED", value: 100 - normalizePhotoRatioPercent(card.photoRatio, 50), min: 10, max: 80, step: 1, onChange: (v) => updateMulti(buildTextAreaPatch(card, v)), suffix: '%' }),
       card.useBg !== false && React.createElement(SliderRow, { label: "\uD22C\uBA85\uB3C4", value: card.bgOpacity, min: 0, max: 1, step: 0.01, onChange: (v) => update("bgOpacity", v), defaultValue: 0.75 }),
       card.useBg !== false && React.createElement(CheckboxRow, { label: "\uD22C\uBA85\uD558\uAC8C", checked: card.bgOpacity === 0, onChange: (v) => update("bgOpacity", v ? 0 : 0.75) }),
     ),
@@ -10282,12 +10453,23 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
+    const moveAllTextDesk = (dx, dy) => {
+      const patch = buildTextGroupMovePatch(card, { dx, dy, includeBoxText: isBaeminBoxBody });
+      if (Object.keys(patch).length) updateMulti(patch);
+    };
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC815\uB82C"),
         React.createElement("div", { style: { display: 'flex', gap: 3 } },
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlignDesk(v) }, lb))
+        ),
+      ),
+      // 전체 이동
+      React.createElement("div", { style: headerRowStyle },
+        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC774\uB3D9"),
+        React.createElement("div", { style: { display: 'flex', gap: 3 } },
+          TEXT_GROUP_MOVE_CONTROLS.map(([key, lb, dx, dy]) => React.createElement(PillBtn, { key, active: false, onClick: () => moveAllTextDesk(dx, dy) }, lb))
         ),
       ),
       // 전체 폰트
@@ -10727,6 +10909,19 @@ export default function App() {
   const router = useRouter();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
+  const projectsRef = useRef([]);
+  const activeProjectIdRef = useRef(null);
+  const commitProjects = useCallback((updater) => {
+    const prev = projectsRef.current || [];
+    const next = typeof updater === 'function' ? updater(prev) : updater;
+    projectsRef.current = next;
+    setProjects(next);
+    return next;
+  }, []);
+  const commitActiveProjectId = useCallback((id) => {
+    activeProjectIdRef.current = id;
+    setActiveProjectId(id);
+  }, []);
   const [showJson, setShowJson] = useState(false);
   const [jsonStr, setJsonStr] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -10741,6 +10936,7 @@ export default function App() {
   const [pendingConfirm, setPendingConfirm] = useState(null); // { message, confirmText, confirmColor, onConfirm }
   const [shareUrl, setShareUrl] = useState(null);
   const [shareLoading, setShareLoading] = useState(false);
+  const [manualSaveState, setManualSaveState] = useState({ status: 'idle', message: '' });
   const [importLoading, setImportLoading] = useState(false);
   const [importProject, setImportProject] = useState(null);
   const [pageVariant, setPageVariant] = useState(PAGE_VARIANTS.DEFAULT);
@@ -10802,6 +10998,7 @@ export default function App() {
   const pollIntervalRef = useRef(null);
   const activeJobIdRef = useRef(null);
   const homeLogoTapRef = useRef({ count: 0, timer: null });
+  const manualSaveTimerRef = useRef(null);
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
 
   const handleHomeLogoClick = useCallback(() => {
@@ -10823,6 +11020,7 @@ export default function App() {
 
   useEffect(() => () => {
     if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
+    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
   }, []);
 
   // Tutorial auto-start on first editor entry
@@ -10854,12 +11052,12 @@ export default function App() {
       const saved = await loadProjects();
       if (!alive) return;
       if (saved) {
-        setProjects(saved.projects);
-        setActiveProjectId(saved.activeId || saved.projects[0]?.id);
+        commitProjects(saved.projects);
+        commitActiveProjectId(saved.activeId || saved.projects[0]?.id);
       } else {
         const first = DEFAULT_PROJECT('\uD504\uB85C\uC81D\uD2B8 1');
-        setProjects([first]);
-        setActiveProjectId(first.id);
+        commitProjects([first]);
+        commitActiveProjectId(first.id);
       }
       const path = window.location.pathname;
       const shortRoute = parseShortShareRoute(path);
@@ -10994,7 +11192,10 @@ export default function App() {
 
   // Auto-save to localStorage
   useEffect(() => {
-    if (projects.length > 0 && activeProjectId) saveProjects(projects, activeProjectId);
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    if (projects !== latestProjects || activeProjectId !== latestActiveId) return;
+    if (latestProjects.length > 0 && latestActiveId) saveProjects(latestProjects, latestActiveId).catch(() => {});
   }, [projects, activeProjectId]);
 
   // Report card count per session
@@ -11016,9 +11217,19 @@ export default function App() {
   const globalBgImage = activeProject?.globalBgImage || null;
   const cards = activeProject?.cards || [];
 
+  const clearSharedRouteForLocalEdit = useCallback(() => {
+    if (!routeShareId || editorMode !== 'editor') return;
+    setRouteShareId(null);
+    const targetPath = buildEditorPathForVariant(pageVariant);
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      window.history.replaceState(window.history.state, '', targetPath);
+    }
+  }, [editorMode, pageVariant, routeShareId]);
+
   const updateProject = useCallback((updates) => {
-    setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
-  }, [activeProjectId]);
+    clearSharedRouteForLocalEdit();
+    commitProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, ...updates } : p));
+  }, [activeProjectId, clearSharedRouteForLocalEdit, commitProjects]);
 
   const setGlobalUrl = (v) => {
     const prev = activeProject?.globalUrl || '';
@@ -11033,7 +11244,8 @@ export default function App() {
   const setGlobalImageSource = (v) => updateProject({ globalImageSource: v });
   const setGlobalBgImage = (v) => updateProject({ globalBgImage: v });
   const setCards = (updater) => {
-    setProjects(prev => prev.map(p => {
+    clearSharedRouteForLocalEdit();
+    commitProjects(prev => prev.map(p => {
       if (p.id !== activeProjectId) return p;
       const newCards = typeof updater === 'function' ? updater(p.cards) : updater;
       return { ...p, cards: newCards };
@@ -11134,8 +11346,8 @@ export default function App() {
   const confirmNewProject = (name) => {
     setShowNewProject(false);
     const proj = DEFAULT_PROJECT(name);
-    setProjects(prev => [...prev, proj]);
-    setActiveProjectId(proj.id);
+    commitProjects(prev => [...prev, proj]);
+    commitActiveProjectId(proj.id);
     setGenProgress(''); setResults([]);
   };
 
@@ -11144,10 +11356,10 @@ export default function App() {
   const confirmCloseProject = () => {
     const id = confirmClose;
     setConfirmClose(null);
-    setProjects(prev => {
+    commitProjects(prev => {
       const next = prev.filter(p => p.id !== id);
       if (activeProjectId === id && next.length > 0) {
-        setActiveProjectId(next[0].id);
+        commitActiveProjectId(next[0].id);
       }
       return next;
     });
@@ -11155,11 +11367,11 @@ export default function App() {
   };
 
   const renameProject = (id, name) => {
-    setProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
+    commitProjects(prev => prev.map(p => p.id === id ? { ...p, name } : p));
   };
 
   const switchProject = (id) => {
-    setActiveProjectId(id);
+    commitActiveProjectId(id);
     setGenProgress(''); setResults([]);
   };
 
@@ -11175,35 +11387,73 @@ export default function App() {
         : null;
 
     if (targetId) {
-      setProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...patch } : p));
+      commitProjects(prev => prev.map(p => p.id === targetId ? { ...p, ...patch } : p));
     } else {
       const nextProject = { ...DEFAULT_PROJECT(name), ...patch };
       targetId = nextProject.id;
-      setProjects(prev => [...prev, nextProject]);
+      commitProjects(prev => [...prev, nextProject]);
     }
 
-    setActiveProjectId(targetId);
+    commitActiveProjectId(targetId);
     setPendingProjectId(null);
     setActiveCardIdx(0);
     setGenProgress('');
     setResults([]);
     return targetId;
-  }, [activeProjectId, pendingProjectId, projects]);
+  }, [activeProjectId, commitActiveProjectId, commitProjects, pendingProjectId, projects]);
+
+  const getLatestActiveProject = useCallback(() => {
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    return latestProjects.find(p => p.id === latestActiveId) || latestProjects[0] || activeProject;
+  }, [activeProject, activeProjectId, projects]);
+
+  const handleManualSave = useCallback(async () => {
+    const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
+    const latestActiveId = activeProjectIdRef.current || activeProjectId;
+    if (!latestProjects.length || !latestActiveId || manualSaveState.status === 'saving') return;
+    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
+    setManualSaveState({ status: 'saving', message: '저장 중' });
+    try {
+      try {
+        if (navigator.storage?.persist) await navigator.storage.persist();
+      } catch (_) {}
+      const result = await saveProjects(latestProjects, latestActiveId);
+      const savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      setManualSaveState({
+        status: 'saved',
+        message: result.warning === 'indexeddb_failed' ? '저장 완료' : `저장 완료 ${savedAt}`,
+      });
+      manualSaveTimerRef.current = setTimeout(() => {
+        setManualSaveState(prev => prev.status === 'saved' ? { status: 'idle', message: '' } : prev);
+      }, 6000);
+    } catch (error) {
+      console.warn('[projects] manual save failed:', error?.message || error);
+      setManualSaveState({ status: 'error', message: '저장 실패' });
+      setAlertMsg('프로젝트 저장에 실패했어요.\n브라우저 저장소가 가득 찼거나 사이트 데이터 접근이 막혔을 수 있어요.\n공유하기로 백업 링크를 만들어 주세요.');
+    }
+  }, [activeProjectId, manualSaveState.status, projects]);
 
   const shareProject = async () => {
-    if (!activeProject || shareLoading) return;
+    const projectToShare = getLatestActiveProject();
+    if (!projectToShare || shareLoading) return;
     setShareLoading(true);
-    const encoded = encodeProject(activeProject);
+    const serverEncoded = encodeProjectForServer(projectToShare);
     // Try Supabase short URL first
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: encoded }),
+        body: JSON.stringify({ data: serverEncoded }),
       });
       if (res.ok) {
         const { id } = await res.json();
-        const url = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`;
+        const sharePath = buildShortSharePath(id, pageVariant);
+        const url = `${window.location.origin}${sharePath}`;
+        if (isBmOnlyPage) {
+          setRouteShareId(id);
+          window.history.replaceState(window.history.state, '', sharePath);
+        }
         if (navigator.clipboard) navigator.clipboard.writeText(url);
         setShareLoading(false);
         setShareUrl(url);
@@ -11211,6 +11461,12 @@ export default function App() {
       }
     } catch (e) { /* fallback to d= method */ }
     // Fallback: embed data in URL directly
+    if (needsServerShareSnapshot(projectToShare)) {
+      setShareLoading(false);
+      setAlertMsg('이미지가 포함된 프로젝트는 서버 저장이 필요해요.\n공유 서버 저장에 실패해서 링크를 만들 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    const encoded = encodeProject(projectToShare);
     const url = `${window.location.origin}/share?d=${encoded}`;
     setShareLoading(false);
     if (url.length > 8000) {
@@ -11223,13 +11479,19 @@ export default function App() {
 
   const handleImport = () => {
     if (!importProject) return;
-    setProjects(prev => [...prev, importProject]);
-    setActiveProjectId(importProject.id);
+    const importedProject = importProject;
+    setRouteShareId(null);
+    const nextProjects = commitProjects(prev => [importedProject, ...prev.filter(p => p.id !== importedProject.id)]);
+    commitActiveProjectId(importedProject.id);
+    saveProjects(nextProjects, importedProject.id).catch(() => {});
+    setActiveCardIdx(0);
+    setShowProjectSelector(false);
+    setPendingProjectId(null);
     setEditorMode('editor');
     setGenProgress(''); setResults([]);
     setImportProject(null);
-    if (isBmOnlyPage && routeShareId) {
-      window.history.replaceState(window.history.state, '', buildShortSharePath(routeShareId, pageVariant));
+    if (isBmOnlyPage) {
+      window.history.replaceState(window.history.state, '', buildEditorPathForVariant(pageVariant));
     } else {
       router.push('/edit', undefined, { shallow: true });
     }
@@ -11400,17 +11662,21 @@ export default function App() {
       }
       setGenProgress("서버에 요청 중...");
       let projectShareUrl = '';
-      if (activeProject) {
+      const projectBaseForShare = getLatestActiveProject();
+      if (projectBaseForShare) {
         try {
           const projectForShare = effectiveOutputFormat === outputFormat
-            ? activeProject
-            : { ...activeProject, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
-          const encoded = encodeProject(projectForShare);
+            ? projectBaseForShare
+            : { ...projectBaseForShare, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
+          const serverEncoded = encodeProjectForServer(projectForShare);
           try {
-            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: encoded }) });
+            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: serverEncoded }) });
             if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`; }
           } catch (_) {}
-          if (!projectShareUrl) projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          if (!projectShareUrl && !needsServerShareSnapshot(projectForShare)) {
+            const encoded = encodeProject(projectForShare);
+            projectShareUrl = `${window.location.origin}/share?d=${encoded}`;
+          }
         } catch (shareErr) {
           console.warn('[generate] project share link skipped:', shareErr);
         }
@@ -11740,7 +12006,7 @@ export default function App() {
     const currentIdx = sourceImages.indexOf(currentSrc);
     const nextIdx = currentIdx < 0 ? 0 : (currentIdx + 1) % sourceImages.length;
     const nextSrc = sourceImages[nextIdx];
-    setProjects(prev => prev.map(p => {
+    commitProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
       newCards[cardIdx] = clearGeneratedCache({
@@ -11759,7 +12025,7 @@ export default function App() {
     if (!proj) return;
     const target = proj.cards?.[cardIdx];
     if (!target) return;
-    setProjects(prev => prev.map(p => {
+    commitProjects(prev => prev.map(p => {
       if (p.id !== proj.id) return p;
       const newCards = [...(p.cards || [])];
       newCards[cardIdx] = clearGeneratedCache({
@@ -11811,7 +12077,7 @@ export default function App() {
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || '재생성 실패');
 
-      setProjects(prev => prev.map(p => {
+      commitProjects(prev => prev.map(p => {
         if (p.id !== proj.id) return p;
         const added = addProjectSourceImage(p, json.url, {
           source: 'ai',
@@ -12106,6 +12372,34 @@ export default function App() {
     if (failCount > 0) window.alert(`${failCount}\uAC1C \uCE74\uB4DC\uC758 \uCE74\uD53C \uBCC0\uD658\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.`);
   };
 
+  const manualSaveBusy = manualSaveState.status === 'saving';
+  const manualSaveLabel = manualSaveState.status === 'saving'
+    ? '저장 중...'
+    : manualSaveState.status === 'saved'
+      ? (manualSaveState.message || '저장 완료')
+      : manualSaveState.status === 'error'
+        ? '저장 실패'
+        : '저장';
+  const manualSaveMobileLabel = manualSaveState.status === 'saving'
+    ? '저장중'
+    : manualSaveState.status === 'saved'
+      ? '완료'
+      : manualSaveState.status === 'error'
+        ? '실패'
+        : '저장';
+  const manualSaveBg = manualSaveState.status === 'saved'
+    ? 'rgba(34,197,94,0.14)'
+    : manualSaveState.status === 'error'
+      ? 'rgba(239,68,68,0.16)'
+      : manualSaveBusy
+        ? T.surfaceHover
+        : 'rgba(255,255,255,0.05)';
+  const manualSaveColor = manualSaveState.status === 'saved'
+    ? '#4ade80'
+    : manualSaveState.status === 'error'
+      ? '#f87171'
+      : T.textSecondary;
+
   return React.createElement("div", {
     'data-page-variant': pageVariant,
     'data-bm-only-page': isBmOnlyPage ? 'true' : undefined,
@@ -12329,8 +12623,8 @@ export default function App() {
           ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
               projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
+              React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '6px 8px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 11, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: !projects.length ? 0.5 : 1, minWidth: 44 } }, manualSaveMobileLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
-              null,
               React.createElement("button", {
                 'data-tour': 'generate',
                 onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
@@ -12339,8 +12633,8 @@ export default function App() {
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
+              React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '8px 14px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: !projects.length ? 0.5 : 1, minWidth: 78 } }, manualSaveLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uACF5\uC720\uD558\uAE30"),
-              null,
               React.createElement("button", {
                 'data-tour': 'generate',
                 onClick: () => { setShowCardSelect(true); setEditorPreviewMuted(true); }, disabled: generating,
