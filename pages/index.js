@@ -7,8 +7,8 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0618';
-const BUILD_NUM = 13; // same-day deploy count
+const BUILD_DATE = '2026.0619';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
   '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
   '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
-  '📥 공유 프로젝트 가져오기 — 가져온 프로젝트를 즉시 활성 탭으로 고정',
 ];
 
 /* ── Icons ── */
