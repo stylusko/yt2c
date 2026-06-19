@@ -3,7 +3,7 @@
 // Stream events:
 //   analyzing, dividing, cards-ready, progress, card, done, error
 
-import { divideArticleToCards, getArticleStylePreset } from '../../lib/claude.js';
+import { divideArticleToCards, composeArticleImagePrompt } from '../../lib/claude.js';
 import { generateImage, persistImageToBucket } from '../../lib/openai-image.js';
 import { fetchImageBufferDirectThenProxy } from '../../lib/article-extractor.js';
 
@@ -68,7 +68,6 @@ export default async function handler(req, res) {
   }
 
   const projectId = genId();
-  const preset = getArticleStylePreset(presetId);
   const ar = aspectRatio || '1:1';
   const imageMode = rawMode === 'generate' ? 'generate' : rawMode === 'manual' ? 'manual' : 'reuse';
   const availableImages = Array.isArray(article.images) ? article.images.length : 0;
@@ -143,7 +142,7 @@ export default async function handler(req, res) {
         const myIdx = cursor++;
         if (myIdx >= generateTargets.length) return;
         const c = generateTargets[myIdx];
-        const fullPrompt = `${preset.stylePrefix}, ${c.imagePrompt}, no text, no letters, no typography`;
+        const fullPrompt = composeArticleImagePrompt({ subject: c.imagePrompt, presetId });
 
         let bgImage = null;
         // aiMeta.prompt 는 stylePrefix 를 제외한 '주제(subject)'만 저장 — 재생성 시 새 스타일과 섞이지 않도록

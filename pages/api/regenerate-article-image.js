@@ -6,7 +6,7 @@
 // generate-cards-from-article 는 Claude 분할까지 포함한 full 파이프라인이라 단건 재생성엔 과함.
 
 import { generateImage } from '../../lib/openai-image.js';
-import { getArticleStylePreset, listArticleStylePresets } from '../../lib/claude.js';
+import { getArticleStylePreset, listArticleStylePresets, composeArticleImagePrompt } from '../../lib/claude.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '64kb' } },
@@ -41,11 +41,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: '프롬프트가 비어있습니다.' });
     }
 
-    const preset = getArticleStylePreset(presetId);
     const ar = aspectRatio || '1:1';
     // 구버전 카드 호환: 저장된 프롬프트에 이전 stylePrefix 가 섞여 있으면 제거
     const subject = stripStylePrefix(prompt);
-    const fullPrompt = `${preset.stylePrefix}, ${subject}, no text, no letters, no typography`;
+    const fullPrompt = composeArticleImagePrompt({ subject, presetId });
 
     const img = await generateImage({ prompt: fullPrompt, aspectRatio: ar });
 
