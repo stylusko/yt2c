@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,11 +56,11 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
-  '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
 ];
@@ -1180,17 +1180,11 @@ const STYLE_COPY_GROUPS = [
   },
 ];
 const STYLE_COPY_GROUP_IDS = STYLE_COPY_GROUPS.map(g => g.id);
-const TEXT_GROUP_MOVE_STEP = 12;
+const TEXT_GROUP_MOVE_SLIDER_STEP = 1;
 const TEXT_OFFSET_X_MIN = -540;
 const TEXT_OFFSET_X_MAX = 540;
 const TEXT_OFFSET_Y_MIN = -1080;
 const TEXT_OFFSET_Y_MAX = 1080;
-const TEXT_GROUP_MOVE_CONTROLS = [
-  ['up', '↑', 0, -TEXT_GROUP_MOVE_STEP],
-  ['down', '↓', 0, TEXT_GROUP_MOVE_STEP],
-  ['left', '←', -TEXT_GROUP_MOVE_STEP, 0],
-  ['right', '→', TEXT_GROUP_MOVE_STEP, 0],
-];
 
 function clampTextOffsetValue(value, min, max) {
   const next = Number(value);
@@ -1214,6 +1208,52 @@ function buildTextGroupMovePatch(card = {}, { dx = 0, dy = 0, includeBoxText = f
   if (card.useBody !== false) addField('body');
   if (includeBoxText && card.useBoxText !== false) addField('boxText');
   return patch;
+}
+
+function getTextGroupMovePrefixes(card = {}, includeBoxText = false) {
+  const prefixes = [];
+  if (card.useTitle !== false) prefixes.push('title');
+  if (card.useSubtitle !== false) prefixes.push('subtitle');
+  if (card.useBody !== false) prefixes.push('body');
+  if (includeBoxText && card.useBoxText !== false) prefixes.push('boxText');
+  return prefixes;
+}
+
+function getTextGroupAnchorOffset(card = {}, axis = 'x', includeBoxText = false) {
+  const suffix = axis === 'y' ? 'Y' : 'X';
+  const min = axis === 'y' ? TEXT_OFFSET_Y_MIN : TEXT_OFFSET_X_MIN;
+  const max = axis === 'y' ? TEXT_OFFSET_Y_MAX : TEXT_OFFSET_X_MAX;
+  const prefix = getTextGroupMovePrefixes(card, includeBoxText)[0];
+  return prefix ? clampTextOffsetValue(card[`${prefix}${suffix}`], min, max) : 0;
+}
+
+function buildTextGroupMoveToPatch(card = {}, { axis = 'x', value = 0, includeBoxText = false } = {}) {
+  const min = axis === 'y' ? TEXT_OFFSET_Y_MIN : TEXT_OFFSET_X_MIN;
+  const max = axis === 'y' ? TEXT_OFFSET_Y_MAX : TEXT_OFFSET_X_MAX;
+  const current = getTextGroupAnchorOffset(card, axis, includeBoxText);
+  const next = clampTextOffsetValue(value, min, max);
+  const delta = next - current;
+  if (!delta) return {};
+  return buildTextGroupMovePatch(card, {
+    dx: axis === 'x' ? delta : 0,
+    dy: axis === 'y' ? delta : 0,
+    includeBoxText,
+  });
+}
+
+function TextGroupMoveControls({ card, includeBoxText = false, onChange }) {
+  const moveX = getTextGroupAnchorOffset(card, 'x', includeBoxText);
+  const moveY = getTextGroupAnchorOffset(card, 'y', includeBoxText);
+  const applyAxis = (axis, value) => {
+    const patch = buildTextGroupMoveToPatch(card, { axis, value, includeBoxText });
+    if (Object.keys(patch).length && onChange) onChange(patch);
+  };
+
+  return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0 10px', borderBottom: `1px solid ${T.border}` } },
+    React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "전체 이동"),
+    React.createElement(SliderRow, { label: "좌우", value: moveX, min: TEXT_OFFSET_X_MIN, max: TEXT_OFFSET_X_MAX, step: TEXT_GROUP_MOVE_SLIDER_STEP, onChange: (v) => applyAxis('x', v), suffix: 'px', defaultValue: 0 }),
+    React.createElement(SliderRow, { label: "위아래", value: moveY, min: TEXT_OFFSET_Y_MIN, max: TEXT_OFFSET_Y_MAX, step: TEXT_GROUP_MOVE_SLIDER_STEP, onChange: (v) => applyAxis('y', v), suffix: 'px', defaultValue: 0 }),
+  );
 }
 
 function cloneStyleValue(value) {
@@ -9893,10 +9933,6 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
-    const moveAllText = (dx, dy) => {
-      const patch = buildTextGroupMovePatch(card, { dx, dy, includeBoxText: isBaeminBoxBody });
-      if (Object.keys(patch).length) updateMulti(patch);
-    };
 
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
@@ -9906,13 +9942,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlign(v) }, lb))
         ),
       ),
-      // 전체 이동
-      React.createElement("div", { style: headerRowStyle },
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC774\uB3D9"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          TEXT_GROUP_MOVE_CONTROLS.map(([key, lb, dx, dy]) => React.createElement(PillBtn, { key, active: false, onClick: () => moveAllText(dx, dy) }, lb))
-        ),
-      ),
+      React.createElement(TextGroupMoveControls, { card, includeBoxText: isBaeminBoxBody, onChange: updateMulti }),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
@@ -10464,10 +10494,6 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
     const cardStyle = { background: 'rgba(255,255,255,0.03)', border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
     const headerRowStyle = { display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0', borderBottom: `1px solid ${T.border}` };
     const isBaeminBoxBody = card?.brandGuideId === BAEMIN_GUIDE_ID && card?.brandLayoutId === 'bm-solid-box';
-    const moveAllTextDesk = (dx, dy) => {
-      const patch = buildTextGroupMovePatch(card, { dx, dy, includeBoxText: isBaeminBoxBody });
-      if (Object.keys(patch).length) updateMulti(patch);
-    };
     return React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
       // 전체 정렬
       React.createElement("div", { style: headerRowStyle },
@@ -10476,13 +10502,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
           [['left','\u2630 \uC88C'], ['center','\u2630 \uC911'], ['right','\u2630 \uC6B0']].map(([v, lb]) => React.createElement(PillBtn, { key: v, active: (card.titleAlign || 'left') === v && (card.subtitleAlign || 'left') === v && (card.bodyAlign || 'left') === v && (!isBaeminBoxBody || (card.boxTextAlign || 'left') === v), onClick: () => setAllAlignDesk(v) }, lb))
         ),
       ),
-      // 전체 이동
-      React.createElement("div", { style: headerRowStyle },
-        React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uC774\uB3D9"),
-        React.createElement("div", { style: { display: 'flex', gap: 3 } },
-          TEXT_GROUP_MOVE_CONTROLS.map(([key, lb, dx, dy]) => React.createElement(PillBtn, { key, active: false, onClick: () => moveAllTextDesk(dx, dy) }, lb))
-        ),
-      ),
+      React.createElement(TextGroupMoveControls, { card, includeBoxText: isBaeminBoxBody, onChange: updateMulti }),
       // 전체 폰트
       React.createElement("div", { style: headerRowStyle },
         React.createElement("span", { style: { fontSize: 12, color: T.textMuted, flexShrink: 0, minWidth: 52 } }, "\uC804\uCCB4 \uD3F0\uD2B8"),
