@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
-  '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
 ];
 
 /* ── Icons ── */
@@ -268,6 +268,21 @@ const BAEMIN_PHOTO_COVER_LOGO_POSITION = {
   y: 67 / BAEMIN_FIGMA_CARD_HEIGHT * 100,
   scale: 226 / BAEMIN_FIGMA_CARD_WIDTH * 100,
 };
+const BAEMIN_SOLID_TEXT_BOX = {
+  x: (80 + 893 / 2) / BAEMIN_FIGMA_CARD_WIDTH * 100,
+  width: 893 / BAEMIN_FIGMA_CARD_WIDTH * 100,
+  paddingX: 0,
+  paddingY: 80,
+};
+const BAEMIN_SOLID_BOX_HIGHLIGHT = {
+  x: 50,
+  y: (754 + 392 / 2) / BAEMIN_FIGMA_CARD_HEIGHT * 100,
+  width: 920 / BAEMIN_FIGMA_CARD_WIDTH * 100,
+  height: 392 / BAEMIN_FIGMA_CARD_HEIGHT * 100,
+  paddingX: 72,
+  paddingY: 48,
+  topContentWidth: 866,
+};
 const BAEMIN_LEGACY_PHOTO_COVER_LOGO_POSITION = { x: 14.9, y: 6.2, scale: 21 };
 const BAEMIN_LOGO_VARIANTS = [
   { id: 'white', label: '흰색', src: BAEMIN_LOGO_WHITE_SRC, previewBg: '#101010', swatch: '#ffffff' },
@@ -441,7 +456,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: [BAEMIN_CREAM, BAEMIN_INK, BAEMIN_MINT],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
+      textBoxX: BAEMIN_SOLID_TEXT_BOX.x, textBoxY: 50, textBoxWidth: BAEMIN_SOLID_TEXT_BOX.width, textBoxHeight: 100, textBoxPadding: 80, textBoxPaddingX: BAEMIN_SOLID_TEXT_BOX.paddingX, textBoxPaddingY: BAEMIN_SOLID_TEXT_BOX.paddingY, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
       useTitle: false, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 56, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 84,
@@ -460,7 +475,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
+      textBoxX: BAEMIN_SOLID_TEXT_BOX.x, textBoxY: 50, textBoxWidth: BAEMIN_SOLID_TEXT_BOX.width, textBoxHeight: 100, textBoxPadding: 80, textBoxPaddingX: BAEMIN_SOLID_TEXT_BOX.paddingX, textBoxPaddingY: BAEMIN_SOLID_TEXT_BOX.paddingY, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
       useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 56, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.54, titleX: 0, titleY: 84,
       useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 125,
@@ -479,7 +494,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: [BAEMIN_CREAM, '#FFFFFF', BAEMIN_INK],
     patch: {
       layout: BAEMIN_BOX_BODY_LAYOUT, useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 63.1, textBoxWidth: 85.2, textBoxHeight: 28.3, textBoxPadding: 56, textBoxPaddingX: 80, textBoxPaddingY: 56, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
+      textBoxX: BAEMIN_SOLID_BOX_HIGHLIGHT.x, textBoxY: BAEMIN_SOLID_BOX_HIGHLIGHT.y, textBoxWidth: BAEMIN_SOLID_BOX_HIGHLIGHT.width, textBoxHeight: BAEMIN_SOLID_BOX_HIGHLIGHT.height, textBoxPadding: BAEMIN_SOLID_BOX_HIGHLIGHT.paddingY, textBoxPaddingX: BAEMIN_SOLID_BOX_HIGHLIGHT.paddingX, textBoxPaddingY: BAEMIN_SOLID_BOX_HIGHLIGHT.paddingY, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
       useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 46, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_SOLID_LINE_HEIGHT, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 0,
@@ -2003,7 +2018,9 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
     }
 
     const contentPadX = Math.round(80 * s);
-    const contentW = w - contentPadX * 2;
+    const contentW = isBaeminGuide && card.brandLayoutId === 'bm-solid-box'
+      ? Math.round(BAEMIN_SOLID_BOX_HIGHLIGHT.topContentWidth * s)
+      : w - contentPadX * 2;
     const contentTop = Math.round(164 * s);
     const topGap = Math.round(24 * s);
     let curY = contentTop;
