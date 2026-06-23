@@ -7,13 +7,13 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0619';
+const BUILD_DATE = '2026.0623';
 const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
-const ARTICLE_IMAGE_RENDER_VERSION = 10;
+const ARTICLE_IMAGE_RENDER_VERSION = 11;
 const PAGE_VARIANTS = { DEFAULT: 'default', BM_ONLY: 'bmonly' };
 const BM_ONLY_MODE_PATHS = {
   home: '/bmonly',
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
   '↔️ 텍스트 전체 이동 — 텍스트 묶음 상하좌우 조정',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
   '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
-  '🎚️ BM ONLY 클립 편집 — 영역 조정 반영과 슬라이더 세부 버튼',
 ];
 
 /* ── Icons ── */
@@ -171,8 +171,10 @@ const FONT_OPTIONS = [
   { id: 'Pretendard', label: 'Pretendard', family: 'Pretendard, sans-serif',
     variants: [
       { id: 'Pretendard-Regular.otf', label: 'Regular', weight: 400 },
+      { id: 'Pretendard-Medium.otf', label: 'Medium', weight: 500 },
       { id: 'Pretendard-SemiBold.otf', label: 'SemiBold', weight: 600 },
       { id: 'Pretendard-Bold.otf', label: 'Bold', weight: 700 },
+      { id: 'Pretendard-ExtraBold.otf', label: 'ExtraBold', weight: 800 },
     ]},
   { id: 'BaeminWork', label: '배민워크체', family: "'BAEMINWORK', Pretendard, sans-serif",
     variants: [
@@ -257,7 +259,6 @@ const BAEMIN_VIDEO_POST_VIDEO_HEIGHT = 906;
 const BAEMIN_VIDEO_POST_LOGO_WIDTH = 308;
 const BAEMIN_VIDEO_POST_LOGO_HEIGHT = 52;
 const BAEMIN_VIDEO_POST_LOGO_SCALE = 308 / BAEMIN_VIDEO_POST_DESIGN_WIDTH * 100;
-const BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING = -1.44;
 const BAEMIN_LOGO_DEFAULT_VARIANT = 'white';
 const BAEMIN_LOGO_DEFAULT_OPACITY = 0.5;
 const BAEMIN_LOGO_ASSET_VERSION = 2;
@@ -285,6 +286,9 @@ const LETTER_SPACING_UNIT_PX = 'px';
 const LETTER_SPACING_UNIT_PERCENT = 'percent';
 const BAEMIN_PHOTO_COVER_LETTER_SPACING = -5;
 const BAEMIN_PHOTO_COVER_LINE_HEIGHT = 1.2;
+const BAEMIN_CONTENT_LETTER_SPACING = -2;
+const BAEMIN_CONTENT_LINE_HEIGHT = 1.56;
+const BAEMIN_SOLID_LINE_HEIGHT = 1.6;
 const BAEMIN_AI_HEADLINE_LINE_LIMIT = 14;
 const BAEMIN_TEXT_LIMITS = {
   photoCover: { title: 14, subtitle: 14 },
@@ -354,7 +358,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.34, titleX: 0, titleY: 64,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('textCover')],
@@ -373,8 +377,8 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: [BAEMIN_COVER_AQUA, BAEMIN_INK],
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_COVER_AQUA, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
-      textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 88, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.34, titleX: 0, titleY: 64,
+      textBoxX: 37.05, textBoxY: 50, textBoxWidth: 74.1, textBoxHeight: 100, textBoxPadding: 60, textBoxPaddingX: 80, textBoxPaddingY: 60, textBoxRadius: 0, textBoxBgColor: BAEMIN_COVER_AQUA, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_COVER_AQUA, textBoxBorderWidth: 0,
+      useTitle: true, titleFont: 'BAEMINWORK.otf', titleSize: 140, titleColor: '#041F1C', titleAlign: 'left', titleLetterSpacing: BAEMIN_PHOTO_COVER_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.34, titleX: 0, titleY: 64,
       useSubtitle: false, subtitleFont: 'BAEMINWORK.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('textCover')],
@@ -431,9 +435,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
-      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.18, titleX: 0, titleY: 0,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 52, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.35, bodyX: 0, bodyY: 84,
+      useTitle: false, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 56, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 84,
       overlays: [baeminLogoOverlay('solidBody')],
     },
   },
@@ -450,9 +454,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: 'text_box', useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 50, textBoxWidth: 100, textBoxHeight: 100, textBoxPadding: 80, textBoxRadius: 0, textBoxBgColor: BAEMIN_CREAM, textBoxBgOpacity: 0, textBoxBorderColor: BAEMIN_CREAM, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 64, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 84,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 42, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.36, bodyX: 0, bodyY: 84,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 56, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.54, titleX: 0, titleY: 84,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 30, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 125,
       overlays: [baeminLogoOverlay('solidBody')],
     },
   },
@@ -469,10 +473,10 @@ const BAEMIN_LAYOUT_PRESETS = [
     patch: {
       layout: BAEMIN_BOX_BODY_LAYOUT, useGradient: false, useBg: true, bgColor: BAEMIN_CREAM, bgOpacity: 1, videoFill: 'full', videoBrightness: 0,
       textBoxX: 50, textBoxY: 63.1, textBoxWidth: 85.2, textBoxHeight: 28.3, textBoxPadding: 56, textBoxPaddingX: 80, textBoxPaddingY: 56, textBoxRadius: 0, textBoxBgColor: '#FFFFFF', textBoxBgOpacity: 1, textBoxBorderColor: BAEMIN_INK, textBoxBorderWidth: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.6, titleX: 0, titleY: 0,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-SemiBold.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.6, bodyX: 0, bodyY: 0,
-      useBoxText: true, boxTextFont: 'Pretendard-Regular.otf', boxTextSize: 46, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: 0, boxTextLineHeight: 1.6, boxTextX: 0, boxTextY: 0,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 46, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_SOLID_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 28, subtitleColor: BAEMIN_INK, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: BAEMIN_INK, bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_SOLID_LINE_HEIGHT, bodyX: 0, bodyY: 0,
+      useBoxText: true, boxTextFont: 'Pretendard-Medium.otf', boxTextSize: 46, boxTextColor: BAEMIN_INK, boxTextAlign: 'left', boxTextLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, boxTextLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, boxTextLineHeight: BAEMIN_SOLID_LINE_HEIGHT, boxTextX: 0, boxTextY: 0,
       overlays: [baeminLogoOverlay('solidBody')],
     },
   },
@@ -489,7 +493,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#000000', '#FFFFFF', '#808080'],
     patch: {
       layout: BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT, photoRatio: BAEMIN_VIDEO_POST_VIDEO_HEIGHT / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100, useGradient: false, useBg: true, bgColor: '#000000', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.26, titleX: 0, titleY: 0,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.26, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-Regular.otf', subtitleSize: 32, subtitleColor: '#FFFFFF', subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'center', bodyLetterSpacing: 0, bodyLineHeight: 1.3, bodyX: 0, bodyY: 0,
       overlays: [baeminVideoPostLogoOverlay(BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT)],
@@ -508,7 +512,7 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#000000', '#FFFFFF', '#808080'],
     patch: {
       layout: BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT, photoRatio: BAEMIN_VIDEO_POST_VIDEO_HEIGHT / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100, useGradient: false, useBg: true, bgColor: '#000000', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_VIDEO_POST_TITLE_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PX, titleLineHeight: 1.26, titleX: 0, titleY: 0,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 72, titleColor: '#FFFFFF', titleAlign: 'center', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: 1.26, titleX: 0, titleY: 0,
       useSubtitle: false, subtitleFont: 'Pretendard-Regular.otf', subtitleSize: 32, subtitleColor: '#FFFFFF', subtitleAlign: 'center', subtitleLetterSpacing: 0, subtitleLineHeight: 1.3, subtitleX: 0, subtitleY: 0,
       useBody: false, bodyFont: 'Pretendard-Regular.otf', bodySize: 32, bodyColor: '#FFFFFF', bodyAlign: 'center', bodyLetterSpacing: 0, bodyLineHeight: 1.3, bodyX: 0, bodyY: 0,
       overlays: [baeminVideoPostLogoOverlay(BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT)],
@@ -526,9 +530,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#FFFFFF', BAEMIN_MINT, BAEMIN_INK],
     patch: {
       layout: 'photo_top', photoRatio: 68, baeminTextTopRatio: 1048 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: false, useBg: true, bgColor: '#FFFFFF', bgOpacity: 1, videoFill: 'split', videoBrightness: 0,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 50, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 34, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 40, titleColor: BAEMIN_INK, titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 40, bodyColor: '#333333', bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
   },
@@ -544,9 +548,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
       layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.72, videoFill: 'full', videoBrightness: -6,
-      useTitle: true, titleFont: 'Pretendard-Bold.otf', titleSize: 54, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.12, titleX: 0, titleY: 0,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 36, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      useTitle: true, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
   },
@@ -562,9 +566,9 @@ const BAEMIN_LAYOUT_PRESETS = [
     swatches: ['#000000', '#FFFFFF', BAEMIN_MINT],
     patch: {
       layout: 'photo_top', photoRatio: 65, baeminTextTopRatio: 998 / BAEMIN_FIGMA_CARD_HEIGHT, useGradient: true, useBg: true, bgColor: '#000000', bgOpacity: 0.68, videoFill: 'full', videoBrightness: -4,
-      useTitle: false, titleFont: 'Pretendard-Bold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: 0, titleLineHeight: 1.14, titleX: 0, titleY: 0,
-      useSubtitle: false, subtitleFont: 'Pretendard-SemiBold.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: 0, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
-      useBody: true, bodyFont: 'Pretendard-Regular.otf', bodySize: 40, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: 0, bodyLineHeight: 1.34, bodyX: 0, bodyY: 0,
+      useTitle: false, titleFont: 'Pretendard-ExtraBold.otf', titleSize: 46, titleColor: '#FFFFFF', titleAlign: 'left', titleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, titleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, titleLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, titleX: 0, titleY: 0,
+      useSubtitle: false, subtitleFont: 'Pretendard-Medium.otf', subtitleSize: 26, subtitleColor: BAEMIN_MINT, subtitleAlign: 'left', subtitleLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, subtitleLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, subtitleLineHeight: 1.25, subtitleX: 0, subtitleY: 0,
+      useBody: true, bodyFont: 'Pretendard-Medium.otf', bodySize: 46, bodyColor: '#F5F5F5', bodyAlign: 'left', bodyLetterSpacing: BAEMIN_CONTENT_LETTER_SPACING, bodyLetterSpacingUnit: LETTER_SPACING_UNIT_PERCENT, bodyLineHeight: BAEMIN_CONTENT_LINE_HEIGHT, bodyX: 0, bodyY: 0,
       overlays: [baeminLogoOverlay('photoCover')],
     },
   },
@@ -1605,7 +1609,9 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
 
   const fontMap = {
     "BAEMINWORK.otf": "400 {s}px 'BAEMINWORK', Pretendard, sans-serif",
+    "Pretendard-Medium.otf": "500 {s}px Pretendard, sans-serif",
     "Pretendard-Bold.otf": "700 {s}px Pretendard, sans-serif",
+    "Pretendard-ExtraBold.otf": "800 {s}px Pretendard, sans-serif",
     "Pretendard-SemiBold.otf": "600 {s}px Pretendard, sans-serif",
     "Pretendard-Regular.otf": "400 {s}px Pretendard, sans-serif",
     "BlackHanSans-Regular": "400 {s}px 'Black Han Sans', sans-serif",
@@ -2105,7 +2111,8 @@ async function generateOverlayPng(card, outputSize, aspectRatio = '1:1', { skipO
       for (const ln of wrapText(card.subtitle, subSz, card.subtitleFont, subtitleLS)) textItems.push({ text: ln, font: getFont(card.subtitleFont, subSz), color: card.subtitleColor, lh: subLh, sz: subSz, ls: subtitleLS, ox: subOX, oy: subOY, align: card.subtitleAlign || 'left' });
     }
     if (card.body) {
-      if (card.title || card.subtitle) textItems.push({ type: "gap", size: Math.round(21 * s) });
+      const usesBaeminFigmaPhotoTextGap = isBaeminGuide && ['bm-photo-body', 'bm-photo-frame'].includes(card.brandLayoutId);
+      if (card.title || card.subtitle) textItems.push({ type: "gap", size: usesBaeminFigmaPhotoTextGap ? 0 : Math.round(21 * s) });
       for (const ln of wrapText(card.body, bodySz, card.bodyFont, bodyLS)) textItems.push({ text: ln, font: getFont(card.bodyFont, bodySz), color: card.bodyColor, lh: bodyLh, sz: bodySz, ls: bodyLS, ox: bodyOX, oy: bodyOY, align: card.bodyAlign || 'left' });
     }
     const contentH = textItems.reduce((sum, item) => sum + (item.type === "gap" ? item.size : (item.text ? item.lh : bodySz / 2)), 0);
@@ -5317,11 +5324,12 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
     const PAD = 40 / 1080;
     const fh = (f) => (card[f + 'Size'] || 40) * (card[f + 'LineHeight'] || 1.4) / 1080;
     const isBaeminPhotoCover = isBaeminPhotoCoverLayout(card);
+    const usesBaeminFigmaPhotoTextGap = card.brandGuideId === BAEMIN_GUIDE_ID && ['bm-photo-body', 'bm-photo-frame'].includes(card.brandLayoutId);
     const gap = (f) => (
       isBaeminPhotoCover && f === 'subtitle'
         ? 0
         : f === 'body'
-          ? (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15)
+          ? (usesBaeminFigmaPhotoTextGap ? 0 : (layout === 'photo_top' || layout === 'photo_bottom' ? 21 : 15))
           : 10
     ) / 1080;
 
@@ -7027,6 +7035,9 @@ const CARD_KEY_MAP = {
   titleLetterSpacingUnit:'16', subtitleLetterSpacingUnit:'17',
   bodyLetterSpacingUnit:'18', boxTextLetterSpacingUnit:'19',
   uploadedImage:'20',
+  useBoxText:'21', boxText:'22', boxTextSize:'23', boxTextColor:'24',
+  boxTextFont:'25', boxTextAlign:'26', boxTextLetterSpacing:'27',
+  boxTextLineHeight:'28', boxTextX:'29', boxTextY:'30',
 };
 const CARD_KEY_REV = Object.fromEntries(Object.entries(CARD_KEY_MAP).map(([k,v]) => [v,k]));
 
