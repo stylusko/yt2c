@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 5; // same-day deploy count
+const BUILD_NUM = 6; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
   '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
-  '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
 ];
 
 /* ── Icons ── */
@@ -617,6 +617,21 @@ function baeminLayoutPatch(preset, card = {}) {
 const BAEMIN_COVER_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-cover-square', 'bm-cover-reels'];
 const BAEMIN_PHOTO_COVER_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels'];
 const BAEMIN_VIDEO_POST_LAYOUT_IDS = ['bm-video-post-title-top', 'bm-video-post-title-bottom'];
+const BAEMIN_VIDEO_LAYOUT_DEFAULT_ID = 'bm-video-post-title-top';
+const BAEMIN_VIDEO_LAYOUT_OPTIONS = [
+  {
+    id: 'bm-video-post-title-top',
+    label: '타이틀 상단',
+    desc: '위 제목 · 아래 BI',
+    badge: '가이드 A',
+  },
+  {
+    id: 'bm-video-post-title-bottom',
+    label: '타이틀 하단',
+    desc: '위 BI · 아래 제목',
+    badge: '가이드 B',
+  },
+];
 const BAEMIN_PHOTO_LAYOUT_IDS = ['bm-cover-square', 'bm-cover-reels', ...BAEMIN_VIDEO_POST_LAYOUT_IDS, 'bm-photo-frame', 'bm-photo-body', 'bm-photo-body-only'];
 const BAEMIN_NO_PHOTO_LAYOUT_IDS = ['bm-cover-text-square', 'bm-cover-feed', 'bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
 const BAEMIN_ARTICLE_TEXT_LAYOUT_IDS = ['bm-solid-body', 'bm-solid-title-body', 'bm-solid-box'];
@@ -643,6 +658,10 @@ function defaultBaeminArticleLayoutPreference(articleData = null) {
     ...BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF,
     cover: imageCount > 0 ? BAEMIN_ARTICLE_DEFAULT_LAYOUT_PREF.cover : 'text',
   };
+}
+
+function normalizeBaeminVideoLayoutPreference(layoutId) {
+  return BAEMIN_VIDEO_POST_LAYOUT_IDS.includes(layoutId) ? layoutId : null;
 }
 
 function isBaeminVideoPostLayout(layout) {
@@ -975,7 +994,9 @@ function deriveBaeminBoxText(card, recommendation = {}) {
   return cleanBaeminText(raw).slice(0, 180);
 }
 
-function baeminVideoPostLayoutIdForIndex(index) {
+function baeminVideoPostLayoutIdForIndex(index, layoutPreference = null) {
+  const preferredLayoutId = normalizeBaeminVideoLayoutPreference(layoutPreference);
+  if (preferredLayoutId) return preferredLayoutId;
   return index % 2 === 1 ? 'bm-video-post-title-top' : 'bm-video-post-title-bottom';
 }
 
@@ -999,9 +1020,12 @@ function normalizeBaeminVideoPostTitlePatch(card = {}) {
   };
 }
 
-function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference = null) {
+function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference = null, videoLayoutPreference = null) {
   const articlePreference = sourceType === 'article' && layoutPreference
     ? normalizeBaeminArticleLayoutPreference(layoutPreference)
+    : null;
+  const selectedVideoLayoutId = sourceType !== 'article'
+    ? normalizeBaeminVideoLayoutPreference(videoLayoutPreference)
     : null;
 
   if (index === 0) return baeminPreferredCoverLayoutId(card, aspectRatio, articlePreference);
@@ -1012,7 +1036,7 @@ function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPref
   const allText = [title, getBaeminVisibleText(card, 'subtitle'), body, card?.boxText].filter(Boolean).join('\n');
 
   if (isBaeminVideoPostCandidate(card, index, aspectRatio, sourceType)) {
-    return baeminVideoPostLayoutIdForIndex(index);
+    return baeminVideoPostLayoutIdForIndex(index, selectedVideoLayoutId);
   }
 
   if (articlePreference?.body === 'text') {
@@ -1048,8 +1072,8 @@ function baeminAllowedArticleLayoutIds(card, index, aspectRatio, layoutPreferenc
     : BAEMIN_ARTICLE_PHOTO_GRADIENT_LAYOUT_IDS;
 }
 
-function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType, layoutPreference = null) {
-  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference);
+function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, sourceType, layoutPreference = null, videoLayoutPreference = null) {
+  const fallback = fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference, videoLayoutPreference);
   const preset = BAEMIN_LAYOUT_PRESETS.find(p => p.id === layoutId);
   if (!preset) return fallback;
 
@@ -1068,6 +1092,10 @@ function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, 
   const allowedVideoLayoutIds = isBaeminVideoPostCandidate(card, index, aspectRatio, sourceType)
     ? BAEMIN_VIDEO_POST_LAYOUT_IDS
     : null;
+  const selectedVideoLayoutId = allowedVideoLayoutIds
+    ? normalizeBaeminVideoLayoutPreference(videoLayoutPreference)
+    : null;
+  if (selectedVideoLayoutId) return selectedVideoLayoutId;
   if (allowedVideoLayoutIds && !allowedVideoLayoutIds.includes(layoutId)) return fallback;
 
   if (hasVisual && BAEMIN_NO_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
@@ -1107,14 +1135,17 @@ function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
   return clearGeneratedCache(clampBaeminCardCopy({ ...card, ...patch }));
 }
 
-async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true, layoutPreference = null } = {}) {
+async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceType = 'youtube', useLLM = true, layoutPreference = null, videoLayoutPreference = null } = {}) {
   const sourceCards = Array.isArray(cards) ? cards : [];
   const normalizedLayoutPreference = sourceType === 'article' && layoutPreference
     ? normalizeBaeminArticleLayoutPreference(layoutPreference)
     : null;
+  const normalizedVideoLayoutPreference = sourceType !== 'article'
+    ? normalizeBaeminVideoLayoutPreference(videoLayoutPreference)
+    : null;
   const fallbackRecommendations = sourceCards.map((card, index) => ({
     cardIndex: index,
-    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, normalizedLayoutPreference),
+    layoutId: fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, normalizedLayoutPreference, normalizedVideoLayoutPreference),
     confidence: 0.5,
     reason: 'fallback',
   }));
@@ -1148,7 +1179,7 @@ async function applyBaeminGeneratedLayouts(cards, { aspectRatio = '1:1', sourceT
   const byIndex = new Map(recommendations.map(item => [item.cardIndex, item]));
   return sourceCards.map((card, index) => {
     const recommendation = byIndex.get(index) || fallbackRecommendations[index];
-    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType, normalizedLayoutPreference);
+    const layoutId = normalizeBaeminRecommendedLayoutId(recommendation?.layoutId, card, index, aspectRatio, sourceType, normalizedLayoutPreference, normalizedVideoLayoutPreference);
     return clearGeneratedCache(normalizeBaeminGeneratedCardCopy(
       applyBaeminLayoutRecommendation(card, layoutId, recommendation)
     ));
@@ -7856,11 +7887,71 @@ function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy
 }
 
 /* ── Wizard Screen ── */
-function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, aiMode }) {
+function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplete, onCancel, aiMode, isBmOnlyPage = false }) {
   const [presetHover, setPresetHover] = useState(null);
   const [durationLoading, setDurationLoading] = useState(false);
   const [durationError, setDurationError] = useState('');
   const update = (k, v) => onDataChange({ ...data, [k]: v });
+  const isBmOnlyAiVideo = aiMode && isBmOnlyPage;
+  const selectedBmVideoLayoutId = normalizeBaeminVideoLayoutPreference(data.bmVideoLayoutId) || BAEMIN_VIDEO_LAYOUT_DEFAULT_ID;
+  const updateBmVideoLayout = (layoutId) => onDataChange({
+    ...data,
+    aspectRatio: '3:4',
+    bmVideoLayoutId: normalizeBaeminVideoLayoutPreference(layoutId) || BAEMIN_VIDEO_LAYOUT_DEFAULT_ID,
+  });
+  const renderBmVideoLayoutThumb = (option, active) => {
+    const titleTop = option.id === 'bm-video-post-title-top';
+    const titleBlock = React.createElement("div", {
+      style: {
+        height: 21,
+        padding: '5px 6px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        background: '#0b0b0f',
+      },
+    },
+      React.createElement("span", { style: { width: '74%', height: 4, borderRadius: 99, background: active ? '#ffffff' : 'rgba(255,255,255,0.78)' } }),
+      React.createElement("span", { style: { width: '50%', height: 4, borderRadius: 99, background: active ? BAEMIN_MINT : 'rgba(42,230,205,0.78)' } }),
+    );
+    const brandBlock = React.createElement("div", {
+      style: {
+        height: 16,
+        padding: '5px 6px',
+        display: 'flex',
+        alignItems: 'center',
+        background: '#0b0b0f',
+      },
+    },
+      React.createElement("span", { style: { width: 34, height: 5, borderRadius: 99, background: 'rgba(255,255,255,0.72)' } }),
+    );
+    const visualBlock = React.createElement("div", {
+      style: {
+        flex: 1,
+        minHeight: 0,
+        background: 'linear-gradient(135deg, #19d8c3 0%, #155e75 42%, #111827 100%)',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      },
+    });
+    return React.createElement("div", {
+      style: {
+        width: 52,
+        height: 70,
+        borderRadius: 8,
+        overflow: 'hidden',
+        border: `1.5px solid ${active ? '#10b981' : 'rgba(255,255,255,0.18)'}`,
+        background: '#0b0b0f',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+      },
+    },
+      titleTop ? titleBlock : brandBlock,
+      visualBlock,
+      titleTop ? brandBlock : titleBlock,
+    );
+  };
 
   // stepIndicator is built dynamically below based on aiMode maxStep
 
@@ -7871,6 +7962,63 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
   };
   const maxCardsByDuration = data.videoDuration ? Math.floor(data.videoDuration / 30) : 20;
   const maxCardsAllowed = Math.min(20, Math.max(1, maxCardsByDuration));
+  const aspectRatioControl = isBmOnlyAiVideo
+    ? React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '14px 16px',
+          borderRadius: 12,
+          border: '1.5px solid rgba(16,185,129,0.45)',
+          background: 'rgba(16,185,129,0.08)',
+        },
+      },
+        React.createElement("div", {
+          style: {
+            width: 24,
+            height: 32,
+            borderRadius: 5,
+            border: '2px solid #10b981',
+            background: 'rgba(16,185,129,0.12)',
+            flexShrink: 0,
+          },
+        }),
+        React.createElement("div", { style: { minWidth: 0 } },
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: '#10b981' } }, "3:4 \uACE0\uC815"),
+          React.createElement("div", { style: { fontSize: 12, color: T.textSecondary, marginTop: 4, lineHeight: 1.35 } }, "\uBC30\uBBFC\uC628\uB9AC \uC601\uC0C1 \uAC00\uC774\uB4DC \uAE30\uC900"),
+        ),
+      ),
+    )
+    : React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
+      React.createElement("div", { style: { display: 'flex', gap: 10 } },
+        ASPECT_OPTIONS.map(opt => {
+          const active = data.aspectRatio === opt.id;
+          const iconW = Math.round(28 * (opt.w / Math.max(opt.w, opt.h)));
+          const iconH = Math.round(28 * (opt.h / Math.max(opt.w, opt.h)));
+          return React.createElement("button", {
+            key: opt.id, onClick: () => update('aspectRatio', opt.id),
+            style: {
+              flex: 1, padding: '14px 8px', borderRadius: 12, border: `1.5px solid ${active ? T.accent : T.border}`,
+              background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+            },
+          },
+            React.createElement("div", { style: {
+              width: iconW, height: iconH, borderRadius: 4,
+              border: `2px solid ${active ? T.accentHover : T.textMuted}`,
+              transition: 'all 0.15s',
+            } }),
+            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: active ? T.accentHover : T.text } }, opt.label),
+            React.createElement("span", { style: { fontSize: 11, color: active ? T.accentHover : T.textMuted } }, opt.desc),
+          );
+        }),
+      ),
+    );
 
   const handleStep1Next = async () => {
     const v = validateYouTubeUrl(data.url);
@@ -7906,33 +8054,7 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
       }),
       durationError && React.createElement("p", { style: { fontSize: 13, color: '#ef4444', margin: 0, marginTop: 8, lineHeight: 1.5, whiteSpace: 'pre-line' } }, durationError),
     ),
-    React.createElement("div", null,
-      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC644\uC131\uB420 \uCE74\uB4DC \uBE44\uC728"),
-      React.createElement("div", { style: { display: 'flex', gap: 10 } },
-        ASPECT_OPTIONS.map(opt => {
-          const active = data.aspectRatio === opt.id;
-          const iconW = Math.round(28 * (opt.w / Math.max(opt.w, opt.h)));
-          const iconH = Math.round(28 * (opt.h / Math.max(opt.w, opt.h)));
-          return React.createElement("button", {
-            key: opt.id, onClick: () => update('aspectRatio', opt.id),
-            style: {
-              flex: 1, padding: '14px 8px', borderRadius: 12, border: `1.5px solid ${active ? T.accent : T.border}`,
-              background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
-              cursor: 'pointer', transition: 'all 0.15s',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-            },
-          },
-            React.createElement("div", { style: {
-              width: iconW, height: iconH, borderRadius: 4,
-              border: `2px solid ${active ? T.accentHover : T.textMuted}`,
-              transition: 'all 0.15s',
-            } }),
-            React.createElement("span", { style: { fontSize: 14, fontWeight: 700, color: active ? T.accentHover : T.text } }, opt.label),
-            React.createElement("span", { style: { fontSize: 11, color: active ? T.accentHover : T.textMuted } }, opt.desc),
-          );
-        }),
-      ),
-    ),
+    aspectRatioControl,
   );
 
   // AI wizard step 2: Copy tone selector
@@ -7956,6 +8078,42 @@ function WizardScreen({ mob, step, data, onDataChange, onNext, onBack, onComplet
         ),
         React.createElement("p", { style: { fontSize: 12, color: T.textSecondary, margin: 0, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: 'italic' } }, tone.example),
       )),
+    ),
+    isBmOnlyAiVideo && React.createElement("div", null,
+      React.createElement("label", { style: { ...labelBase, fontSize: 14, marginBottom: 10 } }, "\uC601\uC0C1 \uB808\uC774\uC544\uC6C3"),
+      React.createElement("div", { style: { display: 'grid', gridTemplateColumns: mob ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: 10 } },
+        BAEMIN_VIDEO_LAYOUT_OPTIONS.map(option => {
+          const active = selectedBmVideoLayoutId === option.id;
+          return React.createElement("button", {
+            key: option.id,
+            type: "button",
+            onClick: () => updateBmVideoLayout(option.id),
+            style: {
+              width: '100%',
+              minHeight: 94,
+              padding: 12,
+              borderRadius: 12,
+              border: `1.5px solid ${active ? '#10b981' : T.border}`,
+              background: active ? 'rgba(16,185,129,0.1)' : 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              textAlign: 'left',
+            },
+          },
+            renderBmVideoLayoutThumb(option, active),
+            React.createElement("div", { style: { minWidth: 0, flex: 1 } },
+              React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, flexWrap: 'wrap' } },
+                React.createElement("span", { style: { fontSize: 14, fontWeight: 800, color: active ? '#10b981' : T.text } }, option.label),
+                React.createElement("span", { style: { fontSize: 10, fontWeight: 800, color: active ? '#10b981' : T.textMuted, border: `1px solid ${active ? 'rgba(16,185,129,0.45)' : T.border}`, borderRadius: 999, padding: '2px 6px' } }, option.badge),
+              ),
+              React.createElement("span", { style: { fontSize: 12, color: active ? '#10b981' : T.textSecondary, lineHeight: 1.35 } }, option.desc),
+            ),
+          );
+        }),
+      ),
     ),
     // \uCE74\uB4DC \uD14D\uC2A4\uD2B8 \uC591 \uC120\uD0DD (\uAC04\uB2E8\uD615/\uC0C1\uC138\uD615)
     React.createElement("div", null,
@@ -10992,6 +11150,18 @@ function defaultArticleWizardData(isBmOnly = false) {
   };
 }
 
+function defaultVideoWizardData(isBmOnly = false) {
+  return {
+    url: '',
+    aspectRatio: isBmOnly ? '3:4' : '1:1',
+    cardCount: 3,
+    presetId: 'photo_top',
+    copyTone: 'hooking',
+    textMode: 'title',
+    ...(isBmOnly ? { bmVideoLayoutId: BAEMIN_VIDEO_LAYOUT_DEFAULT_ID } : {}),
+  };
+}
+
 function applyBmOnlyMode(route, setters) {
   setters.setRouteShareId(null);
   setters.setPageVariant(PAGE_VARIANTS.BM_ONLY);
@@ -11002,7 +11172,7 @@ function applyBmOnlyMode(route, setters) {
     setters.setEditorMode('wizard');
   } else if (route.mode === 'ai-wizard') {
     setters.setWizardStep(1);
-    setters.setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' });
+    setters.setWizardData(defaultVideoWizardData(true));
     setters.setEditorMode('ai-wizard');
   } else if (route.mode === 'article-wizard') {
     setters.setWizardStep(1);
@@ -11086,7 +11256,7 @@ export default function App() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [editorMode, setEditorMode] = useState(null);
   const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' });
+  const [wizardData, setWizardData] = useState(defaultVideoWizardData(false));
   const [wizardLoading, setWizardLoading] = useState(false);
   const [pendingProjectId, setPendingProjectId] = useState(null);
   // 텍스트로 만들기 (article) 전용 생성 진행 상태
@@ -11936,10 +12106,13 @@ export default function App() {
   const handleAiEditComplete = () => {
     const url = wizardData.url;
     const presetId = wizardData.presetId;
-    const aspectRatio = wizardData.aspectRatio;
+    const aspectRatio = isBmOnlyPage ? '3:4' : wizardData.aspectRatio;
+    const bmVideoLayoutId = isBmOnlyPage
+      ? (normalizeBaeminVideoLayoutPreference(wizardData.bmVideoLayoutId) || BAEMIN_VIDEO_LAYOUT_DEFAULT_ID)
+      : null;
 
     // Save wizard data for background completion
-    aiWizardDataRef.current = { url, presetId, aspectRatio, copyTone: wizardData.copyTone || 'hooking' };
+    aiWizardDataRef.current = { url, presetId, aspectRatio, copyTone: wizardData.copyTone || 'hooking', bmVideoLayoutId };
 
     // Switch to editor immediately so the AI overlay renders on top
     setEditorMode('editor');
@@ -12032,6 +12205,7 @@ export default function App() {
             aspectRatio: _aspectRatio,
             sourceType: 'youtube',
             useLLM: true,
+            videoLayoutPreference: wd.bmVideoLayoutId || bmVideoLayoutId,
           });
         }
 
@@ -12550,7 +12724,7 @@ export default function App() {
     editorMode === null && React.createElement(ModeSelectionScreen, {
       mob, aiEditRunning,
       onLogoClick: isBmOnlyPage ? undefined : handleHomeLogoClick,
-      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking', textMode: 'title' }); },
+      onSelectVideo: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('ai-wizard'); setAiMode(true); setWizardStep(1); setWizardData(defaultVideoWizardData(isBmOnlyPage)); },
       onSelectArticle: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('article-wizard'); setAiMode(false); setWizardStep(1); setWizardData(defaultArticleWizardData(isBmOnlyPage)); },
       onSelectEasy: () => { if (aiEditRunning) { window.alert('AI편집이 진행 중이라\n끝나야 새로 시작할 수 있어요.\n\n자유편집은 가능합니다.'); return; } setPendingProjectId(null); setEditorMode('wizard'); setAiMode(false); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
       onSelectFree: () => { setEditorMode('editor'); },
@@ -12558,6 +12732,7 @@ export default function App() {
 
     editorMode === 'wizard' && !wizardLoading && React.createElement(WizardScreen, {
       mob, step: wizardStep, data: wizardData,
+      isBmOnlyPage,
       onDataChange: setWizardData,
       onNext: () => setWizardStep(s => Math.min(s + 1, 3)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
@@ -12567,6 +12742,7 @@ export default function App() {
 
     editorMode === 'ai-wizard' && React.createElement(WizardScreen, {
       mob, step: wizardStep, data: wizardData, aiMode: true,
+      isBmOnlyPage,
       onDataChange: setWizardData,
       onNext: () => setWizardStep(s => Math.min(s + 1, 2)),
       onBack: () => setWizardStep(s => Math.max(s - 1, 1)),
@@ -12699,7 +12875,7 @@ export default function App() {
 
         // Home button
         React.createElement("button", {
-          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData({ url: '', aspectRatio: '1:1', cardCount: 3, presetId: 'photo_top', copyTone: 'hooking' }); },
+          onClick: () => { setEditorMode(null); setWizardStep(1); setWizardData(defaultVideoWizardData(isBmOnlyPage)); },
           title: "\uD648",
           style: { width: mob ? 32 : 36, height: mob ? 32 : 36, borderRadius: T.radiusSm, border: `1px solid ${T.border}`, background: 'transparent', color: T.textSecondary, fontSize: mob ? 15 : 17, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' },
           onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = T.text; },
