@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
   '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
   '💾 프로젝트 수동 저장 — 저장 완료 확인 버튼 추가',
-  '🔗 공유 프로젝트 최신화 — 수정 직후 공유·가져오기 상태 고정',
 ];
 
 /* ── Icons ── */
@@ -252,16 +252,23 @@ const BAEMIN_BOX_BODY_LAYOUT = 'baemin_box_body';
 const BAEMIN_VIDEO_POST_TITLE_TOP_LAYOUT = 'baemin_video_post_title_top';
 const BAEMIN_VIDEO_POST_TITLE_BOTTOM_LAYOUT = 'baemin_video_post_title_bottom';
 const DEFAULT_BOX_TEXT = '박스 내용을 입력하세요';
+const BAEMIN_FIGMA_CARD_WIDTH = 1080;
 const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
-const BAEMIN_VIDEO_POST_DESIGN_WIDTH = 1080;
-const BAEMIN_VIDEO_POST_DESIGN_HEIGHT = 1440;
+const BAEMIN_VIDEO_POST_DESIGN_WIDTH = BAEMIN_FIGMA_CARD_WIDTH;
+const BAEMIN_VIDEO_POST_DESIGN_HEIGHT = BAEMIN_FIGMA_CARD_HEIGHT;
 const BAEMIN_VIDEO_POST_VIDEO_HEIGHT = 906;
 const BAEMIN_VIDEO_POST_LOGO_WIDTH = 308;
 const BAEMIN_VIDEO_POST_LOGO_HEIGHT = 52;
 const BAEMIN_VIDEO_POST_LOGO_SCALE = 308 / BAEMIN_VIDEO_POST_DESIGN_WIDTH * 100;
 const BAEMIN_LOGO_DEFAULT_VARIANT = 'white';
 const BAEMIN_LOGO_DEFAULT_OPACITY = 0.5;
-const BAEMIN_LOGO_ASSET_VERSION = 2;
+const BAEMIN_LOGO_ASSET_VERSION = 3;
+const BAEMIN_PHOTO_COVER_LOGO_POSITION = {
+  x: 161 / BAEMIN_FIGMA_CARD_WIDTH * 100,
+  y: 67 / BAEMIN_FIGMA_CARD_HEIGHT * 100,
+  scale: 226 / BAEMIN_FIGMA_CARD_WIDTH * 100,
+};
+const BAEMIN_LEGACY_PHOTO_COVER_LOGO_POSITION = { x: 14.9, y: 6.2, scale: 21 };
 const BAEMIN_LOGO_VARIANTS = [
   { id: 'white', label: '흰색', src: BAEMIN_LOGO_WHITE_SRC, previewBg: '#101010', swatch: '#ffffff' },
   { id: 'black', label: '검정', src: BAEMIN_LOGO_BLACK_SRC, previewBg: '#f3f4f6', swatch: '#111111' },
@@ -308,7 +315,7 @@ const BAEMIN_STYLE_KEYS = [
 ];
 
 const BAEMIN_LOGO_POSITIONS = {
-  photoCover: { x: 14.9, y: 6.2, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
+  photoCover: { ...BAEMIN_PHOTO_COVER_LOGO_POSITION, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
   solidBody: { x: 17.9, y: 93.1, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
   textCover: { x: 82.1, y: 93.1, scale: 21, opacity: BAEMIN_LOGO_DEFAULT_OPACITY },
 };
@@ -684,16 +691,32 @@ function shouldMigrateBaeminLogoOpacity(overlay = {}) {
   return Math.abs(opacity - 0.3) < 0.001 || Math.abs(opacity - 1) < 0.001;
 }
 
+function isNearPresetNumber(value, target, tolerance = 0.2) {
+  const next = Number(value);
+  return Number.isFinite(next) && Math.abs(next - target) <= tolerance;
+}
+
+function shouldMigrateBaeminPhotoCoverLogoPosition(overlay = {}) {
+  if (overlay.logoAssetVersion === BAEMIN_LOGO_ASSET_VERSION) return false;
+  return (
+    isNearPresetNumber(overlay.x, BAEMIN_LEGACY_PHOTO_COVER_LOGO_POSITION.x, 0.25) &&
+    isNearPresetNumber(overlay.y, BAEMIN_LEGACY_PHOTO_COVER_LOGO_POSITION.y, 0.3) &&
+    isNearPresetNumber(overlay.scale, BAEMIN_LEGACY_PHOTO_COVER_LOGO_POSITION.scale, 0.5)
+  );
+}
+
 function normalizeBaeminLogoOverlayForAsset(overlay = {}) {
   if (!isBaeminPresetLogoOverlay(overlay)) return overlay;
   const variant = getBaeminLogoVariantConfig(inferBaeminLogoVariant(overlay));
   const migrateOpacity = shouldMigrateBaeminLogoOpacity(overlay);
+  const migratePhotoCoverPosition = shouldMigrateBaeminPhotoCoverLogoPosition(overlay);
   const needsUpdate =
     overlay.image !== variant.src ||
     overlay.logoVariant !== variant.id ||
     overlay.logoAssetVersion !== BAEMIN_LOGO_ASSET_VERSION ||
     overlay.brandOverlayId !== 'baemin-logo' ||
     migrateOpacity ||
+    migratePhotoCoverPosition ||
     Object.prototype.hasOwnProperty.call(overlay, 'logoColorMode') ||
     Object.prototype.hasOwnProperty.call(overlay, 'logoColor');
   if (!needsUpdate) return overlay;
@@ -705,6 +728,11 @@ function normalizeBaeminLogoOverlayForAsset(overlay = {}) {
     logoVariant: variant.id,
     logoAssetVersion: BAEMIN_LOGO_ASSET_VERSION,
     opacity: migrateOpacity ? BAEMIN_LOGO_DEFAULT_OPACITY : overlay.opacity,
+    ...(migratePhotoCoverPosition ? {
+      x: BAEMIN_LOGO_POSITIONS.photoCover.x,
+      y: BAEMIN_LOGO_POSITIONS.photoCover.y,
+      scale: BAEMIN_LOGO_POSITIONS.photoCover.scale,
+    } : {}),
   };
 }
 
