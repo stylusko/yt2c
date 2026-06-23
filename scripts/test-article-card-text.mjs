@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   ARTICLE_BODY_MAX_LINES,
+  baeminAllowedLayoutIdsForRecommendation,
   estimateArticleBodyLines,
   fitBaeminAiHeadlineLine,
   fitBaeminAiHeadlinePair,
@@ -55,6 +56,27 @@ assert.ok(legacyBaeminPair.subtitle.length <= 14);
 assert.equal(fitBaeminAiHeadlineLine('제목에\n개행 금지'), '제목에 개행 금지');
 assert.equal(fitBaeminAiHeadlineLine('6월부터 전기료 더 싸게'), '6월부터 전기료 더 싸게');
 assert.equal(fitBaeminAiHeadlineLine('띄어쓰기 포함 열네자 이상 긴 문장'), '띄어쓰기 포함 열네자');
+
+assert.deepEqual(
+  baeminAllowedLayoutIdsForRecommendation(
+    { hasVisual: true, hasTitle: true, hasSubtitle: true, hasBody: false },
+    1,
+    '3:4',
+    'youtube',
+  ),
+  ['bm-video-post-title-top', 'bm-video-post-title-bottom'],
+  'BM ONLY 3:4 video body cards should stay on video-post guide layouts',
+);
+
+assert.ok(
+  baeminAllowedLayoutIdsForRecommendation(
+    { hasVisual: true, hasTitle: true, hasSubtitle: true, hasBody: true },
+    1,
+    '3:4',
+    'youtube',
+  ).includes('bm-photo-body'),
+  'video cards with body copy can still use richer photo-body layouts',
+);
 
 const looseJson = `Here is the JSON:
 {

@@ -181,6 +181,34 @@ try {
   assertIncludes(scaledVideoFilter, 'scale=756:1344', 'video output keeps preview scale');
   assertIncludes(scaledVideoFilter, 'overlay=162:-132', 'video output keeps preview position');
 
+  const baeminVideoTopFilter = buildFilterChain(
+    1920, 1080, 1080, 1440,
+    [0, 0],
+    100,
+    'split',
+    'baemin_video_post_title_top',
+    906 / 1440,
+    0,
+    undefined,
+    false
+  );
+  assertIncludes(baeminVideoTopFilter, 'color=black:1080x906', 'Baemin video top guide keeps 906px video area');
+  assertIncludes(baeminVideoTopFilter, 'pad=1080:1440:0:320:black', 'Baemin video top guide keeps 320px top band');
+
+  const baeminVideoBottomFilter = buildFilterChain(
+    1920, 1080, 1080, 1440,
+    [0, 0],
+    100,
+    'split',
+    'baemin_video_post_title_bottom',
+    906 / 1440,
+    0,
+    undefined,
+    false
+  );
+  assertIncludes(baeminVideoBottomFilter, 'color=black:1080x906', 'Baemin video bottom guide keeps 906px video area');
+  assertIncludes(baeminVideoBottomFilter, 'pad=1080:1440:0:200:black', 'Baemin video bottom guide keeps 200px top band');
+
   const source = path.join(tmpRoot, 'source.png');
   const overlay = path.join(tmpRoot, 'overlay.png');
 
