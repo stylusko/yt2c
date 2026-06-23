@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 4; // same-day deploy count
+const BUILD_NUM = 5; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
   '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
   '⚡ 공유 링크 생성 속도 — 서버 저장 압축 생략·Redis 우선',
-  '🔗 공유 서버 스냅샷 — 직접 삽입 이미지까지 프로젝트 재현',
 ];
 
 /* ── Icons ── */
@@ -975,6 +975,30 @@ function deriveBaeminBoxText(card, recommendation = {}) {
   return cleanBaeminText(raw).slice(0, 180);
 }
 
+function baeminVideoPostLayoutIdForIndex(index) {
+  return index % 2 === 1 ? 'bm-video-post-title-top' : 'bm-video-post-title-bottom';
+}
+
+function isBaeminVideoPostCandidate(card, index, aspectRatio, sourceType) {
+  return sourceType !== 'article' &&
+    aspectRatio === '3:4' &&
+    index > 0 &&
+    cardHasBaeminVisual(card) &&
+    !!getBaeminVisibleText(card, 'title') &&
+    !getBaeminVisibleText(card, 'body');
+}
+
+function normalizeBaeminVideoPostTitlePatch(card = {}) {
+  const title = getBaeminVisibleText(card, 'title');
+  const subtitle = getBaeminVisibleText(card, 'subtitle');
+  if (!subtitle || title.includes(subtitle)) return {};
+  return {
+    title: [title, subtitle].filter(Boolean).join('\n'),
+    subtitle: '',
+    useSubtitle: false,
+  };
+}
+
 function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPreference = null) {
   const articlePreference = sourceType === 'article' && layoutPreference
     ? normalizeBaeminArticleLayoutPreference(layoutPreference)
@@ -986,6 +1010,10 @@ function fallbackBaeminLayoutId(card, index, aspectRatio, sourceType, layoutPref
   const title = getBaeminVisibleText(card, 'title');
   const body = getBaeminVisibleText(card, 'body');
   const allText = [title, getBaeminVisibleText(card, 'subtitle'), body, card?.boxText].filter(Boolean).join('\n');
+
+  if (isBaeminVideoPostCandidate(card, index, aspectRatio, sourceType)) {
+    return baeminVideoPostLayoutIdForIndex(index);
+  }
 
   if (articlePreference?.body === 'text') {
     if (hasBaeminBoxSignal(allText) && deriveBaeminBoxText(card)) return 'bm-solid-box';
@@ -1037,6 +1065,11 @@ function normalizeBaeminRecommendedLayoutId(layoutId, card, index, aspectRatio, 
     : null;
   if (allowedArticleLayoutIds && !allowedArticleLayoutIds.includes(layoutId)) return fallback;
 
+  const allowedVideoLayoutIds = isBaeminVideoPostCandidate(card, index, aspectRatio, sourceType)
+    ? BAEMIN_VIDEO_POST_LAYOUT_IDS
+    : null;
+  if (allowedVideoLayoutIds && !allowedVideoLayoutIds.includes(layoutId)) return fallback;
+
   if (hasVisual && BAEMIN_NO_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
   if (!hasVisual && BAEMIN_PHOTO_LAYOUT_IDS.includes(layoutId)) return fallback;
   return layoutId;
@@ -1067,6 +1100,9 @@ function applyBaeminLayoutRecommendation(card, layoutId, recommendation = {}) {
   if (layoutId === 'bm-solid-box') {
     const boxText = deriveBaeminBoxText(card, recommendation);
     if (boxText) patch.boxText = boxText;
+  }
+  if (BAEMIN_VIDEO_POST_LAYOUT_IDS.includes(layoutId)) {
+    Object.assign(patch, normalizeBaeminVideoPostTitlePatch(card));
   }
   return clearGeneratedCache(clampBaeminCardCopy({ ...card, ...patch }));
 }
