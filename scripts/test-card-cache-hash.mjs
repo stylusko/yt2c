@@ -106,6 +106,12 @@ assert.notEqual(
   'visible logo position must affect the logo safe key',
 );
 
+assert.notEqual(
+  logoSafeOverlayFingerprint([logoOverlay]),
+  logoSafeOverlayFingerprint([{ ...logoOverlay, designWidth: 308, designHeight: 43.428 }]),
+  'visible logo design dimensions must affect the logo safe key',
+);
+
 assert.equal(
   logoSafeOverlayFingerprint([logoOverlay, { ...logoOverlay, aboveLayout: false }]),
   logoSafeOverlayFingerprint([logoOverlay]),
@@ -128,6 +134,12 @@ assert.notEqual(
   computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
   computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, scale: 24 }] }, cfg, 5),
   'overlay scale must be part of the cache hash',
+);
+
+assert.notEqual(
+  computeCardCacheHash({ ...articleCard, overlays: [logoOverlay] }, cfg, 5),
+  computeCardCacheHash({ ...articleCard, overlays: [{ ...logoOverlay, designWidth: 308, designHeight: 43.428 }] }, cfg, 5),
+  'overlay design dimensions must be part of the cache hash',
 );
 
 assert.notEqual(
