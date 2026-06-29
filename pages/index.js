@@ -8,7 +8,7 @@ import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-ca
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0629';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🖼️ 업로드 로고 — 커스텀 이미지 비율 유지·캐시 보정',
   '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
   '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
   '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
-  '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
 ];
 
 /* ── Icons ── */
@@ -693,7 +693,9 @@ function isBaeminLogoAsset(src) {
 }
 
 function isBaeminPresetLogoOverlay(overlay = {}) {
-  return overlay.type === 'logo' && (overlay.brandOverlayId === 'baemin-logo' || isBaeminLogoAsset(overlay.image));
+  if (overlay.type !== 'logo') return false;
+  if (isBaeminLogoAsset(overlay.image)) return true;
+  return overlay.brandOverlayId === 'baemin-logo' && !overlay.image;
 }
 
 function normalizeLegacyHexColor(color, fallback = '#ffffff') {
@@ -772,6 +774,19 @@ function normalizeBaeminLogoOverlayForAsset(overlay = {}) {
   };
 }
 
+function normalizeCustomLogoOverlayForAsset(overlay = {}) {
+  if (overlay?.type !== 'logo' || isBaeminPresetLogoOverlay(overlay)) return overlay;
+  const hasDesignWidth = Object.prototype.hasOwnProperty.call(overlay, 'designWidth');
+  const hasDesignHeight = Object.prototype.hasOwnProperty.call(overlay, 'designHeight');
+  if (!hasDesignWidth && !hasDesignHeight) return overlay;
+  const { designWidth, designHeight, ...rest } = overlay;
+  return rest;
+}
+
+function normalizeOverlayForAsset(overlay = {}) {
+  return normalizeCustomLogoOverlayForAsset(normalizeBaeminLogoOverlayForAsset(overlay));
+}
+
 function logoUploadPatch(src) {
   if (isBaeminLogoAsset(src)) {
     return {
@@ -790,18 +805,20 @@ function logoUploadPatch(src) {
     logoAssetVersion: null,
     logoColorMode: undefined,
     logoColor: undefined,
+    designWidth: undefined,
+    designHeight: undefined,
   };
 }
 
 function renderableCardOverlays(card) {
-  return (card?.overlays || []).map(normalizeBaeminLogoOverlayForAsset);
+  return (card?.overlays || []).map(normalizeOverlayForAsset);
 }
 
 function normalizeBaeminCardOverlays(card) {
   if (!card?.overlays?.length) return card;
   let changed = false;
   const overlays = card.overlays.map(overlay => {
-    const nextOverlay = normalizeBaeminLogoOverlayForAsset(overlay);
+    const nextOverlay = normalizeOverlayForAsset(overlay);
     if (nextOverlay !== overlay) changed = true;
     return nextOverlay;
   });
@@ -2375,7 +2392,7 @@ function LogoVariantControls({ overlay, onChange }) {
 }
 
 function PreviewOverlayImage({ ov, index, z, previewW, previewH }) {
-  const displayOverlay = normalizeBaeminLogoOverlayForAsset(ov);
+  const displayOverlay = normalizeOverlayForAsset(ov);
   const src = displayOverlay.image || null;
   const overlayRatioHeight = Number(displayOverlay.designWidth) > 0 && Number(displayOverlay.designHeight) > 0
     ? previewW * Number(displayOverlay.designHeight) / Number(displayOverlay.designWidth)
