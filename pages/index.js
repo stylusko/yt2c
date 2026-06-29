@@ -11544,7 +11544,7 @@ export default function App() {
   const cloudSaveSignatureRef = useRef('');
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
   const authLoading = authStatus === 'loading';
-  const authConfigured = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED !== 'false';
+  const authConfigured = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
   const authUser = authSession?.user || null;
 
   const handleHomeLogoClick = useCallback(() => {
