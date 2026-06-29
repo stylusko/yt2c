@@ -5,11 +5,11 @@ import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
-import { getBrowserSupabase } from '../lib/supabase-browser.js';
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from 'next-auth/react';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0629';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -57,7 +57,7 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
-  '☁️ Google 로그인 — 계정별 프로젝트 저장소와 내 프로젝트 패널',
+  '☁️ Google 로그인 — Railway Postgres 기반 계정별 프로젝트 저장소',
   '📦 생성 결과물 보관함 — 프로젝트별 생성 이력·재다운로드 기반 추가',
   '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
   '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
@@ -6925,9 +6925,8 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceImageMeta: [],      // sourceImages와 같은 인덱스의 출처 메타 ({ source:'article'|'ai', ... })
 });
 
-function cloudAuthHeaders(session) {
-  const token = session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+function cloudAuthHeaders() {
+  return {};
 }
 
 function projectTypeOf(project) {
@@ -7646,7 +7645,7 @@ function CloudProjectLibraryModal({
         ),
       ),
 
-      !authConfigured && React.createElement("div", { style: { padding: 18, color: '#fbbf24', fontSize: 13, borderBottom: '1px solid ' + T.border, background: 'rgba(251,191,36,0.08)' } }, 'Supabase 공개 URL/Anon Key가 설정되어야 Google 로그인을 사용할 수 있어요.'),
+      !authConfigured && React.createElement("div", { style: { padding: 18, color: '#fbbf24', fontSize: 13, borderBottom: '1px solid ' + T.border, background: 'rgba(251,191,36,0.08)' } }, 'Railway 환경변수에 Google OAuth 설정이 필요해요.'),
       authError && React.createElement("div", { style: { padding: 18, color: '#f87171', fontSize: 13, borderBottom: '1px solid ' + T.border, background: 'rgba(239,68,68,0.08)' } }, authError),
 
       !user ? React.createElement("div", { style: { padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' } },
@@ -11438,6 +11437,7 @@ function applyBmOnlyMode(route, setters) {
 export default function App() {
   const mob = useIsMobile();
   const router = useRouter();
+  const { data: authSession, status: authStatus } = useSession();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const projectsRef = useRef([]);
@@ -11494,8 +11494,6 @@ export default function App() {
   const [queueStatus, setQueueStatus] = useState(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
   const [showCloudProjects, setShowCloudProjects] = useState(false);
-  const [authSession, setAuthSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [cloudProjects, setCloudProjects] = useState([]);
   const [cloudProjectsLoading, setCloudProjectsLoading] = useState(false);
@@ -11545,7 +11543,8 @@ export default function App() {
   const cloudSaveTimerRef = useRef(null);
   const cloudSaveSignatureRef = useRef('');
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
-  const authConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  const authLoading = authStatus === 'loading';
+  const authConfigured = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED !== 'false';
   const authUser = authSession?.user || null;
 
   const handleHomeLogoClick = useCallback(() => {
@@ -11592,37 +11591,6 @@ export default function App() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showInfo]);
-
-  useEffect(() => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
-      setAuthLoading(false);
-      return;
-    }
-    let alive = true;
-    setAuthLoading(true);
-    supabase.auth.getSession()
-      .then(({ data, error }) => {
-        if (!alive) return;
-        if (error) setAuthError(error.message || '로그인 상태를 확인하지 못했어요.');
-        setAuthSession(data?.session || null);
-      })
-      .catch(error => {
-        if (alive) setAuthError(error?.message || '로그인 상태를 확인하지 못했어요.');
-      })
-      .finally(() => {
-        if (alive) setAuthLoading(false);
-      });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthSession(session || null);
-      setAuthError('');
-    });
-    return () => {
-      alive = false;
-      listener?.subscription?.unsubscribe();
-    };
-  }, []);
 
   // Load from localStorage on mount + URL-based initial mode
   useEffect(() => {
@@ -11798,36 +11766,32 @@ export default function App() {
   const localImportCount = projects.filter(p => !p.cloudId && !isReusableBlankProject(p)).length;
 
   const signInWithGoogle = useCallback(async () => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) {
-      setAuthError('Google 로그인을 사용하려면 Supabase 공개 URL과 Anon Key가 필요해요.');
+    if (!authConfigured) {
+      setAuthError('Google 로그인을 사용하려면 Railway 환경변수에 Google OAuth 설정이 필요해요.');
       setShowCloudProjects(true);
       return;
     }
     setAuthError('');
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.href.split('#')[0] },
-    });
-    if (error) setAuthError(error.message || 'Google 로그인 시작에 실패했어요.');
-  }, []);
+    try {
+      await nextAuthSignIn('google', { callbackUrl: window.location.href.split('#')[0] });
+    } catch (error) {
+      setAuthError(error?.message || 'Google 로그인 시작에 실패했어요.');
+    }
+  }, [authConfigured]);
 
   const signOut = useCallback(async () => {
-    const supabase = getBrowserSupabase();
-    if (!supabase) return;
-    await supabase.auth.signOut();
-    setAuthSession(null);
+    await nextAuthSignOut({ redirect: false });
     setCloudProjects([]);
     setCloudOutputs([]);
     setSelectedCloudProjectId(null);
   }, []);
 
   const refreshCloudProjects = useCallback(async () => {
-    if (!authSession?.access_token) return;
+    if (!authUser?.email) return;
     setCloudProjectsLoading(true);
     setCloudProjectsError('');
     try {
-      const res = await fetch('/api/projects', { headers: cloudAuthHeaders(authSession) });
+      const res = await fetch('/api/projects', { headers: cloudAuthHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '프로젝트 목록을 불러오지 못했어요.');
       const list = data.projects || [];
@@ -11838,16 +11802,16 @@ export default function App() {
     } finally {
       setCloudProjectsLoading(false);
     }
-  }, [authSession]);
+  }, [authUser?.email]);
 
   const refreshCloudOutputs = useCallback(async (projectId = selectedCloudProjectId) => {
-    if (!authSession?.access_token || !projectId) {
+    if (!authUser?.email || !projectId) {
       setCloudOutputs([]);
       return;
     }
     setCloudOutputsLoading(true);
     try {
-      const res = await fetch(`/api/projects/${projectId}/outputs`, { headers: cloudAuthHeaders(authSession) });
+      const res = await fetch(`/api/projects/${projectId}/outputs`, { headers: cloudAuthHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '생성 결과물을 불러오지 못했어요.');
       setCloudOutputs(data.outputs || []);
@@ -11857,20 +11821,20 @@ export default function App() {
     } finally {
       setCloudOutputsLoading(false);
     }
-  }, [authSession, selectedCloudProjectId]);
+  }, [authUser?.email, selectedCloudProjectId]);
 
   useEffect(() => {
-    if (authSession?.access_token) refreshCloudProjects();
+    if (authUser?.email) refreshCloudProjects();
     else {
       setCloudProjects([]);
       setCloudOutputs([]);
       setSelectedCloudProjectId(null);
     }
-  }, [authSession?.access_token]);
+  }, [authUser?.email]);
 
   useEffect(() => {
     if (selectedCloudProjectId) refreshCloudOutputs(selectedCloudProjectId);
-  }, [selectedCloudProjectId, authSession?.access_token]);
+  }, [selectedCloudProjectId, authUser?.email]);
 
   const clearSharedRouteForLocalEdit = useCallback(() => {
     if (!routeShareId || editorMode !== 'editor') return;
@@ -11919,7 +11883,7 @@ export default function App() {
   }, []);
 
   const saveProjectToCloud = useCallback(async (project, options = {}) => {
-    if (!authSession?.access_token || !project) return null;
+    if (!authUser?.email || !project) return null;
     const payload = projectCloudPayload(project, pageVariant);
     if (!payload) return null;
     const cloudId = project.cloudId;
@@ -11927,7 +11891,7 @@ export default function App() {
     try {
       const res = await fetch(cloudId ? `/api/projects/${cloudId}` : '/api/projects', {
         method: cloudId ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders(authSession) },
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
         body: JSON.stringify(payload),
       });
       const data = await res.json().catch(() => ({}));
@@ -11950,10 +11914,10 @@ export default function App() {
       if (!options.silent) setAlertMsg(error.message || '계정 저장에 실패했어요.');
       return null;
     }
-  }, [authSession, commitProjects, pageVariant, upsertCloudProjectMeta]);
+  }, [authUser?.email, commitProjects, pageVariant, upsertCloudProjectMeta]);
 
   useEffect(() => {
-    if (!authSession?.access_token || !activeProject || !routeReady) return;
+    if (!authUser?.email || !activeProject || !routeReady) return;
     const payload = projectCloudPayload(activeProject, pageVariant);
     if (!payload) return;
     const signature = JSON.stringify({
@@ -11970,7 +11934,7 @@ export default function App() {
     return () => {
       if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
     };
-  }, [activeProject, authSession?.access_token, pageVariant, routeReady, saveProjectToCloud]);
+  }, [activeProject, authUser?.email, pageVariant, routeReady, saveProjectToCloud]);
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => {
     if (j !== i) return x;
@@ -12129,7 +12093,7 @@ export default function App() {
   }, [activeProject, activeProjectId, projects]);
 
   const recordGeneratedOutput = useCallback(async (items, effectiveOutputFormat, selectedIndices, hashCfg) => {
-    if (!authSession?.access_token || !items?.length) return;
+    if (!authUser?.email || !items?.length) return;
     const latestProject = getLatestActiveProject();
     if (!latestProject) return;
     const cloudProject = latestProject.cloudId
@@ -12160,7 +12124,7 @@ export default function App() {
     try {
       const res = await fetch(`/api/projects/${projectId}/outputs`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders(authSession) },
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
         body: JSON.stringify({
           outputType: effectiveOutputFormat === 'video' ? 'video' : 'image_cards',
           title: `${latestProject.name || '새 프로젝트'} · ${effectiveOutputFormat === 'video' ? '영상' : '이미지'}`,
@@ -12175,7 +12139,7 @@ export default function App() {
     } catch (error) {
       console.warn('[cloud] generated output save failed:', error?.message || error);
     }
-  }, [authSession, cards, getLatestActiveProject, refreshCloudOutputs, saveProjectToCloud]);
+  }, [authUser?.email, cards, getLatestActiveProject, refreshCloudOutputs, saveProjectToCloud]);
 
   const handleManualSave = useCallback(async () => {
     const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
@@ -12189,7 +12153,7 @@ export default function App() {
       } catch (_) {}
 	      const result = await saveProjects(latestProjects, latestActiveId);
 	      const latestProject = latestProjects.find(p => p.id === latestActiveId);
-	      const cloudResult = authSession?.access_token
+	      const cloudResult = authUser?.email
 	        ? await saveProjectToCloud(latestProject, { silent: true, keepStatus: true })
 	        : null;
 	      const savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -12205,14 +12169,14 @@ export default function App() {
       setManualSaveState({ status: 'error', message: '저장 실패' });
       setAlertMsg('프로젝트 저장에 실패했어요.\n브라우저 저장소가 가득 찼거나 사이트 데이터 접근이 막혔을 수 있어요.\n공유하기로 백업 링크를 만들어 주세요.');
     }
-	  }, [activeProjectId, authSession?.access_token, manualSaveState.status, projects, saveProjectToCloud]);
+	  }, [activeProjectId, authUser?.email, manualSaveState.status, projects, saveProjectToCloud]);
 
   const shareProject = async () => {
     const projectToShare = getLatestActiveProject();
     if (!projectToShare || shareLoading) return;
     setShareLoading(true);
     const serverEncoded = encodeProjectForServer(projectToShare);
-    // Try Supabase short URL first
+    // Try server short URL first
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
@@ -12271,9 +12235,9 @@ export default function App() {
   };
 
   const openCloudProject = useCallback(async (cloudId) => {
-    if (!authSession?.access_token || !cloudId) return;
+    if (!authUser?.email || !cloudId) return;
     try {
-      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders(authSession) });
+      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '프로젝트를 불러오지 못했어요.');
       const cloudProject = data.project;
@@ -12295,14 +12259,14 @@ export default function App() {
     } catch (error) {
       setAlertMsg(error.message || '프로젝트를 불러오지 못했어요.');
     }
-  }, [authSession, commitActiveProjectId, commitProjects]);
+  }, [authUser?.email, commitActiveProjectId, commitProjects]);
 
   const renameCloudProject = useCallback(async (cloudId, title) => {
-    if (!authSession?.access_token || !cloudId || !title) return;
+    if (!authUser?.email || !cloudId || !title) return;
     try {
       const res = await fetch(`/api/projects/${cloudId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders(authSession) },
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
         body: JSON.stringify({ title }),
       });
       const data = await res.json().catch(() => ({}));
@@ -12312,12 +12276,12 @@ export default function App() {
     } catch (error) {
       setAlertMsg(error.message || '이름 변경에 실패했어요.');
     }
-  }, [authSession, commitProjects, upsertCloudProjectMeta]);
+  }, [authUser?.email, commitProjects, upsertCloudProjectMeta]);
 
   const deleteCloudProject = useCallback(async (cloudId) => {
-    if (!authSession?.access_token || !cloudId) return;
+    if (!authUser?.email || !cloudId) return;
     try {
-      const res = await fetch(`/api/projects/${cloudId}`, { method: 'DELETE', headers: cloudAuthHeaders(authSession) });
+      const res = await fetch(`/api/projects/${cloudId}`, { method: 'DELETE', headers: cloudAuthHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '삭제에 실패했어요.');
       setCloudProjects(prev => prev.filter(p => p.id !== cloudId));
@@ -12327,12 +12291,12 @@ export default function App() {
     } catch (error) {
       setAlertMsg(error.message || '삭제에 실패했어요.');
     }
-  }, [authSession, commitProjects]);
+  }, [authUser?.email, commitProjects]);
 
   const duplicateCloudProject = useCallback(async (cloudId) => {
-    if (!authSession?.access_token || !cloudId) return;
+    if (!authUser?.email || !cloudId) return;
     try {
-      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders(authSession) });
+      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders() });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || '복제할 프로젝트를 불러오지 못했어요.');
       const source = data.project;
@@ -12341,7 +12305,7 @@ export default function App() {
       delete snapshot.cloudUpdatedAt;
       const createRes = await fetch('/api/projects', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders(authSession) },
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
         body: JSON.stringify({ ...projectCloudPayload(snapshot, source.pageVariant || pageVariant), title: snapshot.name }),
       });
       const createData = await createRes.json().catch(() => ({}));
@@ -12351,10 +12315,10 @@ export default function App() {
     } catch (error) {
       setAlertMsg(error.message || '복제에 실패했어요.');
     }
-  }, [authSession, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
+  }, [authUser?.email, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
 
   const importLocalProjectsToCloud = useCallback(async () => {
-    if (!authSession?.access_token || importingLocalProjects) return;
+    if (!authUser?.email || importingLocalProjects) return;
     const localProjects = projectsRef.current.filter(p => !p.cloudId && !isReusableBlankProject(p));
     if (localProjects.length === 0) return;
     setImportingLocalProjects(true);
@@ -12363,7 +12327,7 @@ export default function App() {
       for (const project of localProjects) {
         const res = await fetch('/api/projects', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders(authSession) },
+          headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
           body: JSON.stringify(projectCloudPayload(project, pageVariant)),
         });
         const data = await res.json().catch(() => ({}));
@@ -12384,7 +12348,7 @@ export default function App() {
     } finally {
       setImportingLocalProjects(false);
     }
-  }, [authSession, importingLocalProjects, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
+  }, [authUser?.email, importingLocalProjects, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
 
   const effectiveCard = (card) => ({
     ...card,

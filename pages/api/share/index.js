@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { getSupabase } from '../../../lib/supabase';
 import { saveShareToRedis } from '../../../lib/share-store';
+import { saveShareToPostgres } from '../../../lib/share-store-postgres.js';
 
 export const config = {
   api: {
@@ -21,13 +22,22 @@ export default async function handler(req, res) {
   }
 
   const id = crypto.randomBytes(4).toString('base64url');
+  let redisSaved = false;
 
   try {
-    const saved = await saveShareToRedis(id, data);
-    if (saved) return res.status(200).json({ id, storage: 'redis' });
+    redisSaved = await saveShareToRedis(id, data);
   } catch (redisErr) {
     console.error('Redis share save error:', redisErr);
   }
+
+  try {
+    const saved = await saveShareToPostgres(id, data);
+    if (saved) return res.status(200).json({ id, storage: 'postgres', cached: redisSaved });
+  } catch (postgresErr) {
+    console.error('Postgres share save error:', postgresErr);
+  }
+
+  if (redisSaved) return res.status(200).json({ id, storage: 'redis' });
 
   const supabase = getSupabase();
 

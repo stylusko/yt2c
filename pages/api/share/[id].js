@@ -1,5 +1,6 @@
 import { getSupabase } from '../../../lib/supabase';
 import { getShareFromRedis } from '../../../lib/share-store';
+import { getShareFromPostgres } from '../../../lib/share-store-postgres.js';
 
 export const config = {
   api: {
@@ -19,6 +20,13 @@ export default async function handler(req, res) {
     if (data) return res.status(200).json({ data, storage: 'redis' });
   } catch (redisErr) {
     console.error('Redis share read error:', redisErr);
+  }
+
+  try {
+    const data = await getShareFromPostgres(id);
+    if (data) return res.status(200).json({ data, storage: 'postgres' });
+  } catch (postgresErr) {
+    console.error('Postgres share read error:', postgresErr);
   }
 
   const supabase = getSupabase();
