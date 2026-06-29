@@ -5,10 +5,11 @@ import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, useSession } from 'next-auth/react';
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.0629';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 3; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +57,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '☁️ Google 로그인 — Railway Postgres 기반 계정별 프로젝트 저장소',
+  '📦 생성 결과물 보관함 — 프로젝트별 생성 이력·재다운로드 기반 추가',
   '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
   '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
   '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
-  '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
-  '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
 ];
 
 /* ── Icons ── */
@@ -6904,6 +6905,7 @@ const PROJECT_STORE_NAME = 'snapshots';
 const PROJECT_SNAPSHOT_KEY = 'latest';
 let projectSaveQueue = Promise.resolve();
 let projectSaveSeq = 0;
+const CLOUD_PROJECT_SAVE_DEBOUNCE_MS = 1200;
 const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
   name,
@@ -6922,6 +6924,56 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
   sourceImageMeta: [],      // sourceImages와 같은 인덱스의 출처 메타 ({ source:'article'|'ai', ... })
 });
+
+function cloudAuthHeaders() {
+  return {};
+}
+
+function projectTypeOf(project) {
+  return project?.sourceType === 'article' || project?.outputFormat === 'image' ? 'text' : 'video';
+}
+
+function projectBrandOf(project, pageVariant = PAGE_VARIANTS.DEFAULT) {
+  if (pageVariant === PAGE_VARIANTS.BM_ONLY) return 'baemin-only';
+  const hasBaemin = (project?.cards || []).some(card => card?.brandGuideId || card?.brandLayoutId);
+  return hasBaemin ? 'baemin-only' : '';
+}
+
+function projectCloudPayload(project, pageVariant = PAGE_VARIANTS.DEFAULT) {
+  if (!project) return null;
+  const snapshot = { ...project, pageVariant };
+  delete snapshot.cloudUpdatedAt;
+  return {
+    title: project.name || '새 프로젝트',
+    projectType: projectTypeOf(project),
+    sourceType: project.sourceType || 'youtube',
+    brand: projectBrandOf(project, pageVariant),
+    pageVariant,
+    cardCount: Array.isArray(project.cards) ? project.cards.length : 0,
+    snapshot,
+  };
+}
+
+function normalizeCloudProjectSnapshot(snapshot, cloudProject) {
+  const project = normalizeLoadedProject({
+    ...snapshot,
+    id: snapshot?.id || cloudProject.id,
+    name: snapshot?.name || cloudProject.title || '새 프로젝트',
+    cloudId: cloudProject.id,
+    cloudUpdatedAt: cloudProject.updatedAt,
+  });
+  return {
+    ...project,
+    cloudId: cloudProject.id,
+    cloudUpdatedAt: cloudProject.updatedAt,
+  };
+}
+
+function bucketDownloadUrl(bucketKey, cardIdx, ext) {
+  const safeExt = ext || inferDownloadExtFromUrl(bucketKey, 'mp4');
+  const fileName = `card-${Number(cardIdx) + 1}.${safeExt}`;
+  return `/api/download?key=${encodeURIComponent(bucketKey)}&proxy=true&ext=${encodeURIComponent(safeExt)}&filename=${encodeURIComponent(fileName)}`;
+}
 
 function normalizeProjectNameFromSource(title, fallback = '새 프로젝트') {
   const compact = String(title || '').replace(/\s+/g, ' ').trim();
@@ -7303,18 +7355,43 @@ function decodeProject(encoded) {
   return proj;
 }
 
+function inferDownloadExtFromUrl(url, fallback = 'mp4') {
+  try {
+    const parsed = new URL(String(url || ''), typeof window !== 'undefined' ? window.location.origin : 'https://youmeca.me');
+    const extParam = parsed.searchParams.get('ext');
+    if (extParam) return extParam.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    const match = parsed.pathname.match(/\.([a-z0-9]+)$/i);
+    if (match) return match[1].toLowerCase();
+  } catch (_) {
+    const match = String(url || '').match(/\.([a-z0-9]+)(?:\?|$)/i);
+    if (match) return match[1].toLowerCase();
+  }
+  return fallback;
+}
+
+function normalizeDownloadItem(item, index, outputFormat) {
+  const fallbackExt = outputFormat === 'video' ? 'mp4' : 'jpg';
+  const url = item?.bucketKey
+    ? bucketDownloadUrl(item.bucketKey, item.cardIdx ?? index, item.ext || inferDownloadExtFromUrl(item.bucketKey, fallbackExt))
+    : (item?.url || item);
+  const cardIdx = item?.cardIdx != null ? item.cardIdx : index;
+  const ext = item?.ext || inferDownloadExtFromUrl(url, fallbackExt);
+  return { url, cardIdx, ext };
+}
+
 /* ── Download All as ZIP ── */
-async function downloadAllAsZip(urls, outputFormat) {
+async function downloadAllAsZip(items, outputFormat) {
   const zip = new JSZip();
-  const defaultExt = outputFormat === 'video' ? 'mp4' : 'jpg';
-  for (let i = 0; i < urls.length; i++) {
-    const res = await fetch(urls[i]);
+  const normalized = (items || [])
+    .map((item, index) => normalizeDownloadItem(item, index, outputFormat))
+    .sort((a, b) => (a.cardIdx ?? 0) - (b.cardIdx ?? 0));
+  for (let i = 0; i < normalized.length; i++) {
+    const item = normalized[i];
+    const res = await fetch(item.url);
     if (!res.ok) continue;
     const blob = await res.blob();
-    // Detect per-card extension from URL's ext parameter
-    const urlExt = new URL(urls[i], window.location.origin).searchParams.get('ext');
-    const ext = urlExt || defaultExt;
-    zip.file(`card_${i + 1}.${ext}`, blob);
+    const label = Number(item.cardIdx) + 1;
+    zip.file(`card_${label}.${item.ext}`, blob);
   }
   const content = await zip.generateAsync({ type: 'blob' });
   const a = document.createElement('a');
@@ -7473,6 +7550,175 @@ function ProjectSelectorModal({ projects, activeId, onSwitch, onAdd, onClose, on
           onClick: () => { onDismiss(); onAdd(); },
           style: { width: '100%', padding: '10px', background: 'rgba(99,102,241,0.1)', color: T.accent, border: `1px solid rgba(99,102,241,0.2)`, borderRadius: T.radiusSm, fontSize: 14, fontWeight: 500, cursor: 'pointer' },
         }, "+ \uC0C8 \uD504\uB85C\uC81D\uD2B8"),
+      ),
+    ),
+  );
+}
+
+function formatCloudTime(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch (_) {
+    return '';
+  }
+}
+
+function AccountButton({ user, authLoading, onClick, compact }) {
+  const label = authLoading ? (compact ? '...' : '확인 중') : user ? (compact ? '내' : '내 프로젝트') : (compact ? 'G' : 'Google 로그인');
+  return React.createElement("button", {
+    onClick,
+    disabled: authLoading,
+    style: {
+      padding: compact ? '6px 8px' : '8px 12px',
+      background: user ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)',
+      color: user ? '#6ee7b7' : T.textSecondary,
+      border: user ? '1px solid rgba(16,185,129,0.28)' : '1px solid ' + T.border,
+      borderRadius: T.radiusPill,
+      fontSize: 12,
+      fontWeight: 700,
+      cursor: authLoading ? 'wait' : 'pointer',
+      whiteSpace: 'nowrap',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      minHeight: compact ? 30 : 32,
+    },
+  },
+    !compact && React.createElement("span", null, user ? '☁' : 'G'),
+    React.createElement("span", null, label),
+  );
+}
+
+function CloudProjectLibraryModal({
+  user,
+  authConfigured,
+  authLoading,
+  authError,
+  onSignIn,
+  onSignOut,
+  onClose,
+  projects,
+  loading,
+  error,
+  selectedProjectId,
+  outputs,
+  outputsLoading,
+  localImportCount,
+  importingLocal,
+  onRefresh,
+  onSelectProject,
+  onOpenProject,
+  onRenameProject,
+  onDeleteProject,
+  onDuplicateProject,
+  onImportLocal,
+}) {
+  const [query, setQuery] = useState('');
+  const visibleProjects = (projects || []).filter(project => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return String(project.title || '').toLowerCase().includes(q);
+  });
+  const selectedProject = (projects || []).find(project => project.id === selectedProjectId) || visibleProjects[0] || null;
+
+  useEffect(() => {
+    if (!selectedProjectId && selectedProject) onSelectProject(selectedProject.id);
+  }, [selectedProjectId, selectedProject?.id]);
+
+  return React.createElement("div", {
+    onClick: (e) => { if (e.target === e.currentTarget) onClose(); },
+    style: { position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  },
+    React.createElement("div", {
+      style: { width: 'min(980px, 100%)', maxHeight: '88vh', background: T.surface, border: '1px solid ' + T.border, borderRadius: 12, boxShadow: T.shadowLg, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+    },
+      React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 18px', borderBottom: '1px solid ' + T.border } },
+        React.createElement("div", { style: { minWidth: 0 } },
+          React.createElement("div", { style: { fontSize: 17, color: T.text, fontWeight: 800 } }, "내 프로젝트"),
+          React.createElement("div", { style: { fontSize: 12, color: T.textMuted, marginTop: 3 } }, user?.email || 'Google 로그인 후 어디서든 이어서 작업할 수 있어요.'),
+        ),
+        React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+          user && React.createElement("button", { onClick: onRefresh, disabled: loading, style: { padding: '8px 12px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: T.textSecondary, fontSize: 12, cursor: loading ? 'wait' : 'pointer' } }, loading ? '새로고침 중' : '새로고침'),
+          user && React.createElement("button", { onClick: onSignOut, style: { padding: '8px 12px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'transparent', color: T.textMuted, fontSize: 12, cursor: 'pointer' } }, '로그아웃'),
+          React.createElement("button", { onClick: onClose, style: { width: 34, height: 34, borderRadius: T.radiusPill, border: 'none', background: 'rgba(255,255,255,0.06)', color: T.textMuted, fontSize: 18, cursor: 'pointer' } }, '×'),
+        ),
+      ),
+
+      !authConfigured && React.createElement("div", { style: { padding: 18, color: '#fbbf24', fontSize: 13, borderBottom: '1px solid ' + T.border, background: 'rgba(251,191,36,0.08)' } }, 'Railway 환경변수에 Google OAuth 설정이 필요해요.'),
+      authError && React.createElement("div", { style: { padding: 18, color: '#f87171', fontSize: 13, borderBottom: '1px solid ' + T.border, background: 'rgba(239,68,68,0.08)' } }, authError),
+
+      !user ? React.createElement("div", { style: { padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, textAlign: 'center' } },
+        React.createElement("div", { style: { fontSize: 15, fontWeight: 700, color: T.text } }, 'Google 계정으로 프로젝트를 저장하세요'),
+        React.createElement("div", { style: { fontSize: 13, color: T.textMuted, lineHeight: 1.6, maxWidth: 420 } }, '로그인하면 현재 작업과 생성된 카드뉴스 결과물을 계정에 묶어서 다시 열고 다운로드할 수 있어요.'),
+        React.createElement("button", { onClick: onSignIn, disabled: authLoading || !authConfigured, style: { padding: '11px 22px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 14, fontWeight: 800, cursor: authLoading || !authConfigured ? 'not-allowed' : 'pointer', opacity: authLoading || !authConfigured ? 0.55 : 1 } }, authLoading ? '확인 중...' : 'Google로 로그인'),
+      ) : React.createElement("div", { style: { display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(320px, 0.85fr)', minHeight: 460, overflow: 'hidden' } },
+        React.createElement("div", { style: { borderRight: '1px solid ' + T.border, display: 'flex', flexDirection: 'column', minWidth: 0 } },
+          React.createElement("div", { style: { padding: 14, borderBottom: '1px solid ' + T.border, display: 'flex', gap: 8 } },
+            React.createElement("input", {
+              value: query,
+              onChange: (e) => setQuery(e.target.value),
+              placeholder: '프로젝트 검색',
+              style: { flex: 1, minWidth: 0, border: '1px solid ' + T.border, borderRadius: 8, background: 'rgba(255,255,255,0.05)', color: T.text, outline: 'none', padding: '9px 11px', fontSize: 13 },
+            }),
+            localImportCount > 0 && React.createElement("button", { onClick: onImportLocal, disabled: importingLocal, style: { padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(16,185,129,0.35)', background: 'rgba(16,185,129,0.12)', color: '#6ee7b7', fontSize: 12, fontWeight: 800, cursor: importingLocal ? 'wait' : 'pointer', whiteSpace: 'nowrap' } }, importingLocal ? '가져오는 중' : `${localImportCount}개 가져오기`),
+          ),
+          React.createElement("div", { style: { flex: 1, overflowY: 'auto', padding: 10 } },
+            loading && React.createElement("div", { style: { padding: 18, color: T.textMuted, fontSize: 13 } }, '프로젝트를 불러오는 중...'),
+            !loading && error && React.createElement("div", { style: { padding: 18, color: '#f87171', fontSize: 13 } }, error),
+            !loading && !error && visibleProjects.length === 0 && React.createElement("div", { style: { padding: 24, color: T.textMuted, fontSize: 13, textAlign: 'center' } }, query ? '검색 결과가 없어요.' : '아직 계정에 저장된 프로젝트가 없어요.'),
+            !loading && !error && visibleProjects.map(project => {
+              const active = project.id === selectedProject?.id;
+              return React.createElement("div", {
+                key: project.id,
+                onClick: () => onSelectProject(project.id),
+                style: { padding: 13, borderRadius: 8, border: active ? '1px solid rgba(99,102,241,0.45)' : '1px solid transparent', background: active ? 'rgba(99,102,241,0.12)' : 'transparent', cursor: 'pointer', marginBottom: 6 },
+              },
+                React.createElement("div", { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 } },
+                  React.createElement("div", { style: { minWidth: 0 } },
+                    React.createElement("div", { style: { color: active ? T.accent : T.text, fontSize: 14, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, project.title || '새 프로젝트'),
+                    React.createElement("div", { style: { color: T.textMuted, fontSize: 11, marginTop: 5 } }, `${project.projectType === 'text' ? '텍스트' : '영상'} · ${project.cardCount || 0}장 · ${formatCloudTime(project.updatedAt)}`),
+                  ),
+                  React.createElement("button", { onClick: (e) => { e.stopPropagation(); onOpenProject(project.id); }, style: { flexShrink: 0, border: 'none', background: T.accent, color: '#fff', borderRadius: T.radiusPill, padding: '7px 12px', fontSize: 12, fontWeight: 800, cursor: 'pointer' } }, '열기'),
+                ),
+              );
+            }),
+          ),
+        ),
+        React.createElement("div", { style: { display: 'flex', flexDirection: 'column', minWidth: 0 } },
+          selectedProject ? React.createElement(React.Fragment, null,
+            React.createElement("div", { style: { padding: 16, borderBottom: '1px solid ' + T.border } },
+              React.createElement("div", { style: { color: T.text, fontSize: 15, fontWeight: 800, marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, selectedProject.title || '새 프로젝트'),
+              React.createElement("div", { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+                React.createElement("button", { onClick: () => onOpenProject(selectedProject.id), style: { padding: '8px 13px', borderRadius: T.radiusPill, border: 'none', background: T.accent, color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' } }, '프로젝트 열기'),
+                React.createElement("button", { onClick: () => { const name = window.prompt('프로젝트 이름', selectedProject.title || '새 프로젝트'); if (name?.trim()) onRenameProject(selectedProject.id, name.trim()); }, style: { padding: '8px 13px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: T.textSecondary, fontSize: 12, cursor: 'pointer' } }, '이름 변경'),
+                React.createElement("button", { onClick: () => onDuplicateProject(selectedProject.id), style: { padding: '8px 13px', borderRadius: T.radiusPill, border: '1px solid ' + T.border, background: 'rgba(255,255,255,0.04)', color: T.textSecondary, fontSize: 12, cursor: 'pointer' } }, '복제'),
+                React.createElement("button", { onClick: () => { if (window.confirm('이 프로젝트를 삭제할까요?')) onDeleteProject(selectedProject.id); }, style: { padding: '8px 13px', borderRadius: T.radiusPill, border: '1px solid rgba(239,68,68,0.35)', background: 'rgba(239,68,68,0.08)', color: '#f87171', fontSize: 12, cursor: 'pointer' } }, '삭제'),
+              ),
+            ),
+            React.createElement("div", { style: { padding: 16, borderBottom: '1px solid ' + T.border } },
+              React.createElement("div", { style: { color: T.text, fontSize: 13, fontWeight: 800, marginBottom: 10 } }, '생성 결과물'),
+              outputsLoading
+                ? React.createElement("div", { style: { color: T.textMuted, fontSize: 12 } }, '결과물을 불러오는 중...')
+                : outputs.length === 0
+                  ? React.createElement("div", { style: { color: T.textMuted, fontSize: 12, lineHeight: 1.6 } }, '아직 저장된 생성 결과물이 없어요. 생성 완료 후 이곳에서 다시 받을 수 있어요.')
+                  : React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 230, overflowY: 'auto' } },
+                      outputs.map(output => React.createElement("div", { key: output.id, style: { padding: 10, borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid ' + T.border } },
+                        React.createElement("div", { style: { display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 8 } },
+                          React.createElement("span", { style: { color: T.text, fontSize: 12, fontWeight: 800 } }, output.title || (output.outputType === 'video' ? '영상 카드뉴스' : '이미지 카드뉴스')),
+                          React.createElement("span", { style: { color: T.textMuted, fontSize: 11 } }, formatCloudTime(output.createdAt)),
+                        ),
+                        React.createElement("div", { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+                          (output.files || []).map((file, idx) => {
+                            const href = file.bucketKey ? bucketDownloadUrl(file.bucketKey, file.cardIdx ?? idx, file.ext) : file.url;
+                            return React.createElement("a", { key: idx, href, download: true, style: { padding: '6px 9px', borderRadius: T.radiusPill, background: 'rgba(99,102,241,0.12)', color: T.accent, fontSize: 11, textDecoration: 'none', fontWeight: 800 } }, `카드 ${(file.cardIdx ?? idx) + 1}`);
+                          }),
+                        ),
+                      )),
+                    ),
+            ),
+          ) : React.createElement("div", { style: { padding: 24, color: T.textMuted, fontSize: 13 } }, '프로젝트를 선택하세요.'),
+        ),
       ),
     ),
   );
@@ -11191,6 +11437,7 @@ function applyBmOnlyMode(route, setters) {
 export default function App() {
   const mob = useIsMobile();
   const router = useRouter();
+  const { data: authSession, status: authStatus } = useSession();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const projectsRef = useRef([]);
@@ -11246,6 +11493,16 @@ export default function App() {
   const [showGeneratingModal, setShowGeneratingModal] = useState(false);
   const [queueStatus, setQueueStatus] = useState(null);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [showCloudProjects, setShowCloudProjects] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [cloudProjects, setCloudProjects] = useState([]);
+  const [cloudProjectsLoading, setCloudProjectsLoading] = useState(false);
+  const [cloudProjectsError, setCloudProjectsError] = useState('');
+  const [selectedCloudProjectId, setSelectedCloudProjectId] = useState(null);
+  const [cloudOutputs, setCloudOutputs] = useState([]);
+  const [cloudOutputsLoading, setCloudOutputsLoading] = useState(false);
+  const [importingLocalProjects, setImportingLocalProjects] = useState(false);
+  const [cloudSaveState, setCloudSaveState] = useState({ status: 'idle', message: '' });
   const [mobilePreviewExpanded, setMobilePreviewExpanded] = useState(false);
   const [mobilePreviewHidden, setMobilePreviewHidden] = useState(false); // false | 'auto' | 'manual'
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
@@ -11283,7 +11540,12 @@ export default function App() {
   const activeJobIdRef = useRef(null);
   const homeLogoTapRef = useRef({ count: 0, timer: null });
   const manualSaveTimerRef = useRef(null);
+  const cloudSaveTimerRef = useRef(null);
+  const cloudSaveSignatureRef = useRef('');
   const isBmOnlyPage = isBmOnlyVariant(pageVariant);
+  const authLoading = authStatus === 'loading';
+  const authConfigured = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
+  const authUser = authSession?.user || null;
 
   const handleHomeLogoClick = useCallback(() => {
     if (isBmOnlyPage || editorMode !== null) return;
@@ -11302,10 +11564,11 @@ export default function App() {
     }, 1600);
   }, [editorMode, isBmOnlyPage, router]);
 
-  useEffect(() => () => {
-    if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
-    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
-  }, []);
+	  useEffect(() => () => {
+	    if (homeLogoTapRef.current.timer) clearTimeout(homeLogoTapRef.current.timer);
+	    if (manualSaveTimerRef.current) clearTimeout(manualSaveTimerRef.current);
+	    if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+	  }, []);
 
   // Tutorial auto-start on first editor entry
   useEffect(() => {
@@ -11500,6 +11763,78 @@ export default function App() {
   const globalImageSource = activeProject?.globalImageSource || 'thumbnail';
   const globalBgImage = activeProject?.globalBgImage || null;
   const cards = activeProject?.cards || [];
+  const localImportCount = projects.filter(p => !p.cloudId && !isReusableBlankProject(p)).length;
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!authConfigured) {
+      setAuthError('Google 로그인을 사용하려면 Railway 환경변수에 Google OAuth 설정이 필요해요.');
+      setShowCloudProjects(true);
+      return;
+    }
+    setAuthError('');
+    try {
+      await nextAuthSignIn('google', { callbackUrl: window.location.href.split('#')[0] });
+    } catch (error) {
+      setAuthError(error?.message || 'Google 로그인 시작에 실패했어요.');
+    }
+  }, [authConfigured]);
+
+  const signOut = useCallback(async () => {
+    await nextAuthSignOut({ redirect: false });
+    setCloudProjects([]);
+    setCloudOutputs([]);
+    setSelectedCloudProjectId(null);
+  }, []);
+
+  const refreshCloudProjects = useCallback(async () => {
+    if (!authUser?.email) return;
+    setCloudProjectsLoading(true);
+    setCloudProjectsError('');
+    try {
+      const res = await fetch('/api/projects', { headers: cloudAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '프로젝트 목록을 불러오지 못했어요.');
+      const list = data.projects || [];
+      setCloudProjects(list);
+      setSelectedCloudProjectId(prev => prev && list.some(p => p.id === prev) ? prev : list[0]?.id || null);
+    } catch (error) {
+      setCloudProjectsError(error.message || '프로젝트 목록을 불러오지 못했어요.');
+    } finally {
+      setCloudProjectsLoading(false);
+    }
+  }, [authUser?.email]);
+
+  const refreshCloudOutputs = useCallback(async (projectId = selectedCloudProjectId) => {
+    if (!authUser?.email || !projectId) {
+      setCloudOutputs([]);
+      return;
+    }
+    setCloudOutputsLoading(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/outputs`, { headers: cloudAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '생성 결과물을 불러오지 못했어요.');
+      setCloudOutputs(data.outputs || []);
+    } catch (error) {
+      console.warn('[cloud] outputs load failed:', error?.message || error);
+      setCloudOutputs([]);
+    } finally {
+      setCloudOutputsLoading(false);
+    }
+  }, [authUser?.email, selectedCloudProjectId]);
+
+  useEffect(() => {
+    if (authUser?.email) refreshCloudProjects();
+    else {
+      setCloudProjects([]);
+      setCloudOutputs([]);
+      setSelectedCloudProjectId(null);
+    }
+  }, [authUser?.email]);
+
+  useEffect(() => {
+    if (selectedCloudProjectId) refreshCloudOutputs(selectedCloudProjectId);
+  }, [selectedCloudProjectId, authUser?.email]);
 
   const clearSharedRouteForLocalEdit = useCallback(() => {
     if (!routeShareId || editorMode !== 'editor') return;
@@ -11535,6 +11870,71 @@ export default function App() {
       return { ...p, cards: newCards };
     }));
   };
+
+  const upsertCloudProjectMeta = useCallback((projectMeta) => {
+    if (!projectMeta?.id) return;
+    setCloudProjects(prev => {
+      const next = prev.some(p => p.id === projectMeta.id)
+        ? prev.map(p => p.id === projectMeta.id ? { ...p, ...projectMeta } : p)
+        : [projectMeta, ...prev];
+      return next.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    });
+    setSelectedCloudProjectId(projectMeta.id);
+  }, []);
+
+  const saveProjectToCloud = useCallback(async (project, options = {}) => {
+    if (!authUser?.email || !project) return null;
+    const payload = projectCloudPayload(project, pageVariant);
+    if (!payload) return null;
+    const cloudId = project.cloudId;
+    setCloudSaveState({ status: 'saving', message: '계정 저장 중' });
+    try {
+      const res = await fetch(cloudId ? `/api/projects/${cloudId}` : '/api/projects', {
+        method: cloudId ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '계정 저장에 실패했어요.');
+      const saved = data.project;
+      if (saved?.id) {
+        upsertCloudProjectMeta(saved);
+        if (!cloudId || project.cloudUpdatedAt !== saved.updatedAt) {
+          commitProjects(prev => prev.map(p => p.id === project.id ? { ...p, cloudId: saved.id, cloudUpdatedAt: saved.updatedAt } : p));
+        }
+      }
+      setCloudSaveState({ status: 'saved', message: '계정 저장됨' });
+      if (!options.keepStatus) {
+        setTimeout(() => setCloudSaveState(prev => prev.status === 'saved' ? { status: 'idle', message: '' } : prev), 3500);
+      }
+      return saved || null;
+    } catch (error) {
+      console.warn('[cloud] project save failed:', error?.message || error);
+      setCloudSaveState({ status: 'error', message: '계정 저장 실패' });
+      if (!options.silent) setAlertMsg(error.message || '계정 저장에 실패했어요.');
+      return null;
+    }
+  }, [authUser?.email, commitProjects, pageVariant, upsertCloudProjectMeta]);
+
+  useEffect(() => {
+    if (!authUser?.email || !activeProject || !routeReady) return;
+    const payload = projectCloudPayload(activeProject, pageVariant);
+    if (!payload) return;
+    const signature = JSON.stringify({
+      id: activeProject.id,
+      cloudId: activeProject.cloudId || '',
+      payload,
+    });
+    if (signature === cloudSaveSignatureRef.current) return;
+    cloudSaveSignatureRef.current = signature;
+    if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+    cloudSaveTimerRef.current = setTimeout(() => {
+      saveProjectToCloud(projectsRef.current.find(p => p.id === activeProjectIdRef.current) || activeProject, { silent: true });
+    }, CLOUD_PROJECT_SAVE_DEBOUNCE_MS);
+    return () => {
+      if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+    };
+  }, [activeProject, authUser?.email, pageVariant, routeReady, saveProjectToCloud]);
 
   const updateCard = (i, c) => setCards(p => p.map((x, j) => {
     if (j !== i) return x;
@@ -11692,6 +12092,55 @@ export default function App() {
     return latestProjects.find(p => p.id === latestActiveId) || latestProjects[0] || activeProject;
   }, [activeProject, activeProjectId, projects]);
 
+  const recordGeneratedOutput = useCallback(async (items, effectiveOutputFormat, selectedIndices, hashCfg) => {
+    if (!authUser?.email || !items?.length) return;
+    const latestProject = getLatestActiveProject();
+    if (!latestProject) return;
+    const cloudProject = latestProject.cloudId
+      ? { id: latestProject.cloudId }
+      : await saveProjectToCloud(latestProject, { silent: true, keepStatus: true });
+    const projectId = latestProject.cloudId || cloudProject?.id;
+    if (!projectId) return;
+
+    const fallbackExt = effectiveOutputFormat === 'video' ? 'mp4' : 'jpg';
+    const files = items
+      .filter(item => item?.bucketKey || item?.url)
+      .map((item, index) => {
+        const ext = item.ext || inferDownloadExtFromUrl(item.bucketKey || item.url, fallbackExt);
+        return {
+          cardIdx: item.cardIdx != null ? item.cardIdx : index,
+          bucketKey: item.bucketKey || '',
+          url: item.bucketKey ? '' : (item.url || ''),
+          ext,
+          fileName: `card-${(item.cardIdx != null ? item.cardIdx : index) + 1}.${ext}`,
+        };
+      })
+      .sort((a, b) => a.cardIdx - b.cardIdx);
+    if (files.length === 0) return;
+
+    const sourceHash = (selectedIndices || [])
+      .map(i => cards[i] ? clientCardHash(cards[i], hashCfg) : '')
+      .join('|');
+    try {
+      const res = await fetch(`/api/projects/${projectId}/outputs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
+        body: JSON.stringify({
+          outputType: effectiveOutputFormat === 'video' ? 'video' : 'image_cards',
+          title: `${latestProject.name || '새 프로젝트'} · ${effectiveOutputFormat === 'video' ? '영상' : '이미지'}`,
+          files,
+          cardCount: files.length,
+          sourceHash,
+        }),
+      });
+      if (res.ok) {
+        refreshCloudOutputs(projectId);
+      }
+    } catch (error) {
+      console.warn('[cloud] generated output save failed:', error?.message || error);
+    }
+  }, [authUser?.email, cards, getLatestActiveProject, refreshCloudOutputs, saveProjectToCloud]);
+
   const handleManualSave = useCallback(async () => {
     const latestProjects = projectsRef.current?.length ? projectsRef.current : projects;
     const latestActiveId = activeProjectIdRef.current || activeProjectId;
@@ -11702,12 +12151,16 @@ export default function App() {
       try {
         if (navigator.storage?.persist) await navigator.storage.persist();
       } catch (_) {}
-      const result = await saveProjects(latestProjects, latestActiveId);
-      const savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-      setManualSaveState({
-        status: 'saved',
-        message: result.warning === 'indexeddb_failed' ? '저장 완료' : `저장 완료 ${savedAt}`,
-      });
+	      const result = await saveProjects(latestProjects, latestActiveId);
+	      const latestProject = latestProjects.find(p => p.id === latestActiveId);
+	      const cloudResult = authUser?.email
+	        ? await saveProjectToCloud(latestProject, { silent: true, keepStatus: true })
+	        : null;
+	      const savedAt = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+	      setManualSaveState({
+	        status: 'saved',
+	        message: cloudResult ? `계정 저장 ${savedAt}` : (result.warning === 'indexeddb_failed' ? '저장 완료' : `저장 완료 ${savedAt}`),
+	      });
       manualSaveTimerRef.current = setTimeout(() => {
         setManualSaveState(prev => prev.status === 'saved' ? { status: 'idle', message: '' } : prev);
       }, 6000);
@@ -11716,14 +12169,14 @@ export default function App() {
       setManualSaveState({ status: 'error', message: '저장 실패' });
       setAlertMsg('프로젝트 저장에 실패했어요.\n브라우저 저장소가 가득 찼거나 사이트 데이터 접근이 막혔을 수 있어요.\n공유하기로 백업 링크를 만들어 주세요.');
     }
-  }, [activeProjectId, manualSaveState.status, projects]);
+	  }, [activeProjectId, authUser?.email, manualSaveState.status, projects, saveProjectToCloud]);
 
   const shareProject = async () => {
     const projectToShare = getLatestActiveProject();
     if (!projectToShare || shareLoading) return;
     setShareLoading(true);
     const serverEncoded = encodeProjectForServer(projectToShare);
-    // Try Supabase short URL first
+    // Try server short URL first
     try {
       const res = await fetch('/api/share', {
         method: 'POST',
@@ -11780,6 +12233,122 @@ export default function App() {
       router.push('/edit', undefined, { shallow: true });
     }
   };
+
+  const openCloudProject = useCallback(async (cloudId) => {
+    if (!authUser?.email || !cloudId) return;
+    try {
+      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '프로젝트를 불러오지 못했어요.');
+      const cloudProject = data.project;
+      const localProject = normalizeCloudProjectSnapshot(cloudProject.snapshot, cloudProject);
+      commitProjects(prev => {
+        const exists = prev.some(p => p.cloudId === cloudProject.id || p.id === localProject.id);
+        return exists
+          ? prev.map(p => (p.cloudId === cloudProject.id || p.id === localProject.id) ? { ...localProject, id: p.id } : p)
+          : [localProject, ...prev];
+      });
+      const existing = projectsRef.current.find(p => p.cloudId === cloudProject.id || p.id === localProject.id);
+      commitActiveProjectId(existing?.id || localProject.id);
+      if (cloudProject.pageVariant) setPageVariant(cloudProject.pageVariant === PAGE_VARIANTS.BM_ONLY ? PAGE_VARIANTS.BM_ONLY : PAGE_VARIANTS.DEFAULT);
+      setActiveCardIdx(0);
+      setEditorMode('editor');
+      setShowCloudProjects(false);
+      setGenProgress('');
+      setResults([]);
+    } catch (error) {
+      setAlertMsg(error.message || '프로젝트를 불러오지 못했어요.');
+    }
+  }, [authUser?.email, commitActiveProjectId, commitProjects]);
+
+  const renameCloudProject = useCallback(async (cloudId, title) => {
+    if (!authUser?.email || !cloudId || !title) return;
+    try {
+      const res = await fetch(`/api/projects/${cloudId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
+        body: JSON.stringify({ title }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '이름 변경에 실패했어요.');
+      upsertCloudProjectMeta(data.project);
+      commitProjects(prev => prev.map(p => p.cloudId === cloudId ? { ...p, name: title } : p));
+    } catch (error) {
+      setAlertMsg(error.message || '이름 변경에 실패했어요.');
+    }
+  }, [authUser?.email, commitProjects, upsertCloudProjectMeta]);
+
+  const deleteCloudProject = useCallback(async (cloudId) => {
+    if (!authUser?.email || !cloudId) return;
+    try {
+      const res = await fetch(`/api/projects/${cloudId}`, { method: 'DELETE', headers: cloudAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '삭제에 실패했어요.');
+      setCloudProjects(prev => prev.filter(p => p.id !== cloudId));
+      setCloudOutputs([]);
+      setSelectedCloudProjectId(prev => prev === cloudId ? null : prev);
+      commitProjects(prev => prev.map(p => p.cloudId === cloudId ? { ...p, cloudId: undefined, cloudUpdatedAt: undefined } : p));
+    } catch (error) {
+      setAlertMsg(error.message || '삭제에 실패했어요.');
+    }
+  }, [authUser?.email, commitProjects]);
+
+  const duplicateCloudProject = useCallback(async (cloudId) => {
+    if (!authUser?.email || !cloudId) return;
+    try {
+      const res = await fetch(`/api/projects/${cloudId}`, { headers: cloudAuthHeaders() });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '복제할 프로젝트를 불러오지 못했어요.');
+      const source = data.project;
+      const snapshot = { ...(source.snapshot || {}), id: Date.now() + '_' + Math.random().toString(36).slice(2, 8), name: `${source.title || '새 프로젝트'} 복사본` };
+      delete snapshot.cloudId;
+      delete snapshot.cloudUpdatedAt;
+      const createRes = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
+        body: JSON.stringify({ ...projectCloudPayload(snapshot, source.pageVariant || pageVariant), title: snapshot.name }),
+      });
+      const createData = await createRes.json().catch(() => ({}));
+      if (!createRes.ok) throw new Error(createData.error || '복제에 실패했어요.');
+      upsertCloudProjectMeta(createData.project);
+      await refreshCloudProjects();
+    } catch (error) {
+      setAlertMsg(error.message || '복제에 실패했어요.');
+    }
+  }, [authUser?.email, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
+
+  const importLocalProjectsToCloud = useCallback(async () => {
+    if (!authUser?.email || importingLocalProjects) return;
+    const localProjects = projectsRef.current.filter(p => !p.cloudId && !isReusableBlankProject(p));
+    if (localProjects.length === 0) return;
+    setImportingLocalProjects(true);
+    try {
+      const cloudIdsByLocalId = new Map();
+      for (const project of localProjects) {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...cloudAuthHeaders() },
+          body: JSON.stringify(projectCloudPayload(project, pageVariant)),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || '프로젝트 가져오기에 실패했어요.');
+        if (data.project?.id) {
+          cloudIdsByLocalId.set(project.id, data.project);
+          upsertCloudProjectMeta(data.project);
+        }
+      }
+      commitProjects(prev => prev.map(project => {
+        const cloud = cloudIdsByLocalId.get(project.id);
+        return cloud ? { ...project, cloudId: cloud.id, cloudUpdatedAt: cloud.updatedAt } : project;
+      }));
+      await refreshCloudProjects();
+      setManualSaveState({ status: 'saved', message: '계정 가져오기 완료' });
+    } catch (error) {
+      setAlertMsg(error.message || '프로젝트 가져오기에 실패했어요.');
+    } finally {
+      setImportingLocalProjects(false);
+    }
+  }, [authUser?.email, importingLocalProjects, pageVariant, refreshCloudProjects, upsertCloudProjectMeta]);
 
   const effectiveCard = (card) => ({
     ...card,
@@ -11906,11 +12475,12 @@ export default function App() {
         for (const ci of cachedIndices) {
           const c = cards[ci];
           try {
-            const dlRes = await fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`);
-            if (dlRes.ok) {
-              const { url: presignedUrl } = await dlRes.json();
-              cachedResults.push({ url: presignedUrl, cardIdx: ci, bucketKey: c.lastGenKey });
-              setGenerationItems(prev => prev.map(item => item.originalIndex === ci ? { ...item, status: 'cached', progress: 100 } : item));
+	            const dlRes = await fetch(`/api/download?key=${encodeURIComponent(c.lastGenKey)}`);
+	            if (dlRes.ok) {
+	              await dlRes.json().catch(() => ({}));
+	              const ext = inferDownloadExtFromUrl(c.lastGenKey, effectiveOutputFormat === 'video' ? 'mp4' : 'jpg');
+	              cachedResults.push({ url: bucketDownloadUrl(c.lastGenKey, ci, ext), cardIdx: ci, bucketKey: c.lastGenKey, ext });
+	              setGenerationItems(prev => prev.map(item => item.originalIndex === ci ? { ...item, status: 'cached', progress: 100 } : item));
             } else {
               // 캐시 파일이 없으면 새로 생성 대상으로 이동
               newIndices.push(ci);
@@ -11923,12 +12493,14 @@ export default function App() {
         }
       }
 
-      // 모두 캐시에서 해결된 경우
-      if (newIndices.length === 0) {
-        setResults(cachedResults);
-        setGenProgress(`완료! ${cachedResults.length}/${indices.length}개 다운로드 준비됨`);
-        setGenerating(false);
-        return;
+	      // 모두 캐시에서 해결된 경우
+	      if (newIndices.length === 0) {
+	        const allCachedResults = cachedResults.sort((a, b) => a.cardIdx - b.cardIdx);
+	        setResults(allCachedResults);
+	        recordGeneratedOutput(allCachedResults, effectiveOutputFormat, indices, hashCfg).catch(() => {});
+	        setGenProgress(`완료! ${cachedResults.length}/${indices.length}개 다운로드 준비됨`);
+	        setGenerating(false);
+	        return;
       }
 
       // 새로 생성할 카드만 오버레이 생성
@@ -12003,7 +12575,20 @@ export default function App() {
                 progress: c.status === 'completed' || c.status === 'failed' ? 100 : progressValue,
               });
             }
-            if (c.status === "completed") { completedCards++; totalProgress += 100; if (c.downloadUrl) downloadUrls.push({ url: c.downloadUrl, cardIdx: c.cardIdx, bucketKey: c.bucketKey || '' }); }
+	            if (c.status === "completed") {
+	              completedCards++;
+	              totalProgress += 100;
+	              if (c.downloadUrl) {
+	                const ext = inferDownloadExtFromUrl(c.bucketKey || c.downloadUrl, effectiveOutputFormat === 'video' ? 'mp4' : 'jpg');
+	                downloadUrls.push({
+	                  url: c.bucketKey ? bucketDownloadUrl(c.bucketKey, originalIndex, ext) : c.downloadUrl,
+	                  cardIdx: originalIndex,
+	                  serverIdx: c.cardIdx,
+	                  bucketKey: c.bucketKey || '',
+	                  ext,
+	                });
+	              }
+	            }
             else if (c.status === "failed") { failedCards++; totalProgress += 100; }
             else { totalProgress += progressValue; if (c.statusMessage) statusMsg = c.statusMessage; }
           }
@@ -12019,7 +12604,7 @@ export default function App() {
           setGenProgress(`${completedCards + cachedDone}/${totalCount}개 완료 (${Math.round((totalProgress + cachedDone * 100) / totalCount)}%)`);
           if (completedCards + failedCards >= cardCount) {
             clearInterval(pollInterval); pollIntervalRef.current = null; activeJobIdRef.current = null;
-            const allResults = [...cachedResults, ...downloadUrls];
+            const allResults = [...cachedResults, ...downloadUrls].sort((a, b) => (a.cardIdx ?? 0) - (b.cardIdx ?? 0));
             setResults(allResults);
             // 생성 완료된 카드에 해시/키 저장
             setCards(prev => {
@@ -12035,13 +12620,15 @@ export default function App() {
             const failedCards2 = (status.cards || []).filter(c => c.status === 'failed');
             const failedLines = failedCards2.map(c => {
               const um = c.userMessage;
-              return `\uCE74\uB4DC ${c.cardIdx + 1}: ${um ? um.msg : (c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958')}`;
+              const originalFailedIndex = newIndices[c.cardIdx] != null ? newIndices[c.cardIdx] : c.cardIdx;
+              return `\uCE74\uB4DC ${originalFailedIndex + 1}: ${um ? um.msg : (c.error || '\uC54C \uC218 \uC5C6\uB294 \uC624\uB958')}`;
             });
             const hasBug = failedCards2.some(c => c.userMessage && c.userMessage.type === 'bug');
             setGenStatusMsg("");
             const totalCompleted = completedCards + cachedDone;
             setGenProgress(`완료! ${totalCompleted}/${totalCount}개 생성됨${failedCards > 0 ? ` \u00B7 ${failedCards}개 실패` : ""}${cachedDone > 0 ? ` (${cachedDone}개 캐시)` : ""}`);
             if (failedLines.length > 0) setAlertMsg(`\uC0DD\uC131 \uC2E4\uD328:\n${failedLines.join('\n')}${hasBug ? '\n\n\uAD00\uB9AC\uC790\uC5D0\uAC8C \uC790\uB3D9 \uB9AC\uD3EC\uD2B8\uB418\uC5C8\uC5B4\uC694.\n\uBE60\uB974\uAC8C \uD655\uC778\uD558\uACE0 \uC218\uC815\uD560\uAC8C\uC694!' : ''}`);
+            if (allResults.length > 0) recordGeneratedOutput(allResults, effectiveOutputFormat, indices, hashCfg).catch(() => {});
             setGenerating(false);
             fetchQueueStatus();
           }
@@ -12054,7 +12641,7 @@ export default function App() {
   const handleDownloadAll = async () => {
     if (results.length === 0) return;
     setDownloading(true);
-    try { await downloadAllAsZip(results.map(r => r.url || r), outputFormat); }
+    try { await downloadAllAsZip(results, outputFormat); }
     catch (e) { setAlertMsg('ZIP \uB2E4\uC6B4\uB85C\uB4DC \uC2E4\uD328: ' + e.message); }
     finally { setDownloading(false); }
   };
@@ -12909,9 +13496,10 @@ export default function App() {
           onClose: closeProject, onRename: renameProject,
         }),
 
-        mob
-          ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
-              projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
+	        mob
+	          ? React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 } },
+	              React.createElement(AccountButton, { user: authUser, authLoading, compact: true, onClick: () => setShowCloudProjects(true) }),
+	              projects.length > 0 && React.createElement("button", { onClick: () => setShowProjectSelector(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\uD83D\uDCC2"),
               React.createElement("button", { onClick: () => setShowGlobalSettings(true), style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: 'pointer', transition: 'all 0.15s', lineHeight: 1 } }, "\u2699"),
               React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '6px 8px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 11, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: !projects.length ? 0.5 : 1, minWidth: 44 } }, manualSaveMobileLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '6px 8px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 14, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', lineHeight: 1, opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\u23F3" : "\u2197"),
@@ -12922,6 +13510,8 @@ export default function App() {
               }, generating ? "생성 중..." : "\u2728 생성"),
             )
           : React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 } },
+              React.createElement(AccountButton, { user: authUser, authLoading, onClick: () => setShowCloudProjects(true) }),
+              cloudSaveState.status !== 'idle' && React.createElement("span", { style: { fontSize: 11, color: cloudSaveState.status === 'error' ? '#f87171' : cloudSaveState.status === 'saved' ? '#6ee7b7' : T.textMuted, whiteSpace: 'nowrap' } }, cloudSaveState.message),
               React.createElement("span", { style: { fontSize: 12, color: T.textMuted } }, `카드 ${cards.length}개`),
               React.createElement("button", { onClick: handleManualSave, disabled: manualSaveBusy || !projects.length, style: { padding: '8px 14px', background: manualSaveBg, color: manualSaveColor, borderRadius: T.radiusPill, border: 'none', fontSize: 13, fontWeight: 700, cursor: manualSaveBusy ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: !projects.length ? 0.5 : 1, minWidth: 78 } }, manualSaveLabel),
               React.createElement("button", { onClick: shareProject, disabled: shareLoading, style: { padding: '8px 16px', background: 'rgba(255,255,255,0.05)', color: T.textSecondary, borderRadius: T.radiusPill, border: 'none', fontSize: 13, cursor: shareLoading ? 'wait' : 'pointer', transition: 'all 0.15s', opacity: shareLoading ? 0.5 : 1 } }, shareLoading ? "\uB9C1\uD06C \uC0DD\uC131 \uC911..." : "\uACF5\uC720\uD558\uAE30"),
@@ -13222,10 +13812,34 @@ export default function App() {
       style: { position: 'fixed', bottom: mob ? 48 : 52, right: mob ? 16 : 24, width: mob ? 40 : 44, height: mob ? 40 : 44, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: T.accent, fontSize: mob ? 16 : 18, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, transition: 'all 0.2s ease', boxShadow: '0 2px 12px rgba(99,102,241,0.2)', backdropFilter: 'blur(8px)' },
       onMouseEnter: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.3)'; e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.35)'; },
       onMouseLeave: (e) => { e.currentTarget.style.background = 'rgba(99,102,241,0.15)'; e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(99,102,241,0.2)'; },
-    }, "?"),
-    ), // end editor Fragment
+	    }, "?"),
+	    ), // end editor Fragment
 
-    shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
+	    showCloudProjects && React.createElement(CloudProjectLibraryModal, {
+	      user: authUser,
+	      authConfigured,
+	      authLoading,
+	      authError,
+	      onSignIn: signInWithGoogle,
+	      onSignOut: signOut,
+	      onClose: () => setShowCloudProjects(false),
+	      projects: cloudProjects,
+	      loading: cloudProjectsLoading,
+	      error: cloudProjectsError,
+	      selectedProjectId: selectedCloudProjectId,
+	      outputs: cloudOutputs,
+	      outputsLoading: cloudOutputsLoading,
+	      localImportCount,
+	      importingLocal: importingLocalProjects,
+	      onRefresh: refreshCloudProjects,
+	      onSelectProject: setSelectedCloudProjectId,
+	      onOpenProject: openCloudProject,
+	      onRenameProject: renameCloudProject,
+	      onDeleteProject: deleteCloudProject,
+	      onDuplicateProject: duplicateCloudProject,
+	      onImportLocal: importLocalProjectsToCloud,
+	    }),
+	    shareUrl && React.createElement(ShareModal, { url: shareUrl, onClose: () => setShareUrl(null) }),
     importLoading && React.createElement("div", { style: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 } },
       React.createElement("div", { style: { background: T.surface, borderRadius: T.radius, padding: 28, textAlign: 'center', boxShadow: T.shadowLg } },
         React.createElement("p", { style: { color: T.text, fontSize: 14 } }, "\uACF5\uC720 \uD504\uB85C\uC81D\uD2B8 \uBD88\uB7EC\uC624\uB294 \uC911..."),
