@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import os from 'os';
@@ -15,6 +16,30 @@ process.env.BUCKET_SECRET_ACCESS_KEY = '';
 process.env.AWS_SECRET_ACCESS_KEY = '';
 
 const { processCard } = await import('../lib/worker.js');
+
+function pngSize(file) {
+  const buffer = fs.readFileSync(file);
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+}
+
+function assertBaeminVideoLogoRatio() {
+  const logoPath = new URL('../public/baemin/baemin-logo-white.png', import.meta.url);
+  const pageSource = fs.readFileSync(new URL('../pages/index.js', import.meta.url), 'utf8');
+  const logoSize = pngSize(logoPath);
+  assert.match(pageSource, /const BAEMIN_LOGO_WHITE_NATURAL_WIDTH = 2000;/);
+  assert.match(pageSource, /const BAEMIN_LOGO_WHITE_NATURAL_HEIGHT = 282;/);
+  assert.equal(logoSize.width, 2000, 'white BM logo natural width changed');
+  assert.equal(logoSize.height, 282, 'white BM logo natural height changed');
+  assert.match(
+    pageSource,
+    /const BAEMIN_VIDEO_POST_LOGO_HEIGHT = BAEMIN_VIDEO_POST_LOGO_WIDTH \* BAEMIN_LOGO_WHITE_NATURAL_HEIGHT \/ BAEMIN_LOGO_WHITE_NATURAL_WIDTH;/,
+    'BM video logo height should preserve the white logo asset ratio',
+  );
+  console.log('PASS BM video logo preserves asset ratio');
+}
 
 function run(cmd, args) {
   return execFileSync(cmd, args, { stdio: 'pipe', maxBuffer: 16 * 1024 * 1024 });
@@ -44,6 +69,8 @@ function assertNear(actual, expected, tolerance, label) {
 }
 
 try {
+  assertBaeminVideoLogoRatio();
+
   const background = path.join(tmpRoot, 'background.png');
   const overlay = path.join(tmpRoot, 'white-logo-overlay.png');
   const outputCopy = '/tmp/yt2c-logo-color-output.jpg';

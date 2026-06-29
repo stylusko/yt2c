@@ -7,8 +7,8 @@ import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0623';
-const BUILD_NUM = 6; // same-day deploy count
+const BUILD_DATE = '2026.0629';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +56,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
   '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
   '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
   '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
   '🎯 BM ONLY 피그마 가이드 정렬 — 폰트·크기·자간·위치 보정',
-  '✨ AI 이미지 품질 향상 — 내용 충실 프롬프트·텍스트 영역 고려 구도',
 ];
 
 /* ── Icons ── */
@@ -257,8 +257,10 @@ const BAEMIN_FIGMA_CARD_HEIGHT = 1440;
 const BAEMIN_VIDEO_POST_DESIGN_WIDTH = BAEMIN_FIGMA_CARD_WIDTH;
 const BAEMIN_VIDEO_POST_DESIGN_HEIGHT = BAEMIN_FIGMA_CARD_HEIGHT;
 const BAEMIN_VIDEO_POST_VIDEO_HEIGHT = 906;
+const BAEMIN_LOGO_WHITE_NATURAL_WIDTH = 2000;
+const BAEMIN_LOGO_WHITE_NATURAL_HEIGHT = 282;
 const BAEMIN_VIDEO_POST_LOGO_WIDTH = 308;
-const BAEMIN_VIDEO_POST_LOGO_HEIGHT = 52;
+const BAEMIN_VIDEO_POST_LOGO_HEIGHT = BAEMIN_VIDEO_POST_LOGO_WIDTH * BAEMIN_LOGO_WHITE_NATURAL_HEIGHT / BAEMIN_LOGO_WHITE_NATURAL_WIDTH;
 const BAEMIN_VIDEO_POST_LOGO_SCALE = 308 / BAEMIN_VIDEO_POST_DESIGN_WIDTH * 100;
 const BAEMIN_LOGO_DEFAULT_VARIANT = 'white';
 const BAEMIN_LOGO_DEFAULT_OPACITY = 0.5;
@@ -359,7 +361,7 @@ const baeminVideoPostLogoOverlay = (layout) => {
     designWidth: BAEMIN_VIDEO_POST_LOGO_WIDTH,
     designHeight: BAEMIN_VIDEO_POST_LOGO_HEIGHT,
     x: 50,
-    y: (spec.logoTop + 26) / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100,
+    y: (spec.logoTop + BAEMIN_VIDEO_POST_LOGO_HEIGHT / 2) / BAEMIN_VIDEO_POST_DESIGN_HEIGHT * 100,
     scale: BAEMIN_VIDEO_POST_LOGO_SCALE,
     opacity: 0.5,
   };
