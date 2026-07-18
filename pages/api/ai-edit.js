@@ -1,5 +1,6 @@
 import { getVideoInfo, extractSubtitles } from '../../lib/subtitle.js';
 import { analyzeHighlights } from '../../lib/claude.js';
+import { toCanonicalYouTubeUrl, validateYouTubeUrl } from '../../lib/youtube-url.js';
 
 export const config = {
   api: { bodyParser: false, responseLimit: false },
@@ -24,6 +25,11 @@ export default async function handler(req, res) {
     res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
     return;
   }
+  if (!validateYouTubeUrl(url).ok) {
+    res.status(400).json({ error: '올바른 YouTube 영상 또는 Shorts 링크를 입력해주세요.' });
+    return;
+  }
+  const canonicalUrl = toCanonicalYouTubeUrl(url);
 
   // SSE 헤더
   res.setHeader('Content-Type', 'text/event-stream');
@@ -46,7 +52,7 @@ export default async function handler(req, res) {
   try {
     // 1. 영상 정보 조회
     send(res, 'status', { step: 'info', message: '영상 정보 확인 중...' });
-    const videoInfo = await getVideoInfo(url);
+    const videoInfo = await getVideoInfo(canonicalUrl);
 
     if (aborted) return res.end();
 
@@ -78,7 +84,7 @@ export default async function handler(req, res) {
 
     // 3. 자막 추출
     send(res, 'status', { step: 'subtitle', message: '자막 추출 중...' });
-    const subtitleData = await extractSubtitles(url, videoInfo.videoId, (msg) => {
+    const subtitleData = await extractSubtitles(canonicalUrl, videoInfo.videoId, (msg) => {
       if (!aborted) send(res, 'status', { step: 'subtitle', message: msg });
     });
 

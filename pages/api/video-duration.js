@@ -1,5 +1,6 @@
 // YouTube 영상의 duration(초)만 빠르게 반환
 import { getVideoInfo } from '../../lib/subtitle.js';
+import { extractYouTubeVideoId } from '../../lib/youtube-url.js';
 
 let _redis = null;
 async function getRedis() {
@@ -17,22 +18,13 @@ async function getRedis() {
   }
 }
 
-function extractVideoId(url) {
-  try {
-    const u = new URL(url);
-    if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
-    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
-  } catch {}
-  return null;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
 
-  const videoId = extractVideoId(url);
+  const videoId = extractYouTubeVideoId(url);
   if (!videoId) return res.status(400).json({ error: '올바른 YouTube URL이 아닙니다.' });
 
   const cacheKey = `ytdur:${videoId}`;

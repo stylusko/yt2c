@@ -1,9 +1,7 @@
 import { getVideoQueue } from '../../../lib/queue.js';
 import { ensureStorageDir } from '../../../lib/storage.js';
 import { v4 as uuidv4 } from 'uuid';
-
-const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
-const SHORTS_RE = /\/shorts\//i;
+import { toCanonicalYouTubeUrl, validateYouTubeUrl } from '../../../lib/youtube-url.js';
 
 // Increase body size limit for overlay PNGs
 export const config = {
@@ -42,14 +40,9 @@ async function handlePost(req, res) {
       if (!url || typeof url !== 'string') {
         return res.status(400).json({ error: 'URL is required' });
       }
-      if (!/^https?:\/\/.+/.test(url)) {
-        return res.status(400).json({ error: 'Invalid URL format' });
-      }
-      if (!YOUTUBE_HOST_RE.test(url)) {
-        return res.status(400).json({ error: '유튜브 링크만 지원합니다.' });
-      }
-      if (SHORTS_RE.test(url)) {
-        return res.status(400).json({ error: '쇼츠(Shorts) 링크는 지원하지 않습니다.' });
+      const urlCheck = validateYouTubeUrl(url);
+      if (!urlCheck.ok) {
+        return res.status(400).json({ error: '올바른 YouTube 영상 또는 Shorts 링크를 입력해주세요.' });
       }
     }
 
@@ -68,6 +61,9 @@ async function handlePost(req, res) {
       if (!c.backgroundData && !cardUrl) {
         return res.status(400).json({ error: `카드 ${i + 1}: 배경 이미지가 업로드되지 않았습니다.` });
       }
+      if (!c.backgroundData && !validateYouTubeUrl(cardUrl).ok) {
+        return res.status(400).json({ error: `카드 ${i + 1}: 올바른 YouTube 영상 또는 Shorts 링크를 입력해주세요.` });
+      }
     }
 
     // Create one job per card
@@ -85,7 +81,7 @@ async function handlePost(req, res) {
         cardIdx,
         cardCount: cards.length,
         cardConfig: cardConfig || {},
-        url: cardConfig?.url || url || '',
+        url: backgroundData ? '' : toCanonicalYouTubeUrl(cardConfig?.url || url || ''),
         overlayData: overlayData || '',
         backgroundData: backgroundData || '',
         bgSourceUrl: bgSourceUrl || '',

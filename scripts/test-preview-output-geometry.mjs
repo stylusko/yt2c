@@ -20,6 +20,7 @@ process.env.BUCKET_SECRET_ACCESS_KEY = '';
 process.env.AWS_SECRET_ACCESS_KEY = '';
 
 const { processCard, buildFilterChain } = await import('../lib/worker.js');
+const { computeNormalizedCropWindow, videoAspectFromDimensions } = await import('../lib/video-crop-geometry.js');
 
 function run(cmd, args, opts = {}) {
   return execFileSync(cmd, args, { stdio: opts.stdio || 'pipe', maxBuffer: 16 * 1024 * 1024 });
@@ -166,6 +167,11 @@ function assertIncludes(value, expected, label) {
   console.log(`PASS ${label}: ${expected}`);
 }
 
+function assertNear(actual, expected, label, tolerance = 0.0001) {
+  if (Math.abs(actual - expected) > tolerance) throw new Error(`${label} expected ${expected}, got ${actual}`);
+  console.log(`PASS ${label}: ${actual.toFixed(5)} ~= ${expected.toFixed(5)}`);
+}
+
 try {
   const scaledVideoFilter = buildFilterChain(
     1080, 1920, OUT, OUT,
@@ -180,6 +186,14 @@ try {
   );
   assertIncludes(scaledVideoFilter, 'scale=756:1344', 'video output keeps preview scale');
   assertIncludes(scaledVideoFilter, 'overlay=162:-132', 'video output keeps preview position');
+
+  const shortsAspect = videoAspectFromDimensions({ w: 1080, h: 1920 });
+  const shortsCrop = computeNormalizedCropWindow({ videoAspect: shortsAspect, targetAspect: 1, videoScale: 100, videoX: 0, videoY: 0 });
+  const shortsFilter = buildFilterChain(1080, 1920, OUT, OUT, [0, 0], 100, 'full', 'photo_top', 0.5, 0, undefined, false);
+  assertIncludes(shortsFilter, 'scale=1080:1920', 'Shorts output keeps native portrait aspect');
+  assertIncludes(shortsFilter, 'overlay=0:-420', 'Shorts output centers the portrait crop');
+  assertNear(shortsCrop.top, 420 / 1920, 'Shorts crop guide matches output top offset');
+  assertNear(shortsCrop.height, OUT / 1920, 'Shorts crop guide matches output visible height');
 
   const baeminVideoTopFilter = buildFilterChain(
     1920, 1080, 1080, 1440,

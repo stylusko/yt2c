@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { downloadYouTubeSegment, getVideoDimensions } from '../../lib/worker.js';
+import { extractYouTubeVideoId } from '../../lib/youtube-url.js';
 
 const WORK_DIR = '/tmp/yt2c-storage/videoinfo';
 
@@ -20,11 +21,6 @@ async function getRedis() {
     _redis = false;
     return null;
   }
-}
-
-function extractVideoId(url) {
-  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
 }
 
 // 중복 in-flight 호출 방지 (같은 videoId 동시 요청 → 1번만 다운로드)
@@ -48,7 +44,7 @@ export default async function handler(req, res) {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'url is required' });
 
-  const videoId = extractVideoId(url);
+  const videoId = extractYouTubeVideoId(url);
   if (!videoId) return res.status(400).json({ error: 'invalid YouTube URL' });
 
   const redis = await getRedis();
