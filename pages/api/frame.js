@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { ensureCookieFile, downloadYouTubeSegment } from '../../lib/worker.js';
+import { extractYouTubeVideoId } from '../../lib/youtube-url.js';
 
 const execFileAsync = promisify(execFile);
 const unlinkAsync = promisify(fs.unlink);
@@ -28,11 +29,6 @@ async function getRedis() {
   }
 }
 
-function extractVideoId(url) {
-  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? m[1] : null;
-}
-
 function secondsToTime(sec) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -47,7 +43,7 @@ export default async function handler(req, res) {
   const { url, t } = req.query;
   if (!url || t == null) return res.status(400).json({ error: 'url and t are required' });
 
-  const videoId = extractVideoId(url);
+  const videoId = extractYouTubeVideoId(url);
   if (!videoId) return res.status(400).json({ error: 'invalid YouTube URL' });
 
   const seconds = parseFloat(t);

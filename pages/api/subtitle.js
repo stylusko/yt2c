@@ -1,4 +1,5 @@
 import { getVideoInfo, extractSubtitles } from '../../lib/subtitle.js';
+import { extractYouTubeVideoId } from '../../lib/youtube-url.js';
 
 let _redis = null;
 async function getRedis() {
@@ -16,15 +17,6 @@ async function getRedis() {
   }
 }
 
-function extractVideoId(url) {
-  try {
-    const u = new URL(url);
-    if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
-    if (u.hostname.includes('youtube.com')) return u.searchParams.get('v');
-  } catch {}
-  return null;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -35,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'url 파라미터가 필요합니다.' });
   }
 
-  const videoId = extractVideoId(url);
+  const videoId = extractYouTubeVideoId(url);
   if (!videoId) {
     return res.status(400).json({ error: 'videoId를 추출할 수 없습니다. 올바른 YouTube URL인지 확인하세요.' });
   }

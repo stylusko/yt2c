@@ -5,10 +5,12 @@ import { useRouter } from 'next/router';
 import JSZip from 'jszip';
 import LZString from 'lz-string';
 import { computeCardCacheHash, logoSafeOverlayFingerprint } from '../lib/card-cache-hash.js';
+import { extractYouTubeVideoId, validateYouTubeUrl } from '../lib/youtube-url.js';
+import { computeNormalizedCropWindow, videoAspectFromDimensions } from '../lib/video-crop-geometry.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0629';
-const BUILD_NUM = 2; // same-day deploy count
+const BUILD_DATE = '2026.0719';
+const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
@@ -56,13 +58,13 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '📱 클립 편집 — YouTube Shorts 링크 추가·미리보기·영상 생성 지원',
   '🖼️ 업로드 로고 — 커스텀 이미지 비율 유지·캐시 보정',
   '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
   '🎛️ BM ONLY 영상 제작 — 3:4 고정·영상 레이아웃 사전 선택',
   '🎬 BM ONLY 영상 카드뉴스 — 피그마 영상 전용 프리셋 선택·2줄 제목 보정',
   '📐 BM ONLY 텍스트온리 내지 — 피그마 솔리드 본문·박스 좌표 보정',
   '📍 BM ONLY 표지 BI 위치 — 피그마 기준 상단 좌표 보정',
-  '🎚️ 텍스트 전체 이동 슬라이더 — 좌우·위아래 값 조정과 미세 이동',
 ];
 
 /* ── Icons ── */
@@ -95,21 +97,11 @@ const TUTORIAL_STEPS_DESKTOP = [
   { target: '[data-tour="generate"]', title: '\uC0DD\uC131\uD558\uAE30', desc: '\uC124\uC815\uC774 \uB05D\uB098\uBA74 \uC5EC\uAE30\uC11C \uCE74\uB4DC\uB274\uC2A4\uB97C \uC0DD\uC131\uD574\uC694!' },
 ];
 
-/* ── YouTube URL helpers ── */
-const YOUTUBE_HOST_RE = /^https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\//i;
-const SHORTS_RE = /\/shorts\//i;
-function validateYouTubeUrl(url) {
-  if (!url) return { ok: false, code: 'empty' };
-  if (!/^https?:\/\/.+/.test(url)) return { ok: false, code: 'format' };
-  if (!YOUTUBE_HOST_RE.test(url)) return { ok: false, code: 'not_youtube' };
-  if (SHORTS_RE.test(url)) return { ok: false, code: 'shorts' };
-  return { ok: true };
-}
 const YT_VALIDATION_MSGS = {
   empty: '영상 URL을 입력하세요.',
-  format: '올바른 URL 형식이 아닙니다.\nhttp:// 또는 https://로 시작하는 영상 주소를 입력해주세요.',
+  format: '올바른 URL 형식이 아닙니다.\nhttps://로 시작하는 영상 주소를 입력해주세요.',
   not_youtube: '유튜브 링크만 지원합니다.\nyoutube.com 또는 youtu.be 주소를 입력해주세요.',
-  shorts: '쇼츠(Shorts) 링크는 지원하지 않습니다.\n일반 영상 링크를 입력해주세요.\n(예: https://youtube.com/watch?v=...)',
+  invalid_video: '영상 ID를 확인할 수 없습니다.\n일반 영상 또는 Shorts 주소를 다시 확인해주세요.',
 };
 
 const LAYOUT_OPTIONS = [
@@ -1480,6 +1472,7 @@ function useIsMobile(breakpoint = 768) {
 
 /* ── Video aspect cache (YouTube native dimensions) ── */
 const __videoAspectCache = new Map(); // videoId → { w, h } or 'pending' or 'failed'
+const __videoAspectSubscribers = new Map();
 function useVideoAspect(videoId) {
   const [dims, setDims] = useState(() => {
     if (!videoId) return null;
@@ -1488,28 +1481,35 @@ function useVideoAspect(videoId) {
   });
   useEffect(() => {
     if (!videoId) { setDims(null); return; }
+    let subscribers = __videoAspectSubscribers.get(videoId);
+    if (!subscribers) {
+      subscribers = new Set();
+      __videoAspectSubscribers.set(videoId, subscribers);
+    }
+    subscribers.add(setDims);
     const cached = __videoAspectCache.get(videoId);
-    if (cached && typeof cached === 'object') { setDims(cached); return; }
-    if (cached === 'pending' || cached === 'failed') return;
-    __videoAspectCache.set(videoId, 'pending');
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch('/api/video-info?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId));
-        if (!r.ok) throw new Error('video-info failed');
-        const j = await r.json();
-        if (j.width && j.height) {
-          const v = { w: j.width, h: j.height };
-          __videoAspectCache.set(videoId, v);
-          if (!cancelled) setDims(v);
-        } else {
+    if (cached && typeof cached === 'object') setDims(cached);
+    if (cached !== 'pending' && cached !== 'failed' && !(cached && typeof cached === 'object')) {
+      __videoAspectCache.set(videoId, 'pending');
+      (async () => {
+        try {
+          const r = await fetch('/api/video-info?url=' + encodeURIComponent('https://www.youtube.com/watch?v=' + videoId));
+          if (!r.ok) throw new Error('video-info failed');
+          const j = await r.json();
+          if (!j.width || !j.height) throw new Error('video dimensions missing');
+          const value = { w: j.width, h: j.height };
+          __videoAspectCache.set(videoId, value);
+          (__videoAspectSubscribers.get(videoId) || []).forEach(notify => notify(value));
+        } catch {
           __videoAspectCache.set(videoId, 'failed');
         }
-      } catch {
-        __videoAspectCache.set(videoId, 'failed');
-      }
-    })();
-    return () => { cancelled = true; };
+      })();
+    }
+    return () => {
+      const current = __videoAspectSubscribers.get(videoId);
+      current?.delete(setDims);
+      if (current?.size === 0) __videoAspectSubscribers.delete(videoId);
+    };
   }, [videoId]);
   return dims;
 }
@@ -3319,12 +3319,13 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     return () => ro.disconnect();
   }, []);
   useEffect(() => { setImgLoaded(false); setThumbFailed(false); }, [clipThumbnail]);
-  const thumbnailId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  const thumbnailId = extractYouTubeVideoId(videoUrl);
+  const nativeDims = useVideoAspect(thumbnailId);
   if (!thumbnailId || !aspectRatio) return null;
   const imgSrc = (clipThumbnail && !thumbFailed) ? clipThumbnail : `https://img.youtube.com/vi/${thumbnailId}/hqdefault.jpg`;
   const isLoading = clipThumbnail && !thumbFailed && !imgLoaded;
   const pH = 110;
-  const videoAspect = 16 / 9;
+  const videoAspect = videoAspectFromDimensions(nativeDims);
   const cw = w || 1;
   const containerAspect = cw / pH;
   let videoDisplayW, videoDisplayH, videoOffsetX = 0, videoOffsetY = 0;
@@ -3335,26 +3336,17 @@ function CropGuidePreview({ videoUrl, aspectRatio, videoX, videoY, videoScale, v
     videoDisplayW = cw; videoDisplayH = cw / videoAspect;
     videoOffsetY = (pH - videoDisplayH) / 2;
   }
-  const zoom = Math.max(videoScale ?? 100, 1) / 100;
   const [_aw, _ah] = (aspectRatio || '1:1').split(':').map(Number);
   const outAspect = (_aw && _ah) ? _aw / _ah : 1;
   const rawPr = Number(photoRatio ?? 0.55);
   const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
   const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
     ? outAspect / pr : outAspect;
-  let visW, visH;
-  if (videoAspect >= targetAspect) {
-    visH = 1 / zoom; visW = targetAspect / (videoAspect * zoom);
-  } else {
-    visW = 1 / zoom; visH = videoAspect / (targetAspect * zoom);
-  }
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, Math.min(0, 1 - visW), Math.max(0, 1 - visW));
-  const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, Math.min(0, 1 - visH), Math.max(0, 1 - visH));
-  const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
-  const guideTop = videoOffsetY + cropTop * videoDisplayH;
-  const guideW = visW * videoDisplayW;
-  const guideH = visH * videoDisplayH;
+  const cropWindow = computeNormalizedCropWindow({ videoAspect, targetAspect, videoScale, videoX, videoY });
+  const guideLeft = videoOffsetX + cropWindow.left * videoDisplayW;
+  const guideTop = videoOffsetY + cropWindow.top * videoDisplayH;
+  const guideW = cropWindow.width * videoDisplayW;
+  const guideH = cropWindow.height * videoDisplayH;
   const accent = '#8b5cf6';
   return React.createElement("div", { ref, style: { position: 'relative', width: fixedWidth || '100%', height: pH, background: '#000', borderRadius: 6, overflow: 'hidden', flexShrink: 0 } },
     React.createElement("img", { src: imgSrc, style: { position: 'absolute', left: videoOffsetX, top: videoOffsetY, width: videoDisplayW, height: videoDisplayH, objectFit: 'cover', opacity: isLoading ? 0 : 1, transition: 'opacity 0.2s' }, draggable: false, onLoad: () => setImgLoaded(true), onError: () => { if (clipThumbnail && !thumbFailed) setThumbFailed(true); setImgLoaded(true); } }),
@@ -3411,7 +3403,8 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
     return () => ro.disconnect();
   }, []);
 
-  const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  const videoId = extractYouTubeVideoId(videoUrl);
+  const nativeDims = useVideoAspect(videoId);
   const startSec = parseTime(start);
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
@@ -3980,7 +3973,7 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
       (() => {
         if (!aspectRatio || !containerWidth) return null;
         const pH = 200;
-        const videoAspect = 16 / 9;
+        const videoAspect = videoAspectFromDimensions(nativeDims);
         const containerAspect = containerWidth / pH;
         let videoDisplayW, videoDisplayH, videoOffsetX = 0, videoOffsetY = 0;
         if (containerAspect > videoAspect) {
@@ -3990,26 +3983,17 @@ function ClipSelector({ videoUrl, start, end, onStartChange, onEndChange, onClip
           videoDisplayW = containerWidth; videoDisplayH = containerWidth / videoAspect;
           videoOffsetY = (pH - videoDisplayH) / 2;
         }
-        const zoom = Math.max(videoScale ?? 100, 1) / 100;
         const [__aw, __ah] = (aspectRatio || '1:1').split(':').map(Number);
         const outAspect = (__aw && __ah) ? __aw / __ah : 1;
         const rawPr = Number(photoRatio ?? 0.55);
         const pr = Math.max(0.1, Math.min(0.95, Number.isFinite(rawPr) ? (rawPr > 1 ? rawPr / 100 : rawPr) : 0.55));
         const targetAspect = (videoFill === 'split' && layout !== 'full_bg' && layout !== 'text_box' && layout !== 'none')
           ? outAspect / pr : outAspect;
-        let visW, visH;
-        if (videoAspect >= targetAspect) {
-          visH = Math.min(1, 1 / zoom); visW = Math.min(1, targetAspect / (videoAspect * zoom));
-        } else {
-          visW = Math.min(1, 1 / zoom); visH = Math.min(1, videoAspect / (targetAspect * zoom));
-        }
-        const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-        const cropLeft = clamp((videoX ?? 0) / 400 + (1 - visW) / 2, 0, 1 - visW);
-        const cropTop = clamp((videoY ?? 0) / 400 + (1 - visH) / 2, 0, 1 - visH);
-        const guideLeft = videoOffsetX + cropLeft * videoDisplayW;
-        const guideTop = videoOffsetY + cropTop * videoDisplayH;
-        const guideW = visW * videoDisplayW;
-        const guideH = visH * videoDisplayH;
+        const cropWindow = computeNormalizedCropWindow({ videoAspect, targetAspect, videoScale, videoX, videoY });
+        const guideLeft = videoOffsetX + cropWindow.left * videoDisplayW;
+        const guideTop = videoOffsetY + cropWindow.top * videoDisplayH;
+        const guideW = cropWindow.width * videoDisplayW;
+        const guideH = cropWindow.height * videoDisplayH;
         const accentGuide = '#8b5cf6';
         return React.createElement("div", {
           style: {
@@ -4248,7 +4232,7 @@ function MobileClipSelector({ videoUrl, start, end, onStartChange, onEndChange, 
   const isInitialMountRef = useRef(true);
   const maxZoom = duration > 0 ? Math.max(2, Math.round(duration / 75)) : 10;
 
-  const videoId = videoUrl ? (videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)||[])[1] : null;
+  const videoId = extractYouTubeVideoId(videoUrl);
   const startSec = parseTime(start);
   const endSec = parseTime(end);
   const clipLen = (startSec != null && endSec != null && endSec > startSec) ? endSec - startSec : null;
@@ -5271,7 +5255,7 @@ function CardPreview({ card: rawCard, globalUrl, aspectRatio = '1:1', globalBgIm
   const vScale = (card.videoScale ?? 100) / 100;
   const coverVScale = Math.max(vScale, 1.01); // cover 모드 최소 101% (가장자리 아티팩트 방지)
   const videoUrl = card.url || globalUrl || "";
-  const thumbnailId = videoUrl.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1];
+  const thumbnailId = extractYouTubeVideoId(videoUrl);
   const nativeDims = useVideoAspect(thumbnailId);
   const [thumbSrc, setThumbSrc] = useState(null);
   const [tried, setTried] = useState(0);
@@ -6102,7 +6086,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
   useEffect(() => { if (editingName && nameRef.current) nameRef.current.focus(); }, [editingName]);
   useEffect(() => { if (urlEditing && urlInputRef.current) urlInputRef.current.focus(); }, [urlEditing]);
   const videoUrl = card.url || globalUrl || '';
-  const hasVideo = videoUrl && YOUTUBE_HOST_RE.test(videoUrl);
+  const hasVideo = !!extractYouTubeVideoId(videoUrl);
   const truncUrl = videoUrl.length > 50 ? videoUrl.slice(0, 50) + '...' : videoUrl;
 
   const displayName = card.name || card.title || card.subtitle || `카드 ${index + 1}`;
@@ -6191,7 +6175,7 @@ function CardEditor({ card, index, onChange, onRemove, onDuplicate, total, globa
                           React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                         )
                       : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
-                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                          React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 \uC77C\uBC18/Shorts URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
                           hasVideo && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
                           card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                         ),
@@ -6489,7 +6473,7 @@ function PreviewModal({ cards, globalUrl, aspectRatio, globalBgImage, onClose, o
         const pvc = pvCard(card);
         const videoUrl = pvc.url || globalUrl || '';
         const isImageBg = !!pvc.uploadedImage || (pvc.fillSource || 'video') === 'image' || (!videoUrl && !!globalBgImage);
-        const hasVid = pvc.appliedStart && pvc.appliedEnd && /(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/.test(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
+        const hasVid = pvc.appliedStart && pvc.appliedEnd && !!extractYouTubeVideoId(videoUrl) && !pvc.uploadedImage && (pvc.fillSource || 'video') === 'video';
         const showSpinner = i === currentIdx && hasVid && !videoReady[i];
         const showUnset = !isImageBg && !hasVid;
         return React.createElement("div", {
@@ -10035,7 +10019,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
 
   // Tab content renderers
   const mobVideoUrl = card.url || globalUrl || '';
-  const mobHasVideo = mobVideoUrl && YOUTUBE_HOST_RE.test(mobVideoUrl);
+  const mobHasVideo = !!extractYouTubeVideoId(mobVideoUrl);
   const renderImageAdjustControls = () => React.createElement("div", { style: { borderTop: '1px solid ' + T.border, paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 } },
     React.createElement(SectionTitleWithReset, { title: "\uC774\uBBF8\uC9C0 \uC870\uC815", onReset: () => updateMulti({ videoX: 0, videoY: 0, videoScale: 100, videoBrightness: 0 }) }),
     React.createElement(SliderRow, { label: "좌우", value: card.videoX ?? 0, min: -400, max: 400, step: 1, onChange: (v) => update("videoX", v), defaultValue: 0, suffix: '' }),
@@ -10056,7 +10040,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '4px 0 8px' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 40 ? vu.slice(0, 40) + '...' : vu; return hv && !urlEditing
+            (() => { const vu = card.url || globalUrl || ''; const hv = !!extractYouTubeVideoId(vu); const tu = vu.length > 40 ? vu.slice(0, 40) + '...' : vu; return hv && !urlEditing
               ? React.createElement("div", {
                   onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
                   style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s', marginBottom: 8 },
@@ -10066,7 +10050,7 @@ function MobileCardCarousel({ cards, activeIndex, onActiveChange, onCardChange, 
                   React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                 )
               : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center', marginBottom: 8 } },
-                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 \uC77C\uBC18/Shorts URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
                   hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
                   card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                 ); })(),
@@ -10585,7 +10569,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
 
   // \u2500\u2500 Fill Tab \u2500\u2500
   const deskVideoUrl = card.url || globalUrl || '';
-  const deskHasVideo = deskVideoUrl && YOUTUBE_HOST_RE.test(deskVideoUrl);
+  const deskHasVideo = !!extractYouTubeVideoId(deskVideoUrl);
   const showStandaloneAiImageButton = !(card.sourceType === 'article' || project?.sourceType === 'article');
   const renderFill = () => React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     !deskHasVideo && React.createElement("div", { style: { display: 'flex', gap: 6, marginBottom: 4 } },
@@ -10598,7 +10582,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
             React.createElement("div", { style: { fontSize: 12, color: T.textMuted, padding: '6px 0' } }, "\uC774\uBBF8\uC9C0\uB97C \uC0AD\uC81C\uD574\uC57C \uC601\uC0C1\uC744 \uBC30\uACBD\uC73C\uB85C \uC4F8 \uC218 \uC788\uC5B4\uC694"),
           )
         : React.createElement(React.Fragment, null,
-            (() => { const vu = card.url || globalUrl || ''; const hv = vu && YOUTUBE_HOST_RE.test(vu); const tu = vu.length > 50 ? vu.slice(0, 50) + '...' : vu; return hv && !urlEditing
+            (() => { const vu = card.url || globalUrl || ''; const hv = !!extractYouTubeVideoId(vu); const tu = vu.length > 50 ? vu.slice(0, 50) + '...' : vu; return hv && !urlEditing
               ? React.createElement("div", {
                   onClick: () => { setUrlEditing(true); setTimeout(() => urlInputRef.current && urlInputRef.current.focus(), 50); },
                   style: { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, cursor: 'pointer', transition: 'background 0.15s' },
@@ -10610,7 +10594,7 @@ function DesktopCardPanel({ cards, activeIndex, onActiveChange, onCardChange, on
                   React.createElement("span", { style: { fontSize: 11, color: T.textMuted, flexShrink: 0 } }, "\u270E"),
                 )
               : React.createElement("div", { style: { display: 'flex', gap: 4, alignItems: 'center' } },
-                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
+                  React.createElement("input", { ref: urlInputRef, type: "text", value: card.url, placeholder: "\uAC1C\uBCC4 \uC77C\uBC18/Shorts URL (\uBE44\uC6CC\uB450\uBA74 \uACF5\uD1B5 URL)", onChange: (e) => updateMulti({ url: e.target.value, start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }), style: { ...inputBase, flex: 1 } }),
                   hv && React.createElement("button", { onClick: () => setUrlEditing(false), style: { background: 'rgba(99,102,241,0.15)', border: 'none', color: T.accent, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC801\uC6A9"),
                   card.url && React.createElement("button", { onClick: () => { updateMulti({ url: '', start: '', end: '', appliedStart: null, appliedEnd: null, clipThumbnail: null }); setUrlEditing(false); }, style: { background: 'rgba(239,68,68,0.1)', border: 'none', color: T.danger, fontSize: 12, cursor: 'pointer', padding: '6px 10px', borderRadius: 6, flexShrink: 0 } }, "\uC9C0\uC6B0\uAE30"),
                 ); })(),
