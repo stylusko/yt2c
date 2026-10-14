@@ -1,5 +1,6 @@
 import { getSupabase } from '../../../lib/supabase';
 import { getShareFromRedis } from '../../../lib/share-store';
+import {legacyShare} from '../../../lib/legacy-archive.mjs';
 
 export const config = {
   api: {
@@ -36,5 +37,11 @@ export default async function handler(req, res) {
     }
   }
 
+  try {
+    const data = await legacyShare(id);
+    if (data) return res.status(200).json({data, storage: 'preserved-archive'});
+  } catch {
+    return res.status(503).json({error: '기존 프로젝트 보관본을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.'});
+  }
   return res.status(404).json({ error: 'Project not found' });
 }

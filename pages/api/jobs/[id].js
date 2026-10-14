@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getVideoQueue } from '../../../lib/queue.js';
+import {legacyDownloadURL} from '../../../lib/legacy-archive.mjs';
 
 const STORAGE_DIR = process.env.STORAGE_DIR || '/tmp/yt2c-storage';
 
@@ -48,6 +49,8 @@ async function handleGet(req, res) {
       const filename = `card-${parseInt(cardIdx) + 1}.${extension}`;
 
       if (!fs.existsSync(filePath)) {
+        const archive = await legacyDownloadURL(id, Number(cardIdx), extension);
+        if (archive) return res.redirect(307, archive);
         return res.status(404).json({ error: 'File not found' });
       }
 
