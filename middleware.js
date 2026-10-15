@@ -1,5 +1,6 @@
 import {NextResponse} from 'next/server';
 import {blockedWebPath,sameOrigin} from './lib/access-paths.mjs';
+import {installerEntry} from './lib/installer-entry.mjs';
 
 function noStore(response) {
   response.headers.set('Cache-Control','private, no-store');
@@ -9,6 +10,14 @@ function noStore(response) {
 }
 export async function middleware(request) {
   const originalPath=request.nextUrl.pathname,path=originalPath.toLowerCase();
+  const installer=installerEntry(originalPath,request.method,process.env.YOUMECA_INSTALLER_TOKEN);
+  if(installer) {
+    const response=installer.kind==='download'?NextResponse.redirect(installer.destination,installer.status):new NextResponse(installer.html||'GET 또는 HEAD 요청만 가능합니다.',{status:installer.status,headers:{'Content-Type':installer.kind==='page'?'text/html; charset=utf-8':'text/plain; charset=utf-8'}});
+    response.headers.set('X-Robots-Tag','noindex, nofollow, noarchive');response.headers.set('Referrer-Policy','no-referrer');
+    response.headers.set('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'");
+    if(installer.kind==='method')response.headers.set('Allow','GET, HEAD');
+    return noStore(response);
+  }
   if(blockedWebPath(path)) return noStore(new NextResponse('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>웹 진입 중단 · 유메카</title><body style="font:17px/1.7 system-ui;background:#fafaf6;color:#263c2f;padding:12vh 8vw"><main><p>youmeca</p><h1>웹 진입이 중단되었습니다.</h1><p>배민온리 웹 페이지는 현재 이용할 수 없습니다.</p></main></body></html>',{status:403,headers:{'Content-Type':'text/html; charset=utf-8'}}));
   if(path==='/access' || path.startsWith('/api/access/') || path.startsWith('/_next/static/') || path.startsWith('/_next/webpack-hmr') || path==='/favicon.ico' || path.startsWith('/icon-') || path.startsWith('/fonts/')) return NextResponse.next();
   if(path.startsWith('/api/') && !['GET','HEAD','OPTIONS'].includes(request.method) && !sameOrigin(request.headers.get('origin'),process.env.YOUMECA_ORIGIN||'https://youmeca.me')) return noStore(NextResponse.json({error:'이 사이트에서 다시 요청해 주세요.'},{status:403}));
