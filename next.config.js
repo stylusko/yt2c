@@ -16,12 +16,6 @@ const nextConfig = {
       { source: '/s/:id', destination: '/' },
     ];
   },
-  // API route body size limit (overlay PNG can be large)
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
   // Exclude bullmq/ioredis from client bundle and prevent build-time errors
   webpack: (config, { isServer }) => {
     if (!isServer) {

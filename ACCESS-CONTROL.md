@@ -12,3 +12,5 @@
 - 새 유메카의 일반 `/app/`, Mac 앱, Claude MCP 및 업데이트 주소는 유지합니다. 배민온리 템플릿 자체나 저장 자료를 삭제하지 않습니다.
 
 검증: `node scripts/test-access-control.mjs`, `node scripts/test-figmama-migration.mjs`, `npm run build` 및 실제 빌드 서버에서 비로그인·대기·승인·회수·관리자·CSRF·기존 보관본 시나리오를 확인합니다.
+
+배포 서버는 Node.js 22와 Next.js 15.5.28을 사용합니다. 알려진 취약점이 있는 이전 Next.js 및 관련 의존성을 보안 수정 버전으로 갱신했습니다.
