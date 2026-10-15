@@ -1,11 +1,11 @@
-# YOUMECA retirement and preserved archive
+# Youmeca migration and restricted legacy service
 
-New card-news creation moves to https://youmeca.web.app/bmonly. Entry and authoring URLs redirect there. Legacy generation, AI rewrite/image generation, video extraction and destructive job/share writes return 410.
+The new editor is named Youmeca and uses the dedicated Firebase project `youmeca`. Web, Mac and Claude MCP use the new editor.
 
-Existing share pages, stored outputs and read-only APIs remain available. Add `archive=1` to an old editor URL to inspect browser-stored projects and copy their content. This does not migrate old projects or identities into Firebase.
+The legacy `youmeca.me` service is now available only after Firebase sign-in and administrator approval. Existing editor routes and APIs remain available to approved users. Share pages and preserved downloads require the same approval. `archive=1` is not an access bypass.
+
+The `/bmonly` web entry and all its subroutes, including BM-only share routes, are closed to everyone, including the administrator. The new Firebase `/bmonly` landing has also been removed.
 
 Before deployment, 42 production Redis shares (1,076,460,105 bytes) were copied to a restricted local backup and private `legacy-shares/` objects in the existing bucket. Every copy was checked by length and SHA-256 metadata. The original Redis keys/TTLs and 846 existing bucket objects were retained. When a share expires from Redis, its archive remains readable. When an old container output disappears on redeployment, its original download URL resolves the preserved bucket copy.
 
-Validation: routing policy tests; Next production build; actual legacy JPG restored byte-for-byte through the new download route; actual legacy share restored with Redis disconnected and its checksum verified. No original checkout changes, database deletions, storage purges or account migrations are part of this change.
-
-The editor is now named Youmeca and hosted in the dedicated Firebase project `youmeca`. Legacy archives remain intact.
+See [ACCESS-CONTROL.md](ACCESS-CONTROL.md) for access configuration, account management and verification. Existing accounts, projects, Redis share keys and bucket objects are not deleted by this change.

@@ -12,7 +12,8 @@
     "test:preview-output": "node scripts/test-preview-output-geometry.mjs",
     "test:logo-color": "node scripts/test-logo-color-output.mjs",
     "test:youtube-url": "node scripts/test-youtube-url.mjs",
-    "telegram:replay48h": "node scripts/replay-telegram-48h.mjs"
+    "telegram:replay48h": "node scripts/replay-telegram-48h.mjs",
+    "test:access": "node scripts/test-access-control.mjs && node scripts/test-figmama-migration.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

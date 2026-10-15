@@ -9,7 +9,7 @@ import { extractYouTubeVideoId, validateYouTubeUrl } from '../lib/youtube-url.js
 import { computeNormalizedCropWindow, videoAspectFromDimensions } from '../lib/video-crop-geometry.js';
 
 /* ── Constants ── */
-const BUILD_DATE = '2026.0719';
+const BUILD_DATE = '2026.1015';
 const BUILD_NUM = 1; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
@@ -58,6 +58,7 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  '🔒 관리자 승인 계정만 이용 · 배민온리 웹 진입 중단',
   '📱 클립 편집 — YouTube Shorts 링크 추가·미리보기·영상 생성 지원',
   '🖼️ 업로드 로고 — 커스텀 이미지 비율 유지·캐시 보정',
   '🪧 BM ONLY 영상 로고 — 실제 에셋 비율로 찌그러짐 보정',
