@@ -10,7 +10,7 @@ import { computeNormalizedCropWindow, videoAspectFromDimensions } from '../lib/v
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.1015';
-const BUILD_NUM = 1; // same-day deploy count
+const BUILD_NUM = 2; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
