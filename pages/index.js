@@ -10,8 +10,9 @@ import { computeNormalizedCropWindow, videoAspectFromDimensions } from '../lib/v
 
 /* ── Constants ── */
 const BUILD_DATE = '2026.1015';
-const BUILD_NUM = 3; // same-day deploy count
+const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
+const FIREBASE_ONLY = process.env.NEXT_PUBLIC_FIREBASE_ONLY === '1';
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
@@ -58,6 +59,7 @@ function buildEditorPathForVariant(variant = PAGE_VARIANTS.DEFAULT) {
   return isBmOnlyVariant(variant) ? BM_ONLY_MODE_PATHS.editor : '/edit';
 }
 const RECENT_FEATURES = [
+  'Firebase 서버·승인 관리·보관 자료 이전',
   '🔒 관리자 승인 계정만 이용 · 배민온리 웹 진입 중단',
   '📱 클립 편집 — YouTube Shorts 링크 추가·미리보기·영상 생성 지원',
   '🖼️ 업로드 로고 — 커스텀 이미지 비율 유지·캐시 보정',
@@ -1248,7 +1250,7 @@ const DEFAULT_CARD = () => ({
   name: '',
   url: "", start: "0:00", end: "0:10",
   layout: "photo_top", photoRatio: 50, useGradient: false,
-  fillSource: "video", videoFill: "full",
+  fillSource: FIREBASE_ONLY ? "image" : "video", videoFill: "full",
   uploadedImage: null,
   useTitle: true, useSubtitle: true, useBody: true,
   title: "제목을 입력하세요", titleSize: 64, titleFont: "Pretendard-Bold.otf",
@@ -6910,7 +6912,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   id: Date.now() + '_' + Math.random().toString(36).slice(2, 8),
   name,
   globalUrl: '',
-  outputFormat: 'video',
+  outputFormat: FIREBASE_ONLY ? 'jpg' : 'video',
   outputFormatTouched: false,
   outputSize: 1080,
   aspectRatio: '1:1',
@@ -7746,8 +7748,8 @@ function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy
     React.createElement("div", { style: { display: 'flex', flexDirection: 'column', gap: mob ? 8 : 16, width: '100%', maxWidth: 860, alignItems: 'center' } },
       // ── 상단 row: 영상 / 텍스트 / 쉬운 ──
       React.createElement("div", { style: { display: 'flex', flexDirection: mob ? 'column' : 'row', gap: mob ? 8 : 16, width: '100%', justifyContent: 'center' } },
-        // 1) 영상으로 만들기 (기존 AI자동편집 리네임, 색상 유지)
-        React.createElement("div", {
+        // 1) 영상으로 만들기 (Firebase 이전에서는 제외)
+        !FIREBASE_ONLY && React.createElement("div", {
           onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectVideo(); },
           onMouseEnter: () => setHovered('video'), onMouseLeave: () => setHovered(null),
           style: {
@@ -7818,8 +7820,8 @@ function ModeSelectionScreen({ mob, onSelectVideo, onSelectArticle, onSelectEasy
                 ),
               ),
         ),
-        // 3) 쉬운편집 (기존 유지, 색상 유지)
-        React.createElement("div", {
+        // 3) 영상 기반 쉬운편집 (Firebase 이전에서는 제외)
+        !FIREBASE_ONLY && React.createElement("div", {
           onClick: () => { if (aiEditRunning) { setShowAiBlock(true); return; } onSelectEasy(); },
           onMouseEnter: () => setHovered('easy'), onMouseLeave: () => setHovered(null),
           style: {
@@ -8746,13 +8748,13 @@ function ArticleWizardScreen({ mob, step, data, onDataChange, onNext, onBack, on
               React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: currentImageMode === 'reuse' ? T.accent : T.text } }, "\uBCF8\uBB38 \uC774\uBBF8\uC9C0 \uC6B0\uC120"),
             ),
             React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.4 } },
-              articleImageCount === 0
+              FIREBASE_ONLY ? '원문 사진을 사용하고, 빈칸에는 직접 사진을 넣을 수 있어요.' : articleImageCount === 0
                 ? '\uAE30\uC0AC\uC5D0 \uC774\uBBF8\uC9C0 \uC5C6\uC74C \u2192 \uC804\uBD80 AI \uC0DD\uC131'
                 : `\uBCF8\uBB38 ${articleImageCount}\uC7A5 \ud65c\uc6a9 \u00B7 \uBD80\uC871\ubd84 AI \uBCF4\uCDA9`
             ),
           ),
           // AI 생성
-          React.createElement("button", {
+          !FIREBASE_ONLY && React.createElement("button", {
             onClick: () => mergeWizardData({ imageMode: 'generate' }),
             style: {
               padding: '12px 14px', borderRadius: T.radiusSm,

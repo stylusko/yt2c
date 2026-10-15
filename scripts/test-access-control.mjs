@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {signSession,readSession,cookieToken,sessionCookie,accessState,sameOrigin,blockedWebPath,SESSION_SECONDS,signAccessRecord,readAccessRecord} from '../lib/access-control.mjs';
+import {signSession,readSession,cookieToken,sessionCookie,accessState,sameOrigin,blockedWebPath,SESSION_SECONDS,SESSION_COOKIE,signAccessRecord,readAccessRecord} from '../lib/access-control.mjs';
 const secret='a'.repeat(64),user={uid:'existing-uid',email:'owner@example.test'},now=1_900_000_000_000;
 const token=signSession(user,secret,now);
 assert.equal(readSession(token,secret,now).uid,user.uid);
@@ -8,6 +8,10 @@ for(const bad of [token+'x',token.replace('ey','aX'),token+'.more','invalid','',
 assert.equal(readSession(token,'other-secret'.repeat(5),now),null);
 assert.equal(readSession(token,undefined,now),null);
 assert.equal(cookieToken('other=1; youmeca_legacy_session='+token+'; third=2'),token);
+assert.equal(SESSION_COOKIE,'__session');
+assert.equal(cookieToken('__session='+token+'; youmeca_legacy_session=old'),token);
+assert.equal(sameOrigin('https://youmeca-service.web.app','https://youmeca.me,https://youmeca-service.web.app'),true);
+assert.equal(sameOrigin('https://youmeca-service.web.app.evil.example','https://youmeca.me,https://youmeca-service.web.app'),false);
 assert.match(sessionCookie(token),/HttpOnly; SameSite=Lax; Max-Age=604800; Secure/);
 assert.match(sessionCookie(''),/Max-Age=0/);
 assert.deepEqual(accessState(null,{status:'approved'},'admin'),{authenticated:false,approved:false,admin:false});

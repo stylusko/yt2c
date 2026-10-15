@@ -165,6 +165,7 @@ async function handleDelete(req, res) {
 }
 
 export default async function handler(req, res) {
+  if(process.env.YOUMECA_BACKEND==='firebase')return (await import('../../../lib/firebase-jobs.mjs')).imageJobStatus(req,res);
   if (req.method === 'GET') {
     return handleGet(req, res);
   } else if (req.method === 'DELETE') {
