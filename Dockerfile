@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-bookworm-slim
 
 # Install ffmpeg, python3, pip, yt-dlp (pip), bgutil plugin
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -14,7 +14,7 @@ node worker.js     # BullMQ 워커 (별도 프로세스)
 ```
 
 ## Tech Stack
-- Next.js 14 (Pages Router) + React 18
+- Next.js 15 (Pages Router) + React 18
 - React.createElement 직접 사용 (JSX 미사용) — 이 패턴을 유지할 것
 - BullMQ + Redis (작업 큐), Supabase (공유 링크)
 - yt-dlp + ffmpeg (영상 처리), Docker → Railway 배포
