@@ -19,7 +19,7 @@ assert.equal(accessState(user,null,user.uid).admin,true);
 assert.equal(accessState({...user,uid:'imposter'},null,user.uid).admin,false,'same email never grants admin rights');
 assert.equal(sameOrigin('https://youmeca.me','https://youmeca.me'),true);
 for(const origin of ['https://youmeca.me.attacker.test','null','http://youmeca.me',undefined]) assert.equal(sameOrigin(origin,'https://youmeca.me'),false);
-for(const path of ['/bmonly','/bmonly/edit','/%62monly','/s/abc/bmonly','/bmonly%2Fedit','/bmonly\\edit']) assert.equal(blockedWebPath(path),true);
+for(const path of ['/bmonly','/bmonly/edit','/%62monly','/s/abc/bmonly','/bmonly%2Fedit','/bmonly\\edit','/BMOnly/Edit','/S/AbC/BMONLY']) assert.equal(blockedWebPath(path),true);
 assert.equal(blockedWebPath('/'),false);
 console.log('Session expiry, tampering, UID-only admin, approval/revocation, origin and closed route checks passed.');
 
