@@ -13,6 +13,10 @@ npm start          # 프로덕션 서버
 node worker.js     # BullMQ 워커 (별도 프로세스)
 ```
 
+## Current production
+
+운영은 Firebase 프로젝트 `youmeca`의 Hosting + Cloud Run + Realtime Database + Storage + Cloud Tasks를 사용한다. `npm run deploy:firebase`와 `docs/firebase-operations.md`를 따른다. 기존 Railway 자동 배포는 종료한다. 영상 생성은 제공하지 않으며 기존 파일은 보존한다. 아래 Redis/Railway 설명은 호환·보관 코드에 관한 이전 구조다.
+
 ## Tech Stack
 - Next.js 15 (Pages Router) + React 18
 - React.createElement 직접 사용 (JSX 미사용) — 이 패턴을 유지할 것

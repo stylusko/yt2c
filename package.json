@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "deploy:firebase": "node scripts/deploy-firebase.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
