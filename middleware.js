@@ -10,6 +10,7 @@ function noStore(response) {
 }
 export async function middleware(request) {
   const originalPath=request.nextUrl.pathname,path=originalPath.toLowerCase();
+  if(process.env.YOUMECA_BACKEND==='firebase'&&(path==='/api/health'||path==='/api/internal/render'))return NextResponse.next();
   const installer=installerEntry(originalPath,request.method,process.env.YOUMECA_INSTALLER_TOKEN);
   if(installer) {
     const response=installer.kind==='download'?NextResponse.redirect(installer.destination,installer.status):new NextResponse(installer.html||'GET 또는 HEAD 요청만 가능합니다.',{status:installer.status,headers:{'Content-Type':installer.kind==='page'?'text/html; charset=utf-8':'text/plain; charset=utf-8'}});
@@ -20,7 +21,7 @@ export async function middleware(request) {
   }
   if(blockedWebPath(path)) return noStore(new NextResponse('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>웹 진입 중단 · 유메카</title><body style="font:17px/1.7 system-ui;background:#fafaf6;color:#263c2f;padding:12vh 8vw"><main><p>youmeca</p><h1>웹 진입이 중단되었습니다.</h1><p>배민온리 웹 페이지는 현재 이용할 수 없습니다.</p></main></body></html>',{status:403,headers:{'Content-Type':'text/html; charset=utf-8'}}));
   if(path==='/access' || path.startsWith('/api/access/') || path.startsWith('/_next/static/') || path.startsWith('/_next/webpack-hmr') || path==='/favicon.ico' || path.startsWith('/icon-') || path.startsWith('/fonts/')) return NextResponse.next();
-  if(path.startsWith('/api/') && !['GET','HEAD','OPTIONS'].includes(request.method) && !sameOrigin(request.headers.get('origin'),process.env.YOUMECA_ORIGIN||'https://youmeca.me')) return noStore(NextResponse.json({error:'이 사이트에서 다시 요청해 주세요.'},{status:403}));
+  if(path.startsWith('/api/') && !['GET','HEAD','OPTIONS'].includes(request.method) && !sameOrigin(request.headers.get('origin'),process.env.YOUMECA_ALLOWED_ORIGINS||process.env.YOUMECA_ORIGIN||'https://youmeca.me')) return noStore(NextResponse.json({error:'이 사이트에서 다시 요청해 주세요.'},{status:403}));
   let access;
   try {
     const port=process.env.PORT||'3000';
@@ -38,6 +39,7 @@ export async function middleware(request) {
     destination.searchParams.set('next',originalPath+request.nextUrl.search);
     return noStore(NextResponse.redirect(destination,307));
   }
+  if(process.env.YOUMECA_BACKEND==='firebase'&&/^\/api\/(?:video-info|video-duration|subtitle|frame|ai-edit|telegram|regenerate-article-image)(?:\/|$)/.test(path))return noStore(NextResponse.json({error:'영상 제작 기능은 제공하지 않습니다.'},{status:410}));
   if((path.startsWith('/admin/') || path.startsWith('/api/admin/')) && !access.admin) return noStore(new NextResponse('관리자만 이용할 수 있습니다.',{status:403}));
   return noStore(NextResponse.next());
 }

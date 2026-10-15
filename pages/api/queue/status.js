@@ -31,6 +31,7 @@ async function getAvgSecondsPerCard(queue) {
 }
 
 export default async function handler(req, res) {
+  if(process.env.YOUMECA_BACKEND==='firebase')return (await import('../../../lib/firebase-jobs.mjs')).imageQueueStatus(req,res);
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

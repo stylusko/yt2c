@@ -88,6 +88,8 @@ export default async function handler(req, res) {
       layoutPreference,
     });
 
+    if(process.env.YOUMECA_BACKEND==='firebase')for(const card of divided.cards)if(card.imageStrategy==='generate')card.imageStrategy='none';
+
     sseSend(res, 'dividing', { message: `${divided.cards.length}장으로 나눴어요` });
     sseSend(res, 'cards-ready', {
       title: divided.title,

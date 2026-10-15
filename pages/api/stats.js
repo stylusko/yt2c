@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import {firebaseBackend,firebaseStats} from '../../lib/firebase-runtime.mjs';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 let _redis = null;
@@ -41,6 +42,7 @@ async function backfillAlltimeVisitorsOnce(redis) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
   try {
+    if(firebaseBackend())return res.json(await firebaseStats());
     const redis = getRedis();
     await backfillAlltimeVisitorsOnce(redis);
 

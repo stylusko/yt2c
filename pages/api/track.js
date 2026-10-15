@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import {firebaseBackend,recordFirebaseVisit} from '../../lib/firebase-runtime.mjs';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -25,6 +26,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    if(firebaseBackend()) {await recordFirebaseVisit(req);return res.json({ok:true});}
     const redis = getRedis();
     const ip = getClientIP(req);
     const dateStr = getKSTDateStr();

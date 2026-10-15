@@ -2,6 +2,7 @@
 import { fileExists } from '../../lib/bucket.js';
 
 export default async function handler(req, res) {
+  if(process.env.YOUMECA_BACKEND==='firebase')return res.json({backend:'firebase',bucket:'youmeca.firebasestorage.app',private:true});
   const endpoint = process.env.BUCKET_ENDPOINT || process.env.AWS_ENDPOINT_URL;
   const accessKey = process.env.BUCKET_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
   const secretKey = process.env.BUCKET_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;

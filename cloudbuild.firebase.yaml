@@ -1,0 +1,12 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['pull', 'asia-southeast1-docker.pkg.dev/youmeca/youmeca-web/legacy:firebase']
+    allowFailure: true
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--cache-from', 'asia-southeast1-docker.pkg.dev/youmeca/youmeca-web/legacy:firebase', '-f', 'Dockerfile.firebase', '-t', 'asia-southeast1-docker.pkg.dev/youmeca/youmeca-web/legacy:firebase', '.']
+    env: ['DOCKER_BUILDKIT=0']
+images:
+  - asia-southeast1-docker.pkg.dev/youmeca/youmeca-web/legacy:firebase
+timeout: 1200s
+options:
+  logging: CLOUD_LOGGING_ONLY

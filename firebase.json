@@ -1,0 +1,8 @@
+{
+  "hosting": {
+    "site": "youmeca-service",
+    "public": "firebase-public",
+    "ignore": ["**/.*"],
+    "rewrites": [{"source":"**","run":{"serviceId":"youmeca-legacy","region":"asia-southeast1"}}]
+  }
+}

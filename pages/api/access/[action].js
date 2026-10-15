@@ -10,7 +10,7 @@ export default async function handler(req,res) {
   if(!secret || secret.length<32 || !adminUid) return res.status(503).json({error:'접근 설정을 준비 중입니다. 잠시 후 다시 시도해 주세요.'});
   const mutation=['login','logout','request','decision'].includes(action);
   if(req.method!==(mutation?'POST':'GET')) {res.setHeader('Allow',mutation?'POST':'GET');return res.status(405).json({error:'허용하지 않는 요청입니다.'});}
-  const expected=process.env.YOUMECA_ORIGIN || 'https://youmeca.me';
+  const expected=process.env.YOUMECA_ALLOWED_ORIGINS || process.env.YOUMECA_ORIGIN || 'https://youmeca.me';
   const local=process.env.NODE_ENV!=='production' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.origin||'');
   if(mutation && !sameOrigin(req.headers.origin,expected) && !local) return res.status(403).json({error:'이 사이트에서 다시 요청해 주세요.'});
   try {
