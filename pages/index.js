@@ -13,6 +13,17 @@ const BUILD_DATE = '2026.1015';
 const BUILD_NUM = 4; // same-day deploy count
 const VERSION = `v${BUILD_DATE}.${BUILD_NUM}`;
 const FIREBASE_ONLY = process.env.NEXT_PUBLIC_FIREBASE_ONLY === '1';
+async function firebaseRequest(url,options) {
+  if(!FIREBASE_ONLY||new Blob([options.body]).size<4_000_000)return fetch(url,options);
+  const parsed=JSON.parse(options.body),purpose=url==='/api/share'?'share':'jobs';
+  const body=new Blob([purpose==='share'?parsed.data:options.body],{type:'text/plain; charset=utf-8'});
+  const start=await fetch('/api/uploads',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({purpose,bytes:body.size})});
+  const prepared=await start.json();if(!start.ok)throw Error(prepared.error||'업로드를 준비하지 못했습니다.');
+  if(new URL(prepared.uploadUrl).origin!=='https://storage.googleapis.com')throw Error('업로드 주소를 확인하지 못했습니다.');
+  const uploaded=await fetch(prepared.uploadUrl,{method:'PUT',headers:{'Content-Type':'text/plain; charset=utf-8'},body,credentials:'omit'});
+  if(!uploaded.ok)throw Error('업로드가 완료되지 않았습니다. 다시 시도해 주세요.');
+  return fetch(url,{...options,body:JSON.stringify({uploadId:prepared.id})});
+}
 const CREATOR = 'JH KO';
 const CONTACT_EMAIL = 'moonsengwon.me@gmail.com';
 const ADSENSE_ID = process.env.NEXT_PUBLIC_ADSENSE_ID || '';
@@ -155,7 +166,7 @@ const ASPECT_OPTIONS = [
 const FILL_SOURCE_OPTIONS = [
   { id: "video", label: "영상" },
   { id: "image", label: "이미지" },
-];
+].filter(option => !FIREBASE_ONLY || option.id !== "video");
 
 const VIDEO_FILL_OPTIONS = [
   { id: "full", label: "전체 채우기" },
@@ -1272,7 +1283,7 @@ const DEFAULT_CARD = () => ({
   brandGuideId: null, brandLayoutId: null,
   appliedStart: null, appliedEnd: null, clipThumbnail: null,
   // ── article 모드 전용 (기본 youtube) ──
-  sourceType: 'youtube',     // 'youtube' | 'article'
+  sourceType: FIREBASE_ONLY ? 'article' : 'youtube',     // 'youtube' | 'article'
   articleType: null,         // 'cover' | 'content' | 'outro' (article 모드에서만)
   articleMeta: null,         // { aiImageSource, sourceImageIndex, aiImagePrompt, aiImageSeed, aiImageStatus, aiImageError, stylePresetId }
 });
@@ -6920,7 +6931,7 @@ const DEFAULT_PROJECT = (name = '새 프로젝트') => ({
   globalBgImage: null,
   cards: [DEFAULT_CARD()],
   // ── article 모드 전용 (기본 youtube) ──
-  sourceType: 'youtube',   // 'youtube' | 'article'
+  sourceType: FIREBASE_ONLY ? 'article' : 'youtube',   // 'youtube' | 'article'
   sourceUrl: '',           // 기사 원본 URL
   sourceTitle: '',         // 기사 원본 제목
   sourceImages: [],        // 기사 원본 이미지 URL 목록 (갤러리용)
@@ -7512,7 +7523,7 @@ function GlobalSettingsModal({ globalUrl, setGlobalUrl, aspectRatio, setAspectRa
         React.createElement("div", null,
           React.createElement("label", { style: labelBase }, "\uD615\uC2DD"),
           React.createElement("div", { style: { display: 'flex', gap: 8 } },
-            React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
+            !FIREBASE_ONLY && React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
             React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "\uC774\uBBF8\uC9C0"),
           ),
         ),
@@ -11729,7 +11740,7 @@ export default function App() {
     const serverEncoded = encodeProjectForServer(projectToShare);
     // Try Supabase short URL first
     try {
-      const res = await fetch('/api/share', {
+      const res = await firebaseRequest('/api/share', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: serverEncoded }),
@@ -11958,7 +11969,7 @@ export default function App() {
             : { ...projectBaseForShare, outputFormat: effectiveOutputFormat, outputFormatTouched: false };
           const serverEncoded = encodeProjectForServer(projectForShare);
           try {
-            const shareRes = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: serverEncoded }) });
+            const shareRes = await firebaseRequest('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: serverEncoded }) });
             if (shareRes.ok) { const { id } = await shareRes.json(); projectShareUrl = `${window.location.origin}${buildShortSharePath(id, pageVariant)}`; }
           } catch (_) {}
           if (!projectShareUrl && !needsServerShareSnapshot(projectForShare)) {
@@ -11969,7 +11980,7 @@ export default function App() {
           console.warn('[generate] project share link skipped:', shareErr);
         }
       }
-      const res = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await firebaseRequest("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url, outputFormat: effectiveOutputFormat, outputSize, aspectRatio, projectShareUrl, cards: newTargetCards.map((card, j) => ({
           cardConfig: buildConfig(card),
           overlayData: overlays[j],
@@ -13024,7 +13035,7 @@ export default function App() {
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
               React.createElement("span", { style: { fontSize: 11, color: T.textMuted, whiteSpace: 'nowrap' } }, "\uD615\uC2DD"),
-              React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
+              !FIREBASE_ONLY && React.createElement(PillBtn, { active: outputFormat === "video", onClick: () => setOutputFormat("video") }, "\uC601\uC0C1"),
               React.createElement(PillBtn, { active: outputFormat === "image", onClick: () => setOutputFormat("image") }, "\uC774\uBBF8\uC9C0"),
             ),
             React.createElement("div", { style: { display: 'flex', alignItems: 'center', gap: 6 } },
